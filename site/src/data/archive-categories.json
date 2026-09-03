@@ -1,0 +1,39 @@
+{
+	"categories": [
+		{
+			"slug": "photos",
+			"label": "老照片",
+			"object_types": ["PHO", "NEG", "SLD", "ALB"]
+		},
+		{
+			"slug": "postcards",
+			"label": "明信片",
+			"object_types": ["PST", "PCD"]
+		},
+		{
+			"slug": "letters",
+			"label": "信件",
+			"object_types": ["LET"]
+		},
+		{
+			"slug": "credentials",
+			"label": "老证件",
+			"object_types": ["IDC"]
+		},
+		{
+			"slug": "cards",
+			"label": "旧卡片",
+			"object_types": ["card"]
+		},
+		{
+			"slug": "notes",
+			"label": "笔记与笔记本",
+			"object_types": ["DIA", "NTB"]
+		},
+		{
+			"slug": "other",
+			"label": "其他旧物",
+			"object_types": ["RPR", "OTH"]
+		}
+	]
+}

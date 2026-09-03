@@ -1,0 +1,271 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteIcon from '../components/SiteIcon.astro';
+---
+
+<BaseLayout
+  title="关于老旧默片"
+  description="了解老旧默片的收录范围、整理方式、研究原则、隐私边界与资料修订方法。"
+>
+  <article class="about-page">
+    <header class="about-heading">
+      <p class="section-mark icon-heading"><SiteIcon name="story" /><span>ABOUT · WORKING PRINCIPLES</span></p>
+      <h1>关于老旧默片</h1>
+      <p class="about-lead">
+        「老旧默片」是一个关于普通人生活痕迹的个人数字档案计划。这里不仅保存图片，也尽量说明资料从哪里来、哪些内容已经确认、哪些仍然未知。
+      </p>
+    </header>
+
+    <nav class="about-index" aria-label="本页内容">
+      <a href="#scope"><span>01</span>收录范围</a>
+      <a href="#method"><span>02</span>整理方式</a>
+      <a href="#research"><span>03</span>研究与未知</a>
+      <a href="#privacy"><span>04</span>隐私与权利</a>
+      <a href="#revision"><span>05</span>资料修订</a>
+	  <a href="#correction"><span>06</span>纠错与撤下</a>
+    </nav>
+
+    <div class="about-content">
+      <section class="about-section" id="scope">
+        <p class="about-section-index">01 / SCOPE</p>
+        <div>
+          <h2 class="icon-heading"><SiteIcon name="collection" /><span>收录普通生活留下的痕迹</span></h2>
+          <p>
+            收录对象包括老照片、明信片、信件、证件、旧卡片、日记、笔记本以及其他能够反映普通生活的旧物。是否收录不取决于人物是否知名，也不要求它必须对应重大事件。
+          </p>
+          <p>
+            网站只展示已经进入公开层的档案。尚未整理、隐私风险无法确认或不适合公开的资料，不会因为内容稀缺而降低发布要求。
+          </p>
+        </div>
+      </section>
+
+      <section class="about-section" id="method">
+        <p class="about-section-index">02 / METHOD</p>
+        <div>
+          <h2 class="icon-heading"><SiteIcon name="details" /><span>永久编号不随分类变化</span></h2>
+          <p>
+            每件档案都有独立永久编号。类型、年代或主题判断后来发生变化时，只更新对应的整理信息，不更换永久编号，以便持续追踪同一件实物。
+          </p>
+          <p>
+            通用管理资料与对象专属资料分开保存；正式代码与原始文字也分开记录。网站优先显示容易理解的中文标签，必要的技术代码收在详情页的折叠信息中。
+          </p>
+        </div>
+      </section>
+
+      <section class="about-section" id="research">
+        <p class="about-section-index">03 / RESEARCH</p>
+        <div>
+          <h2 class="icon-heading"><SiteIcon name="search" /><span>不把推测写成事实</span></h2>
+          <p>
+            已确认、推测和未知内容会尽量保持区别。没有足够证据时使用“未知”或保留原始说法，不根据照片中的人脸、地址或背景主动推断普通人的真实身份。
+          </p>
+          <p>
+            档案详情会显示当前研究状态、证据等级和最后更新日期。新证据出现后可以修订整理结果，但永久编号和历史记录仍然保留。
+          </p>
+        </div>
+      </section>
+
+      <section class="about-section" id="privacy">
+        <p class="about-section-index">04 / PRIVACY</p>
+        <div>
+          <h2 class="icon-heading"><SiteIcon name="rights" /><span>公开副本与原始档案严格分开</span></h2>
+          <p>
+            网站使用的只是经过筛选、压缩和必要脱敏的发布副本。原始扫描件、高清主档、完整证件号码、精确私人地址、清晰签名以及其他敏感材料不直接进入公开网站。
+          </p>
+          <p>
+            页面可见不等于已经授予复制、传播或商业使用许可。除非档案页面另有明确说明，访客不应把公开浏览理解为无限制使用授权。
+          </p>
+        </div>
+      </section>
+
+      <section class="about-section" id="revision">
+        <p class="about-section-index">05 / REVISION</p>
+        <div>
+          <h2 class="icon-heading"><SiteIcon name="citation" /><span>资料可以修订，但修改需要留下依据</span></h2>
+          <p>
+            核对某件档案时，应以题名和永久编号为准。资料修订会更新公开元数据，不覆盖原始档案主文件；已经发布的版本在本地保留可追溯记录。
+          </p>
+          <p>
+            网站不设置公开留言或在线纠错表单，也不因此收集访客个人信息。需要核对档案时，可以先复制标准申请模板；正式邮箱只有在站点所有者配置真实地址后才会显示。
+          </p>
+        </div>
+      </section>
+
+	  <section class="about-section" id="correction">
+		<p class="about-section-index">06 / CORRECTION</p>
+		<div>
+		  <h2 class="icon-heading"><SiteIcon name="rights" /><span>为纠错、权利补充和撤下保留入口</span></h2>
+		  <p>
+			提出申请时应提供档案永久编号、页面地址、需要核对的内容和能够帮助判断的依据。首次联系不应提交完整证件号码、精确私人地址、清晰签名或其他高敏感资料。
+		  </p>
+		  <p><a class="ui-text-link" href="/corrections/">查看纠错与撤下说明 →</a></p>
+		</div>
+	  </section>
+
+      <div class="belief">
+        <p class="belief-label">THE PROJECT BELIEVES</p>
+        <blockquote>把那些原本会消失的人生，留下来。</blockquote>
+      </div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .about-page {
+    max-width: 58rem;
+    margin: 0 auto;
+    padding-top: clamp(3.5rem, 7vw, 5.5rem);
+  }
+
+  .about-heading {
+    max-width: 48rem;
+  }
+
+  .section-mark {
+    margin: 0 0 1.15rem;
+    color: #747064;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.2em;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.35rem, 5vw, 3.7rem);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    line-height: 1.25;
+  }
+
+  .about-lead {
+    max-width: 42rem;
+    margin: 1.5rem 0 0;
+    color: #514e47;
+    font-size: clamp(1rem, 1.8vw, 1.12rem);
+    line-height: 2;
+    letter-spacing: 0.035em;
+  }
+
+  .about-index {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+    margin-top: clamp(2.5rem, 5vw, 3.75rem);
+  }
+
+  .about-index a {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 0;
+    padding: 0.75rem 0.7rem;
+    background: rgba(248, 244, 234, 0.25);
+    border: 1px solid #c7bfaf;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+    text-decoration: none;
+  }
+
+  .about-index span {
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+  }
+
+  .about-index a:hover,
+  .about-index a:focus-visible {
+    border-color: rgba(154, 63, 46, 0.58);
+    box-shadow: inset 3px 0 var(--site-accent);
+  }
+
+  .about-content {
+    margin-top: clamp(3rem, 6vw, 4.5rem);
+  }
+
+  .about-section {
+    display: grid;
+    grid-template-columns: minmax(7rem, 0.26fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    margin-top: 0.8rem;
+    padding: 1.65rem clamp(0.9rem, 2.5vw, 1.35rem) 1.8rem;
+    background: var(--site-paper);
+    border: 1px solid #c8c0b1;
+    border-left: 3px solid rgba(154, 63, 46, 0.32);
+    scroll-margin-top: 1.5rem;
+  }
+
+  .about-section-index {
+    margin: 0;
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.14em;
+  }
+
+  .about-section h2 {
+    margin: 0 0 1.1rem;
+    font-size: clamp(1.2rem, 2.3vw, 1.55rem);
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    line-height: 1.6;
+  }
+
+  .about-section div > p {
+    margin: 0 0 1.1rem;
+    color: #45433e;
+    font-size: 0.98rem;
+    line-height: 2;
+    letter-spacing: 0.035em;
+  }
+
+  .about-section div > p:last-child {
+    margin-bottom: 0;
+  }
+
+  .belief {
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    padding: 2rem 0 0;
+    border-top: 1px solid #aaa397;
+  }
+
+  .belief-label {
+    margin: 0 0 1.5rem;
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.14em;
+  }
+
+  blockquote {
+    margin: 0;
+    font-size: clamp(1.35rem, 3.2vw, 2rem);
+    font-weight: 400;
+    line-height: 1.75;
+    letter-spacing: 0.08em;
+  }
+
+  @media (max-width: 640px) {
+    .about-page {
+      padding-top: 3rem;
+    }
+
+    .about-index {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 2.4rem;
+    }
+
+    .about-section {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      padding: 1.3rem 0.9rem 1.45rem;
+    }
+
+    .about-content {
+      margin-top: 3rem;
+    }
+
+    .belief {
+      margin-top: 3rem;
+    }
+  }
+</style>

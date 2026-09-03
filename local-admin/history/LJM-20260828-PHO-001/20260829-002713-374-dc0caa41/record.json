@@ -1,0 +1,76 @@
+{
+  "core": {
+    "record_status": "ACT",
+    "item_id": "LJM-20260828-PHO-001",
+    "accession_date": "2026-08-28",
+    "object_type": "PCD",
+    "title": "历史的笑容",
+    "privacy_level": "G",
+    "rights_status": "UNK",
+    "research_status": "R0",
+    "evidence_level": "D",
+    "digitization_status": "DG0",
+    "transcription_status": "TX0",
+    "use_status": "U3",
+    "publication_file_path": [
+      "/archive/LJM-20260828-PHO-001/front-public.jpg"
+    ],
+    "physical_location": "沈阳",
+    "created_date": "2026-08-28",
+    "updated_date": "2026-08-29",
+    "batch_id": "FSA-202628-CCQ",
+    "id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+    "required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。",
+    "acquisition_method": "PR-PUR",
+    "date_display": "1992",
+    "source_place": "东北",
+    "collection_code": "PCD_1992_COM_COL_MEM+OTH_OTH_MAI"
+  },
+  "metadata": {
+    "schema": "postcard",
+    "dimensions": {
+      "PC01": {
+        "postcard_type": "PT-COM"
+      },
+      "PC02": {
+        "postcard_function": "PF-COL"
+      },
+      "PC04": {
+        "writing_date": "1992-01-01"
+      },
+      "PC07": {
+        "dispatch_place": [
+          "俄罗斯"
+        ]
+      },
+      "PC12": {
+        "themes": [
+          "SU-MEM"
+        ],
+        "event_scene": [
+          "EV-OTH"
+        ]
+      },
+      "PC19": {
+        "postal_mark_types": [
+          "PM-OTH"
+        ]
+      },
+      "PC21": {
+        "postcard_use": "PU-MAI"
+      },
+      "PC06": {
+        "image_place_code": [
+          "俄罗斯"
+        ]
+      }
+    }
+  },
+  "public_view": {
+    "description": "",
+    "transcription": "",
+    "tags": [],
+    "place_display": "",
+    "place_filters": []
+  }
+}

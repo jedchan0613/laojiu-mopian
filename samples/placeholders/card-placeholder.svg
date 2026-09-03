@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title description">
+  <title id="title">卡片测试占位图</title>
+  <desc id="description">米白旧纸张风格的极简 CARD 占位图</desc>
+  <rect width="1200" height="800" fill="#eee9dc" />
+  <rect x="154" y="142" width="892" height="516" rx="10" fill="#e4dccb" stroke="#625f58" stroke-width="2" />
+  <line x1="154" y1="270" x2="1046" y2="270" stroke="#817b70" stroke-width="18" />
+  <line x1="226" y1="552" x2="460" y2="552" stroke="#9e9688" stroke-width="2" />
+  <text x="822" y="518" fill="#3d3b36" font-family="serif" font-size="82" letter-spacing="18" text-anchor="middle">CARD</text>
+</svg>

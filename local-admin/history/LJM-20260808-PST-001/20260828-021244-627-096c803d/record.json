@@ -1,0 +1,99 @@
+{
+  "core": {
+    "record_status": "ACT",
+    "item_id": "LJM-20260808-PST-001",
+    "batch_id": "hrb202608",
+    "accession_date": "2026-08-08",
+    "object_type": "PST",
+    "item_seq": 1,
+    "title": "一张从日本寄出的旧明信片照片",
+    "date_display": "1979",
+    "date_precision": "TP-YEAR",
+    "city": "哈尔滨",
+    "place_notes": "用户确认寄出地为日本东京，收件地为哈尔滨。",
+    "people": [
+      "王同志"
+    ],
+    "acquisition_method": "PR-PUR",
+    "source_name": "旧货市场/闲鱼",
+    "source_place": "哈尔滨旧货市场",
+    "provenance_notes": "哈尔滨旧货市场购入",
+    "related_item_ids": [
+      "LJM-20260827-LET-001"
+    ],
+    "privacy_level": "G",
+    "rights_status": "UNK",
+    "research_status": "R0",
+    "evidence_level": "A",
+    "evidence_basis": "用户提供并确认的公开元数据。",
+    "digitization_status": "DG3",
+    "transcription_status": "TX2",
+    "backup_status": "BU0",
+    "publication_file_path": [
+      "/archive/LJM-20260808-PST-001/front-public.jpg",
+      "/archive/LJM-20260808-PST-001/back-public.jpg"
+    ],
+    "use_status": "U3",
+    "created_date": "2026-08-27",
+    "updated_date": "2026-08-28",
+    "next_action": "无；本次合并、正式构建和页面文件检查已完成。",
+    "notes": "原编号 LJM-20260827-LET-001 的信件实际为本件明信片的附属信件，现已连同两张发布图片并入本主档。用户此前已确认附属信件的收件称呼、落款和通信内容允许公开且无需遮盖。",
+    "id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+    "required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。",
+    "physical_location": "哈尔滨"
+  },
+  "metadata": {
+    "schema": "postcard",
+    "dimensions": {
+      "PC01": {
+        "postcard_type": "PT-UNK"
+      },
+      "PC02": {
+        "postcard_function": "PF-UNK"
+      },
+      "PC06": {
+        "image_place_text": [
+          "富士山"
+        ]
+      },
+      "PC07": {
+        "dispatch_place": [
+          "日本"
+        ]
+      },
+      "PC10": {
+        "recipient_name": [
+          "孙志坚先生"
+        ]
+      },
+      "PC12": {
+        "image_subject": "富士山风景"
+      },
+      "PC20": {
+        "language": [
+          "zh"
+        ],
+        "script": [
+          "汉字"
+        ],
+        "message_transcription": "赠 孙志坚先生"
+      },
+      "PC21": {
+        "postcard_use": "PU-UNK"
+      }
+    }
+  },
+  "public_view": {
+    "description": "一张保存较完整的旧明信片，正面为富士山风景，背面保留手写文字。",
+    "transcription": "赠 孙志坚先生",
+    "tags": [
+      "明信片",
+      "东北",
+      "1970年代"
+    ],
+    "place_display": "哈尔滨",
+    "place_filters": [
+      "哈尔滨"
+    ]
+  }
+}

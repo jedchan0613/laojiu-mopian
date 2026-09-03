@@ -1,0 +1,337 @@
+{
+  "source_workbook": "archive-metadata-standard-v1.xlsx",
+  "source_sheet": "05_明信片维度",
+  "source_note": "本文件按 Excel v1.1 原文生成。表内 FSA 示例属于来源文件的旧示例；项目当前永久编号正式规则为 LJM-YYYYMMDD-TYP-NNN，详见 docs/coding-standard.md。",
+  "system": "postcard",
+  "applies_to": [
+    "PST",
+    "PCD"
+  ],
+  "dimension_count": 21,
+  "dimensions": [
+    {
+      "dimension_code": "PC01",
+      "name": "明信片类别",
+      "fields": [
+        "postcard_type"
+      ],
+      "code_structure": "PT-*",
+      "rule": "按载体原始形态与发行用途分类；照片明信片仍归明信片对象",
+      "example": "PT-VIEW｜风景明信片",
+      "multi_value_rule": "单值",
+      "uncertainty_rule": "无法判断用PT-UNK",
+      "register_mapping": "资料类型object_type=PST/PCD",
+      "notes": "具体代码见04_代码字典"
+    },
+    {
+      "dimension_code": "PC02",
+      "name": "原始功能/场合",
+      "fields": [
+        "postcard_function"
+      ],
+      "code_structure": "PF-*",
+      "rule": "记录其最初承担的通信、祝贺、旅行、广告或收藏功能",
+      "example": "PF-TRV｜旅行寄送",
+      "multi_value_rule": "单值为主",
+      "uncertainty_rule": "未寄不等于没有功能；不明用PF-UNK",
+      "register_mapping": "事件/场景、主题、使用状态",
+      "notes": "不同于今天的作品利用状态"
+    },
+    {
+      "dimension_code": "PC03",
+      "name": "制作/发行时间",
+      "fields": [
+        "issue_date"
+      ],
+      "code_structure": "日期值",
+      "rule": "明信片制作或发行时间与寄写时间分开；只确认年代时在基本信息的显示年代中记录",
+      "example": "1930-01-01",
+      "multi_value_rule": "单值/范围",
+      "uncertainty_rule": "无出版信息时据版式推测并用证据C",
+      "register_mapping": "显示年代、时间起点/终点",
+      "notes": "不要用邮戳日期替代发行日期"
+    },
+    {
+      "dimension_code": "PC04",
+      "name": "书写时间",
+      "fields": [
+        "writing_date",
+        "writing_date_text"
+      ],
+      "code_structure": "YYYY-MM-DD / 原文",
+      "rule": "优先采用正文落款日期；原文与规范日期同时保留",
+      "example": "1956-05-02｜五月二日夜",
+      "multi_value_rule": "单值",
+      "uncertainty_rule": "仅有月日但无年份时保留原文并留空规范年",
+      "register_mapping": "显示年代、时间判断说明",
+      "notes": "落款可能晚于实际书写，需备注"
+    },
+    {
+      "dimension_code": "PC05",
+      "name": "寄递时间序列",
+      "fields": [
+        "dispatch_date",
+        "transit_dates",
+        "arrival_date"
+      ],
+      "code_structure": "日期序列",
+      "rule": "分别记录寄发、经转、到达或退回日期，按邮路顺序排列",
+      "example": "1956-05-03;1956-05-05",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "邮戳不清写〔不清〕并用证据C/D",
+      "register_mapping": "时间起点/终点、标记转录",
+      "notes": "不要只保留最清楚的一枚邮戳"
+    },
+    {
+      "dimension_code": "PC06",
+      "name": "图像地点",
+      "fields": [
+        "image_place_code",
+        "image_place_text"
+      ],
+      "code_structure": "PL-* + 原文",
+      "rule": "画面地点与寄出地、收件地分开；保留旧地名和图注",
+      "example": "PL-CN-GD-FS｜佛山祖庙",
+      "multi_value_rule": "可多值;",
+      "uncertainty_rule": "无法定位时只录图注原文",
+      "register_mapping": "地点代码至地点说明",
+      "notes": "适用于风景、建筑和街景明信片"
+    },
+    {
+      "dimension_code": "PC07",
+      "name": "寄出地",
+      "fields": [
+        "dispatch_place"
+      ],
+      "code_structure": "地点原文",
+      "rule": "从寄发戳、正文或寄件地址记录始发地点",
+      "example": "广州西关",
+      "multi_value_rule": "可多值;",
+      "uncertainty_rule": "邮戳推定必须附证据等级",
+      "register_mapping": "获得地点以外的地点说明",
+      "notes": "与明信片图像地点可能完全不同"
+    },
+    {
+      "dimension_code": "PC08",
+      "name": "收件地/收件地址",
+      "fields": [
+        "destination_place",
+        "recipient_address"
+      ],
+      "code_structure": "PL-* + 地址原文",
+      "rule": "规范地点与逐字地址分开；公开版本按隐私规则遮盖门牌",
+      "example": "佛山｜永兴街12号",
+      "multi_value_rule": "单值",
+      "uncertainty_rule": "近现代私人地址默认Y；仍在使用的精确地址可升R",
+      "register_mapping": "地点、隐私等级、发布副本",
+      "notes": "地址原文宜保存在受限字段"
+    },
+    {
+      "dimension_code": "PC09",
+      "name": "寄件人",
+      "fields": [
+        "sender_person_id",
+        "sender_name",
+        "sender_address"
+      ],
+      "code_structure": "P* + 原文",
+      "rule": "人物权威编号、署名、异名与寄件地址分开",
+      "example": "P000301｜阿明",
+      "multi_value_rule": "可多值;",
+      "uncertainty_rule": "只见昵称时不要强行对应真实姓名",
+      "register_mapping": "人物编号/姓名/身份、隐私",
+      "notes": "寄件人与图中人物不是同一概念"
+    },
+    {
+      "dimension_code": "PC10",
+      "name": "收件人",
+      "fields": [
+        "recipient_person_id",
+        "recipient_name",
+        "recipient_title"
+      ],
+      "code_structure": "P* + 原文",
+      "rule": "逐字保留姓名、称谓和单位；另建规范人物记录",
+      "example": "P000302｜玉珍女士",
+      "multi_value_rule": "可多值;",
+      "uncertainty_rule": "敏感人物或未成年人从严处理",
+      "register_mapping": "人物编号/姓名/身份、隐私",
+      "notes": "称谓是推断关系的重要证据"
+    },
+    {
+      "dimension_code": "PC11",
+      "name": "通信关系/关联机构",
+      "fields": [
+        "correspondence_relationship",
+        "organizations"
+      ],
+      "code_structure": "关系词 + O*",
+      "rule": "记录亲属、同事、同学、客户等关系及涉及单位",
+      "example": "同学;同乡｜O000081",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "仅凭称谓推断时标证据C",
+      "register_mapping": "人物关系、机构编号/单位",
+      "notes": "关系可随研究更新，不影响item_id"
+    },
+    {
+      "dimension_code": "PC12",
+      "name": "图像主题/画面内容",
+      "fields": [
+        "image_subject",
+        "themes",
+        "event_scene"
+      ],
+      "code_structure": "SU-* / EV-* + 描述",
+      "rule": "图像主题与通信正文主题分别记录；只标核心主题",
+      "example": "SU-CITY;SU-TRN｜火车站街景",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "不要用正文内容替代画面描述",
+      "register_mapping": "主题、事件/场景、题名",
+      "notes": "无图案的纯文字卡可填不适用"
+    },
+    {
+      "dimension_code": "PC13",
+      "name": "出版/发行机构",
+      "fields": [
+        "publisher",
+        "publisher_place",
+        "publisher_id"
+      ],
+      "code_structure": "O* + 原文",
+      "rule": "记录出版社、书店、景区、机构或邮政发行者及所在地",
+      "example": "O000210｜商务印书馆",
+      "multi_value_rule": "可多值;",
+      "uncertainty_rule": "商标残缺时逐字转录可见部分",
+      "register_mapping": "机构编号/单位、标记转录",
+      "notes": "发行者不等同于印刷厂"
+    },
+    {
+      "dimension_code": "PC14",
+      "name": "印刷/制造机构",
+      "fields": [
+        "printer",
+        "manufacturer",
+        "printer_place"
+      ],
+      "code_structure": "O* + 原文",
+      "rule": "记录印刷厂、纸品厂、冲印机构与制造地点",
+      "example": "上海美术印刷厂",
+      "multi_value_rule": "可多值;",
+      "uncertainty_rule": "无法区分发行与印刷时分别标待核验",
+      "register_mapping": "机构/单位、载体/工艺",
+      "notes": "可由边注、背标或纸张标记确认"
+    },
+    {
+      "dimension_code": "PC15",
+      "name": "摄影者/画家/设计者",
+      "fields": [
+        "creator_name",
+        "creator_role",
+        "creator_id"
+      ],
+      "code_structure": "P*/O* + 角色",
+      "rule": "姓名与创作角色分开；保留署名形式",
+      "example": "P000411｜摄影",
+      "multi_value_rule": "可多值;",
+      "uncertainty_rule": "署名不清写〔不清〕，不要补全",
+      "register_mapping": "人物/机构、摄影来源",
+      "notes": "同时影响权利状态判断"
+    },
+    {
+      "dimension_code": "PC16",
+      "name": "印刷工艺/色彩",
+      "fields": [
+        "postcard_process",
+        "color",
+        "paper_stock"
+      ],
+      "code_structure": "PC-* / CL-* / 纸张描述",
+      "rule": "记录珂罗版、石印、胶印、彩色印刷、手工上色等；待鉴定可用UNK",
+      "example": "CL-COL｜彩色胶印（待核验）",
+      "multi_value_rule": "各字段单值",
+      "uncertainty_rule": "不要仅凭年代推定工艺",
+      "register_mapping": "载体、色彩、工艺",
+      "notes": "必要时记录网点、套色和纸面特征"
+    },
+    {
+      "dimension_code": "PC17",
+      "name": "版式/尺寸",
+      "fields": [
+        "postcard_format",
+        "orientation",
+        "width_mm",
+        "height_mm"
+      ],
+      "code_structure": "横/竖/折叠 + W×H mm",
+      "rule": "记录横式、竖式、折叠、异形、图文分区及毫米尺寸",
+      "example": "横式｜140×90 mm",
+      "multi_value_rule": "单值",
+      "uncertainty_rule": "裁切后尺寸另加说明",
+      "register_mapping": "宽度/高度/尺寸备注",
+      "notes": "正背面版式均可描述"
+    },
+    {
+      "dimension_code": "PC18",
+      "name": "邮票",
+      "fields": [
+        "stamp_country",
+        "stamp_value",
+        "stamp_status"
+      ],
+      "code_structure": "国家/面值/状态",
+      "rule": "逐枚记录国家、面值、位置和缺失状态",
+      "example": "中国｜20分｜在位",
+      "multi_value_rule": ";（多枚）",
+      "uncertainty_rule": "邮票缺失但有粘贴痕迹时标“曾有/缺失”",
+      "register_mapping": "印章标记、保存问题",
+      "notes": "不要把邮票从明信片拆离单独归档"
+    },
+    {
+      "dimension_code": "PC19",
+      "name": "邮戳/邮政标记",
+      "fields": [
+        "postal_mark_types",
+        "postmark_transcription"
+      ],
+      "code_structure": "PM-* + 逐字转录",
+      "rule": "寄发、经转、到达、欠资、审查、退件等分别编码并逐字转录",
+      "example": "PM-DSP;PM-ARR｜广州 56.5.3",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "无法辨认用〔不清〕，保留位置与颜色",
+      "register_mapping": "印章/标记类型及转录",
+      "notes": "是建立邮路和时间线的关键证据"
+    },
+    {
+      "dimension_code": "PC20",
+      "name": "语言/文字与正文转录",
+      "fields": [
+        "language",
+        "script",
+        "message_transcription"
+      ],
+      "code_structure": "ISO语言码 + 文字类型",
+      "rule": "记录正文语言、文字、书写方向，并逐字转录；印刷图注与手写正文分开",
+      "example": "zh｜汉字｜“平安抵穗……”",
+      "multi_value_rule": "可多语言;",
+      "uncertainty_rule": "缺字用□，不清用〔不清〕；翻译另字段保存",
+      "register_mapping": "背面文字转录、转录状态",
+      "notes": "不得让OCR结果覆盖人工校对文本"
+    },
+    {
+      "dimension_code": "PC21",
+      "name": "邮寄/使用状态与邮路",
+      "fields": [
+        "postcard_use",
+        "postal_route",
+        "return_reason"
+      ],
+      "code_structure": "PU-* + 地点序列",
+      "rule": "区分未使用、已写未寄、已寄、退回；邮路按始发→经转→到达记录",
+      "example": "PU-MAI｜广州→佛山",
+      "multi_value_rule": "单值+序列",
+      "uncertainty_rule": "只有一枚邮戳时不要虚构完整邮路",
+      "register_mapping": "使用状态、地点、研究备注",
+      "notes": "具体代码见04_代码字典"
+    }
+  ]
+}

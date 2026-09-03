@@ -1,0 +1,479 @@
+{
+  "source_workbook": "archive-metadata-standard-v1.xlsx",
+  "source_column": "是否确认唯一属性编码（必填）",
+  "checked_mark": "√",
+  "format": "{object_type}_{date_display}_{dictionary_code_without_prefix}[+{dictionary_code_without_prefix}][_{next_dimension}]",
+  "note": "收藏品编码第一段为04_代码字典中的正式对象类型代码，第二段为基本信息中必填的显示年代（去除空格并把分隔符规范为短横线）；随后按Excel打勾维度顺序加入能匹配正式代码字典的必填属性代码。字典代码去掉第一个短横线及其前缀，各段用下划线连接，同一维度多个代码用加号，不包含永久编号。",
+  "schemas": {
+    "photo": {
+      "required_dimensions": [
+        {
+          "dimension_code": "D01",
+          "name": "年代/时间",
+          "fields": [
+            {
+              "field_code": "date_display",
+              "scope": "core"
+            }
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "D02",
+          "name": "地域/地点",
+          "fields": [
+            {
+              "field_code": "country",
+              "scope": "core"
+            },
+            {
+              "field_code": "province",
+              "scope": "core"
+            },
+            {
+              "field_code": "city",
+              "scope": "core"
+            },
+            {
+              "field_code": "district",
+              "scope": "core"
+            },
+            {
+              "field_code": "street_town",
+              "scope": "core"
+            },
+            {
+              "field_code": "specific_place",
+              "scope": "core"
+            }
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "D06",
+          "name": "主题",
+          "fields": [
+            {
+              "field_code": "themes",
+              "scope": "core"
+            }
+          ],
+          "code_fields": [
+            {
+              "field_code": "themes",
+              "dictionary_key": "theme",
+              "scope": "core"
+            }
+          ]
+        },
+        {
+          "dimension_code": "D07",
+          "name": "照片功能",
+          "fields": [
+            "photo_function"
+          ],
+          "code_fields": [
+            {
+              "field_code": "photo_function",
+              "dictionary_key": "photo_function"
+            }
+          ]
+        },
+        {
+          "dimension_code": "D12",
+          "name": "背面信息",
+          "fields": [
+            "verso_types",
+            "verso_transcription"
+          ],
+          "code_fields": [
+            {
+              "field_code": "verso_types",
+              "dictionary_key": "verso"
+            }
+          ]
+        },
+        {
+          "dimension_code": "D15",
+          "name": "原始组合关系",
+          "fields": [
+            {
+              "field_code": "batch_id",
+              "scope": "core"
+            },
+            {
+              "field_code": "collection_id",
+              "scope": "core"
+            },
+            {
+              "field_code": "album_id",
+              "scope": "core"
+            },
+            {
+              "field_code": "series_id",
+              "scope": "core"
+            },
+            {
+              "field_code": "original_position",
+              "scope": "core"
+            },
+            {
+              "field_code": "related_item_ids",
+              "scope": "core"
+            }
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "D16",
+          "name": "保存状态",
+          "fields": [
+            {
+              "field_code": "condition_grade",
+              "scope": "core"
+            },
+            {
+              "field_code": "condition_details",
+              "scope": "core"
+            },
+            {
+              "field_code": "treatment_notes",
+              "scope": "core"
+            }
+          ],
+          "code_fields": [
+            {
+              "field_code": "condition_grade",
+              "dictionary_key": "condition",
+              "scope": "core"
+            },
+            {
+              "field_code": "condition_details",
+              "dictionary_key": "damage",
+              "scope": "core"
+            }
+          ]
+        },
+        {
+          "dimension_code": "D17",
+          "name": "隐私等级",
+          "fields": [
+            {
+              "field_code": "privacy_level",
+              "scope": "core"
+            }
+          ],
+          "code_fields": [
+            {
+              "field_code": "privacy_level",
+              "dictionary_key": "privacy",
+              "scope": "core"
+            }
+          ]
+        }
+      ]
+    },
+    "postcard": {
+      "required_dimensions": [
+        {
+          "dimension_code": "PC01",
+          "name": "明信片类别",
+          "fields": [
+            "postcard_type"
+          ],
+          "code_fields": [
+            {
+              "field_code": "postcard_type",
+              "dictionary_key": "postcard_type"
+            }
+          ]
+        },
+        {
+          "dimension_code": "PC02",
+          "name": "原始功能/场合",
+          "fields": [
+            "postcard_function"
+          ],
+          "code_fields": [
+            {
+              "field_code": "postcard_function",
+              "dictionary_key": "postcard_function"
+            }
+          ]
+        },
+        {
+          "dimension_code": "PC04",
+          "name": "书写日期",
+          "fields": [
+            "writing_date",
+            "writing_date_text"
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "PC07",
+          "name": "寄出地点",
+          "fields": [
+            "dispatch_place"
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "PC12",
+          "name": "图像主题",
+          "fields": [
+            "image_subject",
+            {
+              "field_code": "themes",
+              "scope": "core"
+            },
+            {
+              "field_code": "event_scene",
+              "scope": "core"
+            }
+          ],
+          "code_fields": [
+            {
+              "field_code": "themes",
+              "dictionary_key": "theme",
+              "scope": "core"
+            },
+            {
+              "field_code": "event_scene",
+              "dictionary_key": "event_scene",
+              "scope": "core"
+            }
+          ]
+        },
+        {
+          "dimension_code": "PC19",
+          "name": "邮政戳记",
+          "fields": [
+            "postal_mark_types",
+            "postmark_transcription"
+          ],
+          "code_fields": [
+            {
+              "field_code": "postal_mark_types",
+              "dictionary_key": "postal_mark"
+            }
+          ]
+        },
+        {
+          "dimension_code": "PC21",
+          "name": "使用与流转",
+          "fields": [
+            "postcard_use",
+            "postal_route",
+            "return_reason"
+          ],
+          "code_fields": [
+            {
+              "field_code": "postcard_use",
+              "dictionary_key": "postcard_use"
+            }
+          ]
+        }
+      ]
+    },
+    "diary_notebook": {
+      "required_dimensions": [
+        {
+          "dimension_code": "DN01",
+          "name": "册簿类型",
+          "fields": [
+            "notebook_type"
+          ],
+          "code_fields": [
+            {
+              "field_code": "notebook_type",
+              "dictionary_key": "notebook_type"
+            }
+          ]
+        },
+        {
+          "dimension_code": "DN08",
+          "name": "书写地点/涉及地点",
+          "fields": [
+            "writing_place",
+            "mentioned_places",
+            "place_code"
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "DN10",
+          "name": "内容体裁/结构",
+          "fields": [
+            "content_genres"
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "DN11",
+          "name": "主题/地方史议题",
+          "fields": [
+            {
+              "field_code": "themes",
+              "scope": "core"
+            },
+            "local_topics"
+          ],
+          "code_fields": [
+            {
+              "field_code": "themes",
+              "dictionary_key": "theme",
+              "scope": "core"
+            }
+          ]
+        },
+        {
+          "dimension_code": "DN14",
+          "name": "装帧/结构",
+          "fields": [
+            "binding_type",
+            "cover_material",
+            "leaf_structure"
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "DN19",
+          "name": "完整性/缺失/再利用",
+          "fields": [
+            "notebook_completeness",
+            "missing_pages",
+            "reuse_notes"
+          ],
+          "code_fields": [
+            {
+              "field_code": "notebook_completeness",
+              "dictionary_key": "notebook_completeness"
+            }
+          ]
+        }
+      ]
+    },
+    "credential": {
+      "required_dimensions": [
+        {
+          "dimension_code": "ID01",
+          "name": "证件类别",
+          "fields": [
+            "credential_type"
+          ],
+          "code_fields": [
+            {
+              "field_code": "credential_type",
+              "dictionary_key": "credential_type"
+            }
+          ]
+        },
+        {
+          "dimension_code": "ID02",
+          "name": "证件功能/使用场景",
+          "fields": [
+            "credential_function"
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "ID05",
+          "name": "签发/登记时间",
+          "fields": [
+            {
+              "field_code": "date_display",
+              "scope": "core"
+            }
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "ID09",
+          "name": "肖像",
+          "fields": [
+            "portrait_status",
+            "portrait_item_id",
+            "portrait_notes"
+          ],
+          "code_fields": [
+            {
+              "field_code": "portrait_status",
+              "dictionary_key": "portrait_status"
+            }
+          ]
+        },
+        {
+          "dimension_code": "ID10",
+          "name": "人口属性",
+          "fields": [
+            "birth_date",
+            "sex_text",
+            "nationality",
+            "other_attributes"
+          ],
+          "code_fields": []
+        },
+        {
+          "dimension_code": "ID16",
+          "name": "载体/材质/颜色/工艺",
+          "fields": [
+            {
+              "field_code": "carrier",
+              "scope": "core"
+            },
+            "cover_material",
+            {
+              "field_code": "color",
+              "scope": "core"
+            },
+            {
+              "field_code": "process",
+              "scope": "core"
+            }
+          ],
+          "code_fields": [
+            {
+              "field_code": "carrier",
+              "dictionary_key": "carrier",
+              "scope": "core"
+            },
+            {
+              "field_code": "color",
+              "dictionary_key": "color",
+              "scope": "core"
+            },
+            {
+              "field_code": "process",
+              "dictionary_key": "process",
+              "scope": "core"
+            }
+          ]
+        },
+        {
+          "dimension_code": "ID20",
+          "name": "证件状态/完整性",
+          "fields": [
+            "credential_status",
+            "missing_parts"
+          ],
+          "code_fields": [
+            {
+              "field_code": "credential_status",
+              "dictionary_key": "credential_status"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "global_code_fields": [
+    {
+      "field_code": "date_display",
+      "name": "显示年代",
+      "scope": "core",
+      "required": true,
+      "encoding": "normalized_text"
+    }
+  ]
+}

@@ -1,0 +1,447 @@
+---
+interface Props {
+	title?: string;
+	description?: string;
+	image?: string;
+	pageType?: 'website' | 'article';
+	structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
+}
+
+const {
+	title = '老旧默片｜普通人的生活档案',
+	description = '老旧默片——收藏、整理和讲述那些被时间留下来的普通生活痕迹。',
+	image,
+	pageType = 'website',
+	structuredData,
+} = Astro.props;
+const currentPath = Astro.url.pathname;
+const isHome = currentPath === '/';
+const isArchive = currentPath.startsWith('/archive');
+const isAbout = currentPath.startsWith('/about');
+const canonicalUrl = Astro.site ? new URL(currentPath, Astro.site) : undefined;
+const shareImageUrl = image && Astro.site ? new URL(image, Astro.site) : undefined;
+const serializedStructuredData = structuredData
+	? JSON.stringify(structuredData).replaceAll('<', '\\u003c')
+	: undefined;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#eee9dc" />
+		<meta property="og:locale" content="zh_CN" />
+		<meta property="og:site_name" content="老旧默片" />
+		<meta property="og:type" content={pageType} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta name="twitter:card" content={shareImageUrl ? 'summary_large_image' : 'summary'} />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		{canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+		{canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+		{shareImageUrl && <meta property="og:image" content={shareImageUrl} />}
+		{shareImageUrl && <meta name="twitter:image" content={shareImageUrl} />}
+		{serializedStructuredData && (
+			<script type="application/ld+json" set:html={serializedStructuredData} />
+		)}
+		<title>{title}</title>
+	</head>
+	<body>
+		<a class="skip-link" href="#main-content">跳到主要内容</a>
+		<div class="site-shell">
+			<header class="site-header">
+				<nav aria-label="主要导航">
+					<a class="site-brand" href="/" aria-label="老旧默片首页" aria-current={isHome ? 'page' : undefined}>
+						<svg class="site-logo" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+							<path
+								d="M15 6.75H6.75V15M33 6.75h8.25V15M41.25 33v8.25H33M15 41.25H6.75V33"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="square"
+							/>
+							<rect x="11.75" y="12.75" width="24.5" height="22.5" stroke="currentColor" stroke-width="1.5" />
+							<circle cx="19" cy="20" r="2.75" fill="currentColor" />
+							<path
+								class="site-logo-trace"
+								d="M14.75 31.75c3.7-4.35 6.55-6.5 8.55-6.5 2.35 0 4.15 1.3 5.85 3.15l2.1-1.9 2 2.1"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="square"
+								stroke-linejoin="miter"
+							/>
+						</svg>
+						<span class="site-name">老旧默片</span>
+					</a>
+					<div class="site-links">
+						<a href="/archive/" aria-current={isArchive ? 'page' : undefined}>档案</a>
+						<a href="/about/" aria-current={isAbout ? 'page' : undefined}>关于</a>
+					</div>
+				</nav>
+			</header>
+
+			<main class="site-main" id="main-content" tabindex="-1">
+				<slot />
+			</main>
+
+			<footer class="site-footer">
+				<div class="footer-identity">
+					<p class="footer-name">老旧默片</p>
+					<p class="footer-subtitle">普通人的生活档案</p>
+				</div>
+				<div class="footer-end">
+					<a href="/corrections/">纠错与撤下</a>
+					<p class="footer-statement">把那些原本会消失的人生，留下来。</p>
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		color-scheme: light;
+		font-family: "Songti SC", "STSong", "SimSun", serif;
+		background: #eee9dc;
+		color: #302f2b;
+		font-synthesis: none;
+		--site-content-width: 1120px;
+		--site-border: #aaa397;
+		--site-accent: #9a3f2e;
+		--site-accent-soft: rgba(154, 63, 46, 0.075);
+		--site-paper: rgba(248, 244, 234, 0.32);
+		--site-paper-strong: #e7dfcf;
+		--site-muted: #625e55;
+		--site-subtle: #777165;
+		--site-text-micro: 0.72rem;
+		--site-text-small: 0.78rem;
+		--site-control-height: 2.5rem;
+	}
+
+	* {
+		box-sizing: border-box;
+	}
+
+	html {
+		min-width: 0;
+		background: #eee9dc;
+	}
+
+	body {
+		margin: 0;
+		min-width: 0;
+		min-height: 100vh;
+		background: #eee9dc;
+		color: #302f2b;
+		text-rendering: optimizeLegibility;
+		-webkit-font-smoothing: antialiased;
+	}
+
+	a {
+		color: inherit;
+	}
+
+	button,
+	input,
+	select,
+	textarea {
+		font-family: inherit;
+	}
+
+	.site-icon {
+		display: block;
+		flex: 0 0 auto;
+		width: 1.1rem;
+		height: 1.1rem;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.35;
+		stroke-linecap: square;
+		stroke-linejoin: miter;
+	}
+
+	.icon-heading {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+	}
+
+	.icon-heading .site-icon {
+		color: var(--site-accent);
+	}
+
+	.ui-action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.45rem;
+		min-height: var(--site-control-height);
+		padding: 0.48rem 0.78rem;
+		border: 1px solid #918a7d;
+		cursor: pointer;
+		font: inherit;
+		font-size: var(--site-text-small);
+		line-height: 1.45;
+		letter-spacing: 0.06em;
+		text-decoration: none;
+		transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+	}
+
+	.ui-action--primary {
+		color: #fbf5e9;
+		background: var(--site-accent);
+		border-color: var(--site-accent);
+	}
+
+	.ui-action--secondary {
+		color: #4f4b43;
+		background: rgba(248, 244, 234, 0.26);
+	}
+
+	.ui-action--primary:hover,
+	.ui-action--primary:focus-visible {
+		background: #7f3427;
+		border-color: #7f3427;
+	}
+
+	.ui-action--secondary:hover,
+	.ui-action--secondary:focus-visible {
+		color: var(--site-accent);
+		background: var(--site-accent-soft);
+		border-color: var(--site-accent);
+	}
+
+	.ui-text-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		color: var(--site-muted);
+		font-size: var(--site-text-small);
+		line-height: 1.6;
+		letter-spacing: 0.07em;
+		text-decoration: underline;
+		text-decoration-color: #9b9487;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.34em;
+	}
+
+	.ui-text-link:hover,
+	.ui-text-link:focus-visible {
+		color: var(--site-accent);
+		text-decoration-color: currentColor;
+	}
+
+	.skip-link {
+		position: fixed;
+		top: 0.75rem;
+		left: 0.75rem;
+		z-index: 100;
+		padding: 0.65rem 0.85rem;
+		color: #f8f3e8;
+		background: #302f2b;
+		border: 1px solid #f8f3e8;
+		text-decoration: none;
+		transform: translateY(calc(-100% - 1rem));
+	}
+
+	.skip-link:focus-visible {
+		outline: 2px solid #f8f3e8;
+		outline-offset: 2px;
+		transform: translateY(0);
+	}
+
+	:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+		outline: 2px solid #575349;
+		outline-offset: 3px;
+	}
+
+	.site-main:focus {
+		outline: none;
+	}
+
+	.site-shell {
+		display: flex;
+		flex-direction: column;
+		width: min(calc(100% - 56px), var(--site-content-width));
+		min-height: 100vh;
+		min-height: 100svh;
+		margin: 0 auto;
+		padding: clamp(26px, 3.5vw, 40px) 0 clamp(40px, 6vw, 64px);
+	}
+
+	.site-header {
+		padding: 13px 0 14px;
+		border-top: 1px solid #767267;
+		border-bottom: 1px solid var(--site-border);
+	}
+
+	.site-header nav {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 32px;
+	}
+
+	.site-header a {
+		text-decoration: none;
+	}
+
+	.site-links a:hover,
+	.site-links a:focus-visible,
+	.site-links a[aria-current='page'],
+	.site-brand:hover .site-name,
+	.site-brand:focus-visible .site-name,
+	.site-brand[aria-current='page'] .site-name {
+		text-decoration: underline;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.35em;
+	}
+
+	.site-header a:focus-visible {
+		outline: 2px solid #575349;
+		outline-offset: 6px;
+	}
+
+	.site-brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+	}
+
+	.site-logo {
+		display: block;
+		flex: 0 0 auto;
+		width: 31px;
+		height: 31px;
+		fill: none;
+	}
+
+	.site-logo-trace {
+		opacity: 0.68;
+	}
+
+	.site-name {
+		font-size: 0.98rem;
+		line-height: 1.5;
+		letter-spacing: 0.14em;
+	}
+
+	.site-links {
+		display: flex;
+		gap: clamp(20px, 3vw, 32px);
+		color: #56534c;
+		font-size: 0.86rem;
+		line-height: 1.5;
+		letter-spacing: 0.12em;
+	}
+
+	.site-main {
+		flex: 1;
+	}
+
+	.site-footer {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 36px;
+		margin-top: clamp(64px, 9vw, 92px);
+		padding-top: 20px;
+		border-top: 1px solid var(--site-border);
+		color: #59564f;
+	}
+
+	.footer-name,
+	.footer-subtitle,
+	.footer-statement {
+		margin: 0;
+	}
+
+	.footer-name {
+		color: #302f2b;
+		font-size: 0.96rem;
+		line-height: 1.6;
+		letter-spacing: 0.14em;
+	}
+
+	.footer-subtitle {
+		margin-top: 5px;
+		font-size: 0.76rem;
+		line-height: 1.7;
+		letter-spacing: 0.18em;
+	}
+
+	.footer-statement {
+		font-size: clamp(0.9rem, 1.5vw, 1rem);
+		line-height: 1.75;
+		letter-spacing: 0.07em;
+		text-align: right;
+	}
+
+	.footer-end {
+		display: grid;
+		align-self: end;
+		justify-items: end;
+		gap: 0.55rem;
+	}
+
+	.footer-end > a {
+		color: var(--site-accent);
+		font-size: var(--site-text-small);
+		letter-spacing: 0.08em;
+		text-underline-offset: 0.28em;
+	}
+
+	@media (max-width: 640px) {
+		.site-shell {
+			width: calc(100% - 32px);
+			padding-top: 20px;
+		}
+
+		.site-header nav {
+			gap: 16px;
+		}
+
+		.site-brand {
+			gap: 10px;
+		}
+
+		.site-logo {
+			width: 28px;
+			height: 28px;
+		}
+
+		.site-links {
+			gap: 16px;
+			font-size: 0.8rem;
+		}
+
+		.site-footer {
+			grid-template-columns: 1fr;
+			gap: 22px;
+		}
+
+		.footer-statement {
+			text-align: left;
+		}
+
+		.footer-end {
+			justify-items: start;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			scroll-behavior: auto !important;
+			transition-duration: 0.01ms !important;
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+		}
+	}
+</style>

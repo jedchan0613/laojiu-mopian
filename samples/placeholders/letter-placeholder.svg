@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title description">
+  <title id="title">信件测试占位图</title>
+  <desc id="description">米白旧纸张风格的极简 LETTER 占位图</desc>
+  <rect width="1200" height="800" fill="#eee9dc" />
+  <rect x="154" y="74" width="892" height="652" fill="#e7dfcf" stroke="#625f58" stroke-width="2" />
+  <line x1="232" y1="192" x2="478" y2="192" stroke="#9e9688" stroke-width="2" />
+  <line x1="232" y1="260" x2="968" y2="260" stroke="#a49c8e" stroke-width="1" />
+  <line x1="232" y1="326" x2="968" y2="326" stroke="#a49c8e" stroke-width="1" />
+  <line x1="232" y1="392" x2="968" y2="392" stroke="#a49c8e" stroke-width="1" />
+  <line x1="232" y1="458" x2="968" y2="458" stroke="#a49c8e" stroke-width="1" />
+  <text x="600" y="594" fill="#3d3b36" font-family="serif" font-size="82" letter-spacing="18" text-anchor="middle">LETTER</text>
+</svg>

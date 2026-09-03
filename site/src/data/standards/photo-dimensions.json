@@ -1,0 +1,353 @@
+{
+  "source_workbook": "archive-metadata-standard-v1.xlsx",
+  "source_sheet": "01_21照片维度",
+  "source_note": "本文件按 Excel v1.1 原文生成。表内 FSA 示例属于来源文件的旧示例；项目当前永久编号正式规则为 LJM-YYYYMMDD-TYP-NNN，详见 docs/coding-standard.md。",
+  "system": "photo",
+  "applies_to": [
+    "PHO",
+    "NEG",
+    "SLD",
+    "ALB"
+  ],
+  "dimension_count": 21,
+  "dimensions": [
+    {
+      "dimension_code": "D01",
+      "name": "年代/时间",
+      "fields": [
+        "date_display",
+        "date_start",
+        "date_end"
+      ],
+      "code_structure": "显示年代 + 日期值",
+      "rule": "显示年代在基本信息中统一必填；精确日用YYYY-MM-DD，约年/年代/范围保留显示文字",
+      "example": "约1985年",
+      "multi_value_rule": "单值/范围",
+      "uncertainty_rule": "无依据时显示年代填写“年代未知”，证据等级使用D",
+      "register_mapping": "显示年代/时间起点/终点",
+      "notes": "不要把拍摄日期写进入藏日期"
+    },
+    {
+      "dimension_code": "D02",
+      "name": "地域/地点",
+      "fields": [
+        "place_code",
+        "country",
+        "province",
+        "city",
+        "district",
+        "street_town",
+        "specific_place"
+      ],
+      "code_structure": "PL-国家-省-市-区县",
+      "rule": "规范层级分列；另保留历史地名与具体地点原文",
+      "example": "PL-CN-GD-FS-CC",
+      "multi_value_rule": "地点别名可用;",
+      "uncertainty_rule": "不确定范围只填已知层级",
+      "register_mapping": "地点代码至地点说明",
+      "notes": "行政区变化不改旧代码含义"
+    },
+    {
+      "dimension_code": "D03",
+      "name": "人物",
+      "fields": [
+        "person_ids",
+        "people",
+        "people_count",
+        "relationships",
+        "identities"
+      ],
+      "code_structure": "P000001",
+      "rule": "人物权威编号与姓名分开；未知人物仍计人数",
+      "example": "P000123;P000124",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "姓名不确定写疑似并降证据",
+      "register_mapping": "人物编号至人物身份",
+      "notes": "敏感人物同时评估隐私"
+    },
+    {
+      "dimension_code": "D04",
+      "name": "机构/单位",
+      "fields": [
+        "organization_ids",
+        "organizations"
+      ],
+      "code_structure": "O000001",
+      "rule": "机构编号稳定；曾用名、今名与原文异名在备注说明",
+      "example": "O000045｜佛山某机械厂",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "单位不明写未知，不用主题替代",
+      "register_mapping": "机构编号/机构单位",
+      "notes": "照相馆也可建立机构权威记录"
+    },
+    {
+      "dimension_code": "D05",
+      "name": "事件/场景",
+      "fields": [
+        "event_scene"
+      ],
+      "code_structure": "EV-*",
+      "rule": "选择画面主要事件或场景，按重要性排序",
+      "example": "EV-WRK;EV-POR",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "无法判断用EV-UNK",
+      "register_mapping": "事件/场景代码",
+      "notes": "事件与主题分开"
+    },
+    {
+      "dimension_code": "D06",
+      "name": "主题",
+      "fields": [
+        "themes"
+      ],
+      "code_structure": "SU-*",
+      "rule": "主题可多选，但只选真正支持检索的核心主题",
+      "example": "SU-LAB;SU-IND",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "不要因可能相关而过度标引",
+      "register_mapping": "主题代码",
+      "notes": "主题是今天的分析入口"
+    },
+    {
+      "dimension_code": "D07",
+      "name": "照片功能",
+      "fields": [
+        "photo_function"
+      ],
+      "code_structure": "FN-*",
+      "rule": "记录照片原始用途：证件、纪念、家庭、工作等",
+      "example": "FN-WRK",
+      "multi_value_rule": "单值为主",
+      "uncertainty_rule": "不明用FN-UNK",
+      "register_mapping": "照片功能",
+      "notes": "不同于今天的作品使用状态"
+    },
+    {
+      "dimension_code": "D08",
+      "name": "拍摄形式",
+      "fields": [
+        "shot_form"
+      ],
+      "code_structure": "FM-*",
+      "rule": "按主要画面结构分类：单人、双人、群像、街景等",
+      "example": "FM-GRP",
+      "multi_value_rule": "单值为主",
+      "uncertainty_rule": "复杂画面选主要形式并备注",
+      "register_mapping": "拍摄形式",
+      "notes": "群像人数另填people_count"
+    },
+    {
+      "dimension_code": "D09",
+      "name": "摄影来源",
+      "fields": [
+        "photography_source",
+        "studio_photographer"
+      ],
+      "code_structure": "PS-*",
+      "rule": "来源类型用代码，具体照相馆/摄影者保留名称",
+      "example": "PS-STU｜人民照相馆",
+      "multi_value_rule": "名称可用;",
+      "uncertainty_rule": "不明用PS-UNK",
+      "register_mapping": "摄影来源/照相馆摄影者",
+      "notes": "来源可由背章推定，须标证据"
+    },
+    {
+      "dimension_code": "D10",
+      "name": "载体/工艺",
+      "fields": [
+        "carrier",
+        "color",
+        "process"
+      ],
+      "code_structure": "MT-* / CL-* / PC-*",
+      "rule": "载体、色彩和工艺拆分编码；不可鉴定时用UNK",
+      "example": "MT-PPR;CL-BW;PC-AG",
+      "multi_value_rule": "各字段单值",
+      "uncertainty_rule": "不凭年代臆断工艺",
+      "register_mapping": "载体/色彩/工艺",
+      "notes": "必要时请专业人员鉴定"
+    },
+    {
+      "dimension_code": "D11",
+      "name": "尺寸/规格",
+      "fields": [
+        "width_mm",
+        "height_mm",
+        "size_notes"
+      ],
+      "code_structure": "W×H mm",
+      "rule": "统一用毫米，宽在前、高在后；不规则尺寸写备注",
+      "example": "90×60 mm",
+      "multi_value_rule": "单值",
+      "uncertainty_rule": "无法测量留空并说明",
+      "register_mapping": "宽度/高度/尺寸备注",
+      "notes": "证件照俗称可放备注"
+    },
+    {
+      "dimension_code": "D12",
+      "name": "背面信息",
+      "fields": [
+        "verso_types",
+        "verso_transcription"
+      ],
+      "code_structure": "VS-*",
+      "rule": "类型代码+逐字转录；缺字、模糊用约定符号",
+      "example": "VS-DATE;VS-INS",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "不可辨认写〔不清〕而非猜写",
+      "register_mapping": "背面信息类型/背面文字转录",
+      "notes": "正反面均应数字化"
+    },
+    {
+      "dimension_code": "D13",
+      "name": "印章/标记",
+      "fields": [
+        "mark_types",
+        "mark_transcription"
+      ],
+      "code_structure": "MK-*",
+      "rule": "标记类型编码，内容逐字转录并记录颜色/位置",
+      "example": "MK-STU;MK-NUM",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "不明标记用MK-UNK",
+      "register_mapping": "印章标记类型/转录",
+      "notes": "压印也属于标记"
+    },
+    {
+      "dimension_code": "D14",
+      "name": "来源/流传经历",
+      "fields": [
+        "acquisition_method",
+        "source_name",
+        "source_date",
+        "source_place",
+        "provenance_notes"
+      ],
+      "code_structure": "PR-*",
+      "rule": "获得方式用代码；来源人、地点、日期和流传经过分列",
+      "example": "PR-PUR｜护红巷某摊主",
+      "multi_value_rule": "经历写叙述",
+      "uncertainty_rule": "来源未知用PR-UNK",
+      "register_mapping": "获得方式至流传经历",
+      "notes": "来源信息可限制公开"
+    },
+    {
+      "dimension_code": "D15",
+      "name": "原始组合关系",
+      "fields": [
+        "batch_id",
+        "collection_id",
+        "album_id",
+        "series_id",
+        "original_position",
+        "related_item_ids"
+      ],
+      "code_structure": "B/C/A/S/Item",
+      "rule": "批次、组合、相册、系列、单件分层；保留原始次序",
+      "example": "FSA-20260808-B01;FSA-A0001",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "组合不明时至少保留batch_id",
+      "register_mapping": "批次/组合/相册/系列/关联",
+      "notes": "不要扫描后彻底拆散语境"
+    },
+    {
+      "dimension_code": "D16",
+      "name": "保存状态",
+      "fields": [
+        "condition_grade",
+        "condition_details",
+        "treatment_notes"
+      ],
+      "code_structure": "C0-C4 + DM-*",
+      "rule": "总体等级单值，具体问题可多选；处理另记日期和方法",
+      "example": "C2｜DM-FAD;DM-CRS",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "疑似霉菌按较严等级隔离",
+      "register_mapping": "保存等级/问题/处理",
+      "notes": "状态可变，应更新日期"
+    },
+    {
+      "dimension_code": "D17",
+      "name": "隐私等级",
+      "fields": [
+        "privacy_level"
+      ],
+      "code_structure": "G / Y / R",
+      "rule": "绿色可公开、黄色限制、红色不公开；发布前复核",
+      "example": "Y",
+      "multi_value_rule": "单值",
+      "uncertainty_rule": "不确定默认Y",
+      "register_mapping": "隐私等级",
+      "notes": "隐私与著作权分别判断"
+    },
+    {
+      "dimension_code": "D18",
+      "name": "研究状态",
+      "fields": [
+        "research_status",
+        "research_notes",
+        "last_research_date",
+        "next_action",
+        "review_date"
+      ],
+      "code_structure": "R0-R4",
+      "rule": "未开始→研究中→待重访/待核验→完成；状态变化同步更新依据",
+      "example": "R3",
+      "multi_value_rule": "单值",
+      "uncertainty_rule": "需现场补查用R2；有判断待证实用R3",
+      "register_mapping": "研究状态/备注/日期/下一步",
+      "notes": "完成后也可因新证据重新开启"
+    },
+    {
+      "dimension_code": "D19",
+      "name": "证据等级",
+      "fields": [
+        "evidence_level",
+        "evidence_basis"
+      ],
+      "code_structure": "A / B / C / D",
+      "rule": "A确证、B互证、C线索/推测、D未知；必须记录依据",
+      "example": "C｜据服饰与背书推测",
+      "multi_value_rule": "单值",
+      "uncertainty_rule": "没有证据用D",
+      "register_mapping": "证据等级/依据",
+      "notes": "等级描述信息判断，不评价照片价值"
+    },
+    {
+      "dimension_code": "D20",
+      "name": "数字化状态",
+      "fields": [
+        "digitization_status",
+        "transcription_status",
+        "backup_status",
+        "master_file_path",
+        "access_file_path",
+        "publication_file_path",
+        "checksum_sha256"
+      ],
+      "code_structure": "DG* / TX* / BU*",
+      "rule": "扫描、转录、备份分开；主文件、访问副本、发布副本分开保存",
+      "example": "DG3;TX2;BU2",
+      "multi_value_rule": "各字段单值",
+      "uncertainty_rule": "文件不存在不得填已完成",
+      "register_mapping": "数字化状态至校验和",
+      "notes": "建议主文件600ppi TIFF、SHA-256"
+    },
+    {
+      "dimension_code": "D21",
+      "name": "作品使用状态",
+      "fields": [
+        "use_status",
+        "use_project",
+        "publication_reference"
+      ],
+      "code_structure": "U0-U4",
+      "rule": "私藏、候选、研究/编辑中、已发布、停止使用",
+      "example": "U1｜《照片背面的佛山》",
+      "multi_value_rule": "项目可用;",
+      "uncertainty_rule": "发布状态必须受隐私/权利约束",
+      "register_mapping": "使用状态/作品项目/出处",
+      "notes": "不等同于research_status"
+    }
+  ]
+}

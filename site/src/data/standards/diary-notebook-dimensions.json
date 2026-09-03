@@ -1,0 +1,338 @@
+{
+  "source_workbook": "archive-metadata-standard-v1.xlsx",
+  "source_sheet": "06_日记笔记维度",
+  "source_note": "本文件按 Excel v1.1 原文生成。表内 FSA 示例属于来源文件的旧示例；项目当前永久编号正式规则为 LJM-YYYYMMDD-TYP-NNN，详见 docs/coding-standard.md。",
+  "system": "diary_notebook",
+  "applies_to": [
+    "DIA",
+    "NTB"
+  ],
+  "dimension_count": 21,
+  "dimensions": [
+    {
+      "dimension_code": "DN01",
+      "name": "册簿类别",
+      "fields": [
+        "notebook_type"
+      ],
+      "code_structure": "NB-*",
+      "rule": "按原始功能区分日记、学习/工作笔记、账本、通讯录、旅行日志等",
+      "example": "NB-DIA｜日记",
+      "multi_value_rule": "单值为主",
+      "uncertainty_rule": "混合用途选主要类型并在备注列出次要类型",
+      "register_mapping": "资料类型DIA/NTB、题名",
+      "notes": "具体代码见04_代码字典"
+    },
+    {
+      "dimension_code": "DN02",
+      "name": "内容时间范围",
+      "fields": [
+        "content_date_start",
+        "content_date_end"
+      ],
+      "code_structure": "起止日期",
+      "rule": "以实际书写内容覆盖期为准，不以笔记本生产年代代替",
+      "example": "1978-01-03—1981-06-20",
+      "multi_value_rule": "范围",
+      "uncertainty_rule": "缺年或断裂时分别记录确定区间，概括年代写入基本信息的显示年代",
+      "register_mapping": "显示年代、时间起点/终点",
+      "notes": "封面题年仅作为线索"
+    },
+    {
+      "dimension_code": "DN03",
+      "name": "日期连续性/记录频率",
+      "fields": [
+        "entry_frequency",
+        "date_gaps"
+      ],
+      "code_structure": "EF-* + 缺口说明",
+      "rule": "记录每日、间歇、专题或不定期，以及明显中断区间",
+      "example": "间歇｜1979-03至06缺记",
+      "multi_value_rule": "单值+说明",
+      "uncertainty_rule": "不要因缺页直接判断作者停止记录",
+      "register_mapping": "时间判断说明、研究备注",
+      "notes": "有助于区分日记与普通笔记"
+    },
+    {
+      "dimension_code": "DN04",
+      "name": "作者/记录者",
+      "fields": [
+        "creator_person_id",
+        "creator_name",
+        "creator_role"
+      ],
+      "code_structure": "P* + 原文",
+      "rule": "区分主要作者、抄录者、代笔者和后期批注者",
+      "example": "P000501｜陈某｜主要作者",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "署名不明时以“作者未知”保存，不根据所有者强推",
+      "register_mapping": "人物编号/姓名/身份",
+      "notes": "同一册可能有多人书写"
+    },
+    {
+      "dimension_code": "DN05",
+      "name": "所有者/使用流转",
+      "fields": [
+        "owner_person_ids",
+        "ownership_sequence"
+      ],
+      "code_structure": "P* + 时间序列",
+      "rule": "记录题签、赠言、姓名章和来源所显示的历任所有者或使用者",
+      "example": "P000501→P000622",
+      "multi_value_rule": ";/顺序",
+      "uncertainty_rule": "物理持有与作者身份分开",
+      "register_mapping": "来源/流传经历、人物",
+      "notes": "原始组合与传承关系很重要"
+    },
+    {
+      "dimension_code": "DN06",
+      "name": "涉及人物与关系",
+      "fields": [
+        "mentioned_person_ids",
+        "mentioned_people",
+        "relationships"
+      ],
+      "code_structure": "P* + 原文",
+      "rule": "记录频繁出现或研究关键人物；不要求把每个名字都建权威记录",
+      "example": "P000701｜二姐｜亲属",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "同名无法区分时保留上下文",
+      "register_mapping": "人物编号/姓名/关系/身份",
+      "notes": "敏感人物需评估隐私"
+    },
+    {
+      "dimension_code": "DN07",
+      "name": "涉及机构/单位",
+      "fields": [
+        "organization_ids",
+        "organizations"
+      ],
+      "code_structure": "O* + 原文",
+      "rule": "学校、工厂、部队、机关、商店、社团等建立稳定机构记录",
+      "example": "O000119｜佛山某陶瓷厂",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "曾用名与今名分开记录",
+      "register_mapping": "机构编号/单位",
+      "notes": "不要把机构主题与机构实体混为一谈"
+    },
+    {
+      "dimension_code": "DN08",
+      "name": "书写/事件地点",
+      "fields": [
+        "writing_place",
+        "mentioned_places",
+        "place_code"
+      ],
+      "code_structure": "PL-* + 原文",
+      "rule": "书写地点和内容涉及地点分开；可记录迁居、旅行和工作地点序列",
+      "example": "广州书写｜佛山事件",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "只有地名简称时保留原文并待核验",
+      "register_mapping": "地点代码至地点说明",
+      "notes": "地点随时间变化时应带日期"
+    },
+    {
+      "dimension_code": "DN09",
+      "name": "语言/文字/书写方向",
+      "fields": [
+        "language",
+        "script",
+        "writing_direction"
+      ],
+      "code_structure": "ISO语言码 + 文字类型",
+      "rule": "记录语言、繁简体、方言字、外文、速记或密码式书写",
+      "example": "zh｜繁体汉字｜竖排",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "不认识的文字只描述形态，不擅自判定",
+      "register_mapping": "背面文字转录、研究备注",
+      "notes": "可为不同区段分别记录"
+    },
+    {
+      "dimension_code": "DN10",
+      "name": "内容体裁",
+      "fields": [
+        "content_genres"
+      ],
+      "code_structure": "JG-*",
+      "rule": "区分日记、摘抄、会议记录、账目、诗文、地址、配方、清单等体裁",
+      "example": "JG-DIA;JG-ACC",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "同页混合体裁可多选并说明范围",
+      "register_mapping": "事件/场景、主题、题名",
+      "notes": "体裁描述形式，主题描述内容"
+    },
+    {
+      "dimension_code": "DN11",
+      "name": "主题",
+      "fields": [
+        "themes",
+        "local_topics"
+      ],
+      "code_structure": "SU-* + 本地主题词",
+      "rule": "选择支持长期检索的核心主题，并允许项目本地主题词扩充",
+      "example": "SU-LAB;SU-MIG",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "避免逐页堆满主题；可按册、区段、条目三级标引",
+      "register_mapping": "主题代码",
+      "notes": "通用SU-*代码继续沿用"
+    },
+    {
+      "dimension_code": "DN12",
+      "name": "事件/生活阶段",
+      "fields": [
+        "event_scene",
+        "life_stage",
+        "event_dates"
+      ],
+      "code_structure": "EV-* + 日期",
+      "rule": "记录求学、工作、婚育、迁居、疾病、旅行等关键阶段与事件",
+      "example": "EV-WRK｜1979入厂",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "私人陈述不自动等同客观事实，配证据等级",
+      "register_mapping": "事件/场景、时间、证据",
+      "notes": "日记是证据来源，也可能含主观误记"
+    },
+    {
+      "dimension_code": "DN13",
+      "name": "条目组织结构",
+      "fields": [
+        "entry_structure",
+        "section_titles"
+      ],
+      "code_structure": "ES-*",
+      "rule": "按日期、主题、连续书写、固定表格或混合结构编码；保留原目录/标题",
+      "example": "ES-DAT｜按日期",
+      "multi_value_rule": "单值/区段",
+      "uncertainty_rule": "结构变化时分区段记录",
+      "register_mapping": "原始位置/次序、转录状态",
+      "notes": "具体代码见04_代码字典"
+    },
+    {
+      "dimension_code": "DN14",
+      "name": "装帧/物理结构",
+      "fields": [
+        "binding_type",
+        "cover_material",
+        "leaf_structure"
+      ],
+      "code_structure": "BD-* + 描述",
+      "rule": "记录线装、骑马钉、胶装、活页、软/硬封面、横开/竖开等",
+      "example": "线装｜纸封面｜竖开",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "后期重装需与原装结构分开",
+      "register_mapping": "载体、尺寸备注、保存状态",
+      "notes": "装帧变化是来源和使用史线索"
+    },
+    {
+      "dimension_code": "DN15",
+      "name": "页码/页数/使用范围",
+      "fields": [
+        "original_pagination",
+        "leaf_count",
+        "used_pages"
+      ],
+      "code_structure": "页码原文 + 整数",
+      "rule": "记录原页码、实有页/叶数、已用页范围和空白页；不擅自重排散页",
+      "example": "原页1-96｜实有92页｜已用1-71",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "缺页时同时记录前后相邻页码",
+      "register_mapping": "原始位置/次序、保存问题",
+      "notes": "叶与页须在项目中统一口径"
+    },
+    {
+      "dimension_code": "DN16",
+      "name": "书写媒介/颜色",
+      "fields": [
+        "writing_medium",
+        "ink_colors"
+      ],
+      "code_structure": "WM-* + 颜色",
+      "rule": "按区段记录墨水笔、圆珠笔、铅笔、毛笔、打字及混合媒介",
+      "example": "WM-INK｜蓝黑墨水",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "颜色变化不必自动认定换了作者",
+      "register_mapping": "色彩、工艺、标记转录",
+      "notes": "具体代码见04_代码字典"
+    },
+    {
+      "dimension_code": "DN17",
+      "name": "插页/附件/夹藏物",
+      "fields": [
+        "inserts",
+        "attachments",
+        "attachment_item_ids"
+      ],
+      "code_structure": "附件类型 + item_id",
+      "rule": "票据、照片、信件、剪报、花叶等单独编号，并保留原夹藏位置关系",
+      "example": "照片1张｜FSA-...-PHO-021",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "不要扫描后拆散而不记录原位",
+      "register_mapping": "关联单件编号、原始位置/次序",
+      "notes": "高酸附件可物理分离但关系必须保留"
+    },
+    {
+      "dimension_code": "DN18",
+      "name": "批注/修改/书写层",
+      "fields": [
+        "annotation_layers",
+        "hands",
+        "later_additions"
+      ],
+      "code_structure": "L1/L2 + 日期/作者",
+      "rule": "区分原文、涂改、旁注、后期补记、他人批注及不同书写者",
+      "example": "L1原文;L2红笔后注",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "无法确认先后时只描述颜色、位置和笔迹差异",
+      "register_mapping": "标记转录、证据依据、研究备注",
+      "notes": "数字化应保留擦除、覆盖和压痕"
+    },
+    {
+      "dimension_code": "DN19",
+      "name": "完整性/缺失情况",
+      "fields": [
+        "notebook_completeness",
+        "missing_pages",
+        "reuse_notes"
+      ],
+      "code_structure": "NC-*",
+      "rule": "记录完整、缺页、残页、倒写、重复使用和拆分情况",
+      "example": "NC-PAR｜缺第23-24页",
+      "multi_value_rule": "单值+说明",
+      "uncertainty_rule": "无法知道原始页数用NC-UNK",
+      "register_mapping": "保存等级/问题、原始组合",
+      "notes": "具体代码见04_代码字典"
+    },
+    {
+      "dimension_code": "DN20",
+      "name": "可读性/转录状态",
+      "fields": [
+        "legibility_grade",
+        "transcription_status",
+        "transcript_path"
+      ],
+      "code_structure": "LG-* / TX-*",
+      "rule": "按清晰、部分可读、难读分级；OCR、初转录、校对状态分开",
+      "example": "部分可读｜TX2",
+      "multi_value_rule": "可按区段",
+      "uncertainty_rule": "缺字用□，不清用〔不清〕，不让AI推测替代原文",
+      "register_mapping": "转录状态、数字文件路径",
+      "notes": "建议页码与转录段落一一对应"
+    },
+    {
+      "dimension_code": "DN21",
+      "name": "敏感内容/访问分区",
+      "fields": [
+        "sensitivity_types",
+        "privacy_level",
+        "restricted_ranges"
+      ],
+      "code_structure": "G/Y/R + 页码范围",
+      "rule": "身份证号、地址、医疗、亲密关系、未成年人及第三方信息按页码分区管理",
+      "example": "R｜第34-41页",
+      "multi_value_rule": ";",
+      "uncertainty_rule": "私人日记默认至少Y；高风险页制作受限副本",
+      "register_mapping": "隐私等级、权利状态、发布副本",
+      "notes": "整册公开前必须逐页复核"
+    }
+  ]
+}
