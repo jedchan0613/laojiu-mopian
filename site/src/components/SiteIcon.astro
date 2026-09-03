@@ -1,0 +1,128 @@
+---
+export type SiteIconName =
+	| 'archive'
+	| 'collection'
+	| 'compass'
+	| 'search'
+	| 'status'
+	| 'story'
+	| 'tag'
+	| 'details'
+	| 'related'
+	| 'rights'
+	| 'citation'
+	| 'photos'
+	| 'postcards'
+	| 'letters'
+	| 'credentials'
+	| 'cards'
+	| 'notes'
+	| 'objects';
+
+interface Props {
+	name: SiteIconName;
+	class?: string;
+}
+
+const { name, class: className = '' } = Astro.props;
+---
+
+<svg class:list={['site-icon', className]} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+	{name === 'archive' && (
+		<>
+			<path d="M4.5 7.5h15v12h-15zM7 7.5V4.5h10v3M8.5 11h7M8.5 15h5" />
+		</>
+	)}
+	{name === 'collection' && (
+		<>
+			<rect x="4" y="4" width="6" height="6" /><rect x="14" y="4" width="6" height="6" />
+			<rect x="4" y="14" width="6" height="6" /><rect x="14" y="14" width="6" height="6" />
+		</>
+	)}
+	{name === 'compass' && (
+		<>
+			<circle cx="12" cy="12" r="8.5" /><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9z" />
+		</>
+	)}
+	{name === 'search' && (
+		<>
+			<circle cx="10.5" cy="10.5" r="6" /><path d="m15 15 4.5 4.5" />
+		</>
+	)}
+	{name === 'status' && (
+		<>
+			<circle cx="12" cy="12" r="8.5" /><path d="m8.2 12.1 2.4 2.5 5.4-5.5" />
+		</>
+	)}
+	{name === 'story' && (
+		<>
+			<path d="M4.5 5.5h6.25c.7 0 1.25.55 1.25 1.25v12c0-.7-.55-1.25-1.25-1.25H4.5z" />
+			<path d="M19.5 5.5h-6.25c-.7 0-1.25.55-1.25 1.25v12c0-.7.55-1.25 1.25-1.25h6.25z" />
+		</>
+	)}
+	{name === 'tag' && (
+		<>
+			<path d="M4.5 5.5h7l8 8-6 6-8-8z" /><circle cx="9" cy="9" r="1.25" />
+		</>
+	)}
+	{name === 'details' && (
+		<>
+			<rect x="4.5" y="4" width="15" height="16" /><path d="M8 8h8M8 12h8M8 16h5" />
+		</>
+	)}
+	{name === 'related' && (
+		<>
+			<path d="m9.5 14.5-1.3 1.3a3.2 3.2 0 0 1-4.5-4.5l3.1-3.1a3.2 3.2 0 0 1 4.5 0" />
+			<path d="m14.5 9.5 1.3-1.3a3.2 3.2 0 0 1 4.5 4.5l-3.1 3.1a3.2 3.2 0 0 1-4.5 0M8.7 15.3l6.6-6.6" />
+		</>
+	)}
+	{name === 'rights' && (
+		<>
+			<path d="M12 3.5 19 6v5.3c0 4.1-2.7 7.4-7 9.2-4.3-1.8-7-5.1-7-9.2V6z" />
+			<path d="m8.5 12 2.2 2.2 4.8-4.8" />
+		</>
+	)}
+	{name === 'citation' && (
+		<>
+			<path d="M5 7h5v5H7.5v4H5zM14 7h5v5h-2.5v4H14z" />
+		</>
+	)}
+	{name === 'photos' && (
+		<>
+			<rect x="3.5" y="5" width="17" height="14" /><circle cx="8.5" cy="9.5" r="1.5" />
+			<path d="m5.5 17 4.2-4.3 2.8 2.5 2.4-2.2 3.6 4" />
+		</>
+	)}
+	{name === 'postcards' && (
+		<>
+			<rect x="3.5" y="5.5" width="17" height="13" /><path d="M12 7.5v9M14.5 14h3.5" />
+			<rect x="15" y="8" width="3" height="3" />
+		</>
+	)}
+	{name === 'letters' && (
+		<>
+			<rect x="3.5" y="5.5" width="17" height="13" /><path d="m4.5 7 7.5 6 7.5-6M4.5 17l5.2-5M19.5 17l-5.2-5" />
+		</>
+	)}
+	{name === 'credentials' && (
+		<>
+			<rect x="3.5" y="5" width="17" height="14" /><circle cx="8" cy="10" r="2" />
+			<path d="M5.5 16c.5-2 1.4-3 2.5-3s2 .95 2.5 3M13 9h4.5M13 12h4.5M13 15h3" />
+		</>
+	)}
+	{name === 'cards' && (
+		<>
+			<rect x="4" y="6" width="16" height="12" rx="1" /><path d="M4 10h16M7 14h5" />
+		</>
+	)}
+	{name === 'notes' && (
+		<>
+			<path d="M6 4.5h13v15H6zM9 8h7M9 12h7M9 16h4M3.5 7H7M3.5 11H7M3.5 15H7" />
+		</>
+	)}
+	{name === 'objects' && (
+		<>
+			<path d="m12 3.5 8 4.2v8.6l-8 4.2-8-4.2V7.7zM4.5 7.8 12 12l7.5-4.2M12 12v8" />
+		</>
+	)}
+</svg>

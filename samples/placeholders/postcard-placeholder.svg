@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title description">
+  <title id="title">明信片测试占位图</title>
+  <desc id="description">米白旧纸张风格的极简 POSTCARD 占位图</desc>
+  <rect width="1200" height="800" fill="#eee9dc" />
+  <rect x="72" y="108" width="1056" height="584" fill="#e7dfcf" stroke="#625f58" stroke-width="2" />
+  <line x1="600" y1="150" x2="600" y2="650" stroke="#9e9688" stroke-width="1" />
+  <rect x="954" y="156" width="112" height="138" fill="none" stroke="#817b70" stroke-width="2" />
+  <line x1="694" y1="390" x2="1038" y2="390" stroke="#9e9688" stroke-width="1" />
+  <line x1="694" y1="456" x2="1038" y2="456" stroke="#9e9688" stroke-width="1" />
+  <line x1="694" y1="522" x2="1038" y2="522" stroke="#9e9688" stroke-width="1" />
+  <text x="336" y="420" fill="#3d3b36" font-family="serif" font-size="72" letter-spacing="12" text-anchor="middle">POSTCARD</text>
+</svg>

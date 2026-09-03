@@ -1,0 +1,95 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteIcon from '../components/SiteIcon.astro';
+---
+
+<BaseLayout
+  title="页面暂时不可访问｜老旧默片"
+  description="当前页面不存在、地址已经改变，或相关档案暂时不对外开放。"
+>
+  <section class="not-found" aria-labelledby="not-found-title">
+    <p class="not-found-mark icon-heading"><SiteIcon name="search" /><span>404 · PAGE UNAVAILABLE</span></p>
+    <h1 id="not-found-title">这页目前找不到</h1>
+    <p>
+      地址可能已经改变，也可能对应一件目前不对外开放的档案。为了保护资料隐私，这里不会说明具体原因。
+    </p>
+    <div class="not-found-actions">
+      <a class="ui-action ui-action--primary" href="/archive/">浏览现有档案</a>
+      <a class="ui-action ui-action--secondary" href="/">返回首页</a>
+    </div>
+    <aside>
+      <strong>如果你是在核对某件档案</strong>
+      <span>请检查永久编号和页面地址；也可以查看纠错与撤下说明，准备需要提交的信息。</span>
+      <a class="ui-text-link" href="/corrections/">查看纠错与撤下说明 →</a>
+    </aside>
+  </section>
+</BaseLayout>
+
+<style>
+  .not-found {
+    display: grid;
+    justify-items: start;
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: clamp(4.5rem, 10vw, 8rem) 0 clamp(2rem, 5vw, 4rem);
+  }
+
+  .not-found-mark {
+    margin: 0 0 1rem;
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.18em;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.1rem, 6vw, 3.7rem);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    line-height: 1.3;
+  }
+
+  .not-found > p:not(.not-found-mark) {
+    max-width: 38rem;
+    margin: 1.25rem 0 0;
+    color: #514e47;
+    font-size: 1rem;
+    line-height: 2;
+    letter-spacing: 0.03em;
+  }
+
+  .not-found-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-top: 1.6rem;
+  }
+
+  aside {
+    display: grid;
+    gap: 0.45rem;
+    width: 100%;
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding: 1.1rem;
+    background: var(--site-paper);
+    border: 1px solid #c8c0b1;
+    border-left: 3px solid rgba(154, 63, 46, 0.42);
+  }
+
+  aside strong {
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  aside span {
+    color: var(--site-muted);
+    font-size: var(--site-text-small);
+    line-height: 1.75;
+  }
+
+  aside a {
+    justify-self: start;
+    margin-top: 0.25rem;
+  }
+</style>

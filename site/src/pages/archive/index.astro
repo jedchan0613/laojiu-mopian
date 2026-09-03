@@ -1,0 +1,1566 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiteIcon from '../../components/SiteIcon.astro';
+import { archiveItems } from '../../data/archive';
+import {
+  archiveCategories,
+  getArchiveCategorySlug,
+} from '../../data/archive-categories';
+import {
+  createArchiveRecordView,
+  isPublishedArchiveItem,
+} from '../../data/archive-view';
+import { getResponsiveImage } from '../../data/responsive-images';
+import { archiveTopics } from '../../data/site-curation';
+
+const publishedViews = archiveItems
+  .filter(isPublishedArchiveItem)
+  .map(createArchiveRecordView);
+
+// 目前只读取显示年代中出现的首个四位年份。将来遇到年份不明确的资料时，
+// 它仍会显示在“全部年代”中，但不会被错误归入某个具体年代。
+const availableDecades = [
+  ...new Set(
+    publishedViews
+      .map((view) => view.decade)
+      .filter((decade): decade is string => Boolean(decade)),
+  ),
+].sort((a, b) => Number(a) - Number(b));
+
+const availablePlaces = [...new Set(publishedViews.flatMap((view) => view.placeFilters))];
+const availableTags = [...new Set(publishedViews.flatMap((view) => view.tags))];
+const publishedIds = new Set(publishedViews.map((view) => view.id));
+const availableTopics = archiveTopics
+  .map((topic) => ({
+    ...topic,
+    recordIds: topic.recordIds.filter((recordId) => publishedIds.has(recordId)),
+  }))
+  .filter((topic) => topic.recordIds.length >= 2);
+const topicLabels = Object.fromEntries(availableTopics.map((topic) => [topic.slug, topic.title]));
+const topicSlugsByRecord = new Map<string, string[]>();
+for (const topic of availableTopics) {
+  for (const recordId of topic.recordIds) {
+    topicSlugsByRecord.set(recordId, [...(topicSlugsByRecord.get(recordId) ?? []), topic.slug]);
+  }
+}
+const decadeBrowseEntries = availableDecades.map((decade) => ({
+  label: `${decade}年代`,
+  value: decade,
+  count: publishedViews.filter((view) => view.decade === decade).length,
+}));
+const normalizePlaceLabel = (value: string) => value.trim().replace(/[省市区县]$/, '');
+const browsePlaceMap = new Map<string, { label: string; value: string; count: number }>();
+for (const view of publishedViews) {
+  const maintainedFilters = (view.item.public_view.place_filters ?? [])
+    .filter((place) => place.trim() && !place.includes('未知'));
+  const preferredPlaces = maintainedFilters.length
+    ? maintainedFilters.map((place) => ({ label: place, value: place }))
+    : (() => {
+      const display = view.item.public_view.place_display?.trim() ?? '';
+      if (!display || display.includes('未知')) return [];
+      const filterValue = view.placeFilters.find((place) => place === display)
+        ?? view.placeFilters.find((place) => normalizePlaceLabel(place) === normalizePlaceLabel(display));
+      return filterValue ? [{ label: display, value: filterValue }] : [];
+    })();
+  for (const place of preferredPlaces) {
+    const existing = browsePlaceMap.get(place.value);
+    browsePlaceMap.set(place.value, {
+      ...place,
+      count: (existing?.count ?? 0) + 1,
+    });
+  }
+}
+const placeBrowseEntries = [...browsePlaceMap.values()]
+  .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, 'zh-CN'))
+  .slice(0, 6);
+const publishedEntries = publishedViews.map((view) => ({
+  view,
+  coverImage: view.images[0] ? getResponsiveImage(view.images[0]) : undefined,
+}));
+---
+
+<BaseLayout
+  title="档案｜老旧默片"
+  description="浏览老旧默片收录的照片、纸张、卡片与普通生活痕迹。"
+  image={publishedEntries[0]?.coverImage?.src}
+>
+  <div class="archive-page">
+    <header class="archive-heading">
+      <p class="section-mark icon-heading"><SiteIcon name="archive" /><span>ARCHIVE INDEX</span></p>
+      <h1>档案</h1>
+      <p class="introduction">这里保存那些被时间留下来的照片、纸张、卡片与普通生活痕迹。</p>
+    </header>
+
+    {(availableTopics.length > 0 || decadeBrowseEntries.length > 0 || placeBrowseEntries.length > 0) && (
+      <section class="archive-paths" aria-labelledby="archive-paths-heading">
+        <header class="archive-paths-heading">
+          <div class="archive-paths-title">
+            <SiteIcon name="compass" />
+            <div>
+              <p>EXPLORE THE ARCHIVE</p>
+              <h2 id="archive-paths-heading">从一条线索进入</h2>
+            </div>
+          </div>
+        </header>
+        <div class="archive-paths-grid">
+          {availableTopics.length > 0 && (
+            <section class="archive-path-group archive-topic-group" aria-labelledby="archive-topic-heading">
+              <h3 id="archive-topic-heading">专题集合</h3>
+              {availableTopics.map((topic) => (
+                <a class="archive-topic-link" href={`/archive/?topic=${encodeURIComponent(topic.slug)}`} data-topic-link={topic.slug}>
+                  <small>{topic.kicker}</small>
+                  <strong>{topic.title}</strong>
+                  <span>{topic.description}</span>
+                  <em>{topic.recordIds.length} 件档案 →</em>
+                </a>
+              ))}
+            </section>
+          )}
+          {decadeBrowseEntries.length > 0 && (
+            <section class="archive-path-group" aria-labelledby="archive-decade-path-heading">
+              <h3 id="archive-decade-path-heading">按年代浏览</h3>
+              <div class="archive-path-links">
+                {decadeBrowseEntries.map((entry) => (
+                  <a href={`/archive/?decade=${entry.value}&sort=date-asc`}>
+                    <span>{entry.label}</span><small>{entry.count}</small>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+          {placeBrowseEntries.length > 0 && (
+            <section class="archive-path-group" aria-labelledby="archive-place-path-heading">
+              <h3 id="archive-place-path-heading">按地点浏览</h3>
+              <div class="archive-path-links">
+                {placeBrowseEntries.map((entry) => (
+                  <a href={`/archive/?place=${encodeURIComponent(entry.value)}`}>
+                    <span>{entry.label}</span><small>{entry.count}</small>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </section>
+    )}
+
+    <section
+      class="archive-index"
+      aria-label="档案目录"
+      data-archive-topic-labels={JSON.stringify(topicLabels)}
+      data-archive-page-size="12"
+    >
+      <header class="archive-index-heading">
+        <div class="archive-index-title">
+          <SiteIcon name="search" />
+          <div><p>SEARCH THE RECORDS</p><h2>查找档案</h2></div>
+        </div>
+        <span>按关键词、类型和整理线索缩小范围</span>
+      </header>
+      <div class="archive-controls" aria-label="档案搜索与筛选">
+        <div class="archive-control">
+          <label for="archive-search">关键词搜索</label>
+          <input
+            id="archive-search"
+            type="search"
+            placeholder="搜索档案……"
+            autocomplete="off"
+            spellcheck={false}
+            aria-controls="archive-list"
+          />
+          <div class="archive-search-assist" id="archive-search-assist" hidden>
+            <span>相关线索</span>
+            <div id="archive-search-suggestions"></div>
+          </div>
+        </div>
+
+        <div class="archive-control">
+          <label for="archive-category">藏品分类</label>
+          <select id="archive-category" aria-controls="archive-list">
+            <option value="">全部分类</option>
+            {archiveCategories.map((category) => (
+              <option
+                value={category.slug}
+                data-object-types={category.objectTypes.join('|')}
+              >
+                {category.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div class="archive-control">
+          <label for="archive-sort">排序方式</label>
+          <select id="archive-sort" aria-controls="archive-list">
+            <option value="recent">最近收录</option>
+            <option value="date-asc">年代从早到晚</option>
+            <option value="date-desc">年代从晚到早</option>
+            <option value="type">按藏品类型</option>
+          </select>
+        </div>
+
+        <details class="archive-more-filters" id="archive-more-filters">
+          <summary><span>更多筛选</span><small id="archive-more-summary">年代、地点、标签</small></summary>
+          <div class="archive-secondary-controls">
+            <div class="archive-control">
+              <label for="archive-decade">年代</label>
+              <select id="archive-decade" aria-controls="archive-list">
+                <option value="">全部年代</option>
+                {availableDecades.map((decade) => <option value={decade}>{decade}年代</option>)}
+              </select>
+            </div>
+
+            <div class="archive-control">
+              <label for="archive-place">地点</label>
+              <select id="archive-place" aria-controls="archive-list">
+                <option value="">全部地点</option>
+                {availablePlaces.map((place) => <option value={place}>{place}</option>)}
+              </select>
+            </div>
+
+            <div class="archive-control">
+              <label for="archive-tag">标签</label>
+              <select id="archive-tag" aria-controls="archive-list">
+                <option value="">全部标签</option>
+                {availableTags.map((tag) => <option value={tag}>{tag}</option>)}
+              </select>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="archive-actions" id="archive-actions" hidden>
+        <div class="active-filters" aria-label="当前筛选条件">
+          <span>当前筛选</span>
+          <div id="archive-filter-chips"></div>
+        </div>
+        <button class="clear-filters ui-text-link" id="archive-clear" type="button" aria-controls="archive-list">
+          清除全部
+        </button>
+      </div>
+
+      <p
+        class="results-summary"
+        id="archive-results-summary"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        共 {publishedViews.length} 件档案
+      </p>
+
+      <div class="archive-empty-state" id="archive-empty-state" hidden>
+        <p>NO MATCHES</p>
+        <h2 id="archive-empty-title">没有找到符合条件的档案</h2>
+        <span id="archive-empty-description">可以减少筛选条件，或清除后浏览全部档案。</span>
+        <button class="ui-action ui-action--secondary" id="archive-empty-clear" type="button">清除全部筛选</button>
+      </div>
+
+      <ul class="archive-list" id="archive-list">
+        {
+          publishedEntries.map(({ view, coverImage }, originalIndex) => (
+            <li
+              data-archive-item
+              data-archive-category={getArchiveCategorySlug(view.objectType)}
+              data-archive-decade={view.decade}
+              data-archive-places={`|${view.placeFilters.join('|')}|`}
+              data-archive-tags={`|${view.tags.join('|')}|`}
+              data-archive-topics={`|${(topicSlugsByRecord.get(view.id) ?? []).join('|')}|`}
+              data-search-text={view.searchText}
+              data-archive-id={view.id}
+              data-archive-accession={view.item.core.accession_date ?? ''}
+              data-archive-year={view.dateDisplay.match(/\d{4}/)?.[0] ?? ''}
+              data-archive-type-label={view.typeLabel}
+              data-archive-title={view.title}
+              data-archive-original-index={originalIndex}
+            >
+              <a
+                class="archive-entry"
+                href={`/archive/${view.id}/`}
+                aria-label={`查看档案：${view.title}`}
+                data-archive-entry
+              >
+                <figure class="archive-image">
+                  {coverImage && (
+                    <img
+                      src={coverImage.src}
+                      srcset={coverImage.srcset}
+                      sizes="(max-width: 700px) calc(100vw - 32px), 400px"
+                      alt={view.imageDescriptions[0]}
+                      width={coverImage.width}
+                      height={coverImage.height}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+                </figure>
+
+                <div class="archive-information">
+                  <h2 data-search-highlight>{view.title}</h2>
+
+                  {view.description && <p class="archive-description" data-search-highlight>{view.description}</p>}
+
+                  <dl class="archive-facts">
+                    <div>
+                      <dt>类型</dt>
+                      <dd data-search-highlight>{view.typeLabel}</dd>
+                    </div>
+                    <div>
+                      <dt>年代</dt>
+                      <dd data-search-highlight>{view.dateDisplay}</dd>
+                    </div>
+                    <div>
+                      <dt>地点</dt>
+                      <dd data-search-highlight>{view.placeDisplay}</dd>
+                    </div>
+                  </dl>
+
+                  <ul class="archive-tags" aria-label="标签">
+                    {view.tags.map((tag) => <li data-search-highlight>{tag}</li>)}
+                  </ul>
+
+                  <span class="archive-entry-action" aria-hidden="true">查看档案 →</span>
+                </div>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <nav class="archive-pagination" id="archive-pagination" aria-label="档案分页" hidden>
+        <p id="archive-page-summary"></p>
+        <div>
+          <button class="ui-action ui-action--secondary" id="archive-page-previous" type="button">← 上一页</button>
+          <span id="archive-page-numbers" aria-label="页码"></span>
+          <button class="ui-action ui-action--secondary" id="archive-page-next" type="button">下一页 →</button>
+        </div>
+      </nav>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  const archiveIndex = document.querySelector<HTMLElement>('.archive-index');
+  const searchInput = document.querySelector<HTMLInputElement>('#archive-search');
+  const categorySelect = document.querySelector<HTMLSelectElement>('#archive-category');
+  const sortSelect = document.querySelector<HTMLSelectElement>('#archive-sort');
+  const decadeSelect = document.querySelector<HTMLSelectElement>('#archive-decade');
+  const placeSelect = document.querySelector<HTMLSelectElement>('#archive-place');
+  const tagSelect = document.querySelector<HTMLSelectElement>('#archive-tag');
+  const clearFiltersButton = document.querySelector<HTMLButtonElement>('#archive-clear');
+  const archiveActions = document.querySelector<HTMLElement>('#archive-actions');
+  const moreFilters = document.querySelector<HTMLDetailsElement>('#archive-more-filters');
+  const moreFiltersSummary = document.querySelector<HTMLElement>('#archive-more-summary');
+  const filterChips = document.querySelector<HTMLElement>('#archive-filter-chips');
+  const emptyState = document.querySelector<HTMLElement>('#archive-empty-state');
+  const emptyTitle = document.querySelector<HTMLElement>('#archive-empty-title');
+  const emptyDescription = document.querySelector<HTMLElement>('#archive-empty-description');
+  const emptyClearButton = document.querySelector<HTMLButtonElement>('#archive-empty-clear');
+  const searchAssist = document.querySelector<HTMLElement>('#archive-search-assist');
+  const searchSuggestions = document.querySelector<HTMLElement>('#archive-search-suggestions');
+  const archiveList = document.querySelector<HTMLElement>('#archive-list');
+  const resultsSummary = document.querySelector<HTMLElement>('#archive-results-summary');
+  const pagination = document.querySelector<HTMLElement>('#archive-pagination');
+  const pageSummary = document.querySelector<HTMLElement>('#archive-page-summary');
+  const previousPageButton = document.querySelector<HTMLButtonElement>('#archive-page-previous');
+  const nextPageButton = document.querySelector<HTMLButtonElement>('#archive-page-next');
+  const pageNumbers = document.querySelector<HTMLElement>('#archive-page-numbers');
+  const archiveEntries = Array.from(document.querySelectorAll<HTMLElement>('[data-archive-item]'));
+  const highlightOriginalText = new WeakMap<HTMLElement, string>();
+  const browseStateKey = 'ljm-archive-browse-state';
+  const pageSize = Math.max(1, Number(archiveIndex?.dataset.archivePageSize) || 12);
+  const topicLabels = (() => {
+    try {
+      return JSON.parse(archiveIndex?.dataset.archiveTopicLabels ?? '{}') as Record<string, string>;
+    } catch {
+      return {} as Record<string, string>;
+    }
+  })();
+  let selectedTopic = '';
+  let currentPage = 1;
+
+  const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('zh-CN');
+  const searchTermsFrom = (value: string) => normalizeSearchText(value).split(/\s+/).filter(Boolean);
+  const splitDataValues = (value: string | undefined) => (value ?? '').split('|').filter(Boolean);
+
+  const setAddressParameter = (url: URL, name: string, value: string) => {
+    if (value) url.searchParams.set(name, value);
+    else url.searchParams.delete(name);
+  };
+
+  const updateFiltersInAddress = () => {
+    if (!searchInput || !categorySelect || !sortSelect || !decadeSelect || !placeSelect || !tagSelect) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('type');
+    setAddressParameter(url, 'q', searchInput.value.trim());
+    setAddressParameter(url, 'category', categorySelect.value);
+    setAddressParameter(url, 'decade', decadeSelect.value);
+    setAddressParameter(url, 'place', placeSelect.value);
+    setAddressParameter(url, 'tag', tagSelect.value);
+    setAddressParameter(url, 'topic', selectedTopic);
+    setAddressParameter(url, 'sort', sortSelect.value === 'recent' ? '' : sortSelect.value);
+    setAddressParameter(url, 'page', currentPage > 1 ? String(currentPage) : '');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  };
+
+  const currentBrowseHref = () => `${window.location.pathname}${window.location.search}`;
+
+  const renderActiveFilterChips = () => {
+    if (!filterChips || !searchInput || !categorySelect || !decadeSelect || !placeSelect || !tagSelect) return;
+    const definitions = [
+      { key: 'topic', label: '专题', value: topicLabels[selectedTopic] ?? '' },
+      { key: 'q', label: '关键词', value: searchInput.value.trim() },
+      { key: 'category', label: '分类', value: categorySelect.value ? categorySelect.selectedOptions[0]?.textContent?.trim() ?? '' : '' },
+      { key: 'decade', label: '年代', value: decadeSelect.value ? `${decadeSelect.value}年代` : '' },
+      { key: 'place', label: '地点', value: placeSelect.value },
+      { key: 'tag', label: '标签', value: tagSelect.value },
+    ].filter((definition) => definition.value);
+
+    filterChips.replaceChildren(...definitions.map((definition) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.clearFilter = definition.key;
+      button.textContent = `${definition.label}：${definition.value} ×`;
+      button.setAttribute('aria-label', `移除${definition.label}筛选：${definition.value}`);
+      return button;
+    }));
+  };
+
+  const saveBrowseState = (targetId = '') => {
+    try {
+      window.sessionStorage.setItem(
+        browseStateKey,
+        JSON.stringify({ href: currentBrowseHref(), scrollY: window.scrollY, targetId, restorePending: false }),
+      );
+    } catch {
+      // 浏览器禁用会话存储时，网址中的筛选条件仍然可以独立恢复。
+    }
+  };
+
+  const compareText = (left: string, right: string) =>
+    left.localeCompare(right, 'zh-CN', { numeric: true, sensitivity: 'base' });
+
+  const sortArchiveEntries = () => {
+    if (!sortSelect || !archiveList) return;
+    const sortMode = sortSelect.value;
+    archiveEntries.sort((left, right) => {
+      const leftYear = Number(left.dataset.archiveYear);
+      const rightYear = Number(right.dataset.archiveYear);
+      const leftHasYear = Number.isFinite(leftYear) && leftYear > 0;
+      const rightHasYear = Number.isFinite(rightYear) && rightYear > 0;
+      if (sortMode === 'date-asc' || sortMode === 'date-desc') {
+        if (leftHasYear !== rightHasYear) return leftHasYear ? -1 : 1;
+        if (leftHasYear && rightHasYear && leftYear !== rightYear) {
+          return sortMode === 'date-asc' ? leftYear - rightYear : rightYear - leftYear;
+        }
+      } else if (sortMode === 'type') {
+        const typeOrder = compareText(left.dataset.archiveTypeLabel ?? '', right.dataset.archiveTypeLabel ?? '');
+        if (typeOrder !== 0) return typeOrder;
+      } else {
+        const accessionOrder = (right.dataset.archiveAccession ?? '').localeCompare(left.dataset.archiveAccession ?? '');
+        if (accessionOrder !== 0) return accessionOrder;
+      }
+      const titleOrder = compareText(left.dataset.archiveTitle ?? '', right.dataset.archiveTitle ?? '');
+      if (titleOrder !== 0) return titleOrder;
+      return Number(left.dataset.archiveOriginalIndex ?? 0) - Number(right.dataset.archiveOriginalIndex ?? 0);
+    });
+    archiveList.append(...archiveEntries);
+  };
+
+  const renderSearchHighlights = (terms: string[]) => {
+    document.querySelectorAll<HTMLElement>('[data-search-highlight]').forEach((element) => {
+      if (!highlightOriginalText.has(element)) highlightOriginalText.set(element, element.textContent ?? '');
+      const original = highlightOriginalText.get(element) ?? '';
+      element.replaceChildren();
+      if (!terms.length || !original) {
+        element.textContent = original;
+        return;
+      }
+      const normalized = original.toLocaleLowerCase('zh-CN');
+      const ranges: Array<[number, number]> = [];
+      for (const term of terms) {
+        let fromIndex = 0;
+        while (fromIndex < normalized.length) {
+          const matchIndex = normalized.indexOf(term, fromIndex);
+          if (matchIndex < 0) break;
+          ranges.push([matchIndex, matchIndex + term.length]);
+          fromIndex = matchIndex + Math.max(1, term.length);
+        }
+      }
+      ranges.sort((left, right) => left[0] - right[0]);
+      const merged = ranges.reduce<Array<[number, number]>>((result, range) => {
+        const previous = result.at(-1);
+        if (previous && range[0] <= previous[1]) previous[1] = Math.max(previous[1], range[1]);
+        else result.push([...range]);
+        return result;
+      }, []);
+      if (!merged.length) {
+        element.textContent = original;
+        return;
+      }
+      let cursor = 0;
+      for (const [start, end] of merged) {
+        if (start > cursor) element.append(document.createTextNode(original.slice(cursor, start)));
+        const mark = document.createElement('mark');
+        mark.textContent = original.slice(start, end);
+        element.append(mark);
+        cursor = end;
+      }
+      if (cursor < original.length) element.append(document.createTextNode(original.slice(cursor)));
+    });
+  };
+
+  const renderSearchSuggestions = (matchingEntries: HTMLElement[], terms: string[]) => {
+    if (!searchAssist || !searchSuggestions || !tagSelect || !terms.length) {
+      if (searchAssist) searchAssist.hidden = true;
+      return;
+    }
+    const tagCounts = new Map<string, number>();
+    for (const entry of matchingEntries) {
+      for (const tag of splitDataValues(entry.dataset.archiveTags)) {
+        if (tag === tagSelect.value) continue;
+        tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+      }
+    }
+    const suggestions = [...tagCounts.entries()]
+      .sort((left, right) => {
+        const leftNear = terms.some((term) => normalizeSearchText(left[0]).includes(term));
+        const rightNear = terms.some((term) => normalizeSearchText(right[0]).includes(term));
+        return Number(rightNear) - Number(leftNear) || right[1] - left[1] || compareText(left[0], right[0]);
+      })
+      .slice(0, 5);
+    searchSuggestions.replaceChildren(...suggestions.map(([tag, count]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.suggestedTag = tag;
+      button.textContent = `${tag} · ${count}`;
+      button.setAttribute('aria-label', `按相关标签“${tag}”继续筛选`);
+      return button;
+    }));
+    searchAssist.hidden = suggestions.length === 0;
+  };
+
+  const renderPagination = (matchingEntries: HTMLElement[]) => {
+    const totalPages = Math.max(1, Math.ceil(matchingEntries.length / pageSize));
+    currentPage = Math.min(Math.max(1, currentPage), totalPages);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, matchingEntries.length);
+    matchingEntries.forEach((entry, index) => {
+      entry.hidden = index < startIndex || index >= endIndex;
+    });
+    if (!pagination || !pageSummary || !previousPageButton || !nextPageButton || !pageNumbers) {
+      return { startIndex, endIndex, totalPages };
+    }
+    pagination.hidden = totalPages <= 1;
+    pageSummary.textContent = `第 ${currentPage} 页，共 ${totalPages} 页`;
+    previousPageButton.disabled = currentPage <= 1;
+    nextPageButton.disabled = currentPage >= totalPages;
+    pageNumbers.replaceChildren(...Array.from({ length: totalPages }, (_, index) => {
+      const page = index + 1;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.archivePage = String(page);
+      button.textContent = String(page);
+      button.setAttribute('aria-label', `前往第 ${page} 页`);
+      if (page === currentPage) button.setAttribute('aria-current', 'page');
+      return button;
+    }));
+    return { startIndex, endIndex, totalPages };
+  };
+
+  const updateArchiveResults = () => {
+    if (!searchInput || !categorySelect || !sortSelect || !decadeSelect || !placeSelect || !tagSelect || !resultsSummary) return;
+    sortArchiveEntries();
+    const terms = searchTermsFrom(searchInput.value);
+    const selectedCategory = categorySelect.value;
+    const selectedDecade = decadeSelect.value;
+    const selectedPlace = placeSelect.value;
+    const selectedTag = tagSelect.value;
+    const matchingEntries = archiveEntries.filter((entry) => {
+      const searchText = entry.dataset.searchText ?? '';
+      const matchesKeyword = terms.every((term) => searchText.includes(term));
+      const matchesCategory = !selectedCategory || entry.dataset.archiveCategory === selectedCategory;
+      const matchesDecade = !selectedDecade || entry.dataset.archiveDecade === selectedDecade;
+      const matchesPlace = !selectedPlace || (entry.dataset.archivePlaces ?? '').includes(`|${selectedPlace}|`);
+      const matchesTag = !selectedTag || (entry.dataset.archiveTags ?? '').includes(`|${selectedTag}|`);
+      const matchesTopic = !selectedTopic || (entry.dataset.archiveTopics ?? '').includes(`|${selectedTopic}|`);
+      const isMatch = matchesKeyword && matchesCategory && matchesDecade && matchesPlace && matchesTag && matchesTopic;
+      entry.hidden = !isMatch;
+      return isMatch;
+    });
+    renderSearchHighlights(terms);
+    renderSearchSuggestions(matchingEntries, terms);
+    const pageState = renderPagination(matchingEntries);
+    const hasActiveFilters = terms.length > 0 || Boolean(selectedCategory || selectedDecade || selectedPlace || selectedTag || selectedTopic);
+    const advancedFilterCount = [selectedDecade, selectedPlace, selectedTag].filter(Boolean).length;
+    if (moreFiltersSummary) moreFiltersSummary.textContent = advancedFilterCount ? `已选 ${advancedFilterCount} 项` : '年代、地点、标签';
+    if (archiveActions) archiveActions.hidden = !hasActiveFilters;
+    renderActiveFilterChips();
+    if (emptyState) emptyState.hidden = matchingEntries.length !== 0;
+    document.querySelectorAll<HTMLAnchorElement>('[data-topic-link]').forEach((link) => {
+      if (link.dataset.topicLink === selectedTopic) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    if (!matchingEntries.length) {
+      const hasOnlyCategoryFilter = Boolean(selectedCategory) && !terms.length && !selectedDecade && !selectedPlace && !selectedTag && !selectedTopic;
+      resultsSummary.textContent = hasOnlyCategoryFilter ? '当前暂无此类档案。' : '没有找到符合条件的档案。';
+      if (emptyTitle) emptyTitle.textContent = hasOnlyCategoryFilter ? '这个分类还没有公开档案' : '没有找到符合条件的档案';
+      if (emptyDescription) emptyDescription.textContent = hasOnlyCategoryFilter
+        ? '可以先浏览其他分类；新内容通过发布检查后会出现在这里。'
+        : '可以移除部分筛选条件，或清除后浏览全部档案。';
+      return;
+    }
+    const topicPrefix = selectedTopic ? `专题“${topicLabels[selectedTopic]}” · ` : '';
+    const rangeText = pageState.totalPages > 1 ? `，显示第 ${pageState.startIndex + 1}–${pageState.endIndex} 件` : '';
+    resultsSummary.textContent = `${topicPrefix}${hasActiveFilters ? '找到' : '共'} ${matchingEntries.length} 件档案${rangeText}`;
+  };
+
+  const applyFilterChange = () => {
+    currentPage = 1;
+    updateFiltersInAddress();
+    updateArchiveResults();
+    saveBrowseState();
+  };
+
+  searchInput?.addEventListener('input', applyFilterChange);
+  categorySelect?.addEventListener('change', applyFilterChange);
+  sortSelect?.addEventListener('change', applyFilterChange);
+  decadeSelect?.addEventListener('change', applyFilterChange);
+  placeSelect?.addEventListener('change', applyFilterChange);
+  tagSelect?.addEventListener('change', applyFilterChange);
+
+  searchSuggestions?.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-suggested-tag]');
+    if (!button || !tagSelect) return;
+    tagSelect.value = button.dataset.suggestedTag ?? '';
+    applyFilterChange();
+  });
+
+  const clearAllFilters = () => {
+    if (!searchInput || !categorySelect || !decadeSelect || !placeSelect || !tagSelect) return;
+    searchInput.value = '';
+    categorySelect.value = '';
+    decadeSelect.value = '';
+    placeSelect.value = '';
+    tagSelect.value = '';
+    selectedTopic = '';
+    currentPage = 1;
+    if (moreFilters) moreFilters.open = false;
+    updateFiltersInAddress();
+    updateArchiveResults();
+    saveBrowseState();
+    searchInput.focus();
+  };
+
+  clearFiltersButton?.addEventListener('click', clearAllFilters);
+  emptyClearButton?.addEventListener('click', clearAllFilters);
+
+  filterChips?.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-clear-filter]');
+    if (!button || !searchInput || !categorySelect || !decadeSelect || !placeSelect || !tagSelect) return;
+    if (button.dataset.clearFilter === 'topic') selectedTopic = '';
+    else {
+      const controls = { q: searchInput, category: categorySelect, decade: decadeSelect, place: placeSelect, tag: tagSelect };
+      const control = controls[button.dataset.clearFilter as keyof typeof controls];
+      if (!control) return;
+      control.value = '';
+      control.focus();
+    }
+    applyFilterChange();
+  });
+
+  const changePage = (page: number) => {
+    currentPage = page;
+    updateArchiveResults();
+    updateFiltersInAddress();
+    saveBrowseState();
+    resultsSummary?.scrollIntoView({ behavior: 'auto', block: 'start' });
+  };
+  previousPageButton?.addEventListener('click', () => changePage(currentPage - 1));
+  nextPageButton?.addEventListener('click', () => changePage(currentPage + 1));
+  pageNumbers?.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-archive-page]');
+    if (button) changePage(Number(button.dataset.archivePage));
+  });
+
+  const addressParameters = new URLSearchParams(window.location.search);
+  const requestedKeyword = addressParameters.get('q');
+  const requestedCategory = addressParameters.get('category');
+  const requestedType = addressParameters.get('type');
+  const requestedDecade = addressParameters.get('decade');
+  const requestedPlace = addressParameters.get('place');
+  const requestedTag = addressParameters.get('tag');
+  const requestedTopic = addressParameters.get('topic');
+  const requestedSort = addressParameters.get('sort');
+  const requestedPage = Number(addressParameters.get('page'));
+  const categoryOptions = Array.from(categorySelect?.options ?? []);
+  const hasRequestedCategory = categoryOptions.some((option) => option.value === requestedCategory);
+  const selectRequestedValue = (select: HTMLSelectElement | null, value: string | null) => {
+    if (select && value && Array.from(select.options).some((option) => option.value === value)) select.value = value;
+  };
+
+  if (searchInput && requestedKeyword) searchInput.value = requestedKeyword;
+  selectRequestedValue(decadeSelect, requestedDecade);
+  selectRequestedValue(placeSelect, requestedPlace);
+  selectRequestedValue(tagSelect, requestedTag);
+  selectRequestedValue(sortSelect, requestedSort);
+  if (requestedTopic && topicLabels[requestedTopic]) selectedTopic = requestedTopic;
+  if (Number.isInteger(requestedPage) && requestedPage > 0) currentPage = requestedPage;
+  if (categorySelect && requestedCategory && hasRequestedCategory) categorySelect.value = requestedCategory;
+  else if (categorySelect && requestedType) {
+    const legacyTypeCategory = categoryOptions.find((option) => (option.dataset.objectTypes ?? '').split('|').includes(requestedType));
+    if (legacyTypeCategory) categorySelect.value = legacyTypeCategory.value;
+  }
+  if (moreFilters && [decadeSelect?.value, placeSelect?.value, tagSelect?.value].some(Boolean)) moreFilters.open = true;
+
+  updateArchiveResults();
+  updateFiltersInAddress();
+
+  document.querySelectorAll<HTMLAnchorElement>('[data-archive-entry]').forEach((entryLink) => {
+    entryLink.addEventListener('click', () => {
+      const targetId = entryLink.closest<HTMLElement>('[data-archive-id]')?.dataset.archiveId ?? '';
+      saveBrowseState(targetId);
+    });
+  });
+
+  try {
+    const storedState = JSON.parse(window.sessionStorage.getItem(browseStateKey) ?? 'null');
+    if (storedState?.restorePending === true && storedState.href === currentBrowseHref() && Number.isFinite(storedState.scrollY)) {
+      window.requestAnimationFrame(() => window.scrollTo({ top: storedState.scrollY, behavior: 'auto' }));
+      window.sessionStorage.setItem(browseStateKey, JSON.stringify({ ...storedState, restorePending: false }));
+    }
+  } catch {
+    // 无法读取会话状态时不影响筛选本身。
+  }
+</script>
+
+<style>
+  .archive-page {
+    padding-top: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .archive-heading {
+    max-width: 46rem;
+  }
+
+  .section-mark {
+    margin: 0 0 0.7rem;
+    color: #747064;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.2em;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.25rem, 4.5vw, 3.4rem);
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    line-height: 1.1;
+  }
+
+  .introduction {
+    max-width: 38rem;
+    margin: 1rem 0 0;
+    color: #555249;
+    font-size: clamp(1rem, 1.7vw, 1.12rem);
+    line-height: 2;
+  }
+
+  .archive-paths {
+    margin-top: clamp(2.25rem, 4vw, 3.25rem);
+    padding: 1.15rem clamp(0.9rem, 2vw, 1.25rem) 1.35rem;
+    background: var(--site-paper);
+    border-top: 1px solid #aaa397;
+    border-bottom: 1px solid #c4bdad;
+    border-left: 3px solid var(--site-accent);
+  }
+
+  .archive-paths-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .archive-paths-title,
+  .archive-index-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  .archive-paths-title > :global(.site-icon),
+  .archive-index-title > :global(.site-icon) {
+    width: 1.2rem;
+    height: 1.2rem;
+    margin-top: 0.05rem;
+    color: var(--site-accent);
+  }
+
+  .archive-paths-heading p,
+  .archive-paths-heading h2,
+  .archive-path-group h3 {
+    margin: 0;
+  }
+
+  .archive-paths-heading p {
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.16em;
+  }
+
+  .archive-paths-heading h2 {
+    color: #5f5a50;
+    font-size: 0.82rem;
+    font-weight: 400;
+    letter-spacing: 0.13em;
+  }
+
+  .archive-paths-grid {
+    display: grid;
+    grid-template-columns: minmax(16rem, 1.25fr) repeat(2, minmax(10rem, 0.75fr));
+    margin-top: 1rem;
+    border-top: 1px solid #d0c9ba;
+  }
+
+  .archive-path-group {
+    min-width: 0;
+    padding: 0.95rem 1rem 0.2rem;
+    border-left: 1px solid #d0c9ba;
+  }
+
+  .archive-path-group:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .archive-path-group h3 {
+    margin-bottom: 0.7rem;
+    color: #777165;
+    font-size: 0.74rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+  }
+
+  .archive-topic-link {
+    display: grid;
+    gap: 0.25rem;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .archive-topic-link small {
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.13em;
+  }
+
+  .archive-topic-link strong {
+    font-size: 1.08rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+  }
+
+  .archive-topic-link span {
+    display: -webkit-box;
+    max-width: 32rem;
+    overflow: hidden;
+    color: #686359;
+    font-size: 0.76rem;
+    line-height: 1.65;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .archive-topic-link em {
+    margin-top: 0.2rem;
+    color: #625e54;
+    font-size: 0.74rem;
+    font-style: normal;
+    letter-spacing: 0.06em;
+  }
+
+  .archive-topic-link:hover strong,
+  .archive-topic-link:focus-visible strong,
+  .archive-topic-link[aria-current='page'] strong {
+    color: var(--site-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+  }
+
+  .archive-path-links {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .archive-path-links a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    padding: 0.32rem 0;
+    color: #5f5a50;
+    border-bottom: 1px solid #dad3c5;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    text-decoration: none;
+  }
+
+  .archive-path-links a:hover,
+  .archive-path-links a:focus-visible {
+    color: var(--site-accent);
+    border-bottom-color: var(--site-accent);
+  }
+
+  .archive-path-links small {
+    color: #817b70;
+    font-size: var(--site-text-micro);
+  }
+
+  .archive-index {
+    margin-top: clamp(2.2rem, 4.5vw, 3.5rem);
+  }
+
+  .archive-index-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1.15rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid #bcb5a4;
+  }
+
+  .archive-index-heading p,
+  .archive-index-heading h2,
+  .archive-index-heading span {
+    margin: 0;
+  }
+
+  .archive-index-heading p {
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.15em;
+  }
+
+  .archive-index-heading h2 {
+    margin-top: 0.2rem;
+    font-size: 1.08rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+  }
+
+  .archive-index-heading > span {
+    color: var(--site-subtle);
+    font-size: var(--site-text-small);
+    line-height: 1.55;
+  }
+
+  .archive-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(11rem, 0.7fr));
+    gap: 1rem 1.25rem;
+    align-items: end;
+    margin-bottom: 0.9rem;
+  }
+
+  .archive-control label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #716c61;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+  }
+
+  .archive-control input,
+  .archive-control select {
+    width: 100%;
+    border: 1px solid #9f988b;
+    border-radius: 0;
+    background: transparent;
+    color: #302f2b;
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1.6;
+    padding: 0.62rem 0.75rem;
+  }
+
+  .archive-more-filters {
+    grid-column: 1 / -1;
+    border-top: 1px solid #c0b9aa;
+    border-bottom: 1px solid #c0b9aa;
+  }
+
+  .archive-more-filters > summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 0;
+    color: #625e55;
+    cursor: pointer;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    list-style: none;
+  }
+
+  .archive-more-filters > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .archive-more-filters > summary::after {
+    flex: 0 0 auto;
+    content: '＋';
+  }
+
+  .archive-more-filters[open] > summary::after {
+    content: '－';
+  }
+
+  .archive-more-filters > summary small {
+    margin-left: auto;
+    color: #807a70;
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+  }
+
+  .archive-secondary-controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+    padding: 0.85rem 0 1rem;
+    border-top: 1px solid #d1cabd;
+  }
+
+  .archive-control input::placeholder {
+    color: #7d786e;
+    opacity: 1;
+  }
+
+  .archive-control input:focus-visible,
+  .archive-control select:focus-visible {
+    border-color: #575349;
+    outline: 2px solid #575349;
+    outline-offset: 3px;
+  }
+
+  .archive-search-assist {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.6rem;
+    margin-top: 0.5rem;
+  }
+
+  .archive-search-assist[hidden] {
+    display: none;
+  }
+
+  .archive-search-assist > span {
+    color: #777165;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.08em;
+  }
+
+  #archive-search-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  #archive-search-suggestions button {
+    padding: 0.2rem 0.42rem;
+    color: #625e54;
+    background: #e5ded0;
+    border: 1px solid #c3bbac;
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--site-text-micro);
+  }
+
+  #archive-search-suggestions button:hover,
+  #archive-search-suggestions button:focus-visible {
+    color: var(--site-accent);
+    border-color: var(--site-accent);
+  }
+
+  .archive-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .archive-actions[hidden] {
+    display: none;
+  }
+
+  .active-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.7rem;
+    min-width: 0;
+  }
+
+  .active-filters > span {
+    color: #716c61;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+  }
+
+  #archive-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  #archive-filter-chips button {
+    padding: 0.28rem 0.52rem;
+    color: #5f5a50;
+    background: #e4ddcf;
+    border: 1px solid #bdb5a6;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+
+  #archive-filter-chips button:hover {
+    color: #302f2b;
+    border-color: #716c61;
+  }
+
+  .clear-filters {
+    border: 0;
+    border-bottom: 1px solid #9f988b;
+    background: transparent;
+    color: #686359;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    line-height: 1.6;
+    padding: 0.1rem 0 0.2rem;
+  }
+
+  .clear-filters:hover {
+    border-bottom-color: #575349;
+    color: #302f2b;
+  }
+
+  .clear-filters:focus-visible {
+    outline: 2px solid #575349;
+    outline-offset: 4px;
+  }
+
+  .archive-list,
+  .archive-tags {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .archive-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1.25rem, 2.6vw, 2rem);
+    padding-top: clamp(1rem, 2vw, 1.4rem);
+    border-top: 1px solid #bcb5a4;
+  }
+
+  .archive-list > li {
+    min-width: 0;
+    border: 1px solid #c7bfaf;
+  }
+
+  .results-summary {
+    margin: 0 0 1.5rem;
+    color: #5f5b51;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    letter-spacing: 0.1em;
+  }
+
+  .archive-empty-state {
+    padding: clamp(2rem, 6vw, 3.5rem);
+    border-top: 1px solid #bcb5a4;
+    border-bottom: 1px solid #bcb5a4;
+    text-align: center;
+  }
+
+  .archive-empty-state[hidden] {
+    display: none;
+  }
+
+  .archive-empty-state p {
+    margin: 0 0 0.65rem;
+    color: #7a756a;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.16em;
+  }
+
+  .archive-empty-state h2 {
+    display: block;
+    margin: 0;
+    font-size: clamp(1.25rem, 3vw, 1.65rem);
+    line-height: 1.5;
+  }
+
+  .archive-empty-state span {
+    display: block;
+    margin: 0.7rem 0 1.25rem;
+    color: #666156;
+    font-size: 0.85rem;
+    line-height: 1.8;
+  }
+
+  .archive-empty-state button {
+    margin-inline: auto;
+  }
+
+  .archive-entry {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0.7rem;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .archive-entry:focus-visible {
+    outline: 2px solid #575349;
+    outline-offset: 0.6rem;
+  }
+
+  .archive-image {
+    aspect-ratio: 3 / 2;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid #c5bdab;
+    background: #e4dece;
+  }
+
+  .archive-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .archive-information {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 1rem 0.25rem 0.2rem;
+  }
+
+  .archive-information h2 {
+    display: inline;
+    margin: 0;
+    font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    line-height: 1.5;
+  }
+
+  .archive-entry:hover h2,
+  .archive-entry:focus-visible h2 {
+    text-decoration: underline;
+    text-decoration-color: #817b6c;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.38em;
+  }
+
+  .archive-description {
+    display: -webkit-box;
+    margin: 0.65rem 0 0;
+    overflow: hidden;
+    color: #625e54;
+    font-size: 0.92rem;
+    line-height: 1.85;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  [data-search-highlight] mark {
+    padding: 0 0.08em;
+    color: inherit;
+    background: #e5c7b6;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .archive-facts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0 0;
+  }
+
+  .archive-facts div {
+    min-width: 0;
+  }
+
+  .archive-facts dt {
+    margin-bottom: 0.3rem;
+    color: #777165;
+    font-size: 0.76rem;
+    letter-spacing: 0.16em;
+  }
+
+  .archive-facts dd {
+    margin: 0;
+    font-size: 0.96rem;
+    line-height: 1.7;
+  }
+
+  .archive-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1.3rem;
+    margin-top: 0.9rem;
+    color: #666156;
+    font-size: 0.82rem;
+    line-height: 1.7;
+  }
+
+  .archive-entry-action {
+    display: inline-block;
+    align-self: flex-start;
+    margin-top: auto;
+    padding-top: 0.9rem;
+    color: #625e54;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid #8d8779;
+  }
+
+  .archive-tags li {
+    position: relative;
+  }
+
+  .archive-tags li:not(:last-child)::after {
+    position: absolute;
+    right: -0.7rem;
+    color: #a09a8c;
+    content: '·';
+  }
+
+  .archive-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #bcb5a4;
+  }
+
+  .archive-pagination[hidden] {
+    display: none;
+  }
+
+  .archive-pagination p {
+    margin: 0;
+    color: #716c61;
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+  }
+
+  .archive-pagination > div,
+  #archive-page-numbers {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .archive-pagination button {
+    min-width: 2.15rem;
+    min-height: 2.15rem;
+    padding: 0.35rem 0.55rem;
+    color: #5d584f;
+    background: transparent;
+    border: 1px solid #aaa294;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.72rem;
+  }
+
+  .archive-pagination button[aria-current='page'] {
+    color: #f7f1e6;
+    background: #5b574e;
+    border-color: #5b574e;
+  }
+
+  .archive-pagination button:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 980px) {
+    .archive-paths-grid {
+      grid-template-columns: minmax(15rem, 1fr) repeat(2, minmax(9rem, 0.72fr));
+    }
+
+    .archive-secondary-controls {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 700px) {
+    .archive-page {
+      padding-top: 2.5rem;
+    }
+
+    .introduction {
+      margin-top: 1.5rem;
+    }
+
+    .archive-paths {
+      margin-top: 2rem;
+      padding: 1rem 0.85rem;
+    }
+
+    .archive-paths-heading {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .archive-paths-grid {
+      grid-template-columns: 1fr;
+      margin-top: 0.75rem;
+    }
+
+    .archive-path-group,
+    .archive-path-group:first-child {
+      padding: 0.8rem 0 0.55rem;
+      border-top: 1px solid #d0c9ba;
+      border-left: 0;
+    }
+
+    .archive-paths-grid > .archive-path-group:first-child {
+      border-top: 0;
+    }
+
+    .archive-path-links {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 0.85rem;
+    }
+
+    .archive-index {
+      margin-top: 2.5rem;
+    }
+
+    .archive-index-heading {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .archive-controls {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .archive-more-filters {
+      grid-column: auto;
+    }
+
+    .archive-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .clear-filters {
+      align-self: flex-start;
+    }
+
+    .archive-secondary-controls {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .archive-list {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      padding-top: 0.85rem;
+    }
+
+    .archive-entry {
+      display: grid;
+      grid-template-columns: minmax(6.75rem, 34%) minmax(0, 1fr);
+      gap: 0.85rem;
+      align-items: start;
+      height: auto;
+      padding: 0.65rem;
+    }
+
+    .archive-image {
+      aspect-ratio: 4 / 3;
+    }
+
+    .archive-information {
+      display: block;
+      padding: 0.05rem 0 0;
+    }
+
+    .archive-information h2 {
+      font-size: 1.08rem;
+      line-height: 1.4;
+    }
+
+    .archive-description {
+      margin-top: 0.4rem;
+      font-size: 0.76rem;
+      line-height: 1.6;
+      -webkit-line-clamp: 1;
+    }
+
+    .archive-facts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.35rem 0.7rem;
+      margin-top: 0.55rem;
+    }
+
+    .archive-facts div:last-child {
+      display: none;
+    }
+
+    .archive-facts dt {
+      margin-bottom: 0.12rem;
+      font-size: var(--site-text-micro);
+    }
+
+    .archive-facts dd {
+      font-size: 0.75rem;
+      line-height: 1.45;
+    }
+
+    .archive-tags {
+      display: none;
+    }
+
+    .archive-entry-action {
+      margin-top: 0.5rem;
+      padding-top: 0;
+      font-size: 0.74rem;
+    }
+
+    .archive-pagination {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .archive-pagination > div {
+      justify-content: space-between;
+    }
+  }
+</style>

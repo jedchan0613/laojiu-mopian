@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="light" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>档案管理｜老旧默片</title>
+		<link rel="stylesheet" href="./styles.css" />
+	</head>
+	<body>
+		<a class="skip-link" href="#main-editor">跳到档案编辑区</a>
+		<div class="app-shell">
+			<aside class="sidebar">
+				<div class="brand">
+					<p class="eyebrow">PRIVATE ARCHIVE DESK</p>
+					<h1>老旧默片</h1>
+					<p>档案管理</p>
+				</div>
+
+				<button class="new-record-button" id="new-record-button" type="button">
+					<span aria-hidden="true">＋</span>
+					新建藏品
+				</button>
+
+				<nav class="desk-nav" aria-label="管理工作区">
+					<button class="desk-nav-button is-active" data-workspace="records" type="button">
+						<span>档案管理</span><small id="records-badge">0</small>
+					</button>
+					<button class="desk-nav-button" data-workspace="query" type="button">
+						<span>资料查询</span><small id="query-badge">0</small>
+					</button>
+					<button class="desk-nav-button" data-workspace="maintenance" type="button">
+						<span>维护概览</span><small id="maintenance-badge">0</small>
+					</button>
+					<button class="desk-nav-button" data-workspace="drafts" type="button">
+						<span>草稿中心</span><small id="drafts-badge">0</small>
+					</button>
+					<button class="desk-nav-button" data-workspace="recycle" type="button">
+						<span>图片回收区</span><small id="recycle-badge">0</small>
+					</button>
+					<button class="desk-nav-button" data-workspace="history" type="button">
+						<span>历史版本</span><small id="history-badge">0</small>
+					</button>
+				</nav>
+
+				<button class="mobile-record-browser-toggle" id="mobile-record-browser-toggle" type="button" aria-controls="record-browser-content" aria-expanded="false">
+					<span>选择已有档案</span><small>展开</small>
+				</button>
+
+				<div class="record-browser-content" id="record-browser-content">
+					<nav class="record-status-nav" id="record-status-nav" aria-label="档案状态">
+						<button class="record-status-button is-active" data-record-status="normal" type="button">
+							<span>正常档案</span><small id="normal-records-badge">0</small>
+						</button>
+						<button class="record-status-button" data-record-status="withdrawn" type="button">
+							<span>已撤销</span><small id="withdrawn-records-badge">0</small>
+						</button>
+					</nav>
+
+					<label class="search-box">
+						<span class="sr-only">搜索藏品</span>
+						<input id="record-search" type="search" placeholder="搜索编号或题名" />
+					</label>
+
+					<div class="record-count" id="record-count" role="status" aria-live="polite" aria-atomic="true">正在读取档案…</div>
+					<nav class="record-list" id="record-list" aria-label="藏品列表"></nav>
+				</div>
+
+				<div class="sidebar-footer">
+					<span class="local-dot" aria-hidden="true"></span>
+					非公开管理入口
+				</div>
+			</aside>
+
+			<main class="workspace" id="main-editor" tabindex="-1">
+				<header class="workspace-header">
+					<div>
+						<p class="eyebrow" id="record-kicker">ARCHIVE RECORD</p>
+						<h2 id="record-title">读取中…</h2>
+						<p class="record-id" id="record-id"></p>
+						<p class="save-state" id="save-state" role="status" aria-live="polite" aria-atomic="true"></p>
+					</div>
+					<div class="header-actions" id="header-actions">
+						<a class="quiet-button" id="preview-link" href="/">查看网站首页</a>
+						<button class="quiet-button" id="save-draft-button" type="button">保存草稿</button>
+						<button class="publish-button" id="publish-button" type="button">检查并发布</button>
+						<details class="record-more-actions" id="record-more-actions" hidden>
+							<summary id="record-more-actions-label">更多操作</summary>
+							<div class="record-more-actions-panel">
+								<button class="quiet-button" id="similar-record-button" type="button" hidden>以此为模板新建</button>
+								<button class="lifecycle-button" id="lifecycle-button" type="button" hidden></button>
+							</div>
+						</details>
+					</div>
+				</header>
+
+				<div class="notice" id="notice">
+					<strong>管理数据与公开内容严格分开</strong>
+					<span>这里只接收已经筛选、压缩并完成必要脱敏的发布副本。</span>
+				</div>
+
+				<section class="task-summary" id="task-summary" aria-labelledby="task-summary-title" hidden>
+					<div class="task-summary-copy">
+						<span>下一步</span>
+						<strong id="task-summary-title">继续完善档案</strong>
+						<small id="task-summary-detail"></small>
+					</div>
+					<div class="task-chips" id="task-chips" aria-label="档案完成情况"></div>
+				</section>
+
+				<nav class="tabs" aria-label="编辑分区" role="tablist">
+					<button class="tab is-active" id="tab-basic" data-tab="basic" type="button" role="tab" aria-controls="editor-surface" aria-selected="true"><span>基本信息</span><small data-tab-status></small></button>
+					<button class="tab" id="tab-images" data-tab="images" type="button" role="tab" aria-controls="editor-surface" aria-selected="false"><span>发布图片</span><small data-tab-status></small></button>
+					<button class="tab" id="tab-specific" data-tab="specific" type="button" role="tab" aria-controls="editor-surface" aria-selected="false"><span>对象专属信息</span><small data-tab-status></small></button>
+					<button class="tab" id="tab-preview" data-tab="preview" type="button" role="tab" aria-controls="editor-surface" aria-selected="false"><span>发布前预览</span><small data-tab-status></small></button>
+					<button class="tab" id="tab-privacy" data-tab="privacy" type="button" role="tab" aria-controls="editor-surface" aria-selected="false"><span>隐私与发布</span><small data-tab-status></small></button>
+				</nav>
+
+				<section class="editor-surface" id="editor-surface" role="tabpanel" aria-labelledby="tab-basic">
+					<div class="loading-state">
+						<div class="loading-line"></div>
+						<div class="loading-line short"></div>
+					</div>
+				</section>
+
+				<aside class="record-action-dock" id="record-action-dock" aria-label="当前档案快捷操作" hidden>
+					<div class="record-action-dock-state">
+						<span>当前档案</span>
+						<strong id="dock-save-state">当前没有未保存修改</strong>
+					</div>
+					<div class="record-action-dock-buttons">
+						<button class="quiet-button" id="dock-save-draft-button" type="button">保存草稿</button>
+						<button class="publish-button" id="dock-publish-button" type="button" hidden>检查并发布</button>
+					</div>
+				</aside>
+			</main>
+		</div>
+
+		<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+		<div class="busy-overlay" id="busy-overlay" role="status" aria-live="polite" aria-atomic="true" aria-busy="true" hidden>
+			<div class="busy-card">
+				<div class="busy-spinner" aria-hidden="true"></div>
+				<strong id="busy-title">正在处理…</strong>
+				<span id="busy-detail">请保持这个窗口打开</span>
+			</div>
+		</div>
+		<dialog class="action-dialog" id="withdraw-dialog" aria-labelledby="withdraw-dialog-title">
+			<form class="action-dialog-card" method="dialog">
+				<div class="action-dialog-heading">
+					<p class="eyebrow">WITHDRAW RECORD</p>
+					<h2 id="withdraw-dialog-title">撤销公开档案</h2>
+					<p id="withdraw-record-label"></p>
+				</div>
+				<div class="action-dialog-notice">
+					<strong>撤销不会删除本地档案和图片。</strong>
+					<span>系统会先保存当前发布版本，再从公开网站撤下这条档案及其公开图片。以后可以恢复为草稿，重新检查后再发布。</span>
+				</div>
+				<label class="dialog-field">
+					<span>撤销原因 <strong>必填</strong></span>
+					<textarea id="withdraw-reason" maxlength="500" rows="4" placeholder="例如：资料归属需要重新确认，暂时停止公开。"></textarea>
+					<small>原因会写入本地追溯记录，不会显示在公开网站。</small>
+				</label>
+				<label class="dialog-confirm">
+					<input id="withdraw-confirmation" type="checkbox" />
+					<span>我确认要把这条档案从公开网站撤下，并保留本地记录、历史版本和图片。</span>
+				</label>
+				<div class="action-dialog-actions">
+					<button class="quiet-button" value="cancel" type="submit">取消</button>
+					<button class="danger-button" id="confirm-withdraw-button" type="button">确认撤销</button>
+				</div>
+			</form>
+		</dialog>
+		<datalist id="administrative-province-options"></datalist>
+		<datalist id="administrative-city-options"></datalist>
+		<datalist id="administrative-district-options"></datalist>
+
+		<script type="module" src="./app.js"></script>
+	</body>
+</html>

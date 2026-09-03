@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title description">
+  <title id="title">老照片测试占位图</title>
+  <desc id="description">米白旧纸张风格的极简 PHOTO 占位图</desc>
+  <rect width="1200" height="800" fill="#eee9dc" />
+  <rect x="76" y="76" width="1048" height="648" fill="#e5dece" stroke="#625f58" stroke-width="2" />
+  <rect x="116" y="116" width="968" height="568" fill="none" stroke="#a49c8e" stroke-width="1" />
+  <line x1="116" y1="620" x2="1084" y2="620" stroke="#a49c8e" stroke-width="1" />
+  <text x="600" y="405" fill="#3d3b36" font-family="serif" font-size="92" letter-spacing="20" text-anchor="middle">PHOTO</text>
+</svg>

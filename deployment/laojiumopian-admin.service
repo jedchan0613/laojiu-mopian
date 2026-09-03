@@ -1,0 +1,44 @@
+[Unit]
+Description=老旧默片线上档案管理服务
+Wants=network-online.target
+After=network-online.target cloudflared.service
+
+[Service]
+Type=simple
+User=ljmadmin
+Group=ljmadmin
+WorkingDirectory=/srv/laojiumopian-admin/app/current
+EnvironmentFile=/etc/laojiumopian-admin.env
+Environment=PATH=/snap/node/current/bin:/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=NPM_CONFIG_CACHE=/srv/laojiumopian-admin/build-work/npm-cache
+ExecStartPre=/snap/node/current/bin/node /srv/laojiumopian-admin/app/current/local-admin/server.mjs --check-config
+ExecStart=/snap/node/current/bin/node /srv/laojiumopian-admin/app/current/local-admin/server.mjs
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0027
+
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/srv/laojiumopian-admin/data
+ReadWritePaths=/srv/laojiumopian-admin/build-work
+ReadWritePaths=/srv/laojiumopian-admin/logs
+ReadWritePaths=/srv/laojiumopian-admin/app/current/site
+ReadWritePaths=/srv/laojiumopian/releases
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,2003 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SiteIcon from '../../components/SiteIcon.astro';
+import { archiveItems, type ArchiveItem } from '../../data/archive';
+import {
+  archiveCategories,
+  getArchiveCategorySlug,
+} from '../../data/archive-categories';
+import {
+  createArchiveRecordView,
+  displayCode,
+  getSpecificMetadataFacts,
+  isPublishedArchiveItem,
+  type DisplayFact,
+} from '../../data/archive-view';
+import { getCodeEntry } from '../../data/code-dictionary';
+import { getPublicUsagePolicy } from '../../data/archive-rights';
+import { getResponsiveImage } from '../../data/responsive-images';
+
+export function getStaticPaths() {
+  return archiveItems.filter(isPublishedArchiveItem).map((item) => ({
+    params: { id: item.core.item_id },
+    props: { item },
+  }));
+}
+
+interface Props {
+  item: ArchiveItem;
+}
+
+const { item } = Astro.props;
+const view = createArchiveRecordView(item);
+const publishedViews = archiveItems.filter(isPublishedArchiveItem).map(createArchiveRecordView);
+const currentCategorySlug = getArchiveCategorySlug(view.objectType);
+const currentCategory = archiveCategories.find((category) => category.slug === currentCategorySlug);
+const categoryViews = publishedViews.filter(
+  (candidate) => getArchiveCategorySlug(candidate.objectType) === currentCategorySlug,
+);
+const categoryIndex = categoryViews.findIndex((candidate) => candidate.id === view.id);
+const previousView = categoryIndex > 0 ? categoryViews[categoryIndex - 1] : undefined;
+const nextView = categoryIndex >= 0 && categoryIndex < categoryViews.length - 1
+  ? categoryViews[categoryIndex + 1]
+  : undefined;
+const defaultBackHref = currentCategorySlug ? `/archive/?category=${currentCategorySlug}` : '/archive/';
+
+interface LinkedDisplayFact extends DisplayFact {
+  href?: string;
+}
+
+interface RecordStatusFact {
+  label: string;
+  value: string;
+  description: string;
+}
+
+const hasText = (value: string | undefined) => Boolean(value?.trim());
+const compactFacts = <T extends DisplayFact>(facts: T[]) => facts.filter((fact) => hasText(fact.value));
+const joinText = (value: string[] | undefined) => value?.filter(hasText).join('、') ?? '';
+const archiveFilterHref = (name: 'category' | 'decade' | 'place' | 'tag', value: string) =>
+  `/archive/?${name}=${encodeURIComponent(value)}`;
+const normalizePlaceLabel = (value: string) => value.trim().replace(/[省市区县]$/, '');
+const preferredPlaceFilter = view.placeFilters.find((place) => place === view.placeDisplay)
+  ?? view.placeFilters.find(
+    (place) => normalizePlaceLabel(place) === normalizePlaceLabel(view.placeDisplay),
+  )
+  ?? (view.placeFilters.length === 1 && !view.placeDisplay.includes('未知')
+    ? view.placeFilters[0]
+    : undefined);
+const formatDisplayDate = (value: string | undefined) => {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return value?.trim() ?? '';
+  return `${match[1]}年${Number(match[2])}月${Number(match[3])}日`;
+};
+const codeStatusFact = (label: string, code: string | undefined): RecordStatusFact | undefined => {
+  if (!code) return undefined;
+  const entry = getCodeEntry(code);
+  return {
+    label,
+    value: entry?.label ?? code,
+    description: entry?.definition ?? '以当前档案记录为准。',
+  };
+};
+
+const basicFacts = compactFacts<LinkedDisplayFact>([
+  {
+    label: '类型',
+    value: view.typeLabel,
+    href: currentCategorySlug ? archiveFilterHref('category', currentCategorySlug) : undefined,
+  },
+  {
+    label: '年代',
+    value: view.dateDisplay,
+    href: view.decade ? archiveFilterHref('decade', view.decade) : undefined,
+  },
+  {
+    label: '地点',
+    value: view.placeDisplay,
+    href: preferredPlaceFilter ? archiveFilterHref('place', preferredPlaceFilter) : undefined,
+  },
+  { label: '人物', value: joinText(item.core.people) },
+]);
+
+const recordStatusFacts = [
+  codeStatusFact('研究状态', item.core.research_status),
+  codeStatusFact('证据等级', item.core.evidence_level),
+  item.core.updated_date
+    ? {
+      label: '最后更新',
+      value: formatDisplayDate(item.core.updated_date),
+      description: '公开档案最近一次修改的日期。',
+    }
+    : undefined,
+].filter((fact): fact is RecordStatusFact => Boolean(fact));
+
+const specificFacts = getSpecificMetadataFacts(item);
+const specificTechnicalFacts = getSpecificMetadataFacts(item, { includeCodes: true });
+
+const researchManagementFacts = compactFacts([
+  { label: '永久编号', value: view.id },
+  { label: '收藏品编码', value: view.collectionCode },
+  { label: '对象类型', value: view.typeLabel, code: item.core.object_type },
+  { label: '获得方式', value: displayCode(item.core.acquisition_method) },
+  { label: '来源地点', value: item.core.source_place ?? '' },
+  { label: '研究状态', value: displayCode(item.core.research_status) },
+  { label: '证据等级', value: displayCode(item.core.evidence_level) },
+  { label: '数字化状态', value: displayCode(item.core.digitization_status) },
+  { label: '转录状态', value: displayCode(item.core.transcription_status) },
+  { label: '备份状态', value: displayCode(item.core.backup_status) },
+  { label: '保存等级', value: displayCode(item.core.condition_grade) },
+  { label: '发布副本', value: view.images.length > 0 ? `${view.images.length} 个文件` : '' },
+  { label: '隐私等级', value: displayCode(item.core.privacy_level) },
+  { label: '权利状态', value: displayCode(item.core.rights_status) },
+  { label: '利用状态', value: displayCode(item.core.use_status) },
+  { label: '档案状态', value: displayCode(item.core.record_status) },
+	...specificTechnicalFacts.map((fact) => ({
+		label: `专属维度 · ${fact.label}`,
+		value: fact.value,
+		code: fact.code,
+	})),
+]);
+const getImageRole = (description: string, index: number) => {
+  const matchedRole = ['正面', '背面', '封面', '内页', '全景', '细节'].find((role) =>
+    description.includes(role));
+  return matchedRole ?? `图片 ${index + 1}`;
+};
+const galleryImages = view.images.map((source, index) => ({
+  ...getResponsiveImage(source),
+  description: view.imageDescriptions[index],
+  role: getImageRole(view.imageDescriptions[index], index),
+}));
+const revisionNote = item.public_view.revision_note?.trim() ?? '';
+const hasNarrativeContent = hasText(view.transcription) || hasText(item.core.provenance_notes);
+const hasTags = view.tags.length > 0;
+const usagePolicy = getPublicUsagePolicy(item.core.rights_status);
+const downloadableImages = usagePolicy.canDownloadPublicationCopy
+  ? view.images.map((source, index) => ({
+    source,
+    description: view.imageDescriptions[index],
+    filename: `${view.id}-${String(index + 1).padStart(2, '0')}.${source.split('.').at(-1) ?? 'jpg'}`,
+  }))
+  : [];
+const relatedRecordEntries = publishedViews
+  .filter((candidate) => candidate.id !== view.id)
+  .map((candidate) => {
+    const sharedTags = candidate.tags.filter((tag) => view.tags.includes(tag));
+    const sharedPlaces = candidate.placeFilters.filter((place) => view.placeFilters.includes(place));
+    const sameDecade = Boolean(view.decade && candidate.decade === view.decade);
+    const candidateCategorySlug = getArchiveCategorySlug(candidate.objectType);
+    const sameCategory = Boolean(currentCategorySlug && candidateCategorySlug === currentCategorySlug);
+    const reasons = [
+      sharedTags.length ? `共同线索：${sharedTags.slice(0, 2).join('、')}` : '',
+      sharedPlaces.length ? `关联地点：${sharedPlaces.slice(0, 2).join('、')}` : '',
+      sameDecade ? `同属${view.decade}年代` : '',
+      sameCategory ? `同属${currentCategory?.label ?? '相近类型'}` : '',
+    ].filter(Boolean);
+    const score = sharedTags.length * 4 + sharedPlaces.length * 3 + Number(sameDecade) * 2
+      + Number(sameCategory) * 2 + Number(candidate.objectType !== view.objectType) * 0.25;
+    return {
+      view: candidate,
+      score,
+      reason: reasons[0] ?? '',
+      coverImage: candidate.images[0] ? getResponsiveImage(candidate.images[0]) : undefined,
+    };
+  })
+  .filter((entry) => entry.score > 0 && entry.reason)
+  .sort((left, right) => right.score - left.score || left.view.title.localeCompare(right.view.title, 'zh-CN'))
+  .slice(0, 3);
+const recordUrl = Astro.site ? new URL(`/archive/${view.id}/`, Astro.site) : undefined;
+const archiveIndexUrl = Astro.site ? new URL('/archive/', Astro.site) : undefined;
+const recordStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: view.title,
+  identifier: view.id,
+  description: view.description || `${view.typeLabel}，${view.dateDisplay || '年代未知'}。`,
+  dateCreated: item.core.created_date,
+  dateModified: item.core.updated_date,
+  temporalCoverage: view.dateDisplay || undefined,
+  contentLocation: hasText(view.placeDisplay) && !view.placeDisplay.includes('未知')
+    ? { '@type': 'Place', name: view.placeDisplay }
+    : undefined,
+  keywords: view.tags.length ? view.tags : undefined,
+  image: Astro.site ? galleryImages.map((image) => new URL(image.src, Astro.site).href) : undefined,
+  url: recordUrl?.href,
+  isPartOf: {
+    '@type': 'CollectionPage',
+    name: '老旧默片',
+    url: archiveIndexUrl?.href,
+  },
+};
+---
+
+<BaseLayout
+  title={`${view.title}｜老旧默片`}
+  description={view.description || `${view.title}，${view.typeLabel}，${view.dateDisplay || '年代未知'}。`}
+  image={galleryImages[0]?.src}
+  pageType="article"
+  structuredData={recordStructuredData}
+>
+  <article class="record-page" data-record-id={view.id}>
+    <a class="back-link ui-text-link" href={defaultBackHref} data-record-back>← 返回档案</a>
+
+    <header class="record-heading">
+      <p class="section-mark icon-heading"><SiteIcon name="archive" /><span>ARCHIVE RECORD · {view.typeLabel}</span></p>
+      <h1>{view.title}</h1>
+      {hasText(view.description) && <p class="record-lead">{view.description}</p>}
+    </header>
+
+    <div class="record-sheet">
+      {
+        galleryImages.length > 0 && (
+          <div
+            class="record-gallery"
+            data-record-gallery
+            data-gallery-items={JSON.stringify(galleryImages.map((image) => ({
+              src: image.src,
+              srcset: image.srcset,
+              description: image.description,
+              role: image.role,
+              width: image.width,
+              height: image.height,
+            })))}
+            aria-label="档案图片"
+          >
+            <figure class="record-image">
+              <button
+                class="record-image-open"
+                type="button"
+                data-gallery-open
+                data-gallery-swipe
+                aria-label={`放大查看：${galleryImages[0].description}`}
+              >
+                <img
+                  data-gallery-main
+                  src={galleryImages[0].src}
+                  srcset={galleryImages[0].srcset}
+                  sizes="(max-width: 760px) calc(100vw - 32px), 700px"
+                  alt={galleryImages[0].description}
+                  width={galleryImages[0].width}
+                  height={galleryImages[0].height}
+                  loading="eager"
+                  decoding="async"
+                  fetchpriority="high"
+                />
+                <span class="record-image-hint">放大查看</span>
+              </button>
+              <figcaption>
+                <span class="record-image-caption">
+                  <strong data-gallery-role>{galleryImages[0].role}</strong>
+                  <span data-gallery-caption>{galleryImages[0].description}</span>
+                </span>
+                <small data-gallery-counter aria-live="polite">第 1 张，共 {galleryImages.length} 张</small>
+              </figcaption>
+            </figure>
+            {galleryImages.length > 1 && (
+              <div class="record-gallery-controls" aria-label="切换当前档案图片">
+                <button class="gallery-step gallery-step-previous" type="button" data-gallery-previous-inline>
+                  <span aria-hidden="true">←</span> 上一张
+                </button>
+                <span>点击主图可进入大图查看</span>
+                <button class="gallery-step gallery-step-next" type="button" data-gallery-next-inline>
+                  下一张 <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            )}
+            {galleryImages.length > 1 && (
+              <div class="record-thumbnails" aria-label="切换档案图片">
+                {galleryImages.map((image, index) => (
+                  <button
+                    type="button"
+                    aria-label={`查看第 ${index + 1} 张图片：${image.description}`}
+                    aria-current={index === 0 ? 'true' : 'false'}
+                    data-gallery-thumbnail
+                    data-gallery-src={image.src}
+                    data-gallery-srcset={image.srcset}
+                    data-gallery-alt={image.description}
+                    data-gallery-width={image.width}
+                    data-gallery-height={image.height}
+                    data-gallery-index={index + 1}
+                  >
+                    <img
+                      src={image.src}
+                      srcset={image.srcset}
+                      sizes="88px"
+                      alt=""
+                      width="180"
+                      height="120"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <span>{image.role}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <dialog class="record-lightbox" data-gallery-lightbox aria-label="放大查看档案图片">
+              <div class="lightbox-shell">
+                <button class="lightbox-close" type="button" data-gallery-close aria-label="关闭放大图片">关闭 ×</button>
+                {galleryImages.length > 1 && (
+                  <button class="lightbox-previous" type="button" data-gallery-previous aria-label="查看上一张图片">
+                    <span aria-hidden="true">←</span><small>上一张</small>
+                  </button>
+                )}
+                <figure class="lightbox-figure" data-gallery-swipe>
+                  <img
+                    data-lightbox-main
+                    src={galleryImages[0].src}
+                    srcset={galleryImages[0].srcset}
+                    sizes="100vw"
+                    alt={galleryImages[0].description}
+                    width={galleryImages[0].width}
+                    height={galleryImages[0].height}
+                    decoding="async"
+                  />
+                  <figcaption>
+                    <span class="lightbox-caption-copy">
+                      <strong data-lightbox-role>{galleryImages[0].role}</strong>
+                      <span data-lightbox-caption>{galleryImages[0].description}</span>
+                    </span>
+                    <small data-lightbox-counter>第 1 张，共 {galleryImages.length} 张</small>
+                  </figcaption>
+                </figure>
+                {galleryImages.length > 1 && (
+                  <button class="lightbox-next" type="button" data-gallery-next aria-label="查看下一张图片">
+                    <span aria-hidden="true">→</span><small>下一张</small>
+                  </button>
+                )}
+              </div>
+            </dialog>
+          </div>
+        )
+      }
+
+      <section aria-labelledby="basic-heading">
+        <h2 class="facts-heading icon-heading" id="basic-heading"><SiteIcon name="details" /><span>基本信息</span></h2>
+        <dl class="record-facts">
+          {
+            basicFacts.map((fact) => (
+              <div>
+                <dt>{fact.label}</dt>
+                <dd>
+                  {fact.href ? (
+                    <a class="fact-filter-link" href={fact.href}>
+                      {fact.value}
+                      <small>查看相关档案 →</small>
+                    </a>
+                  ) : fact.value}
+                  {fact.code && <small>{fact.code}</small>}
+                </dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+    </div>
+
+    {recordStatusFacts.length > 0 && (
+      <aside class="record-status" aria-labelledby="record-status-heading">
+        <div class="record-status-heading">
+          <div>
+            <p>CURRENT RECORD STATUS</p>
+            <h2 class="icon-heading" id="record-status-heading"><SiteIcon name="status" /><span>资料状态</span></h2>
+          </div>
+          <a href="/about/#research">了解整理与判断方式 →</a>
+        </div>
+        <dl>
+          {recordStatusFacts.map((fact) => (
+            <div>
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}<small>{fact.description}</small></dd>
+            </div>
+          ))}
+        </dl>
+        {hasText(revisionNote) && (
+          <div class="record-revision-note">
+            <strong>最近修订</strong>
+            <p>{revisionNote}</p>
+          </div>
+        )}
+      </aside>
+    )}
+
+    <div class="record-notes">
+      {
+        hasNarrativeContent && (
+          <section class="record-section" aria-labelledby="description-heading">
+            <h2 class="icon-heading" id="description-heading"><SiteIcon name="story" /><span>故事与原文</span></h2>
+            <div class="section-content">
+              {hasText(item.core.provenance_notes) && (
+                <div class="subsection">
+                  <h3>流传线索</h3>
+                  <p>{item.core.provenance_notes}</p>
+                </div>
+              )}
+              {hasText(view.transcription) && (
+                <div class="subsection">
+                  <h3>原文 / 转录</h3>
+                  <p class="transcription">{view.transcription}</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )
+      }
+
+      {
+        hasTags && (
+          <section class="record-section" aria-labelledby="tags-heading">
+            <h2 class="icon-heading" id="tags-heading"><SiteIcon name="tag" /><span>标签</span></h2>
+            <div class="section-content">
+              <ul class="record-tags">
+                {view.tags.map((tag) => (
+                  <li><a href={archiveFilterHref('tag', tag)}>{tag}</a></li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )
+      }
+
+      {
+        specificFacts.length > 0 && (
+          <section class="record-section" aria-labelledby="specific-heading">
+            <h2 class="icon-heading" id="specific-heading"><SiteIcon name="details" /><span>藏品细节</span></h2>
+            <dl class="section-facts">
+              {specificFacts.map((fact) => (
+                <div>
+                  <dt>{fact.label}</dt>
+                  <dd>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )
+      }
+
+      {
+        researchManagementFacts.length > 0 && (
+          <details class="management-information">
+            <summary>
+              <span class="icon-heading"><SiteIcon name="archive" /><span>档案信息</span></span>
+              <small>{researchManagementFacts.length} 项 · 包含编号与技术代码</small>
+            </summary>
+            <dl class="section-facts">
+              {researchManagementFacts.map((fact) => (
+                <div>
+                  <dt>
+                    {fact.label}
+                    {fact.code && <small>{fact.code}</small>}
+                  </dt>
+                  <dd>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+        )
+      }
+    </div>
+
+    {relatedRecordEntries.length > 0 && (
+      <section class="record-related" aria-labelledby="record-related-heading">
+        <div class="record-related-heading">
+          <p>RELATED RECORDS</p>
+          <h2 class="icon-heading" id="record-related-heading"><SiteIcon name="related" /><span>沿着线索继续看</span></h2>
+          <span>根据共同标签、地点、年代或分类自动关联。</span>
+        </div>
+        <div class="record-related-grid">
+          {relatedRecordEntries.map((entry) => (
+            <a href={`/archive/${entry.view.id}/`} data-record-nav data-record-target={entry.view.id}>
+              <figure>
+                {entry.coverImage && (
+                  <img
+                    src={entry.coverImage.src}
+                    srcset={entry.coverImage.srcset}
+                    sizes="(max-width: 760px) 112px, 240px"
+                    alt={entry.view.imageDescriptions[0]}
+                    width={entry.coverImage.width}
+                    height={entry.coverImage.height}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+              </figure>
+              <div>
+                <small>{entry.reason}</small>
+                <strong>{entry.view.title}</strong>
+                <span>{entry.view.typeLabel} · {entry.view.dateDisplay}</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section
+      class="record-usage"
+      aria-labelledby="record-usage-heading"
+      data-record-usage
+      data-rights-status={item.core.rights_status ?? 'UNK'}
+      data-download-available={String(usagePolicy.canDownloadPublicationCopy)}
+    >
+      <div class="record-usage-heading">
+        <p>RIGHTS AND USE</p>
+        <h2 class="icon-heading" id="record-usage-heading"><SiteIcon name="rights" /><span>使用与下载</span></h2>
+      </div>
+      <div class="record-usage-content">
+        <div class="record-usage-summary">
+          <span>权利状态 · {usagePolicy.statusLabel}</span>
+          <strong>{usagePolicy.title}</strong>
+          <p>{usagePolicy.description}</p>
+          <small>{usagePolicy.attribution}</small>
+        </div>
+        {downloadableImages.length > 0 && (
+          <div class="record-downloads" aria-label="可下载的网页发布副本">
+            {downloadableImages.map((image, index) => (
+              <a class="ui-action ui-action--primary" href={image.source} download={image.filename} data-download-publication-copy>
+                下载发布副本 {downloadableImages.length > 1 ? index + 1 : ''}
+                <small>{image.description}</small>
+              </a>
+            ))}
+            <p>下载内容是网站使用的压缩发布副本，不是原始扫描件或档案主文件。</p>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <section
+      class="record-citation"
+      aria-labelledby="record-citation-heading"
+      data-record-citation
+      data-record-title={view.title}
+      data-record-identifier={view.id}
+    >
+      <div class="record-citation-heading">
+        <p>CITE THIS RECORD</p>
+        <h2 class="icon-heading" id="record-citation-heading"><SiteIcon name="citation" /><span>引用与分享</span></h2>
+      </div>
+      <div class="record-citation-content">
+        <p class="citation-preview">
+          《{view.title}》（{view.id}），老旧默片。复制时会自动补充当前页面地址和访问日期。
+        </p>
+        <div class="citation-actions">
+          <button class="ui-action ui-action--secondary" type="button" data-copy-record-link>复制页面链接</button>
+          <button class="ui-action ui-action--secondary" type="button" data-copy-record-citation>复制规范引用</button>
+        </div>
+        <p class="citation-feedback" role="status" aria-live="polite" data-citation-feedback></p>
+      </div>
+    </section>
+
+    {(previousView || nextView) && (
+      <nav class="record-neighbors" aria-label={`${currentCategory?.label ?? '同类'}档案导航`}>
+        <p>继续浏览 · {currentCategory?.label ?? '同类档案'}</p>
+        <div>
+          {previousView && (
+            <a href={`/archive/${previousView.id}/`} data-record-nav data-record-target={previousView.id}>
+              <small>← 上一件</small>
+              <strong>{previousView.title}</strong>
+              <span>{previousView.dateDisplay}</span>
+            </a>
+          )}
+          {nextView && (
+            <a class="is-next" href={`/archive/${nextView.id}/`} data-record-nav data-record-target={nextView.id}>
+              <small>下一件 →</small>
+              <strong>{nextView.title}</strong>
+              <span>{nextView.dateDisplay}</span>
+            </a>
+          )}
+        </div>
+      </nav>
+    )}
+  </article>
+</BaseLayout>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-record-gallery]').forEach((gallery) => {
+    const mainImage = gallery.querySelector<HTMLImageElement>('[data-gallery-main]');
+    const openButton = gallery.querySelector<HTMLButtonElement>('[data-gallery-open]');
+    const counter = gallery.querySelector<HTMLElement>('[data-gallery-counter]');
+    const caption = gallery.querySelector<HTMLElement>('[data-gallery-caption]');
+    const role = gallery.querySelector<HTMLElement>('[data-gallery-role]');
+    const lightbox = gallery.querySelector<HTMLDialogElement>('[data-gallery-lightbox]');
+    const lightboxImage = gallery.querySelector<HTMLImageElement>('[data-lightbox-main]');
+    const lightboxCaption = gallery.querySelector<HTMLElement>('[data-lightbox-caption]');
+    const lightboxRole = gallery.querySelector<HTMLElement>('[data-lightbox-role]');
+    const lightboxCounter = gallery.querySelector<HTMLElement>('[data-lightbox-counter]');
+    const thumbnails = Array.from(
+      gallery.querySelectorAll<HTMLButtonElement>('[data-gallery-thumbnail]'),
+    );
+    const items = JSON.parse(gallery.dataset.galleryItems ?? '[]') as Array<{
+      src: string;
+      srcset: string;
+      description: string;
+      role: string;
+      width: number;
+      height: number;
+    }>;
+    if (!mainImage || !openButton || items.length === 0) return;
+
+    let activeIndex = 0;
+    const selectImage = (index: number) => {
+      activeIndex = (index + items.length) % items.length;
+      const item = items[activeIndex];
+      mainImage.src = item.src;
+      mainImage.srcset = item.srcset;
+      mainImage.alt = item.description;
+      mainImage.width = item.width;
+      mainImage.height = item.height;
+      openButton.setAttribute('aria-label', `放大查看：${item.description}`);
+      thumbnails.forEach((button, thumbnailIndex) =>
+        button.setAttribute('aria-current', String(thumbnailIndex === activeIndex)));
+      if (counter) counter.textContent = `第 ${activeIndex + 1} 张，共 ${items.length} 张`;
+      if (caption) caption.textContent = item.description;
+      if (role) role.textContent = item.role;
+      if (lightboxImage) {
+        lightboxImage.src = item.src;
+        lightboxImage.srcset = item.srcset;
+        lightboxImage.alt = item.description;
+        lightboxImage.width = item.width;
+        lightboxImage.height = item.height;
+      }
+      if (lightboxCaption) lightboxCaption.textContent = item.description;
+      if (lightboxRole) lightboxRole.textContent = item.role;
+      if (lightboxCounter) lightboxCounter.textContent = `第 ${activeIndex + 1} 张，共 ${items.length} 张`;
+    };
+
+    thumbnails.forEach((thumbnail, index) => {
+      thumbnail.addEventListener('click', () => {
+        selectImage(index);
+      });
+    });
+
+    gallery.querySelector<HTMLElement>('.record-thumbnails')?.addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      const currentIndex = thumbnails.findIndex((button) => button === document.activeElement);
+      if (currentIndex < 0) return;
+      event.preventDefault();
+      const targetIndex = event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? thumbnails.length - 1
+          : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + thumbnails.length) % thumbnails.length;
+      thumbnails[targetIndex].focus();
+      selectImage(targetIndex);
+    });
+
+    openButton.addEventListener('click', () => lightbox?.showModal());
+    gallery.querySelector<HTMLButtonElement>('[data-gallery-close]')?.addEventListener('click', () => lightbox?.close());
+    gallery.querySelector<HTMLButtonElement>('[data-gallery-previous-inline]')?.addEventListener('click', () => selectImage(activeIndex - 1));
+    gallery.querySelector<HTMLButtonElement>('[data-gallery-next-inline]')?.addEventListener('click', () => selectImage(activeIndex + 1));
+    gallery.querySelector<HTMLButtonElement>('[data-gallery-previous]')?.addEventListener('click', () => selectImage(activeIndex - 1));
+    gallery.querySelector<HTMLButtonElement>('[data-gallery-next]')?.addEventListener('click', () => selectImage(activeIndex + 1));
+    lightbox?.addEventListener('click', (event) => {
+      if (event.target === lightbox) lightbox.close();
+    });
+    lightbox?.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        selectImage(activeIndex - 1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        selectImage(activeIndex + 1);
+		} else if (event.key === 'Escape') {
+			event.preventDefault();
+			lightbox.close();
+      }
+    });
+    lightbox?.addEventListener('close', () => openButton.focus());
+
+    gallery.querySelectorAll<HTMLElement>('[data-gallery-swipe]').forEach((surface) => {
+      let startX = 0;
+      let startY = 0;
+      surface.addEventListener('touchstart', (event) => {
+        startX = event.changedTouches[0]?.clientX ?? 0;
+        startY = event.changedTouches[0]?.clientY ?? 0;
+      }, { passive: true });
+      surface.addEventListener('touchend', (event) => {
+        if (items.length < 2) return;
+        const deltaX = (event.changedTouches[0]?.clientX ?? startX) - startX;
+        const deltaY = (event.changedTouches[0]?.clientY ?? startY) - startY;
+        if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
+        selectImage(activeIndex + (deltaX < 0 ? 1 : -1));
+      }, { passive: true });
+    });
+
+    selectImage(0);
+  });
+
+  const browseStateKey = 'ljm-archive-browse-state';
+  const recordPage = document.querySelector<HTMLElement>('[data-record-id]');
+  const backLink = document.querySelector<HTMLAnchorElement>('[data-record-back]');
+
+  try {
+    const browseState = JSON.parse(window.sessionStorage.getItem(browseStateKey) ?? 'null');
+    if (
+      browseState?.targetId === recordPage?.dataset.recordId &&
+      typeof browseState.href === 'string' &&
+      browseState.href.startsWith('/archive/')
+    ) {
+      window.sessionStorage.setItem(
+        browseStateKey,
+        JSON.stringify({ ...browseState, restorePending: true }),
+      );
+      if (backLink) {
+        backLink.href = browseState.href;
+        backLink.textContent = '← 返回筛选结果';
+      }
+
+      document.querySelectorAll<HTMLAnchorElement>('[data-record-nav]').forEach((link) => {
+        link.addEventListener('click', () => {
+          window.sessionStorage.setItem(
+            browseStateKey,
+            JSON.stringify({ ...browseState, targetId: link.dataset.recordTarget ?? '', restorePending: true }),
+          );
+        });
+      });
+    }
+  } catch {
+    // 无法使用会话存储时，返回链接仍按当前分类工作。
+  }
+
+  const citation = document.querySelector<HTMLElement>('[data-record-citation]');
+  const citationFeedback = citation?.querySelector<HTMLElement>('[data-citation-feedback]');
+  let citationFeedbackTimer = 0;
+  const showCitationFeedback = (message: string) => {
+    if (!citationFeedback) return;
+    citationFeedback.textContent = message;
+    window.clearTimeout(citationFeedbackTimer);
+    citationFeedbackTimer = window.setTimeout(() => {
+      citationFeedback.textContent = '';
+    }, 4000);
+  };
+  const copyText = async (value: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+    const fallback = document.createElement('textarea');
+    fallback.value = value;
+    fallback.setAttribute('readonly', '');
+    fallback.style.position = 'fixed';
+    fallback.style.opacity = '0';
+    document.body.append(fallback);
+    fallback.select();
+    const copied = document.execCommand('copy');
+    fallback.remove();
+    if (!copied) throw new Error('copy failed');
+  };
+  const publicRecordUrl = () =>
+    document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href ?? window.location.href;
+  const accessDate = () => new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date());
+
+  citation?.querySelector<HTMLButtonElement>('[data-copy-record-link]')?.addEventListener('click', async () => {
+    try {
+      await copyText(publicRecordUrl());
+      showCitationFeedback('页面链接已复制。');
+    } catch {
+      showCitationFeedback('复制失败，请从浏览器地址栏复制。');
+    }
+  });
+
+  citation?.querySelector<HTMLButtonElement>('[data-copy-record-citation]')?.addEventListener('click', async () => {
+    const title = citation.dataset.recordTitle ?? '';
+    const identifier = citation.dataset.recordIdentifier ?? '';
+    const citationText = `《${title}》（${identifier}），老旧默片，${publicRecordUrl()}，访问日期：${accessDate()}。`;
+    try {
+      await copyText(citationText);
+      showCitationFeedback('规范引用已复制。');
+    } catch {
+      showCitationFeedback('复制失败，请手动选择上方引用信息。');
+    }
+  });
+</script>
+
+<style>
+  .record-page {
+    padding-top: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .back-link {
+    font-size: 0.86rem;
+    letter-spacing: 0.08em;
+  }
+
+  .back-link:focus-visible {
+    outline: 2px solid #575349;
+    outline-offset: 0.35rem;
+  }
+
+  .record-heading {
+    max-width: 50rem;
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .section-mark {
+    color: #747064;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.18em;
+    line-height: 1.5;
+  }
+
+  .section-mark {
+    margin: 0 0 0.7rem;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.15rem, 4.4vw, 3.35rem);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    line-height: 1.28;
+  }
+
+  .record-lead {
+    max-width: 42rem;
+    margin: 1.35rem 0 0;
+    color: #5f5b52;
+    font-size: clamp(0.96rem, 1.5vw, 1.08rem);
+    line-height: 1.95;
+  }
+
+  .record-status {
+    display: grid;
+    grid-template-columns: minmax(11rem, 0.28fr) minmax(0, 1fr);
+    gap: 1rem;
+    max-width: none;
+    margin-top: clamp(1.8rem, 3vw, 2.4rem);
+    padding: 0.85rem 1rem;
+    background: rgba(224, 215, 197, 0.34);
+    border-left: 3px solid var(--site-accent);
+  }
+
+  .record-status-heading {
+    padding-right: 1rem;
+    border-right: 1px solid #c9c0ae;
+  }
+
+  .record-status-heading p,
+  .record-status-heading h2 {
+    margin: 0;
+  }
+
+  .record-status-heading p {
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.15em;
+  }
+
+  .record-status-heading h2 {
+    margin-top: 0.28rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+  }
+
+  .record-status-heading > a {
+    display: inline-flex;
+    margin-top: 0.55rem;
+    color: #696459;
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+  }
+
+  .record-status-heading > a:hover,
+  .record-status-heading > a:focus-visible {
+    color: var(--site-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+  }
+
+  .record-status dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    border-top: 0;
+  }
+
+  .record-status dl > div {
+    min-width: 0;
+    padding: 0.18rem 0.75rem 0.18rem 0;
+  }
+
+  .record-status dl > div + div {
+    padding-left: 1rem;
+    border-left: 1px solid #c9c0ae;
+  }
+
+  .record-status dt {
+    color: #756f63;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.1em;
+  }
+
+  .record-status dd {
+    margin: 0.18rem 0 0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  .record-status dd small {
+    display: block;
+    margin-top: 0.12rem;
+    color: #777165;
+    font-family: inherit;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.02em;
+    line-height: 1.45;
+  }
+
+  .record-revision-note {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 0.25fr) minmax(0, 1fr);
+    gap: 1rem;
+    grid-column: 1 / -1;
+    margin-top: 0.15rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid #c9c0ae;
+  }
+
+  .record-revision-note strong,
+  .record-revision-note p {
+    margin: 0;
+  }
+
+  .record-revision-note strong {
+    color: #756f63;
+    font-size: var(--site-text-micro);
+    font-weight: 400;
+    letter-spacing: 0.1em;
+  }
+
+  .record-revision-note p {
+    color: #5f5a50;
+    font-size: 0.8rem;
+    line-height: 1.75;
+  }
+
+  .record-sheet {
+    display: grid;
+    grid-template-columns: minmax(0, 1.28fr) minmax(16rem, 0.72fr);
+    gap: clamp(2.5rem, 7vw, 5.5rem);
+    align-items: start;
+    margin-top: clamp(2.4rem, 4vw, 3.3rem);
+    padding-top: clamp(2rem, 3.5vw, 2.8rem);
+    border-top: 1px solid #bcb5a4;
+  }
+
+  .record-gallery {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .record-image {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid #c5bdab;
+    background: #e4dece;
+  }
+
+  .record-image-open {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    cursor: zoom-in;
+    touch-action: pan-y;
+  }
+
+  .record-image-open:focus-visible {
+    outline: 2px solid #575349;
+    outline-offset: -3px;
+  }
+
+  .record-image-open img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: min(62vh, 36rem);
+    margin: 0 auto;
+    object-fit: contain;
+  }
+
+  .record-image-hint {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    padding: 0.35rem 0.55rem;
+    color: #f6f0e5;
+    background: rgba(38, 37, 33, 0.78);
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.08em;
+    opacity: 0;
+    transform: translateY(0.25rem);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .record-image-open:hover .record-image-hint,
+  .record-image-open:focus-visible .record-image-hint {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .record-image figcaption {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0.65rem;
+    color: #716b60;
+    border-top: 1px solid #c5bdab;
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+  }
+
+  .record-image-caption,
+  .lightbox-caption-copy {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.28rem 0.55rem;
+    min-width: 0;
+  }
+
+  .record-image-caption strong,
+  .lightbox-caption-copy strong {
+    flex: 0 0 auto;
+    padding-right: 0.55rem;
+    color: var(--site-accent);
+    border-right: 1px solid #bcb5a4;
+    font-size: var(--site-text-micro);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+  }
+
+  .record-image figcaption small {
+    flex: 0 0 auto;
+    color: #817b70;
+    font-size: var(--site-text-micro);
+  }
+
+  .record-gallery-controls {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: -0.1rem;
+  }
+
+  .record-gallery-controls > span {
+    color: #817b70;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+
+  .gallery-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.25rem;
+    padding: 0.42rem 0.7rem;
+    color: #575349;
+    background: rgba(248, 244, 234, 0.42);
+    border: 1px solid #bdb5a5;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+  }
+
+  .gallery-step-previous {
+    justify-self: start;
+  }
+
+  .gallery-step-next {
+    justify-self: end;
+  }
+
+  .gallery-step:hover,
+  .gallery-step:focus-visible {
+    color: var(--site-accent);
+    border-color: var(--site-accent);
+    outline: 0;
+  }
+
+  .record-thumbnails {
+    display: grid;
+    grid-auto-columns: minmax(4.5rem, 5.5rem);
+    grid-auto-flow: column;
+    gap: 0.55rem;
+    padding: 0.15rem 0 0.35rem;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .record-thumbnails button {
+    position: relative;
+    aspect-ratio: 3 / 2;
+    padding: 0;
+    overflow: hidden;
+    background: #ded7c8;
+    border: 1px solid #bdb5a5;
+    cursor: pointer;
+    opacity: 0.62;
+  }
+
+  .record-thumbnails button[aria-current='true'] {
+    border-color: var(--site-accent);
+    box-shadow: 0 0 0 2px var(--site-accent);
+    opacity: 1;
+  }
+
+  .record-thumbnails button:focus-visible {
+    outline: 2px solid #4f4b43;
+    outline-offset: 3px;
+    opacity: 1;
+  }
+
+  .record-thumbnails img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .record-thumbnails button > span {
+    position: absolute;
+    right: 0.18rem;
+    bottom: 0.18rem;
+    padding: 0.12rem 0.28rem;
+    color: #f7f0e4;
+    background: rgba(38, 37, 33, 0.76);
+    font-size: 0.58rem;
+    line-height: 1.35;
+    letter-spacing: 0.06em;
+  }
+
+  .record-thumbnails button[aria-current='true'] > span {
+    background: var(--site-accent);
+  }
+
+  .record-lightbox {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    color: #f4eee3;
+    background: rgba(25, 25, 23, 0.97);
+    border: 0;
+  }
+
+  .record-lightbox::backdrop {
+    background: rgba(16, 16, 14, 0.92);
+  }
+
+  .lightbox-shell {
+    position: relative;
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr) 5rem;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 3.8rem clamp(1rem, 3vw, 2.5rem) 1rem;
+  }
+
+  .lightbox-close,
+  .lightbox-previous,
+  .lightbox-next {
+    display: grid;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    place-items: center;
+    color: #f4eee3;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    cursor: pointer;
+  }
+
+  .lightbox-close:hover,
+  .lightbox-close:focus-visible,
+  .lightbox-previous:hover,
+  .lightbox-previous:focus-visible,
+  .lightbox-next:hover,
+  .lightbox-next:focus-visible {
+    background: rgba(255, 255, 255, 0.17);
+    outline: 2px solid #f4eee3;
+    outline-offset: 2px;
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 0.8rem;
+    right: clamp(1rem, 3vw, 2.5rem);
+    z-index: 1;
+    min-width: auto;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+  }
+
+  .lightbox-previous,
+  .lightbox-next {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+    min-height: 4.25rem;
+    font-size: 1.15rem;
+  }
+
+  .lightbox-previous small,
+  .lightbox-next small {
+    color: inherit;
+    font-size: 0.66rem;
+    line-height: 1;
+    letter-spacing: 0.08em;
+  }
+
+  .lightbox-figure {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-self: stretch;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0 clamp(0.6rem, 2vw, 1.5rem);
+    touch-action: pan-y;
+  }
+
+  .lightbox-figure img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: contain;
+  }
+
+  .lightbox-figure figcaption {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.7rem;
+    color: #cfc7ba;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    line-height: 1.6;
+  }
+
+  .lightbox-figure figcaption small {
+    flex: 0 0 auto;
+    font-size: inherit;
+  }
+
+  .lightbox-caption-copy strong {
+    color: #f0a796;
+    border-right-color: rgba(255, 255, 255, 0.28);
+  }
+
+  .facts-heading {
+    margin: 0 0 1rem;
+    color: #6b665b;
+    font-size: 0.78rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    line-height: 1.8;
+  }
+
+  .record-facts,
+  .section-facts {
+    margin: 0;
+    border-top: 1px solid #c9c2b2;
+  }
+
+  .record-facts > div,
+  .section-facts > div {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 0.75fr) minmax(0, 1.25fr);
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid #c9c2b2;
+  }
+
+  .record-facts dt,
+  .section-facts dt {
+    color: #777165;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    line-height: 1.7;
+  }
+
+  .record-facts dd,
+  .section-facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-size: 0.93rem;
+    line-height: 1.7;
+  }
+
+  .fact-filter-link {
+    display: inline-flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.55rem;
+    color: inherit;
+    text-decoration-color: #9a9386;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.3em;
+  }
+
+  .fact-filter-link small {
+    display: inline;
+    margin: 0;
+    color: var(--site-accent);
+    font-family: inherit;
+    letter-spacing: 0.05em;
+  }
+
+  .fact-filter-link:hover,
+  .fact-filter-link:focus-visible {
+    color: var(--site-accent);
+    text-decoration-color: currentColor;
+  }
+
+  dt small,
+  dd small {
+    display: block;
+    margin-top: 0.2rem;
+    color: #8a8478;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.08em;
+  }
+
+  .record-notes {
+    max-width: 58rem;
+    margin-top: clamp(3.5rem, 6vw, 5rem);
+  }
+
+  .record-section {
+    display: grid;
+    grid-template-columns: minmax(8.5rem, 0.3fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    padding: 1.35rem 1rem 1.5rem;
+    background: var(--site-paper);
+    border-top: 1px solid #c8c0b1;
+    border-left: 3px solid rgba(154, 63, 46, 0.32);
+  }
+
+  .record-section + .record-section,
+  .record-section + .management-information {
+    margin-top: 0.75rem;
+  }
+
+  .record-section:last-child {
+    border-bottom: 1px solid #bcb5a4;
+  }
+
+  .management-information {
+    padding: 0 1rem;
+    background: rgba(248, 244, 234, 0.2);
+    border-top: 1px solid #bcb5a4;
+    border-bottom: 1px solid #bcb5a4;
+  }
+
+  .management-information > summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.2rem 0;
+    color: #6b665b;
+    cursor: pointer;
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    line-height: 1.8;
+    list-style: none;
+  }
+
+  .management-information > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .management-information > summary::after {
+    flex: 0 0 auto;
+    content: '＋';
+  }
+
+  .management-information[open] > summary::after {
+    content: '－';
+  }
+
+  .management-information > summary small {
+    margin-left: auto;
+    color: #827c70;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.06em;
+    text-align: right;
+  }
+
+  .management-information .section-facts {
+    padding-bottom: 0.4rem;
+  }
+
+  .record-related {
+    max-width: 58rem;
+    margin-top: clamp(2.8rem, 5vw, 4.2rem);
+    padding-top: 1.25rem;
+    border-top: 1px solid #bcb5a4;
+  }
+
+  .record-related-heading {
+    display: grid;
+    grid-template-columns: minmax(8.5rem, 0.3fr) minmax(0, 0.7fr);
+    gap: 0.15rem clamp(1.5rem, 5vw, 4rem);
+    align-items: baseline;
+  }
+
+  .record-related-heading p,
+  .record-related-heading h2,
+  .record-related-heading span {
+    margin: 0;
+  }
+
+  .record-related-heading p {
+    grid-row: 1 / span 2;
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.15em;
+  }
+
+  .record-related-heading h2 {
+    color: #5f5a50;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+  }
+
+  .record-related-heading span {
+    color: #777165;
+    font-size: 0.72rem;
+    line-height: 1.6;
+  }
+
+  .record-related-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+    margin-top: 1rem;
+  }
+
+  .record-related-grid a {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-width: 0;
+    padding: 0.55rem;
+    color: inherit;
+    border: 1px solid #c4bdad;
+    text-decoration: none;
+  }
+
+  .record-related-grid a:hover,
+  .record-related-grid a:focus-visible {
+    border-color: #6b665b;
+  }
+
+  .record-related-grid figure {
+    aspect-ratio: 3 / 2;
+    margin: 0;
+    overflow: hidden;
+    background: #dfd8c9;
+    border: 1px solid #d0c8b8;
+  }
+
+  .record-related-grid img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .record-related-grid a > div {
+    display: grid;
+    align-content: start;
+    gap: 0.3rem;
+    padding: 0.65rem 0.15rem 0.1rem;
+  }
+
+  .record-related-grid small,
+  .record-related-grid span {
+    color: #787267;
+    font-size: var(--site-text-micro);
+    line-height: 1.5;
+  }
+
+  .record-related-grid small {
+    color: var(--site-accent);
+  }
+
+  .record-related-grid strong {
+    overflow-wrap: anywhere;
+    font-size: 0.92rem;
+    font-weight: 500;
+    line-height: 1.55;
+  }
+
+  .record-usage {
+    display: grid;
+    grid-template-columns: minmax(8.5rem, 0.3fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    max-width: 58rem;
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    padding: 1.2rem 1.1rem 1.3rem;
+    background: var(--site-paper);
+    border: 1px solid #c7bfaf;
+    border-left: 3px solid var(--site-accent);
+  }
+
+  .record-usage-heading p,
+  .record-usage-heading h2,
+  .record-usage-summary p,
+  .record-usage-summary small,
+  .record-downloads p {
+    margin: 0;
+  }
+
+  .record-usage-heading p {
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.15em;
+  }
+
+  .record-usage-heading h2 {
+    margin-top: 0.35rem;
+    color: #6b665b;
+    font-size: 0.78rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    line-height: 1.8;
+  }
+
+  .record-usage-content,
+  .record-usage-summary {
+    display: grid;
+    gap: 0.38rem;
+  }
+
+  .record-usage-summary > span {
+    color: #7b756a;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.08em;
+  }
+
+  .record-usage-summary strong {
+    font-size: 0.94rem;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+
+  .record-usage-summary p,
+  .record-usage-summary small,
+  .record-downloads p {
+    color: #656057;
+    font-size: 0.78rem;
+    line-height: 1.75;
+  }
+
+  .record-usage-summary small {
+    color: #7b756a;
+  }
+
+  .record-downloads {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 0.7rem;
+  }
+
+  .record-downloads a {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  .record-downloads a small {
+    color: inherit;
+    font-size: var(--site-text-micro);
+  }
+
+  .record-downloads a:hover,
+  .record-downloads a:focus-visible {
+    color: #fbf5e9;
+    background: #7f3427;
+    border-color: #7f3427;
+  }
+
+  .record-downloads p {
+    flex-basis: 100%;
+  }
+
+  .record-neighbors {
+    margin-top: clamp(3rem, 6vw, 5rem);
+    padding: 1.25rem 0 0;
+    border-top: 1px solid #bcb5a4;
+  }
+
+  .record-citation {
+    display: grid;
+    grid-template-columns: minmax(8.5rem, 0.3fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    max-width: 58rem;
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    padding: 1.2rem 1.1rem 1.3rem;
+    background: var(--site-paper);
+    border: 1px solid #c7bfaf;
+  }
+
+  .record-citation-heading p,
+  .record-citation-heading h2,
+  .citation-preview,
+  .citation-feedback {
+    margin: 0;
+  }
+
+  .record-citation-heading p {
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.15em;
+  }
+
+  .record-citation-heading h2 {
+    margin-top: 0.35rem;
+    color: #6b665b;
+    font-size: 0.78rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    line-height: 1.8;
+  }
+
+  .citation-preview {
+    color: #5f5a50;
+    font-size: 0.84rem;
+    line-height: 1.85;
+  }
+
+  .citation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-top: 0.9rem;
+  }
+
+  .citation-actions button {
+    letter-spacing: 0.06em;
+  }
+
+  .citation-actions button:hover,
+  .citation-actions button:focus-visible {
+    color: var(--site-accent);
+    border-color: var(--site-accent);
+  }
+
+  .citation-feedback {
+    min-height: 1.5rem;
+    margin-top: 0.5rem;
+    color: var(--site-accent);
+    font-size: 0.72rem;
+    line-height: 1.5;
+  }
+
+  .record-neighbors > p {
+    margin: 0 0 1rem;
+    color: #777165;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+  }
+
+  .record-neighbors > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .record-neighbors a {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 1rem;
+    color: inherit;
+    border: 1px solid #c4bdad;
+    text-decoration: none;
+  }
+
+  .record-neighbors a.is-next {
+    grid-column: 2;
+    text-align: right;
+  }
+
+  .record-neighbors a:hover,
+  .record-neighbors a:focus-visible {
+    border-color: #6b665b;
+  }
+
+  .record-neighbors a:focus-visible {
+    outline: 2px solid #575349;
+    outline-offset: 3px;
+  }
+
+  .record-neighbors small,
+  .record-neighbors span {
+    color: #7b756a;
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+  }
+
+  .record-neighbors strong {
+    overflow-wrap: anywhere;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.55;
+  }
+
+  .record-section > h2 {
+    margin: 0;
+    color: #6b665b;
+	font-size: 0.86rem;
+	font-weight: 600;
+    letter-spacing: 0.15em;
+    line-height: 1.8;
+  }
+
+  .section-content > p,
+  .subsection p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 2;
+  }
+
+  .subsection {
+    margin-top: 2rem;
+  }
+
+  .section-content > .subsection:first-child {
+    margin-top: 0;
+  }
+
+  .subsection h3 {
+    margin: 0 0 0.75rem;
+    color: #777165;
+    font-size: 0.74rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+  }
+
+  .transcription {
+    white-space: pre-line;
+  }
+
+  .record-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 1.4rem;
+    margin: 0;
+    padding: 0;
+    color: #5f5b51;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    list-style: none;
+  }
+
+  .record-tags li {
+    position: relative;
+  }
+
+  .record-tags a {
+    color: inherit;
+    text-decoration-color: #9a9386;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.3em;
+  }
+
+  .record-tags a:hover,
+  .record-tags a:focus-visible {
+    color: var(--site-accent);
+    text-decoration-color: currentColor;
+  }
+
+  .record-tags li:not(:last-child)::after {
+    position: absolute;
+    right: -0.78rem;
+    color: #9b9588;
+    content: '·';
+  }
+
+  @media (max-width: 760px) {
+    .record-page {
+      padding-top: 1.65rem;
+    }
+
+    .record-heading {
+      margin-top: 1.45rem;
+    }
+
+    .record-lead {
+      margin-top: 0.85rem;
+      line-height: 1.8;
+    }
+
+    .record-status-heading {
+      display: flex;
+      align-items: start;
+      flex-direction: column;
+      gap: 0.55rem;
+      padding: 0 0 0.65rem;
+      border-right: 0;
+      border-bottom: 1px solid #c9c0ae;
+    }
+
+    .record-status {
+      grid-template-columns: 1fr;
+      gap: 0.65rem;
+    }
+
+    .record-status dl {
+      grid-template-columns: 1fr;
+    }
+
+    .record-status dl > div {
+      display: grid;
+      grid-template-columns: 5.8rem minmax(0, 1fr);
+      gap: 0.7rem;
+      padding: 0.55rem 0;
+    }
+
+    .record-status dl > div + div {
+      padding-left: 0;
+      border-top: 1px solid #c9c0ae;
+      border-left: 0;
+    }
+
+    .record-sheet {
+      grid-template-columns: 1fr;
+      gap: 2.1rem;
+      margin-top: 1.55rem;
+      padding-top: 1.15rem;
+    }
+
+    .record-image-hint {
+      opacity: 1;
+      transform: none;
+    }
+
+    .record-gallery-controls {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .record-gallery-controls > span {
+      display: none;
+    }
+
+    .lightbox-shell {
+      grid-template-columns: 3.35rem minmax(0, 1fr) 3.35rem;
+      padding: 3.7rem 0.55rem 0.75rem;
+    }
+
+    .lightbox-figure {
+      padding: 0 0.25rem;
+    }
+
+    .lightbox-close {
+      right: 0.75rem;
+    }
+
+    .record-facts > div,
+    .section-facts > div {
+      grid-template-columns: minmax(6.5rem, 0.55fr) minmax(0, 1.45fr);
+    }
+
+    .record-notes {
+      margin-top: 3.5rem;
+    }
+
+    .record-section {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding: 1.15rem 0.85rem 1.3rem;
+    }
+
+    .record-citation {
+      grid-template-columns: 1fr;
+      gap: 0.8rem;
+    }
+
+    .record-related-heading,
+    .record-usage {
+      grid-template-columns: 1fr;
+      gap: 0.8rem;
+    }
+
+    .record-related-heading p {
+      grid-row: auto;
+    }
+
+    .record-related-grid {
+      grid-template-columns: 1fr;
+      gap: 0.7rem;
+    }
+
+    .record-related-grid a {
+      grid-template-columns: 7rem minmax(0, 1fr);
+      grid-template-rows: auto;
+      gap: 0.75rem;
+    }
+
+    .record-related-grid figure {
+      aspect-ratio: 4 / 3;
+    }
+
+    .record-related-grid a > div {
+      padding-top: 0.1rem;
+    }
+
+    .record-neighbors > div {
+      grid-template-columns: 1fr;
+    }
+
+    .record-neighbors a.is-next {
+      grid-column: auto;
+    }
+  }
+
+  @media (max-width: 430px) {
+    h1 {
+      font-size: clamp(1.85rem, 9.5vw, 2.35rem);
+      letter-spacing: 0.05em;
+    }
+
+    .lightbox-shell {
+      grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+      padding-inline: 0.35rem;
+    }
+
+    .lightbox-previous,
+    .lightbox-next {
+			min-width: 2.75rem;
+			min-height: 3.8rem;
+    }
+
+		.lightbox-previous small,
+		.lightbox-next small {
+			font-size: 0.58rem;
+			letter-spacing: 0.04em;
+		}
+
+    .lightbox-figure figcaption {
+      display: grid;
+      gap: 0.25rem;
+    }
+
+    .record-facts > div,
+    .section-facts > div {
+      grid-template-columns: 1fr;
+      gap: 0.35rem;
+    }
+  }
+</style>

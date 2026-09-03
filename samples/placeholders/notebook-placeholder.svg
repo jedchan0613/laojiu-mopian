@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title description">
+  <title id="title">笔记本测试占位图</title>
+  <desc id="description">米白旧纸张风格的极简 NOTEBOOK 占位图</desc>
+  <rect width="1200" height="800" fill="#eee9dc" />
+  <rect x="170" y="94" width="860" height="612" fill="#e6dece" stroke="#625f58" stroke-width="2" />
+  <line x1="284" y1="94" x2="284" y2="706" stroke="#817b70" stroke-width="8" />
+  <line x1="350" y1="236" x2="938" y2="236" stroke="#a49c8e" stroke-width="1" />
+  <line x1="350" y1="310" x2="938" y2="310" stroke="#a49c8e" stroke-width="1" />
+  <line x1="350" y1="384" x2="938" y2="384" stroke="#a49c8e" stroke-width="1" />
+  <line x1="350" y1="458" x2="938" y2="458" stroke="#a49c8e" stroke-width="1" />
+  <text x="650" y="584" fill="#3d3b36" font-family="serif" font-size="72" letter-spacing="13" text-anchor="middle">NOTEBOOK</text>
+</svg>
