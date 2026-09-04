@@ -6,7 +6,6 @@ interface FeaturedCarouselItem {
 	description: string;
 	itemId: string;
 	title: string;
-	typeLabel: string;
 	dateDisplay: string;
 	href: string;
 }
@@ -17,8 +16,6 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 	const image = carousel.querySelector<HTMLImageElement>('[data-home-carousel-image]');
 	const recordLink = carousel.querySelector<HTMLAnchorElement>('[data-home-carousel-link]');
 	const recordIndex = carousel.querySelector<HTMLElement>('[data-home-carousel-index]');
-	const recordType = carousel.querySelector<HTMLElement>('[data-home-carousel-type]');
-	const recordId = carousel.querySelector<HTMLElement>('[data-home-carousel-item-id]');
 	const recordDate = carousel.querySelector<HTMLElement>('[data-home-carousel-date]');
 	const recordTitle = carousel.querySelector<HTMLElement>('[data-home-carousel-title]');
 	const likeButton = carousel.querySelector<HTMLButtonElement>('[data-archive-like]');
@@ -29,7 +26,6 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 	const toggleLabel = carousel.querySelector<HTMLElement>('[data-home-carousel-toggle-label]');
 	const status = carousel.querySelector<HTMLElement>('[data-home-carousel-status]');
 	const announcement = carousel.querySelector<HTMLElement>('[data-home-carousel-announcement]');
-	const dots = Array.from(carousel.querySelectorAll<HTMLButtonElement>('[data-home-carousel-dot]'));
 
 	let items: FeaturedCarouselItem[] = [];
 	try {
@@ -95,8 +91,6 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 		recordLink.href = item.href;
 		recordLink.setAttribute('aria-label', `查看精选档案：${item.title}`);
 		if (recordIndex) recordIndex.textContent = String(activeIndex + 1).padStart(2, '0');
-		if (recordType) recordType.textContent = item.typeLabel;
-		if (recordId) recordId.textContent = item.itemId;
 		if (recordDate) recordDate.textContent = item.dateDisplay;
 		if (recordTitle) recordTitle.textContent = item.title;
 		if (likeButton) {
@@ -105,8 +99,6 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 			likeButton.dispatchEvent(new CustomEvent('archive-like-target-change'));
 		}
 		if (status) status.textContent = `第 ${activeIndex + 1} 张，共 ${items.length} 张`;
-		dots.forEach((dot, dotIndex) =>
-			dot.setAttribute('aria-current', String(dotIndex === activeIndex)));
 		if (announce && announcement) {
 			announcement.textContent = `已显示第 ${activeIndex + 1} 张精选图片：${item.description}`;
 		}
@@ -126,7 +118,6 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 
 	previousButton.addEventListener('click', () => selectManually(activeIndex - 1));
 	nextButton.addEventListener('click', () => selectManually(activeIndex + 1));
-	dots.forEach((dot, index) => dot.addEventListener('click', () => selectManually(index)));
 
 	toggleButton.addEventListener('click', () => {
 		userPaused = !userPaused;

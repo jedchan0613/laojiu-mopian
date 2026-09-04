@@ -57,6 +57,7 @@ const scriptTreeIncludes = (scriptPath, marker, visited = new Set()) => {
 	return imports.some((match) => scriptTreeIncludes(normalizePublicPath(match[1], basePath), marker, visited));
 };
 const pageLoadsScriptMarker = (page, marker) => {
+	if (page.html.includes(marker)) return true;
 	const scriptSources = [...page.html.matchAll(/<script\b[^>]*\btype="module"[^>]*\bsrc="([^"]+)"[^>]*>/g)]
 		.map((match) => match[1]);
 	return scriptSources.some((source) => scriptTreeIncludes(source, marker));
@@ -66,12 +67,14 @@ const archiveIndex = htmlEntries.find((entry) => entry.relativePath === 'archive
 const notFoundPage = htmlEntries.find((entry) => entry.relativePath === '404.html');
 const correctionsPage = htmlEntries.find((entry) => entry.relativePath === 'corrections/index.html');
 const detailPages = htmlEntries.filter((entry) => /^archive\/[^/]+\/index\.html$/.test(entry.relativePath));
+const backgroundMusicPath = join(distRoot, 'audio', 'last-reunion.mp3');
 
 check(Boolean(home), '缺少公开首页。');
 check(Boolean(archiveIndex), '缺少档案列表页。');
 check(Boolean(notFoundPage), '缺少友好的 404 页面。');
 check(Boolean(correctionsPage), '缺少纠错与撤下说明页。');
 check(detailPages.length > 0, '没有生成任何公开档案详情页。');
+check(await exists(backgroundMusicPath), '公开构建缺少背景音乐发布副本。');
 check(archiveDetailSource.includes("item.core.object_type === 'LET'"), '详情页缺少信件类型专属判断。');
 for (const marker of ['data-letter-reader', '文字阅读', '原件对照', '只看原件', '原件图片是最终核对依据']) {
 	check(archiveDetailSource.includes(marker), `信件阅读模板缺少必要内容：${marker}。`);
@@ -148,6 +151,10 @@ for (const page of detailPages) {
 
 for (const page of htmlEntries) {
 	check(page.html.includes('<meta name="viewport"'), `${page.relativePath} 缺少手机端视口设置。`);
+	check(page.html.includes('data-background-music'), `${page.relativePath} 缺少背景音乐播放器。`);
+	check(page.html.includes('/audio/last-reunion.mp3'), `${page.relativePath} 没有引用背景音乐发布副本。`);
+	check(/<audio\b[^>]*\bautoplay\b[^>]*\bloop\b/.test(page.html), `${page.relativePath} 的背景音乐没有设置自动循环。`);
+	check(pageLoadsScriptMarker(page, 'ljm-background-music-preference'), `${page.relativePath} 缺少背景音乐播放控制程序。`);
 	for (const imageTag of page.html.match(/<img\b[^>]*>/g) ?? []) {
 		check(/\bwidth="\d+"/.test(imageTag) && /\bheight="\d+"/.test(imageTag), `${page.relativePath} 存在未声明尺寸的图片，可能引起页面跳动或异常拉长。`);
 	}
