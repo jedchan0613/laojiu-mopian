@@ -1,0 +1,9 @@
+# 把这一段放进 laojiumopian.com 的站点块，并置于公开文件服务之前。
+@public_likes path /api/likes /api/likes/*
+handle @public_likes {
+	reverse_proxy 127.0.0.1:4175 {
+		header_up X-LJM-Client-IP {client_ip}
+	}
+}
+
+# 现有的 root、file_server 等公开网站配置继续放在这里。

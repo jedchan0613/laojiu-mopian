@@ -1,0 +1,110 @@
+---
+import SiteIcon from './SiteIcon.astro';
+
+interface Props {
+	itemId: string;
+	title: string;
+	compact?: boolean;
+}
+
+const { itemId, title, compact = false } = Astro.props;
+---
+
+<button
+	type="button"
+	class:list={['archive-like-button', { 'archive-like-button--compact': compact }]}
+	data-archive-like
+	data-item-id={itemId}
+	aria-label={`为“${title}”点赞`}
+	aria-pressed="false"
+	hidden
+	disabled
+>
+	<SiteIcon name="heart" class="archive-like-icon" />
+	<span data-like-label>点赞</span>
+	<span class="archive-like-count" data-like-count aria-live="polite">—</span>
+</button>
+
+<style>
+	.archive-like-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.4rem;
+		min-height: 2.25rem;
+		padding: 0.42rem 0.7rem;
+		color: #5f5a50;
+		background: rgba(248, 244, 234, 0.76);
+		border: 1px solid #bdb4a3;
+		border-radius: 999px;
+		font: inherit;
+		font-size: 0.76rem;
+		line-height: 1.35;
+		letter-spacing: 0.05em;
+		cursor: pointer;
+		transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+	}
+
+	.archive-like-button[hidden] {
+		display: none;
+	}
+
+	.archive-like-button :global(.archive-like-icon) {
+		width: 1rem;
+		height: 1rem;
+		fill: transparent;
+		stroke-width: 1.6;
+	}
+
+	.archive-like-count {
+		min-width: 1ch;
+		color: #777166;
+		font-family: Georgia, 'Times New Roman', serif;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.02em;
+	}
+
+	.archive-like-button:hover:not(:disabled),
+	.archive-like-button:focus-visible:not(:disabled) {
+		color: var(--site-accent);
+		background: #f8f2e6;
+		border-color: rgba(154, 63, 46, 0.62);
+	}
+
+	.archive-like-button:active:not(:disabled) {
+		transform: translateY(1px);
+	}
+
+	.archive-like-button:focus-visible {
+		outline: 2px solid #575349;
+		outline-offset: 3px;
+	}
+
+	.archive-like-button[aria-pressed='true'] {
+		color: var(--site-accent);
+		background: rgba(154, 63, 46, 0.08);
+		border-color: rgba(154, 63, 46, 0.5);
+		cursor: default;
+	}
+
+	.archive-like-button[aria-pressed='true'] :global(.archive-like-icon) {
+		fill: currentColor;
+	}
+
+	.archive-like-button:disabled:not([aria-pressed='true']) {
+		cursor: wait;
+		opacity: 0.62;
+	}
+
+	.archive-like-button--compact {
+		min-height: 2rem;
+		padding: 0.32rem 0.62rem;
+		font-size: 0.72rem;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.archive-like-button {
+			transition: none;
+		}
+	}
+</style>
