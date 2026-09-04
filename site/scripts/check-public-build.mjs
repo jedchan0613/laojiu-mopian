@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
+const archiveDetailSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', '[id].astro'), 'utf8');
 const issues = [];
 const check = (condition, message) => {
 	if (!condition) issues.push(message);
@@ -70,6 +71,10 @@ check(Boolean(archiveIndex), '缺少档案列表页。');
 check(Boolean(notFoundPage), '缺少友好的 404 页面。');
 check(Boolean(correctionsPage), '缺少纠错与撤下说明页。');
 check(detailPages.length > 0, '没有生成任何公开档案详情页。');
+check(archiveDetailSource.includes("item.core.object_type === 'LET'"), '详情页缺少信件类型专属判断。');
+for (const marker of ['data-letter-reader', '文字阅读', '原件对照', '只看原件', '原件图片是最终核对依据']) {
+	check(archiveDetailSource.includes(marker), `信件阅读模板缺少必要内容：${marker}。`);
+}
 
 if (notFoundPage) {
 	check(notFoundPage.html.includes('这页目前找不到'), '404 页面缺少清晰的不可访问说明。');
