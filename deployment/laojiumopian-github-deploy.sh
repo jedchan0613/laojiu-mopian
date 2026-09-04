@@ -25,6 +25,7 @@ readonly ENVIRONMENT_FILE='/etc/laojiumopian-admin.env'
 readonly ADMIN_SERVICE='laojiumopian-admin.service'
 readonly NODE='/snap/node/current/bin/node'
 readonly NPM='/snap/node/current/bin/npm'
+readonly RUNUSER='/usr/sbin/runuser'
 readonly LOCK_FILE='/run/lock/laojiumopian-github-deploy.lock'
 
 log() {
@@ -76,11 +77,11 @@ switch_link() {
 }
 
 run_as_admin() {
-	runuser -u "$ADMIN_USER" -- "$@"
+	"$RUNUSER" -u "$ADMIN_USER" -- env HOME="$NPM_HOME" "$@"
 }
 
 run_git_as_admin() {
-	runuser -u "$ADMIN_USER" -- env \
+	"$RUNUSER" -u "$ADMIN_USER" -- env \
 		HOME="$NPM_HOME" \
 		GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes -o UserKnownHostsFile=$KNOWN_HOSTS -o StrictHostKeyChecking=yes" \
 		"$@"
@@ -131,11 +132,12 @@ cleanup() {
 trap cleanup EXIT
 
 [[ "${EUID:-$(id -u)}" -eq 0 ]] || fail '必须由 root 或 sudo 运行自动部署程序。'
-for command_name in git tar flock runuser systemctl curl; do
+for command_name in git tar flock systemctl curl; do
 	require_command "$command_name"
 done
 require_file "$NODE" 'Node.js'
 require_file "$NPM" 'npm'
+require_file "$RUNUSER" 'runuser'
 require_file "$ENVIRONMENT_FILE" '线上管理配置'
 require_file "$DEPLOY_KEY" 'GitHub 只读部署私钥'
 require_file "$KNOWN_HOSTS" 'GitHub 主机身份清单'
@@ -216,7 +218,7 @@ require_file "$staging_directory/deployment/publish-built-site.mjs" '新版本�
 
 install -d -o "$ADMIN_USER" -g "$ADMIN_GROUP" -m 0750 "$NPM_CACHE" "$NPM_HOME"
 log "安装并检查新程序版本：$short_commit"
-runuser -u "$ADMIN_USER" -- env \
+"$RUNUSER" -u "$ADMIN_USER" -- env \
 	HOME="$NPM_HOME" PATH="/snap/node/current/bin:/usr/local/bin:/usr/bin:/bin" \
 	NPM_CONFIG_CACHE="$NPM_CACHE" \
 	"$NPM" ci --prefix "$staging_directory/site"
@@ -242,11 +244,11 @@ export PATH="/snap/node/current/bin:/usr/local/bin:/usr/bin:/bin"
 export HOME="$NPM_HOME"
 export NPM_CONFIG_CACHE="$NPM_CACHE"
 
-runuser -u "$ADMIN_USER" --preserve-environment -- \
+"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
 	"$NODE" "$staging_directory/local-admin/server.mjs" --sync-site-data
-runuser -u "$ADMIN_USER" --preserve-environment -- \
+"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
 	"$NPM" run build --prefix "$staging_directory/site"
-runuser -u "$ADMIN_USER" --preserve-environment -- \
+"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
 	"$NODE" "$staging_directory/local-admin/server.mjs" --check-config
 
 mv -- "$staging_directory" "$release_directory"
