@@ -4,12 +4,24 @@ interface FeaturedCarouselItem {
 	width: number;
 	height: number;
 	description: string;
+	itemId: string;
+	title: string;
+	typeLabel: string;
+	dateDisplay: string;
+	href: string;
 }
 
-const AUTOPLAY_DELAY = 6500;
+const AUTOPLAY_DELAY = 4000;
 
 document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach((carousel) => {
 	const image = carousel.querySelector<HTMLImageElement>('[data-home-carousel-image]');
+	const recordLink = carousel.querySelector<HTMLAnchorElement>('[data-home-carousel-link]');
+	const recordIndex = carousel.querySelector<HTMLElement>('[data-home-carousel-index]');
+	const recordType = carousel.querySelector<HTMLElement>('[data-home-carousel-type]');
+	const recordId = carousel.querySelector<HTMLElement>('[data-home-carousel-item-id]');
+	const recordDate = carousel.querySelector<HTMLElement>('[data-home-carousel-date]');
+	const recordTitle = carousel.querySelector<HTMLElement>('[data-home-carousel-title]');
+	const likeButton = carousel.querySelector<HTMLButtonElement>('[data-archive-like]');
 	const previousButton = carousel.querySelector<HTMLButtonElement>('[data-home-carousel-previous]');
 	const nextButton = carousel.querySelector<HTMLButtonElement>('[data-home-carousel-next]');
 	const toggleButton = carousel.querySelector<HTMLButtonElement>('[data-home-carousel-toggle]');
@@ -25,11 +37,12 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 	} catch {
 		return;
 	}
-	if (!image || !previousButton || !nextButton || !toggleButton || items.length < 2) return;
+	if (!image || !recordLink || !previousButton || !nextButton || !toggleButton || items.length < 2) return;
 
 	const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 	let activeIndex = 0;
 	let autoplayTimer: number | undefined;
+	let preloadedImage: HTMLImageElement | undefined;
 	let userPaused = prefersReducedMotion.matches;
 	let pointerInside = false;
 	let focusInside = false;
@@ -56,6 +69,20 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 		if (toggleLabel) toggleLabel.textContent = userPaused ? '播放' : '暂停';
 	};
 
+	const preloadNextImage = () => {
+		const nextItem = items[(activeIndex + 1) % items.length];
+		const candidate = new Image();
+		candidate.sizes = image.sizes;
+		if (nextItem.srcset) candidate.srcset = nextItem.srcset;
+		const releaseCandidate = () => {
+			if (preloadedImage === candidate) preloadedImage = undefined;
+		};
+		candidate.addEventListener('load', releaseCandidate, { once: true });
+		candidate.addEventListener('error', releaseCandidate, { once: true });
+		candidate.src = nextItem.src;
+		preloadedImage = candidate;
+	};
+
 	const selectImage = (index: number, announce = false) => {
 		activeIndex = (index + items.length) % items.length;
 		const item = items[activeIndex];
@@ -65,7 +92,19 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 		image.alt = item.description;
 		image.width = item.width;
 		image.height = item.height;
-		status && (status.textContent = `第 ${activeIndex + 1} 张，共 ${items.length} 张`);
+		recordLink.href = item.href;
+		recordLink.setAttribute('aria-label', `查看精选档案：${item.title}`);
+		if (recordIndex) recordIndex.textContent = String(activeIndex + 1).padStart(2, '0');
+		if (recordType) recordType.textContent = item.typeLabel;
+		if (recordId) recordId.textContent = item.itemId;
+		if (recordDate) recordDate.textContent = item.dateDisplay;
+		if (recordTitle) recordTitle.textContent = item.title;
+		if (likeButton) {
+			likeButton.dataset.itemId = item.itemId;
+			likeButton.setAttribute('aria-label', `为“${item.title}”点赞`);
+			likeButton.dispatchEvent(new CustomEvent('archive-like-target-change'));
+		}
+		if (status) status.textContent = `第 ${activeIndex + 1} 张，共 ${items.length} 张`;
 		dots.forEach((dot, dotIndex) =>
 			dot.setAttribute('aria-current', String(dotIndex === activeIndex)));
 		if (announce && announcement) {
@@ -77,6 +116,7 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 				{ duration: 260, easing: 'ease-out' },
 			);
 		}
+		preloadNextImage();
 	};
 
 	const selectManually = (index: number) => {

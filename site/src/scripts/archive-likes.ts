@@ -4,28 +4,32 @@ type LikeState = {
 };
 
 type LikeButton = HTMLButtonElement & {
-	dataset: DOMStringMap & { itemId?: string };
+	dataset: DOMStringMap & { itemId?: string; likePreloadItems?: string };
 };
 
 const buttons = [...document.querySelectorAll<LikeButton>('[data-archive-like]')];
 const numberFormatter = new Intl.NumberFormat('zh-CN');
 const maxItemsPerRequest = 20;
+const states = new Map<string, LikeState>();
 
 function buttonsFor(itemId: string) {
 	return buttons.filter((button) => button.dataset.itemId === itemId);
 }
 
+function renderButton(button: LikeButton, state: LikeState) {
+	const label = button.querySelector<HTMLElement>('[data-like-label]');
+	const count = button.querySelector<HTMLElement>('[data-like-count]');
+	button.hidden = false;
+	button.disabled = state.liked;
+	button.setAttribute('aria-pressed', String(state.liked));
+	button.title = state.liked ? '这个访问地址已经赞过这件档案' : '为这件档案点赞';
+	if (label) label.textContent = state.liked ? '已赞' : '点赞';
+	if (count) count.textContent = numberFormatter.format(state.count);
+}
+
 function setState(itemId: string, state: LikeState) {
-	for (const button of buttonsFor(itemId)) {
-		const label = button.querySelector<HTMLElement>('[data-like-label]');
-		const count = button.querySelector<HTMLElement>('[data-like-count]');
-		button.hidden = false;
-		button.disabled = state.liked;
-		button.setAttribute('aria-pressed', String(state.liked));
-		button.title = state.liked ? '这个访问地址已经赞过这件档案' : '为这件档案点赞';
-		if (label) label.textContent = state.liked ? '已赞' : '点赞';
-		if (count) count.textContent = numberFormatter.format(state.count);
-	}
+	states.set(itemId, state);
+	for (const button of buttonsFor(itemId)) renderButton(button, state);
 }
 
 function setUnavailable(message = '点赞服务暂时不可用') {
@@ -51,7 +55,10 @@ async function requestJson(url: string, init?: RequestInit) {
 
 async function initializeLikes() {
 	if (buttons.length === 0) return;
-	const itemIds = [...new Set(buttons.map((button) => button.dataset.itemId).filter(Boolean))] as string[];
+	const itemIds = [...new Set(buttons.flatMap((button) => [
+		button.dataset.itemId,
+		...(button.dataset.likePreloadItems?.split(',') ?? []),
+	]).filter(Boolean))] as string[];
 	try {
 		for (let index = 0; index < itemIds.length; index += maxItemsPerRequest) {
 			const batch = itemIds.slice(index, index + maxItemsPerRequest);
@@ -72,6 +79,11 @@ async function initializeLikes() {
 	}
 
 	for (const button of buttons) {
+		button.addEventListener('archive-like-target-change', () => {
+			const itemId = button.dataset.itemId;
+			const state = itemId ? states.get(itemId) : undefined;
+			if (state) renderButton(button, state);
+		});
 		button.addEventListener('click', async () => {
 			const itemId = button.dataset.itemId;
 			if (!itemId || button.getAttribute('aria-pressed') === 'true') return;
