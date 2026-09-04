@@ -82,10 +82,12 @@ const categoryEntries = archiveCategories.map((category, index) => {
 				<header class="masthead">
 					<div class="masthead-mark" aria-hidden="true">
 						<svg viewBox="0 0 48 48" focusable="false">
-							<path d="M15 6.75H6.75V15M33 6.75h8.25V15M41.25 33v8.25H33M15 41.25H6.75V33" />
-							<rect x="11.75" y="12.75" width="24.5" height="22.5" />
-							<circle cx="19" cy="20" r="2.75" />
-							<path class="masthead-mark-trace" d="M14.75 31.75c3.7-4.35 6.55-6.5 8.55-6.5 2.35 0 4.15 1.3 5.85 3.15l2.1-1.9 2 2.1" />
+							<path d="M11.5 6.5h23.75l4.25 4.25V41.5h-28z" />
+							<path class="masthead-mark-fold" d="M35.25 6.5v4.25h4.25" />
+							<rect x="15.5" y="14" width="20" height="13.5" />
+							<circle cx="21.25" cy="19.25" r="2" />
+							<path class="masthead-mark-image" d="m17.75 25 5-4.65 3.5 3 3.45-3.1 3.55 3.55" />
+							<path class="masthead-mark-lines" d="M15.5 32.5h19M15.5 36.5h12" />
 						</svg>
 						<span><strong>生活档案</strong><small>ARCHIVE · 001</small></span>
 					</div>
@@ -327,8 +329,10 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		stroke: none;
 	}
 
-	.masthead-mark-trace {
-		opacity: 0.68;
+	.masthead-mark-fold,
+	.masthead-mark-image,
+	.masthead-mark-lines {
+		opacity: 0.72;
 	}
 
 	.masthead-mark span {
