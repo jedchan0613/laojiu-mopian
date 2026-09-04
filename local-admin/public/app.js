@@ -1668,6 +1668,15 @@ const renderPreview = () => {
 	</aside></div>`;
 };
 
+// 记录编辑器内所有折叠区（<details>）当前的展开状态。
+// 仅在同标签页内重新渲染时使用，避免切到其他标签页后把旧展开状态误恢复。
+const captureEditorDetailsOpenState = () => [...elements.editorSurface.querySelectorAll('details')].map((details) => details.open);
+const restoreEditorDetailsOpenState = (previousOpen) => {
+	elements.editorSurface.querySelectorAll('details').forEach((details, index) => {
+		if (previousOpen[index]) details.setAttribute('open', '');
+	});
+};
+
 function renderEditor() {
 	if (state.workspaceMode !== 'records') {
 		renderWorkspaceCenter();
@@ -1679,6 +1688,9 @@ function renderEditor() {
 		return;
 	}
 	updateTabCompletionBadges();
+	const previousTab = elements.editorSurface.dataset.renderedTab ?? '';
+	const preserveDetailsOpen = previousTab === state.activeTab;
+	const previousDetailsOpen = preserveDetailsOpen ? captureEditorDetailsOpenState() : [];
 	if (isWithdrawn()) {
 		const reason = state.current._admin?.withdrawalReason;
 		const restoreMessage = state.current._admin?.canRestoreWithdrawn
@@ -1687,6 +1699,8 @@ function renderEditor() {
 		elements.editorSurface.innerHTML = `<div class="withdrawn-record-notice"><strong>这是一条已撤销的只读档案</strong>
 			<span>${reason ? `撤销原因：${escapeHtml(reason)}。` : ''}${escapeHtml(restoreMessage)}</span></div>${state.activeTab === 'images' ? renderWithdrawnImages() : renderBasic()}`;
 		elements.editorSurface.querySelectorAll('input, textarea, select').forEach((control) => { control.disabled = true; });
+		elements.editorSurface.dataset.renderedTab = state.activeTab;
+		restoreEditorDetailsOpenState(previousDetailsOpen);
 		refreshAdministrativeRegionOptions();
 		return;
 	}
@@ -1695,6 +1709,8 @@ function renderEditor() {
 	else if (state.activeTab === 'preview') elements.editorSurface.innerHTML = renderPreview();
 	else if (state.activeTab === 'privacy') elements.editorSurface.innerHTML = renderPrivacy();
 	else elements.editorSurface.innerHTML = renderBasic();
+	elements.editorSurface.dataset.renderedTab = state.activeTab;
+	restoreEditorDetailsOpenState(previousDetailsOpen);
 	refreshAdministrativeRegionOptions();
 }
 
