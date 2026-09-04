@@ -2147,6 +2147,30 @@ button.task-chip:focus-visible {
 	line-height: 1.9;
 }
 
+.preview-transcription {
+	margin-top: 1rem;
+	padding-top: 0.85rem;
+	border-top: 1px solid #d0c8bb;
+}
+
+.preview-transcription > strong {
+	display: block;
+	margin-bottom: 0.55rem;
+	color: #756e63;
+	font-size: 0.7rem;
+	letter-spacing: 0.1em;
+}
+
+.preview-transcription > p {
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}
+
+.preview-transcription.is-letter > p {
+	font-family: "Songti SC", "STSong", "SimSun", serif;
+	line-height: 2.05;
+}
+
 .preview-tags {
 	display: flex;
 	flex-wrap: wrap;

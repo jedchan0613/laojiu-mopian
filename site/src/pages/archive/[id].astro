@@ -55,6 +55,15 @@ interface RecordStatusFact {
 }
 
 const hasText = (value: string | undefined) => Boolean(value?.trim());
+const isLetter = item.core.object_type === 'LET';
+const hasPublicTranscription = hasText(view.transcription);
+const hasPublicOriginal = view.images.length > 0;
+const initialLetterMode = hasPublicTranscription ? 'text' : 'original';
+const letterReadingModes = [
+  hasPublicTranscription ? { value: 'text', label: '文字阅读' } : undefined,
+  hasPublicTranscription && hasPublicOriginal ? { value: 'compare', label: '原件对照' } : undefined,
+  hasPublicOriginal ? { value: 'original', label: '只看原件' } : undefined,
+].filter((mode): mode is { value: string; label: string } => Boolean(mode));
 const compactFacts = <T extends DisplayFact>(facts: T[]) => facts.filter((fact) => hasText(fact.value));
 const joinText = (value: string[] | undefined) => value?.filter(hasText).join('、') ?? '';
 const archiveFilterHref = (name: 'category' | 'decade' | 'place' | 'tag', value: string) =>
@@ -150,7 +159,7 @@ const galleryImages = view.images.map((source, index) => ({
   role: getImageRole(view.imageDescriptions[index], index),
 }));
 const revisionNote = item.public_view.revision_note?.trim() ?? '';
-const hasNarrativeContent = hasText(view.transcription) || hasText(item.core.provenance_notes);
+const hasNarrativeContent = (!isLetter && hasText(view.transcription)) || hasText(item.core.provenance_notes);
 const hasTags = view.tags.length > 0;
 const usagePolicy = getPublicUsagePolicy(item.core.rights_status);
 const downloadableImages = usagePolicy.canDownloadPublicationCopy
@@ -230,7 +239,55 @@ const recordStructuredData = {
       </div>
     </header>
 
-    <div class="record-sheet">
+    <div
+      class:list={['record-sheet', { 'record-sheet--letter': isLetter }]}
+      data-letter-reader={isLetter ? 'true' : undefined}
+      data-letter-mode={isLetter ? initialLetterMode : undefined}
+    >
+      {isLetter && (
+        <header class="letter-reading-header">
+          <div>
+            <p>LETTER READING</p>
+            <h2 class="icon-heading"><SiteIcon name="story" /><span>信件阅读</span></h2>
+          </div>
+          {letterReadingModes.length > 1 && (
+            <div class="letter-reading-modes" role="group" aria-label="选择信件查看方式">
+              {letterReadingModes.map((mode) => (
+                <button
+                  type="button"
+                  data-letter-mode-select={mode.value}
+                  aria-pressed={String(mode.value === initialLetterMode)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          )}
+          <p class="letter-reading-introduction">
+            {hasPublicTranscription
+              ? '以下为经过公开与隐私检查的电子转录，保留原有段落与换行；原件图片是最终核对依据。'
+              : '这封信暂未提供公开电子转录，当前仅展示经过检查的原件发布副本。'}
+          </p>
+        </header>
+      )}
+
+      {isLetter && hasPublicTranscription && (
+        <article class="letter-transcription" aria-labelledby="letter-transcription-heading">
+          <header>
+            <div>
+              <p>PUBLIC TRANSCRIPTION</p>
+              <h2 id="letter-transcription-heading">电子文字</h2>
+            </div>
+            <span>{displayCode(item.core.transcription_status) || '公开转录'}</span>
+          </header>
+          <div class="letter-transcription-text">{view.transcription}</div>
+          <footer>
+            <span>〔不清〕表示原件难以辨认</span>
+            <span>□ 表示原件文字缺失</span>
+          </footer>
+        </article>
+      )}
+
       {
         galleryImages.length > 0 && (
           <div
@@ -356,7 +413,7 @@ const recordStructuredData = {
         )
       }
 
-      <section aria-labelledby="basic-heading">
+      <section class="record-basic-information" aria-labelledby="basic-heading">
         <h2 class="facts-heading icon-heading" id="basic-heading"><SiteIcon name="details" /><span>基本信息</span></h2>
         <dl class="record-facts">
           {
@@ -409,7 +466,7 @@ const recordStructuredData = {
       {
         hasNarrativeContent && (
           <section class="record-section" aria-labelledby="description-heading">
-            <h2 class="icon-heading" id="description-heading"><SiteIcon name="story" /><span>故事与原文</span></h2>
+            <h2 class="icon-heading" id="description-heading"><SiteIcon name="story" /><span>{isLetter ? '流传与来源' : '故事与原文'}</span></h2>
             <div class="section-content">
               {hasText(item.core.provenance_notes) && (
                 <div class="subsection">
@@ -417,7 +474,7 @@ const recordStructuredData = {
                   <p>{item.core.provenance_notes}</p>
                 </div>
               )}
-              {hasText(view.transcription) && (
+              {!isLetter && hasText(view.transcription) && (
                 <div class="subsection">
                   <h3>原文 / 转录</h3>
                   <p class="transcription">{view.transcription}</p>
@@ -598,6 +655,22 @@ const recordStructuredData = {
 
 <script>
   import '../../scripts/archive-likes';
+
+  document.querySelectorAll<HTMLElement>('[data-letter-reader]').forEach((reader) => {
+    const modeButtons = Array.from(
+      reader.querySelectorAll<HTMLButtonElement>('[data-letter-mode-select]'),
+    );
+    const setMode = (mode: string) => {
+      if (!modeButtons.some((button) => button.dataset.letterModeSelect === mode)) return;
+      reader.dataset.letterMode = mode;
+      for (const button of modeButtons) {
+        button.setAttribute('aria-pressed', String(button.dataset.letterModeSelect === mode));
+      }
+    };
+    for (const button of modeButtons) {
+      button.addEventListener('click', () => setMode(button.dataset.letterModeSelect ?? ''));
+    }
+  });
 
   document.querySelectorAll<HTMLElement>('[data-record-gallery]').forEach((gallery) => {
     const mainImage = gallery.querySelector<HTMLImageElement>('[data-gallery-main]');
@@ -982,6 +1055,177 @@ const recordStructuredData = {
     margin-top: clamp(2.4rem, 4vw, 3.3rem);
     padding-top: clamp(2rem, 3.5vw, 2.8rem);
     border-top: 1px solid #bcb5a4;
+  }
+
+  .record-sheet--letter {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.4rem;
+  }
+
+  .record-sheet--letter[data-letter-mode='compare'] {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  }
+
+  .record-sheet--letter > .letter-reading-header,
+  .record-sheet--letter > .record-basic-information {
+    grid-column: 1 / -1;
+  }
+
+  .record-sheet--letter[data-letter-mode='text'] > .record-gallery {
+    display: none;
+  }
+
+  .record-sheet--letter[data-letter-mode='original'] > .letter-transcription {
+    display: none;
+  }
+
+  .letter-reading-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.7rem 1.25rem;
+    padding: 0.9rem 1rem 1rem;
+    background: rgba(224, 215, 197, 0.34);
+    border-left: 3px solid var(--site-accent);
+  }
+
+  .letter-reading-header p,
+  .letter-reading-header h2 {
+    margin: 0;
+  }
+
+  .letter-reading-header > div:first-child > p {
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.15em;
+  }
+
+  .letter-reading-header h2 {
+    margin-top: 0.25rem;
+    font-size: 0.96rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+  }
+
+  .letter-reading-introduction {
+    grid-column: 1 / -1;
+    max-width: 50rem;
+    color: #686257;
+    font-size: 0.8rem;
+    line-height: 1.75;
+  }
+
+  .letter-reading-modes {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    padding: 0.2rem;
+    background: rgba(248, 244, 234, 0.72);
+    border: 1px solid #c3baa9;
+  }
+
+  .letter-reading-modes button {
+    min-height: 2.2rem;
+    padding: 0.38rem 0.72rem;
+    color: #6a645a;
+    background: transparent;
+    border: 0;
+    font: inherit;
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+
+  .letter-reading-modes button:hover,
+  .letter-reading-modes button:focus-visible {
+    color: var(--site-accent);
+  }
+
+  .letter-reading-modes button:focus-visible {
+    outline: 2px solid #575349;
+    outline-offset: -2px;
+  }
+
+  .letter-reading-modes button[aria-pressed='true'] {
+    color: #f8f2e7;
+    background: var(--site-accent);
+  }
+
+  .letter-transcription {
+    grid-column: 1 / -1;
+    width: min(100%, 54rem);
+    justify-self: center;
+    padding: clamp(1.2rem, 3.5vw, 2.4rem) clamp(1rem, 4.5vw, 3.5rem);
+    background: rgba(249, 246, 237, 0.82);
+    border: 1px solid #c8bfad;
+    box-shadow: 0 0.65rem 1.8rem rgba(69, 62, 49, 0.06);
+  }
+
+  .record-sheet--letter[data-letter-mode='compare'] > .letter-transcription {
+    grid-column: 1;
+    width: 100%;
+  }
+
+  .record-sheet--letter[data-letter-mode='compare'] > .record-gallery {
+    grid-column: 2;
+  }
+
+  .letter-transcription > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid #d1c9b9;
+  }
+
+  .letter-transcription > header p,
+  .letter-transcription > header h2 {
+    margin: 0;
+  }
+
+  .letter-transcription > header p {
+    color: var(--site-accent);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: var(--site-text-micro);
+    letter-spacing: 0.14em;
+  }
+
+  .letter-transcription > header h2 {
+    margin-top: 0.22rem;
+    font-size: 1.08rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+  }
+
+  .letter-transcription > header > span {
+    flex: 0 0 auto;
+    color: #777064;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+  }
+
+  .letter-transcription-text {
+    max-width: 44rem;
+    margin: clamp(1.5rem, 4vw, 2.8rem) auto;
+    overflow-wrap: anywhere;
+    color: #34322d;
+    font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+    font-size: clamp(1.02rem, 1.5vw, 1.15rem);
+    letter-spacing: 0.035em;
+    line-height: 2.15;
+    white-space: pre-wrap;
+  }
+
+  .letter-transcription > footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.2rem;
+    padding-top: 0.85rem;
+    color: #7a7368;
+    border-top: 1px solid #d1c9b9;
+    font-size: var(--site-text-micro);
+    line-height: 1.6;
   }
 
   .record-gallery {
@@ -1892,6 +2136,41 @@ const recordStructuredData = {
       gap: 2.1rem;
       margin-top: 1.55rem;
       padding-top: 1.15rem;
+    }
+
+    .record-sheet--letter[data-letter-mode='compare'] {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    .record-sheet--letter[data-letter-mode='compare'] > .letter-transcription,
+    .record-sheet--letter[data-letter-mode='compare'] > .record-gallery {
+      grid-column: 1;
+    }
+
+    .letter-reading-header {
+      grid-template-columns: 1fr;
+      padding: 0.8rem;
+    }
+
+    .letter-reading-modes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      width: 100%;
+    }
+
+    .letter-reading-modes button {
+      padding-inline: 0.4rem;
+    }
+
+    .letter-transcription {
+      padding: 1rem 0.9rem 1.2rem;
+    }
+
+    .letter-transcription-text {
+      margin: 1.25rem auto 1.5rem;
+      font-size: 1rem;
+      line-height: 2;
     }
 
     .record-image-hint {

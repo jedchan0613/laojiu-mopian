@@ -1317,6 +1317,12 @@ const renderBasic = () => {
 			context: rule.context,
 		})).join('')}</div></details>`;
 	}).join('');
+	const publicTranscriptionDefinition = state.current.core.object_type === 'LET'
+		? {
+			name: '信件电子文字',
+			rule: '按原件逐字录入并保留称呼、段落、换行、落款和日期；无法辨认写〔不清〕，缺失文字写□。私人地址、电话、证件号码和清晰签名等敏感内容不得进入公开文字。',
+		}
+		: undefined;
 	return `<section class="form-section">
 		<div class="section-heading"><div><h3>常用档案信息</h3><p>必填字段已排在前面；永久编号首次保存后不变，收藏品编码由正式对象类型、显示年代和必填属性代码组成。</p></div></div>
 		<div class="form-grid common-info-grid"><label class="form-field is-item-id"><span class="field-label">永久编号 <small>item_id</small></span>
@@ -1331,7 +1337,7 @@ const renderBasic = () => {
 	</section>
 	<section class="form-section"><div class="section-heading"><div><h3>访客看到的内容</h3><p>这些文字会进入公开页面，请不要填写敏感信息。</p></div></div>
 		<div class="form-grid">${renderField({ scope: 'public', fieldCode: 'description', value: state.current.public_view.description })}
-		${renderField({ scope: 'public', fieldCode: 'transcription', value: state.current.public_view.transcription })}
+		${renderField({ scope: 'public', fieldCode: 'transcription', definition: publicTranscriptionDefinition, value: state.current.public_view.transcription })}
 		${renderField({
 			scope: 'public',
 			fieldCode: 'revision_note',
@@ -1652,7 +1658,7 @@ const renderPreview = () => {
 		<p class="preview-collection-code">收藏品编码：<span data-collection-code-output>${escapeHtml(record.core.collection_code || '请先填写收藏品编码组成字段')}</span></p>
 		<div class="preview-gallery">${imageGallery}</div>
 		<div class="preview-copy"><p>${escapeHtml(description)}</p>
-		${transcription ? `<p><strong>文字记录：</strong>${escapeHtml(transcription)}</p>` : ''}
+		${transcription ? `<div class="preview-transcription ${record.core.object_type === 'LET' ? 'is-letter' : ''}"><strong>${record.core.object_type === 'LET' ? '信件电子文字' : '文字记录'}</strong><p>${escapeHtml(transcription)}</p></div>` : ''}
 		${tags.length ? `<div class="preview-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div>` : ''}</div>
 	</article><aside class="check-panel"><h4>发布前缺失项</h4>
 		<p>点击一项可回到相应位置处理。预览不会把草稿公开。</p>
