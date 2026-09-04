@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArchiveLikeButton from '../../components/ArchiveLikeButton.astro';
 import SiteIcon from '../../components/SiteIcon.astro';
 import { archiveItems, type ArchiveItem } from '../../data/archive';
 import {
@@ -224,6 +225,9 @@ const recordStructuredData = {
       <p class="section-mark icon-heading"><SiteIcon name="archive" /><span>ARCHIVE RECORD · {view.typeLabel}</span></p>
       <h1>{view.title}</h1>
       {hasText(view.description) && <p class="record-lead">{view.description}</p>}
+      <div class="record-heading-actions" aria-label="档案互动操作">
+        <ArchiveLikeButton itemId={view.id} title={view.title} />
+      </div>
     </header>
 
     <div class="record-sheet">
@@ -593,6 +597,8 @@ const recordStructuredData = {
 </BaseLayout>
 
 <script>
+  import '../../scripts/archive-likes';
+
   document.querySelectorAll<HTMLElement>('[data-record-gallery]').forEach((gallery) => {
     const mainImage = gallery.querySelector<HTMLImageElement>('[data-gallery-main]');
     const openButton = gallery.querySelector<HTMLButtonElement>('[data-gallery-open]');
@@ -842,6 +848,12 @@ const recordStructuredData = {
     color: #5f5b52;
     font-size: clamp(0.96rem, 1.5vw, 1.08rem);
     line-height: 1.95;
+  }
+
+  .record-heading-actions {
+    display: flex;
+    align-items: center;
+    margin-top: 1.15rem;
   }
 
   .record-status {
