@@ -1,13 +1,22 @@
 ---
-const trackTitle = 'Last Reunion';
+const playlist = [
+	{ title: 'Lullaby（夏日蝉鸣）', src: '/audio/lullaby-summer-cicadas.ogg' },
+	{ title: 'Last Reunion', src: '/audio/last-reunion.mp3' },
+];
+const firstTrack = playlist[0];
 ---
 
-<aside class="background-music" data-background-music data-state="waiting" aria-label="背景音乐">
+<aside
+	class="background-music"
+	data-background-music
+	data-background-music-playlist={JSON.stringify(playlist)}
+	data-state="waiting"
+	aria-label="背景音乐"
+>
 	<audio
 		data-background-music-audio
-		src="/audio/last-reunion.mp3"
+		src={firstTrack.src}
 		autoplay
-		loop
 		preload="metadata"
 	></audio>
 	<button
@@ -15,8 +24,8 @@ const trackTitle = 'Last Reunion';
 		type="button"
 		data-background-music-toggle
 		aria-pressed="false"
-		aria-label={`播放背景音乐《${trackTitle}》`}
-		title={`背景音乐：${trackTitle}`}
+		aria-label={`播放背景音乐《${firstTrack.title}》`}
+		title={`背景音乐：${firstTrack.title}`}
 	>
 		<svg class="background-music__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
 			<path d="M9.25 17.25V6.5l8-1.75v10.5" />
@@ -26,30 +35,61 @@ const trackTitle = 'Last Reunion';
 		</svg>
 		<span data-background-music-label aria-live="polite">播放音乐</span>
 	</button>
-	<span class="background-music__track" aria-hidden="true">{trackTitle}</span>
+	<span class="background-music__track" data-background-music-track aria-hidden="true">
+		1 / {playlist.length} · {firstTrack.title}
+	</span>
 </aside>
 
 <script>
+	type BackgroundTrack = { title: string; src: string };
+
 	const root = document.querySelector<HTMLElement>('[data-background-music]');
 	const audio = root?.querySelector<HTMLAudioElement>('[data-background-music-audio]');
 	const toggle = root?.querySelector<HTMLButtonElement>('[data-background-music-toggle]');
 	const label = root?.querySelector<HTMLElement>('[data-background-music-label]');
+	const trackLabel = root?.querySelector<HTMLElement>('[data-background-music-track]');
 
-	if (root && audio && toggle && label && root.dataset.ready !== 'true') {
+	if (root && audio && toggle && label && trackLabel && root.dataset.ready !== 'true') {
 		root.dataset.ready = 'true';
 
 		const preferenceKey = 'ljm-background-music-preference';
-		const positionKey = 'ljm-background-music-position';
-		const trackTitle = 'Last Reunion';
+		const positionKey = 'ljm-background-music-position-v2';
+		const trackIndexKey = 'ljm-background-music-track-index';
+		let playlist: BackgroundTrack[] = [];
+		try {
+			const parsedPlaylist = JSON.parse(root.dataset.backgroundMusicPlaylist ?? '[]');
+			if (Array.isArray(parsedPlaylist)) {
+				playlist = parsedPlaylist.filter((track): track is BackgroundTrack => (
+					typeof track?.title === 'string' && typeof track?.src === 'string'
+				));
+			}
+		} catch {
+			playlist = [];
+		}
+
+		let currentTrackIndex = 0;
 		let wantsPlayback = true;
+		const failedTrackIndexes = new Set<number>();
 
 		try {
 			wantsPlayback = sessionStorage.getItem(preferenceKey) !== 'paused';
+			const savedTrackIndex = Number(sessionStorage.getItem(trackIndexKey));
+			if (Number.isInteger(savedTrackIndex) && savedTrackIndex >= 0 && savedTrackIndex < playlist.length) {
+				currentTrackIndex = savedTrackIndex;
+			}
 		} catch {
 			wantsPlayback = true;
 		}
 
 		audio.volume = 0.24;
+		const currentTrack = () => playlist[currentTrackIndex];
+
+		const updateTrackPresentation = () => {
+			const track = currentTrack();
+			if (!track) return;
+			trackLabel.textContent = `${currentTrackIndex + 1} / ${playlist.length} · ${track.title}`;
+			toggle.title = `背景音乐：${track.title}`;
+		};
 
 		const rememberPreference = (preference: 'playing' | 'paused') => {
 			try {
@@ -60,41 +100,25 @@ const trackTitle = 'Last Reunion';
 		};
 
 		const rememberPosition = () => {
-			if (!Number.isFinite(audio.currentTime) || audio.currentTime <= 0) return;
 			try {
-				sessionStorage.setItem(positionKey, String(audio.currentTime));
+				sessionStorage.setItem(trackIndexKey, String(currentTrackIndex));
+				if (Number.isFinite(audio.currentTime) && audio.currentTime > 0) {
+					sessionStorage.setItem(positionKey, String(audio.currentTime));
+				}
 			} catch {
 				// 播放进度只用于页面之间衔接，写入失败不影响播放。
 			}
 		};
 
-		const restorePosition = () => {
-			let savedPosition = 0;
-			try {
-				savedPosition = Number(sessionStorage.getItem(positionKey));
-			} catch {
-				savedPosition = 0;
-			}
-
-			if (!Number.isFinite(savedPosition) || savedPosition <= 0) return;
-			const latestValidPosition = Number.isFinite(audio.duration)
-				? Math.max(0, audio.duration - 0.25)
-				: savedPosition;
-			try {
-				audio.currentTime = Math.min(savedPosition, latestValidPosition);
-			} catch {
-				// 个别浏览器需要媒体元数据完全就绪后才能恢复进度。
-			}
-		};
-
 		const showState = (state: 'playing' | 'waiting' | 'paused' | 'unavailable') => {
+			const track = currentTrack();
 			const isPlaying = state === 'playing';
 			root.dataset.state = state;
 			toggle.setAttribute('aria-pressed', String(isPlaying));
 
 			if (state === 'playing') {
 				label.textContent = '暂停音乐';
-				toggle.setAttribute('aria-label', `暂停背景音乐《${trackTitle}》`);
+				toggle.setAttribute('aria-label', `暂停背景音乐《${track?.title ?? ''}》`);
 				return;
 			}
 
@@ -106,7 +130,7 @@ const trackTitle = 'Last Reunion';
 			}
 
 			label.textContent = '播放音乐';
-			toggle.setAttribute('aria-label', `播放背景音乐《${trackTitle}》`);
+			toggle.setAttribute('aria-label', `播放背景音乐《${track?.title ?? ''}》`);
 		};
 
 		const requestPlayback = async () => {
@@ -125,12 +149,68 @@ const trackTitle = 'Last Reunion';
 			if (wantsPlayback && audio.paused) void requestPlayback();
 		};
 
-		if (audio.readyState >= 1) restorePosition();
-		else audio.addEventListener('loadedmetadata', restorePosition, { once: true });
+		const loadTrack = (trackIndex: number, position = 0) => {
+			if (!playlist.length) return;
+			currentTrackIndex = (trackIndex + playlist.length) % playlist.length;
+			const track = currentTrack();
+			if (!track) return;
+			audio.src = track.src;
+			audio.load();
+			updateTrackPresentation();
+			try {
+				sessionStorage.setItem(trackIndexKey, String(currentTrackIndex));
+				sessionStorage.setItem(positionKey, String(position));
+			} catch {
+				// 曲目顺序只在当前标签页内记忆，存储不可用时从第一首开始。
+			}
+			if (position > 0) {
+				audio.addEventListener('loadedmetadata', () => {
+					try {
+						audio.currentTime = Math.min(position, Math.max(0, audio.duration - 0.25));
+					} catch {
+						// 无法恢复进度时从曲目开头播放。
+					}
+				}, { once: true });
+			}
+		};
+
+		const playNextTrack = () => {
+			failedTrackIndexes.clear();
+			loadTrack(currentTrackIndex + 1);
+			if (wantsPlayback) void requestPlayback();
+		};
+
+		const playNextAvailableTrack = () => {
+			failedTrackIndexes.add(currentTrackIndex);
+			if (failedTrackIndexes.size >= playlist.length) {
+				showState('unavailable');
+				return;
+			}
+
+			let nextTrackIndex = (currentTrackIndex + 1) % playlist.length;
+			while (failedTrackIndexes.has(nextTrackIndex)) {
+				nextTrackIndex = (nextTrackIndex + 1) % playlist.length;
+			}
+			loadTrack(nextTrackIndex);
+			if (wantsPlayback) void requestPlayback();
+		};
 
 		audio.addEventListener('playing', () => showState('playing'));
 		audio.addEventListener('pause', () => showState(wantsPlayback ? 'waiting' : 'paused'));
-		audio.addEventListener('error', () => showState('unavailable'));
+		audio.addEventListener('ended', playNextTrack);
+		audio.addEventListener('error', playNextAvailableTrack);
+
+		if (!playlist.length) {
+			showState('unavailable');
+		} else {
+			let savedPosition = 0;
+			try {
+				savedPosition = Number(sessionStorage.getItem(positionKey));
+			} catch {
+				savedPosition = 0;
+			}
+			loadTrack(currentTrackIndex, Number.isFinite(savedPosition) ? savedPosition : 0);
+		}
 
 		toggle.addEventListener('click', () => {
 			if (audio.paused) {
@@ -150,8 +230,10 @@ const trackTitle = 'Last Reunion';
 		document.addEventListener('keydown', unlockPlayback, { capture: true });
 		window.addEventListener('pagehide', rememberPosition);
 
-		if (wantsPlayback) void requestPlayback();
-		else showState('paused');
+		if (playlist.length) {
+			if (wantsPlayback) void requestPlayback();
+			else showState('paused');
+		}
 	}
 </script>
 
@@ -163,7 +245,7 @@ const trackTitle = 'Last Reunion';
 		z-index: 60;
 		display: inline-flex;
 		align-items: center;
-		max-width: min(19rem, calc(100vw - 32px));
+		max-width: min(22rem, calc(100vw - 32px));
 		color: #eee8dc;
 		background: rgba(39, 39, 35, 0.94);
 		border: 1px solid rgba(238, 232, 220, 0.32);
@@ -219,7 +301,7 @@ const trackTitle = 'Last Reunion';
 
 	.background-music__track {
 		min-width: 0;
-		max-width: 9rem;
+		max-width: 12rem;
 		padding: 0 0.72rem;
 		overflow: hidden;
 		color: #bbb4a8;

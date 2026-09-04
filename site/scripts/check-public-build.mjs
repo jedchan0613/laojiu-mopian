@@ -6,6 +6,7 @@ const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
 const archiveIndexSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', 'index.astro'), 'utf8');
 const archiveDetailSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', '[id].astro'), 'utf8');
+const backgroundMusicSource = await readFile(join(siteRoot, 'src', 'components', 'BackgroundMusic.astro'), 'utf8');
 const issues = [];
 const check = (condition, message) => {
 	if (!condition) issues.push(message);
@@ -67,14 +68,24 @@ const archiveIndex = htmlEntries.find((entry) => entry.relativePath === 'archive
 const notFoundPage = htmlEntries.find((entry) => entry.relativePath === '404.html');
 const correctionsPage = htmlEntries.find((entry) => entry.relativePath === 'corrections/index.html');
 const detailPages = htmlEntries.filter((entry) => /^archive\/[^/]+\/index\.html$/.test(entry.relativePath));
-const backgroundMusicPath = join(distRoot, 'audio', 'last-reunion.mp3');
+const backgroundMusicPublicPaths = [
+	'/audio/lullaby-summer-cicadas.ogg',
+	'/audio/last-reunion.mp3',
+];
 
 check(Boolean(home), '缺少公开首页。');
 check(Boolean(archiveIndex), '缺少档案列表页。');
 check(Boolean(notFoundPage), '缺少友好的 404 页面。');
 check(Boolean(correctionsPage), '缺少纠错与撤下说明页。');
 check(detailPages.length > 0, '没有生成任何公开档案详情页。');
-check(await exists(backgroundMusicPath), '公开构建缺少背景音乐发布副本。');
+for (const publicPath of backgroundMusicPublicPaths) {
+	check(await exists(join(distRoot, ...publicPath.slice(1).split('/'))), `公开构建缺少背景音乐发布副本：${publicPath}。`);
+}
+check(
+	backgroundMusicSource.indexOf(backgroundMusicPublicPaths[0]) < backgroundMusicSource.indexOf(backgroundMusicPublicPaths[1]),
+	'背景音乐播放顺序不正确，夏日蝉鸣应排在第一首。',
+);
+check(backgroundMusicSource.includes("audio.addEventListener('ended', playNextTrack)"), '背景音乐播放列表缺少整列循环逻辑。');
 check(archiveDetailSource.includes("item.core.object_type === 'LET'"), '详情页缺少信件类型专属判断。');
 for (const marker of ['data-letter-reader', '文字阅读', '原件对照', '只看原件', '原件图片是最终核对依据']) {
 	check(archiveDetailSource.includes(marker), `信件阅读模板缺少必要内容：${marker}。`);
@@ -98,14 +109,38 @@ if (correctionsPage) {
 }
 
 if (home) {
+	const categoryOrder = ['photos', 'postcards', 'letters', 'credentials', 'cards', 'notes', 'other'];
 	const featuredIds = [...home.html.matchAll(/data-home-featured-record="([^"]+)"/g)].map((match) => match[1]);
 	const recentIds = [...home.html.matchAll(/data-home-recent-record="([^"]+)"/g)].map((match) => match[1]);
+	const recentCategories = [...home.html.matchAll(/data-home-recent-category="([^"]+)"/g)].map((match) => match[1]);
 	const likeIds = [...home.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
+	const carouselCategories = home.html.match(/data-carousel-category-order="([^"]*)"/)?.[1].split(',').filter(Boolean) ?? [];
 	check(featuredIds.length === 1, '首页精选档案应当且只能出现一次。');
-	check(new Set(recentIds).size === recentIds.length, '首页其他档案存在重复藏品。');
-	check(!recentIds.includes(featuredIds[0]), '首页精选档案与下方其他档案发生重复。');
+	check(new Set(recentIds).size === recentIds.length, '首页每种藏品类型只能展示一件最新档案。');
+	check(recentCategories.length === recentIds.length, '首页其他档案缺少藏品类型顺序标识。');
+	check(new Set(recentCategories).size === recentCategories.length, '首页其他档案重复展示了同一种藏品类型。');
+	check(recentCategories.every((category, index) =>
+		categoryOrder.indexOf(category) > categoryOrder.indexOf(recentCategories[index - 1] ?? '')),
+	'首页其他档案没有按规定的藏品类型顺序排列。');
+	let lastCarouselCategoryIndex = -1;
+	let carouselRoundCategories = new Set();
+	for (const category of carouselCategories) {
+		const categoryIndex = categoryOrder.indexOf(category);
+		check(categoryIndex >= 0, `首页精选轮播包含未知藏品类型：${category}。`);
+		if (categoryIndex <= lastCarouselCategoryIndex) carouselRoundCategories = new Set();
+		check(!carouselRoundCategories.has(category), `首页精选轮播同一轮重复出现藏品类型：${category}。`);
+		carouselRoundCategories.add(category);
+		lastCarouselCategoryIndex = categoryIndex;
+	}
+	for (const excludedImageMarker of [
+		'/archive/LJM-20260808-PST-001/back-public.jpg',
+		'/archive-responsive/LJM-20260808-PST-001/back-public-',
+		'/archive/LJM-20260808-PCD-001/back-public.jpg',
+		'/archive-responsive/LJM-20260808-PCD-001/back-public-',
+	]) {
+		check(!home.html.includes(excludedImageMarker), `首页精选轮播重新包含固定排除图片：${excludedImageMarker}。`);
+	}
 	check(likeIds.length === featuredIds.length + recentIds.length, '首页展示档案没有逐件提供点赞入口。');
-	check(new Set(likeIds).size === likeIds.length, '首页同一件档案出现了重复点赞入口。');
 	check([...featuredIds, ...recentIds].every((itemId) => likeIds.includes(itemId)), '首页点赞入口与展示档案不一致。');
 	check(pageLoadsScriptMarker(home, '/api/likes?items='), '首页缺少点赞计数程序。');
 }
@@ -152,8 +187,11 @@ for (const page of detailPages) {
 for (const page of htmlEntries) {
 	check(page.html.includes('<meta name="viewport"'), `${page.relativePath} 缺少手机端视口设置。`);
 	check(page.html.includes('data-background-music'), `${page.relativePath} 缺少背景音乐播放器。`);
-	check(page.html.includes('/audio/last-reunion.mp3'), `${page.relativePath} 没有引用背景音乐发布副本。`);
-	check(/<audio\b[^>]*\bautoplay\b[^>]*\bloop\b/.test(page.html), `${page.relativePath} 的背景音乐没有设置自动循环。`);
+	for (const publicPath of backgroundMusicPublicPaths) {
+		check(page.html.includes(publicPath), `${page.relativePath} 没有引用背景音乐发布副本：${publicPath}。`);
+	}
+	check(/<audio\b[^>]*\bautoplay\b/.test(page.html), `${page.relativePath} 的背景音乐没有设置自动播放。`);
+	check(page.html.includes('data-background-music-playlist'), `${page.relativePath} 缺少背景音乐播放列表。`);
 	check(pageLoadsScriptMarker(page, 'ljm-background-music-preference'), `${page.relativePath} 缺少背景音乐播放控制程序。`);
 	for (const imageTag of page.html.match(/<img\b[^>]*>/g) ?? []) {
 		check(/\bwidth="\d+"/.test(imageTag) && /\bheight="\d+"/.test(imageTag), `${page.relativePath} 存在未声明尺寸的图片，可能引起页面跳动或异常拉长。`);
@@ -187,4 +225,4 @@ if (issues.length) {
 	process.exit(1);
 }
 
-process.stdout.write(`公开页面回归检查通过：${htmlEntries.length} 个页面、${detailPages.length} 个档案详情，无重复精选、空区块、图片尺寸缺失或管理端内容。\n`);
+process.stdout.write(`公开页面回归检查通过：${htmlEntries.length} 个页面、${detailPages.length} 个档案详情，首页分类顺序、固定排除图片、空区块、图片尺寸和管理端隔离均正常。\n`);
