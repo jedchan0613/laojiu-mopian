@@ -1558,7 +1558,7 @@ const runSiteBuild = async () => {
 	const { stdout, stderr } = await execFileAsync(buildCommand.file, buildCommand.arguments, {
 		cwd: siteDirectory,
 		env: onlineMode
-			? { ...process.env, PATH: `/snap/bin:${process.env.PATH ?? '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'}` }
+			? { ...process.env, PATH: `/snap/node/current/bin:${process.env.PATH ?? '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'}` }
 			: process.env,
 		windowsHide: true,
 		maxBuffer: 10 * 1024 * 1024,

@@ -35,6 +35,7 @@ const copyPublishedTree = async (sourceDirectory, destinationDirectory) => {
 		if (entry.isSymbolicLink()) throw new Error(`公开构建中不允许出现软链接：${entry.name}`);
 		if (entry.isDirectory()) {
 			await fs.mkdir(destinationPath, { mode: 0o755 });
+			await fs.chmod(destinationPath, 0o755);
 			await copyPublishedTree(sourcePath, destinationPath);
 		} else if (entry.isFile()) {
 			await fs.copyFile(sourcePath, destinationPath, fsConstants.COPYFILE_EXCL);
@@ -77,6 +78,7 @@ export const createReleaseDeployer = ({
 		let releaseCreated = false;
 		try {
 			await fs.mkdir(releaseDirectory, { mode: 0o755 });
+			await fs.chmod(releaseDirectory, 0o755);
 			releaseCreated = true;
 			await copyPublishedTree(sourceDirectory, releaseDirectory);
 			for (const requiredFile of ['index.html', '404.html', 'robots.txt', 'sitemap.xml']) {
