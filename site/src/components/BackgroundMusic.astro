@@ -1,0 +1,255 @@
+---
+const trackTitle = 'Last Reunion';
+---
+
+<aside class="background-music" data-background-music data-state="waiting" aria-label="背景音乐">
+	<audio
+		data-background-music-audio
+		src="/audio/last-reunion.mp3"
+		autoplay
+		loop
+		preload="metadata"
+	></audio>
+	<button
+		class="background-music__toggle"
+		type="button"
+		data-background-music-toggle
+		aria-pressed="false"
+		aria-label={`播放背景音乐《${trackTitle}》`}
+		title={`背景音乐：${trackTitle}`}
+	>
+		<svg class="background-music__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+			<path d="M9.25 17.25V6.5l8-1.75v10.5" />
+			<path d="M9.25 9.15l8-1.75" />
+			<ellipse cx="6.75" cy="17.4" rx="2.5" ry="1.85" />
+			<ellipse cx="14.75" cy="15.4" rx="2.5" ry="1.85" />
+		</svg>
+		<span data-background-music-label aria-live="polite">播放音乐</span>
+	</button>
+	<span class="background-music__track" aria-hidden="true">{trackTitle}</span>
+</aside>
+
+<script>
+	const root = document.querySelector<HTMLElement>('[data-background-music]');
+	const audio = root?.querySelector<HTMLAudioElement>('[data-background-music-audio]');
+	const toggle = root?.querySelector<HTMLButtonElement>('[data-background-music-toggle]');
+	const label = root?.querySelector<HTMLElement>('[data-background-music-label]');
+
+	if (root && audio && toggle && label && root.dataset.ready !== 'true') {
+		root.dataset.ready = 'true';
+
+		const preferenceKey = 'ljm-background-music-preference';
+		const positionKey = 'ljm-background-music-position';
+		const trackTitle = 'Last Reunion';
+		let wantsPlayback = true;
+
+		try {
+			wantsPlayback = sessionStorage.getItem(preferenceKey) !== 'paused';
+		} catch {
+			wantsPlayback = true;
+		}
+
+		audio.volume = 0.24;
+
+		const rememberPreference = (preference: 'playing' | 'paused') => {
+			try {
+				sessionStorage.setItem(preferenceKey, preference);
+			} catch {
+				// 浏览器禁用会话存储时，播放器仍可在当前页面正常工作。
+			}
+		};
+
+		const rememberPosition = () => {
+			if (!Number.isFinite(audio.currentTime) || audio.currentTime <= 0) return;
+			try {
+				sessionStorage.setItem(positionKey, String(audio.currentTime));
+			} catch {
+				// 播放进度只用于页面之间衔接，写入失败不影响播放。
+			}
+		};
+
+		const restorePosition = () => {
+			let savedPosition = 0;
+			try {
+				savedPosition = Number(sessionStorage.getItem(positionKey));
+			} catch {
+				savedPosition = 0;
+			}
+
+			if (!Number.isFinite(savedPosition) || savedPosition <= 0) return;
+			const latestValidPosition = Number.isFinite(audio.duration)
+				? Math.max(0, audio.duration - 0.25)
+				: savedPosition;
+			try {
+				audio.currentTime = Math.min(savedPosition, latestValidPosition);
+			} catch {
+				// 个别浏览器需要媒体元数据完全就绪后才能恢复进度。
+			}
+		};
+
+		const showState = (state: 'playing' | 'waiting' | 'paused' | 'unavailable') => {
+			const isPlaying = state === 'playing';
+			root.dataset.state = state;
+			toggle.setAttribute('aria-pressed', String(isPlaying));
+
+			if (state === 'playing') {
+				label.textContent = '暂停音乐';
+				toggle.setAttribute('aria-label', `暂停背景音乐《${trackTitle}》`);
+				return;
+			}
+
+			if (state === 'unavailable') {
+				label.textContent = '音乐不可用';
+				toggle.setAttribute('aria-label', '背景音乐暂时不可用');
+				toggle.disabled = true;
+				return;
+			}
+
+			label.textContent = '播放音乐';
+			toggle.setAttribute('aria-label', `播放背景音乐《${trackTitle}》`);
+		};
+
+		const requestPlayback = async () => {
+			if (!wantsPlayback) return;
+			try {
+				await audio.play();
+				showState('playing');
+			} catch {
+				// 主流浏览器会拦截未经访客交互的有声自动播放。
+				showState('waiting');
+			}
+		};
+
+		const unlockPlayback = (event: Event) => {
+			if (event.target instanceof Node && root.contains(event.target)) return;
+			if (wantsPlayback && audio.paused) void requestPlayback();
+		};
+
+		if (audio.readyState >= 1) restorePosition();
+		else audio.addEventListener('loadedmetadata', restorePosition, { once: true });
+
+		audio.addEventListener('playing', () => showState('playing'));
+		audio.addEventListener('pause', () => showState(wantsPlayback ? 'waiting' : 'paused'));
+		audio.addEventListener('error', () => showState('unavailable'));
+
+		toggle.addEventListener('click', () => {
+			if (audio.paused) {
+				wantsPlayback = true;
+				rememberPreference('playing');
+				void requestPlayback();
+				return;
+			}
+
+			wantsPlayback = false;
+			rememberPreference('paused');
+			audio.pause();
+			showState('paused');
+		});
+
+		document.addEventListener('pointerdown', unlockPlayback, { capture: true });
+		document.addEventListener('keydown', unlockPlayback, { capture: true });
+		window.addEventListener('pagehide', rememberPosition);
+
+		if (wantsPlayback) void requestPlayback();
+		else showState('paused');
+	}
+</script>
+
+<style>
+	.background-music {
+		position: fixed;
+		left: max(16px, env(safe-area-inset-left));
+		bottom: max(16px, env(safe-area-inset-bottom));
+		z-index: 60;
+		display: inline-flex;
+		align-items: center;
+		max-width: min(19rem, calc(100vw - 32px));
+		color: #eee8dc;
+		background: rgba(39, 39, 35, 0.94);
+		border: 1px solid rgba(238, 232, 220, 0.32);
+		box-shadow: 0 7px 22px rgba(48, 45, 39, 0.18);
+	}
+
+	.background-music audio {
+		display: none;
+	}
+
+	.background-music__toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.48rem;
+		min-height: 2.65rem;
+		padding: 0.56rem 0.72rem;
+		color: inherit;
+		background: transparent;
+		border: 0;
+		cursor: pointer;
+		font: inherit;
+		font-size: 0.76rem;
+		line-height: 1.45;
+		letter-spacing: 0.08em;
+	}
+
+	.background-music__toggle:hover,
+	.background-music__toggle:focus-visible {
+		color: #fffaf0;
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.background-music__toggle:disabled {
+		cursor: default;
+		opacity: 0.66;
+	}
+
+	.background-music__icon {
+		display: block;
+		flex: 0 0 auto;
+		width: 1.1rem;
+		height: 1.1rem;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.35;
+		stroke-linecap: square;
+		stroke-linejoin: miter;
+	}
+
+	.background-music[data-state='playing'] .background-music__icon {
+		color: #d88b76;
+	}
+
+	.background-music__track {
+		min-width: 0;
+		max-width: 9rem;
+		padding: 0 0.72rem;
+		overflow: hidden;
+		color: #bbb4a8;
+		border-left: 1px solid rgba(238, 232, 220, 0.2);
+		font-size: 0.68rem;
+		line-height: 1.45;
+		letter-spacing: 0.06em;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	@media (max-width: 640px) {
+		.background-music {
+			left: max(10px, env(safe-area-inset-left));
+			bottom: max(10px, env(safe-area-inset-bottom));
+		}
+
+		.background-music__toggle {
+			min-height: 2.5rem;
+			padding: 0.48rem 0.65rem;
+		}
+
+		.background-music__track {
+			display: none;
+		}
+	}
+
+	@media print {
+		.background-music {
+			display: none;
+		}
+	}
+</style>

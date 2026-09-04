@@ -43,7 +43,6 @@ const featuredSlides = carouselViews.flatMap((view) => view.images.map((source, 
 	description: view.imageDescriptions[index],
 	itemId: view.id,
 	title: view.title,
-	typeLabel: view.typeLabel,
 	dateDisplay: view.dateDisplay,
 	href: `/archive/${view.id}/`,
 })));
@@ -102,7 +101,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 					class="hero-record-shell"
 					data-home-featured-record={featuredView.id}
 					data-home-featured-carousel={featuredSlides.length > 1 ? '' : undefined}
-					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description, itemId, title, typeLabel, dateDisplay, href }) => ({
+					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description, itemId, title, dateDisplay, href }) => ({
 						src: image.src,
 						srcset: image.srcset ?? '',
 						width: image.width,
@@ -110,7 +109,6 @@ const categoryEntries = archiveCategories.map((category, index) => {
 						description,
 						itemId,
 						title,
-						typeLabel,
 						dateDisplay,
 						href,
 					}))) : undefined}
@@ -141,12 +139,10 @@ const categoryEntries = archiveCategories.map((category, index) => {
 								/>
 							</div>
 							<figcaption>
-								<p class="hero-record-context">精选档案 · <span data-home-carousel-type>{firstFeaturedSlide.typeLabel}</span></p>
-								<div class="hero-record-meta" aria-label="精选档案标识">
-									<span><b>档案号</b><span data-home-carousel-item-id>{firstFeaturedSlide.itemId}</span></span>
-									<span><b>年代</b><span data-home-carousel-date>{firstFeaturedSlide.dateDisplay}</span></span>
+								<div class="hero-record-heading">
+									<small class="hero-record-date"><span>年代</span><span data-home-carousel-date>{firstFeaturedSlide.dateDisplay}</span></small>
+									<strong data-home-carousel-title>{firstFeaturedSlide.title}</strong>
 								</div>
-								<strong data-home-carousel-title>{firstFeaturedSlide.title}</strong>
 								<small class="hero-record-open">打开档案 →</small>
 							</figcaption>
 						</figure>
@@ -159,16 +155,6 @@ const categoryEntries = archiveCategories.map((category, index) => {
 								</button>
 								<div class="hero-carousel-progress">
 									<span data-home-carousel-status>第 1 张，共 {featuredSlides.length} 张</span>
-									<div class:list={['hero-carousel-dots', { 'hero-carousel-dots--many': featuredSlides.length > 8 }]} aria-label="选择精选图片">
-										{featuredSlides.map(({ description }, index) => (
-											<button
-												type="button"
-												data-home-carousel-dot={index}
-												aria-label={`查看第 ${index + 1} 张：${description}`}
-												aria-current={index === 0 ? 'true' : 'false'}
-											></button>
-										))}
-									</div>
 								</div>
 								<button type="button" data-home-carousel-next aria-label="查看下一张精选图片">
 									<span class="carousel-control-label">下一张</span><span aria-hidden="true">→</span>
@@ -455,41 +441,31 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		padding: 0.72rem 0.2rem 0.08rem;
 	}
 
-	.hero-record-context {
-		grid-column: 1 / -1;
-		margin: 0;
-		color: #777166;
-		font-size: var(--site-text-micro);
-		line-height: 1.5;
-		letter-spacing: 0.12em;
+	.hero-record-heading {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		align-items: baseline;
+		gap: 0.7rem;
+		min-width: 0;
 	}
 
-	.hero-record-meta {
-		display: flex;
-		grid-column: 1 / -1;
-		flex-wrap: wrap;
-		gap: 0.38rem;
-	}
-
-	.hero-record-meta span {
+	.hero-record-date {
 		display: inline-flex;
 		align-items: baseline;
-		gap: 0.45rem;
-		padding: 0.22rem 0.42rem;
-		color: #5f5a50;
-		background: rgba(248, 244, 234, 0.62);
-		border: 1px solid #c9c0ae;
+		gap: 0.3rem;
+		color: #686359;
 		font-family: Georgia, 'Times New Roman', serif;
 		font-size: var(--site-text-micro);
-		line-height: 1.4;
-		letter-spacing: 0.055em;
+		font-weight: 400;
+		line-height: 1.45;
+		letter-spacing: 0.04em;
+		white-space: nowrap;
 	}
 
-	.hero-record-meta b {
+	.hero-record-date span:first-child {
 		color: var(--site-accent);
 		font-family: inherit;
 		font-size: 0.62rem;
-		font-weight: 500;
 		letter-spacing: 0.08em;
 	}
 
@@ -585,44 +561,6 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		line-height: 1.35;
 		letter-spacing: 0.04em;
 		text-align: center;
-	}
-
-	.hero-carousel-dots {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.08rem;
-	}
-
-	.hero-carousel-dots button {
-		position: relative;
-		width: 1.05rem;
-		height: 1rem;
-		padding: 0;
-		background: transparent;
-		border: 0;
-		cursor: pointer;
-	}
-
-	.hero-carousel-dots button::before {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 0.42rem;
-		height: 0.42rem;
-		background: #aaa294;
-		border: 1px solid transparent;
-		border-radius: 50%;
-		content: '';
-		transform: translate(-50%, -50%);
-		transition: width 160ms ease, background-color 160ms ease, border-color 160ms ease;
-	}
-
-	.hero-carousel-dots button[aria-current='true']::before {
-		width: 0.8rem;
-		background: var(--site-accent);
-		border-color: var(--site-accent);
-		border-radius: 999px;
 	}
 
 	.hero-carousel-toggle {
@@ -1018,10 +956,6 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			display: none;
 		}
 
-		.hero-carousel-dots--many {
-			display: none;
-		}
-
 		.hero-carousel-controls > button {
 			padding-right: 0.5rem;
 			padding-left: 0.5rem;
@@ -1152,7 +1086,6 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		.hero-record img,
 		.hero-record figure,
 		.hero-carousel-controls > button,
-		.hero-carousel-dots button::before,
 		.recent-records img,
 		.recent-record-image,
 		.recent-records em,
