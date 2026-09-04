@@ -20,7 +20,7 @@ const administrativeRegionListIds = {
 	city: 'administrative-city-options',
 	district: 'administrative-district-options',
 };
-const administrativeRegionValueKeys = { province: 'provinces', city: 'cities', district: 'districts' };
+const municipalityNames = new Set(['北京市', '天津市', '上海市', '重庆市']);
 
 const arrayFields = new Set([
 	'tags', 'place_filters',
@@ -203,6 +203,87 @@ const specificSchemaLabels = {
 const hasMeaningfulValue = (value) =>
 	value !== undefined && value !== null && value !== '' &&
 	(!Array.isArray(value) || value.some((entry) => hasMeaningfulValue(entry)));
+
+const currentAdministrativeProvince = () => {
+	const province = state.current?.core?.province;
+	return (state.standards?.administrativeRegions?.hierarchy ?? [])
+		.find((entry) => entry.province === province) ?? null;
+};
+
+const administrativeCitiesForProvince = (provinceEntry) => {
+	if (!provinceEntry) return [];
+	if (municipalityNames.has(provinceEntry.province)) return [provinceEntry.province];
+	return (provinceEntry.cities ?? []).map((entry) => entry.city);
+};
+
+const administrativeDistrictsForSelection = (provinceEntry, city) => {
+	if (!provinceEntry) return [];
+	if (municipalityNames.has(provinceEntry.province) && city === provinceEntry.province) {
+		return provinceEntry.direct_districts ?? [];
+	}
+	const cityEntry = (provinceEntry.cities ?? []).find((entry) => entry.city === city);
+	if (cityEntry) return cityEntry.districts ?? [];
+	return city ? [] : provinceEntry.direct_districts ?? [];
+};
+
+const setAdministrativeDatalist = (fieldCode, values) => {
+	const list = document.querySelector(`#${administrativeRegionListIds[fieldCode]}`);
+	if (list) list.innerHTML = values.map((value) => `<option value="${escapeHtml(value)}"></option>`).join('');
+};
+
+const refreshAdministrativeRegionOptions = () => {
+	const regions = state.standards?.administrativeRegions;
+	if (!regions) return;
+	const provinceEntry = currentAdministrativeProvince();
+	const city = state.current?.core?.city ?? '';
+	setAdministrativeDatalist('province', regions.provinces ?? []);
+	setAdministrativeDatalist('city', administrativeCitiesForProvince(provinceEntry));
+	setAdministrativeDatalist('district', administrativeDistrictsForSelection(provinceEntry, city));
+};
+
+const administrativeRegionFieldState = (fieldCode, value) => {
+	const provinceEntry = currentAdministrativeProvince();
+	if (fieldCode === 'province') return {
+		placeholder: '选择或输入省级行政区',
+		message: '选择省级后，市级选项会自动缩小；历史地名仍可直接输入。',
+		warning: false,
+	};
+	if (fieldCode === 'city') {
+		if (!provinceEntry) return {
+			placeholder: '请先选择省级',
+			message: '请先选择省级，再从对应的市级范围中选择；历史地名仍可直接输入。',
+			warning: Boolean(value && state.current?.core?.province),
+		};
+		const allowed = administrativeCitiesForProvince(provinceEntry);
+		return {
+			placeholder: `选择${provinceEntry.province}下属市级`,
+			message: value && !allowed.includes(value)
+				? `“${value}”不属于当前省级参照，请重新选择或确认它是历史地名。`
+				: `当前只提示${provinceEntry.province}下属市级；历史地名仍可直接输入。`,
+			warning: Boolean(value && !allowed.includes(value)),
+		};
+	}
+	if (fieldCode === 'district') {
+		const city = state.current?.core?.city ?? '';
+		if (!provinceEntry) return {
+			placeholder: '请先选择省级和市级',
+			message: '请先选择上级行政区；历史地名仍可直接输入。',
+			warning: Boolean(value),
+		};
+		const allowed = administrativeDistrictsForSelection(provinceEntry, city);
+		const parentLabel = city || provinceEntry.province;
+		return {
+			placeholder: allowed.length ? `选择${parentLabel}下属区县` : '可输入区县或历史地名',
+			message: value && allowed.length && !allowed.includes(value)
+				? `“${value}”不属于当前上级行政区参照，请重新选择或确认它是历史地名。`
+				: allowed.length
+					? `当前只提示${parentLabel}下属区县；历史地名仍可直接输入。`
+					: '当前上级没有下一级参照，可留空或输入历史地名。',
+			warning: Boolean(value && allowed.length && !allowed.includes(value)),
+		};
+	}
+	return null;
+};
 
 const normalizeRuleField = (field) =>
 	typeof field === 'string' ? { field_code: field, scope: 'metadata' } : field;
@@ -1129,6 +1210,9 @@ const renderField = ({
 	const wide = type === '长文本' || multi;
 	const attributes = `data-scope="${scope}" data-dimension="${escapeHtml(dimension)}" data-field="${escapeHtml(fieldCode)}"${required ? ' aria-required="true"' : ''}`;
 	const requiredControlAttribute = required && !readonly ? ' required' : '';
+	const regionState = administrativeRegionListIds[fieldCode]
+		? administrativeRegionFieldState(fieldCode, value)
+		: null;
 	let control;
 	if (fieldCode === 'object_type' && options.length) {
 		control = renderObjectTypeControl(options, value, { readonly, required });
@@ -1155,7 +1239,7 @@ const renderField = ({
 	} else if (type === '长文本') {
 		control = `<textarea class="field-control" ${attributes}${requiredControlAttribute}>${escapeHtml(value ?? '')}</textarea>`;
 	} else if (administrativeRegionListIds[fieldCode]) {
-		control = `<input class="field-control" type="text" list="${administrativeRegionListIds[fieldCode]}" autocomplete="off" ${attributes}${requiredControlAttribute} value="${escapeHtml(value ?? '')}" />`;
+		control = `<input class="field-control administrative-region-control${regionState?.warning ? ' is-invalid' : ''}" type="text" list="${administrativeRegionListIds[fieldCode]}" autocomplete="off" placeholder="${escapeHtml(regionState?.placeholder ?? '')}" data-initial-value="${escapeHtml(value ?? '')}" ${attributes}${requiredControlAttribute}${regionState?.warning ? ' aria-invalid="true"' : ''} value="${escapeHtml(value ?? '')}" />`;
 	} else {
 		const inputType = type === '日期' ? 'date' : ['整数', '数值'].includes(type) ? 'number' : 'text';
 		control = `<input class="field-control" type="${inputType}"${type === '数值' ? ' step="any"' : ''} ${attributes}${requiredControlAttribute} value="${escapeHtml(value ?? '')}" />`;
@@ -1164,7 +1248,7 @@ const renderField = ({
 	const help = fieldCode === 'object_type'
 		? '首页和管理端共用同一套七类；一个分类对应多个正式类型时，再选择精确类型。'
 		: definition?.rule || (multi && !options.length ? '多项内容请每行填写一项。' : '');
-	const notes = `${context ? `<span class="field-context">${escapeHtml(context)}</span>` : ''}${help ? `<span class="field-help">${escapeHtml(help)}</span>` : ''}`;
+	const notes = `${context ? `<span class="field-context">${escapeHtml(context)}</span>` : ''}${regionState?.message ? `<span class="field-context${regionState.warning ? ' is-warning' : ''}">${escapeHtml(regionState.message)}</span>` : ''}${help ? `<span class="field-help">${escapeHtml(help)}</span>` : ''}`;
 	return `<${wrapperTag} class="form-field ${wide ? 'is-wide' : ''} ${fieldCode === 'object_type' ? 'is-object-type' : ''}">
 		<span class="field-label">${escapeHtml(label)}${required ? '<span class="required-mark">必填</span>' : ''}<small>${escapeHtml(fieldCode)}</small></span>
 		${control}${notes ? `<span class="field-notes">${notes}</span>` : ''}
@@ -1205,16 +1289,26 @@ const renderBasic = () => {
 			return { definition, rule, required: Boolean(definition.required || rule.required) };
 		}).sort((left, right) => Number(right.required) - Number(left.required));
 		const requiredCount = fields.filter((field) => field.required).length;
-		return { section, fields, requiredCount, originalIndex };
+		const sectionFieldCodes = new Set(definitions.map((definition) => definition.field_code));
+		const groupRequirements = (currentCollectionRules()?.required_dimensions ?? []).filter((dimension) => {
+			const dimensionFields = (dimension.fields ?? []).map(normalizeRuleField);
+			return dimensionFields.length > 1 &&
+				dimensionFields.every((field) => field.scope === 'core' && sectionFieldCodes.has(field.field_code)) &&
+				!(dimension.code_fields ?? []).length;
+		});
+		return { section, fields, requiredCount, groupRequirements, originalIndex };
 	}).sort((left, right) =>
-		Number(right.requiredCount > 0) - Number(left.requiredCount > 0) ||
+		Number(right.requiredCount > 0 || right.groupRequirements.length > 0) -
+			Number(left.requiredCount > 0 || left.groupRequirements.length > 0) ||
 		left.originalIndex - right.originalIndex);
-	const moreFields = moreFieldGroups.map(({ section, fields, requiredCount }) => {
-		const requiredBadge = requiredCount
+	const moreFields = moreFieldGroups.map(({ section, fields, requiredCount, groupRequirements }) => {
+		const requiredBadge = groupRequirements.length
+			? `<strong class="more-fields-required" title="${escapeHtml(groupRequirements.map((rule) => `${rule.dimension_code} · ${rule.name}`).join('；'))}">必填 · 至少一项</strong>`
+			: requiredCount
 			? `<strong class="more-fields-required">必填 ${requiredCount} 项</strong>`
 			: '';
 		return `
-		<details class="more-fields"><summary><span class="more-fields-summary-title">${escapeHtml(section)} · ${fields.length} 个字段</span>${requiredBadge}</summary><div class="form-grid">
+		<details class="more-fields ${groupRequirements.length ? 'is-required-group' : ''}"><summary><span class="more-fields-summary-title">${escapeHtml(section)} · ${fields.length} 个字段</span>${requiredBadge}</summary><div class="form-grid">
 		${fields.map(({ definition, rule, required }) => renderField({
 			fieldCode: definition.field_code,
 			definition,
@@ -1575,6 +1669,7 @@ function renderEditor() {
 	}
 	if (!state.current) {
 		elements.editorSurface.innerHTML = '<div class="empty-state">点击“新建藏品”开始建立草稿。</div>';
+		refreshAdministrativeRegionOptions();
 		return;
 	}
 	updateTabCompletionBadges();
@@ -1586,6 +1681,7 @@ function renderEditor() {
 		elements.editorSurface.innerHTML = `<div class="withdrawn-record-notice"><strong>这是一条已撤销的只读档案</strong>
 			<span>${reason ? `撤销原因：${escapeHtml(reason)}。` : ''}${escapeHtml(restoreMessage)}</span></div>${state.activeTab === 'images' ? renderWithdrawnImages() : renderBasic()}`;
 		elements.editorSurface.querySelectorAll('input, textarea, select').forEach((control) => { control.disabled = true; });
+		refreshAdministrativeRegionOptions();
 		return;
 	}
 	if (state.activeTab === 'images') elements.editorSurface.innerHTML = renderImages();
@@ -1593,6 +1689,7 @@ function renderEditor() {
 	else if (state.activeTab === 'preview') elements.editorSurface.innerHTML = renderPreview();
 	else if (state.activeTab === 'privacy') elements.editorSurface.innerHTML = renderPrivacy();
 	else elements.editorSurface.innerHTML = renderBasic();
+	refreshAdministrativeRegionOptions();
 }
 
 const updateTabCompletionBadges = () => {
@@ -1678,6 +1775,61 @@ const setFieldValue = (scope, dimension, fieldCode, value) => {
 	state.validationIssues = [];
 	updateTabCompletionBadges();
 	updateHeader();
+};
+
+const handleAdministrativeRegionCommit = (control) => {
+	const fieldCode = control.dataset.field;
+	if (!administrativeRegionListIds[fieldCode]) return false;
+	const previousValue = control.dataset.initialValue ?? '';
+	handleFieldChange(control);
+	const value = state.current.core[fieldCode] ?? '';
+	if (value === previousValue) {
+		refreshAdministrativeRegionOptions();
+		return true;
+	}
+
+	let changedChildren = false;
+	let nextField = fieldCode === 'province' ? 'city' : 'district';
+	if (fieldCode === 'province') {
+		const provinceEntry = currentAdministrativeProvince();
+		if (provinceEntry) {
+			const allowedCities = administrativeCitiesForProvince(provinceEntry);
+			if (municipalityNames.has(provinceEntry.province)) {
+				if (state.current.core.city !== provinceEntry.province) {
+					state.current.core.city = provinceEntry.province;
+					changedChildren = true;
+				}
+				nextField = 'district';
+			} else if (state.current.core.city && !allowedCities.includes(state.current.core.city)) {
+				delete state.current.core.city;
+				delete state.current.core.district;
+				changedChildren = true;
+			}
+			const allowedDistricts = administrativeDistrictsForSelection(provinceEntry, state.current.core.city ?? '');
+			if (state.current.core.district && allowedDistricts.length && !allowedDistricts.includes(state.current.core.district)) {
+				delete state.current.core.district;
+				changedChildren = true;
+			}
+		}
+	} else if (fieldCode === 'city') {
+		const provinceEntry = currentAdministrativeProvince();
+		const allowedDistricts = administrativeDistrictsForSelection(provinceEntry, value);
+		if (state.current.core.district && allowedDistricts.length && !allowedDistricts.includes(state.current.core.district)) {
+			delete state.current.core.district;
+			changedChildren = true;
+		}
+	}
+
+	if (changedChildren) {
+		updateDerivedCollectionCode();
+		updateCollectionCodeDisplays();
+		state.validationIssues = [];
+	}
+	renderEditor();
+	requestAnimationFrame(() => elements.editorSurface
+		.querySelector(`.administrative-region-control[data-field="${nextField}"]`)?.focus());
+	if (changedChildren) showToast('已根据上级行政区更新后续选项，原有的不匹配值已清空。');
+	return true;
 };
 
 const applyObjectTypeChange = (value) => {
@@ -1999,11 +2151,7 @@ const loadBootstrap = async (selectedId = state.activeId) => {
 		if (!state.dictionary.has(entry.dictionary_key)) state.dictionary.set(entry.dictionary_key, []);
 		state.dictionary.get(entry.dictionary_key).push(entry);
 	}
-	for (const [fieldCode, listId] of Object.entries(administrativeRegionListIds)) {
-		const list = document.querySelector(`#${listId}`);
-		const values = data.standards.administrativeRegions?.[administrativeRegionValueKeys[fieldCode]] ?? [];
-		if (list) list.innerHTML = values.map((value) => `<option value="${escapeHtml(value)}"></option>`).join('');
-	}
+	refreshAdministrativeRegionOptions();
 	elements.previewLink.href = publicPreviewUrl('/');
 	renderRecordList();
 	renderWorkspaceNavigation();
@@ -2129,6 +2277,10 @@ elements.editorSurface.addEventListener('change', async (event) => {
 	}
 	if (control.matches('.object-category-control')) {
 		handleObjectCategoryChange(control);
+		return;
+	}
+	if (control.matches('.administrative-region-control')) {
+		handleAdministrativeRegionCommit(control);
 		return;
 	}
 	if (control.matches('.field-control[type="checkbox"]') || control.tagName === 'SELECT') handleFieldChange(control);

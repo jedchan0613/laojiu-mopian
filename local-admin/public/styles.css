@@ -884,6 +884,11 @@ button.task-chip:focus-visible {
 	line-height: 1.45;
 }
 
+.field-context.is-warning {
+	color: #8d3f30;
+	font-weight: 600;
+}
+
 .field-notes {
 	display: grid;
 	gap: 0.12rem;
@@ -924,6 +929,11 @@ button.task-chip:focus-visible {
 	outline: 2px solid #9a3f2e;
 	outline-offset: 3px;
 	box-shadow: 0 0 0 3px rgba(86, 99, 84, 0.08);
+}
+
+.form-field .administrative-region-control.is-invalid {
+	border-color: #a75340;
+	background: #fff8f4;
 }
 
 .form-field input[readonly] {
@@ -994,6 +1004,11 @@ button.task-chip:focus-visible {
 	margin-top: 0.68rem;
 	background: rgba(255, 255, 255, 0.32);
 	border: 1px solid #cec6b8;
+}
+
+.more-fields.is-required-group {
+	border-color: #b59a78;
+	background: rgba(255, 252, 244, 0.58);
 }
 
 .more-fields > summary,
