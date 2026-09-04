@@ -1,0 +1,13 @@
+[Unit]
+Description=定时检查老旧默片 GitHub main 分支
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=2min
+RandomizedDelaySec=15s
+AccuracySec=15s
+Persistent=true
+Unit=laojiumopian-github-deploy.service
+
+[Install]
+WantedBy=timers.target

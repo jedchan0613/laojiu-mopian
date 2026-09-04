@@ -1945,6 +1945,22 @@ if (process.argv.includes('--check-config')) {
 	await fs.writeFile(siteArchiveDataFile, await generateSiteArchiveSource(), 'utf8');
 	console.log('网站档案数据已根据正式 JSON 重新生成。');
 } else {
+	let shutdownRequested = false;
+	const requestGracefulShutdown = (signal) => {
+		if (shutdownRequested) return;
+		shutdownRequested = true;
+		console.log(`收到 ${signal}，停止接收新请求并等待当前操作完成。`);
+		const forceTimer = setTimeout(() => {
+			console.error('等待当前操作完成超时，管理服务退出。');
+			process.exit(1);
+		}, 270_000);
+		adminServer.close(() => {
+			clearTimeout(forceTimer);
+			console.log('当前操作已经完成，管理服务安全停止。');
+		});
+	};
+	process.once('SIGTERM', () => requestGracefulShutdown('SIGTERM'));
+	process.once('SIGINT', () => requestGracefulShutdown('SIGINT'));
 	adminServer.listen(adminPort, adminHost, () => {
 		if (onlineMode) {
 			console.log(`线上档案管理仅在服务器本机监听：http://${adminHost}:${adminPort}`);

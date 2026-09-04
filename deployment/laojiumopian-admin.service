@@ -15,7 +15,7 @@ ExecStartPre=/snap/node/current/bin/node /srv/laojiumopian-admin/app/current/loc
 ExecStart=/snap/node/current/bin/node /srv/laojiumopian-admin/app/current/local-admin/server.mjs
 Restart=on-failure
 RestartSec=5
-TimeoutStopSec=30
+TimeoutStopSec=5min
 UMask=0027
 
 NoNewPrivileges=true
