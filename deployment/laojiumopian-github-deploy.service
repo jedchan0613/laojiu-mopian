@@ -1,0 +1,36 @@
+[Unit]
+Description=老旧默片 GitHub 代码自动发布检查
+Wants=network-online.target
+After=network-online.target cloudflared.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/laojiumopian-github-deploy
+TimeoutStartSec=20min
+UMask=0027
+
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+ReadWritePaths=/srv/laojiumopian-admin/app
+ReadWritePaths=/srv/laojiumopian-admin/build-work
+ReadWritePaths=/srv/laojiumopian-admin/github-deploy
+ReadWritePaths=/srv/laojiumopian-admin/github-source.git
+ReadWritePaths=/srv/laojiumopian/releases
+ReadWritePaths=/run/lock
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

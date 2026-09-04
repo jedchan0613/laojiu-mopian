@@ -3,7 +3,8 @@ import { constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
-const safeReleaseNamePattern = /^\d{8}-\d{6}-admin-[a-f0-9]{8}$/;
+const safeReleaseLabelPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const safeReleaseNamePattern = /^\d{8}-\d{6}-[a-z0-9]+(?:-[a-z0-9]+)*-[a-f0-9]{8}$/;
 
 const pathIsInside = (parent, candidate) => {
 	const relative = path.relative(path.resolve(parent), path.resolve(candidate));
@@ -61,17 +62,21 @@ export const createReleaseDeployer = ({
 	sourceDirectory,
 	releasesDirectory,
 	liveLink,
+	releaseLabel = 'admin',
 	now = () => new Date(),
 	randomId = () => randomUUID().slice(0, 8),
 }) => ({
 	deploy: async () => {
+		if (!safeReleaseLabelPattern.test(releaseLabel) || releaseLabel.length > 48) {
+			throw new Error('公开版本来源标签无效。');
+		}
 		await requireDirectory(sourceDirectory, '待发布网站构建目录');
 		await requireDirectory(releasesDirectory, '公开网站版本目录');
 		if (path.dirname(path.resolve(liveLink)) !== path.resolve(releasesDirectory)) {
 			throw new Error('公开网站切换软链接必须直接位于版本目录中。');
 		}
 		const previous = await readLiveRelease(releasesDirectory, liveLink);
-		const releaseName = `${timestamp(now())}-admin-${randomId()}`;
+		const releaseName = `${timestamp(now())}-${releaseLabel}-${randomId()}`;
 		if (!safeReleaseNamePattern.test(releaseName)) throw new Error('新公开版本名称无效。');
 		const releaseDirectory = path.join(releasesDirectory, releaseName);
 		const temporaryLink = path.join(releasesDirectory, `.live-next-${randomUUID().slice(0, 8)}`);
