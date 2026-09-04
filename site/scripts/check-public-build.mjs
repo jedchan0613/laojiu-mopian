@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
+const archiveIndexSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', 'index.astro'), 'utf8');
 const archiveDetailSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', '[id].astro'), 'utf8');
 const issues = [];
 const check = (condition, message) => {
@@ -120,6 +121,7 @@ if (archiveIndex) {
 	check(archiveIndex.html.includes('id="archive-search-suggestions"'), '档案列表缺少相关标签提示区域。');
 	check(archiveIndex.html.includes('data-search-highlight'), '档案列表缺少关键词高亮目标。');
 	check(archiveIndex.html.includes('id="archive-pagination"'), '档案列表缺少条件式分页控件。');
+	check(archiveIndexSource.includes('.archive-list > li[hidden]'), '档案列表缺少筛选结果卡片的明确隐藏样式。');
 	for (const sortValue of ['recent', 'date-asc', 'date-desc', 'type']) {
 		check(archiveIndex.html.includes(`value="${sortValue}"`), `档案列表缺少排序方式：${sortValue}。`);
 	}
