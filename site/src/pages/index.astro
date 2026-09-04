@@ -35,11 +35,21 @@ const recentViews = [...publishedViews]
 	})
 	.filter((view) => view.id !== featuredView?.id)
 	.slice(0, 3);
-const featuredSlides = featuredView?.images.map((source, index) => ({
+const carouselViews = featuredView
+	? [featuredView, ...publishedViews.filter((view) => view.id !== featuredView.id)]
+	: publishedViews;
+const featuredSlides = carouselViews.flatMap((view) => view.images.map((source, index) => ({
 	image: getResponsiveImage(source),
-	description: featuredView.imageDescriptions[index],
-})) ?? [];
+	description: view.imageDescriptions[index],
+	itemId: view.id,
+	title: view.title,
+	typeLabel: view.typeLabel,
+	dateDisplay: view.dateDisplay,
+	href: `/archive/${view.id}/`,
+})));
 const featuredImage = featuredSlides[0]?.image;
+const firstFeaturedSlide = featuredSlides[0];
+const carouselItemIds = [...new Set(featuredSlides.map((slide) => slide.itemId))];
 const recentEntries = recentViews.map((view) => ({
 	view,
 	image: view.images[0] ? getResponsiveImage(view.images[0]) : undefined,
@@ -87,30 +97,36 @@ const categoryEntries = archiveCategories.map((category, index) => {
 				</section>
 			</div>
 
-			{featuredView && featuredImage && (
+			{featuredView && featuredImage && firstFeaturedSlide && (
 				<div
 					class="hero-record-shell"
 					data-home-featured-record={featuredView.id}
 					data-home-featured-carousel={featuredSlides.length > 1 ? '' : undefined}
-					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description }) => ({
+					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description, itemId, title, typeLabel, dateDisplay, href }) => ({
 						src: image.src,
 						srcset: image.srcset ?? '',
 						width: image.width,
 						height: image.height,
 						description,
+						itemId,
+						title,
+						typeLabel,
+						dateDisplay,
+						href,
 					}))) : undefined}
 					role={featuredSlides.length > 1 ? 'region' : undefined}
 					aria-roledescription={featuredSlides.length > 1 ? '轮播图' : undefined}
-					aria-label={featuredSlides.length > 1 ? `${featuredView.title}的精选图片` : undefined}
+					aria-label={featuredSlides.length > 1 ? '全部公开藏品的精选图片' : undefined}
 				>
 					<a
 						class="hero-record"
-						href={`/archive/${featuredView.id}/`}
-						aria-label={`查看本期档案：${featuredView.title}`}
+						href={firstFeaturedSlide.href}
+						aria-label={`查看精选档案：${firstFeaturedSlide.title}`}
+						data-home-carousel-link={featuredSlides.length > 1 ? '' : undefined}
 					>
 						<figure>
 							<div class="hero-record-image">
-								<span class="hero-record-index" aria-hidden="true">精选<br />01</span>
+								<span class="hero-record-index" aria-hidden="true">精选<br /><span data-home-carousel-index>01</span></span>
 								<img
 									src={featuredImage.src}
 									srcset={featuredImage.srcset}
@@ -125,12 +141,12 @@ const categoryEntries = archiveCategories.map((category, index) => {
 								/>
 							</div>
 							<figcaption>
-								<p class="hero-record-context">本期档案 · {featuredView.typeLabel}</p>
+								<p class="hero-record-context">精选档案 · <span data-home-carousel-type>{firstFeaturedSlide.typeLabel}</span></p>
 								<div class="hero-record-meta" aria-label="精选档案标识">
-									<span><b>档案号</b>{featuredView.id}</span>
-									<span><b>年代</b>{featuredView.dateDisplay}</span>
+									<span><b>档案号</b><span data-home-carousel-item-id>{firstFeaturedSlide.itemId}</span></span>
+									<span><b>年代</b><span data-home-carousel-date>{firstFeaturedSlide.dateDisplay}</span></span>
 								</div>
-								<strong>{featuredView.title}</strong>
+								<strong data-home-carousel-title>{firstFeaturedSlide.title}</strong>
 								<small class="hero-record-open">打开档案 →</small>
 							</figcaption>
 						</figure>
@@ -143,7 +159,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 								</button>
 								<div class="hero-carousel-progress">
 									<span data-home-carousel-status>第 1 张，共 {featuredSlides.length} 张</span>
-									<div class="hero-carousel-dots" aria-label="选择精选图片">
+									<div class:list={['hero-carousel-dots', { 'hero-carousel-dots--many': featuredSlides.length > 8 }]} aria-label="选择精选图片">
 										{featuredSlides.map(({ description }, index) => (
 											<button
 												type="button"
@@ -171,7 +187,11 @@ const categoryEntries = archiveCategories.map((category, index) => {
 							</div>
 						)}
 						<div class="hero-record-actions">
-							<ArchiveLikeButton itemId={featuredView.id} title={featuredView.title} />
+							<ArchiveLikeButton
+								itemId={firstFeaturedSlide.itemId}
+								title={firstFeaturedSlide.title}
+								preloadItemIds={carouselItemIds}
+							/>
 						</div>
 					</div>
 				</div>
@@ -571,12 +591,12 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.18rem;
+		gap: 0.08rem;
 	}
 
 	.hero-carousel-dots button {
 		position: relative;
-		width: 1.25rem;
+		width: 1.05rem;
 		height: 1rem;
 		padding: 0;
 		background: transparent;
@@ -995,6 +1015,10 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		}
 
 		.carousel-control-label {
+			display: none;
+		}
+
+		.hero-carousel-dots--many {
 			display: none;
 		}
 
