@@ -17,7 +17,8 @@ export type SiteIconName =
 	| 'credentials'
 	| 'cards'
 	| 'notes'
-	| 'objects';
+	| 'objects'
+	| 'heart';
 
 interface Props {
 	name: SiteIconName;
@@ -124,5 +125,8 @@ const { name, class: className = '' } = Astro.props;
 		<>
 			<path d="m12 3.5 8 4.2v8.6l-8 4.2-8-4.2V7.7zM4.5 7.8 12 12l7.5-4.2M12 12v8" />
 		</>
+	)}
+	{name === 'heart' && (
+		<path d="M12 20.1 4.8 13.4a4.7 4.7 0 0 1 6.6-6.7l.6.7.6-.7a4.7 4.7 0 0 1 6.6 6.7z" />
 	)}
 </svg>

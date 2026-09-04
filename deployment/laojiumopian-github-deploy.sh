@@ -23,6 +23,7 @@ readonly PUBLIC_RELEASES='/srv/laojiumopian/releases'
 readonly PUBLIC_LIVE="$PUBLIC_RELEASES/live"
 readonly ENVIRONMENT_FILE='/etc/laojiumopian-admin.env'
 readonly ADMIN_SERVICE='laojiumopian-admin.service'
+readonly LIKE_SERVICE='laojiumopian-likes.service'
 readonly NODE='/snap/node/current/bin/node'
 readonly NPM='/snap/node/current/bin/npm'
 readonly RUNUSER='/usr/sbin/runuser'
@@ -95,6 +96,7 @@ previous_public_target=''
 service_stopped=false
 app_switched=false
 public_switched=false
+like_service_installed=false
 
 cleanup() {
 	local status=$?
@@ -110,6 +112,9 @@ cleanup() {
 		fi
 		if [[ "$service_stopped" == true || "$app_switched" == true ]]; then
 			systemctl restart "$ADMIN_SERVICE"
+		fi
+		if [[ "$like_service_installed" == true && "$app_switched" == true ]]; then
+			systemctl restart "$LIKE_SERVICE"
 		fi
 		if [[ -n "$staging_directory" && -e "$staging_directory" ]]; then
 			assert_staging_path
@@ -148,6 +153,10 @@ require_directory "$BUILD_ROOT" '构建工作目录'
 require_directory "$PUBLIC_RELEASES" '公开网站版本目录'
 require_symlink "$APP_CURRENT" '当前管理程序版本'
 require_symlink "$PUBLIC_LIVE" '当前公开网站版本'
+
+if systemctl cat "$LIKE_SERVICE" >/dev/null 2>&1; then
+	like_service_installed=true
+fi
 
 exec 9>"$LOCK_FILE"
 if ! flock -n 9; then
@@ -213,6 +222,7 @@ for forbidden_path in \
 done
 
 require_file "$staging_directory/local-admin/server.mjs" '新版本管理服务'
+require_file "$staging_directory/site/server/likes/server.mjs" '新版本公开点赞服务'
 require_file "$staging_directory/site/package-lock.json" '新版本依赖锁定清单'
 require_file "$staging_directory/deployment/publish-built-site.mjs" '新版本公开切换程序'
 
@@ -223,6 +233,7 @@ log "安装并检查新程序版本：$short_commit"
 	NPM_CONFIG_CACHE="$NPM_CACHE" \
 	"$NPM" ci --prefix "$staging_directory/site"
 run_as_admin "$NODE" --test "$staging_directory"/local-admin/tests/*.test.mjs
+run_as_admin "$NODE" --test "$staging_directory"/site/server/likes/tests/*.test.mjs
 
 log '暂停管理服务，接入服务器现有公开资料并执行正式构建。'
 systemctl stop "$ADMIN_SERVICE"
@@ -267,6 +278,19 @@ for attempt in {1..20}; do
 	[[ "$attempt" -lt 20 ]] || fail '新管理服务健康检查没有通过。'
 	sleep 1
 done
+
+if [[ "$like_service_installed" == true ]]; then
+	log '重启公开点赞服务。'
+	systemctl restart "$LIKE_SERVICE"
+	for attempt in {1..20}; do
+		if curl --fail --silent --show-error --max-time 2 \
+			http://127.0.0.1:4175/healthz >/dev/null; then
+			break
+		fi
+		[[ "$attempt" -lt 20 ]] || fail '新点赞服务健康检查没有通过。'
+		sleep 1
+	done
+fi
 
 log '管理服务正常，切换新的公开网站版本。'
 run_as_admin "$NODE" "$release_directory/deployment/publish-built-site.mjs" \

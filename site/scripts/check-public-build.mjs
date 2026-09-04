@@ -65,9 +65,14 @@ if (correctionsPage) {
 if (home) {
 	const featuredIds = [...home.html.matchAll(/data-home-featured-record="([^"]+)"/g)].map((match) => match[1]);
 	const recentIds = [...home.html.matchAll(/data-home-recent-record="([^"]+)"/g)].map((match) => match[1]);
+	const likeIds = [...home.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
 	check(featuredIds.length === 1, '首页精选档案应当且只能出现一次。');
 	check(new Set(recentIds).size === recentIds.length, '首页其他档案存在重复藏品。');
 	check(!recentIds.includes(featuredIds[0]), '首页精选档案与下方其他档案发生重复。');
+	check(likeIds.length === featuredIds.length + recentIds.length, '首页展示档案没有逐件提供点赞入口。');
+	check(new Set(likeIds).size === likeIds.length, '首页同一件档案出现了重复点赞入口。');
+	check([...featuredIds, ...recentIds].every((itemId) => likeIds.includes(itemId)), '首页点赞入口与展示档案不一致。');
+	check(home.html.includes('/api/likes'), '首页缺少点赞计数程序。');
 }
 
 if (archiveIndex) {
@@ -112,6 +117,9 @@ for (const page of htmlEntries) {
 const publicText = htmlEntries.map((entry) => entry.html).join('\n');
 for (const marker of ['LOCAL ARCHIVE DESK', '/api/bootstrap', 'data-admin-app', 'similar-record-button', 'STRUCTURED DATA ONLY']) {
 	check(!publicText.includes(marker), `公开构建混入管理端标记：${marker}。`);
+}
+for (const secretMarker of ['LJM_LIKE_HASH_SECRET', 'LJM_LIKE_DATA_FILE', 'X-LJM-Client-IP']) {
+	check(!publicText.includes(secretMarker), `公开构建混入点赞服务私有配置：${secretMarker}。`);
 }
 check(!(await exists(join(distRoot, 'admin'))), '公开构建中不应存在 admin 目录。');
 

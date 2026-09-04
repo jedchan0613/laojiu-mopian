@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ArchiveLikeButton from '../components/ArchiveLikeButton.astro';
 import SiteIcon, { type SiteIconName } from '../components/SiteIcon.astro';
 import { archiveItems } from '../data/archive';
 import {
@@ -83,38 +84,43 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			</div>
 
 			{featuredView && featuredImage && (
-				<a
-					class="hero-record"
-					href={`/archive/${featuredView.id}/`}
-					aria-label={`查看本期档案：${featuredView.title}`}
-					data-home-featured-record={featuredView.id}
-				>
-					<figure>
-						<div class="hero-record-image">
-							<span class="hero-record-index" aria-hidden="true">精选<br />01</span>
-							<img
-								src={featuredImage.src}
-								srcset={featuredImage.srcset}
-								sizes="(max-width: 760px) calc(100vw - 32px), 600px"
-								alt={featuredView.imageDescriptions[0]}
-								width={featuredImage.width}
-								height={featuredImage.height}
-								loading="eager"
-								fetchpriority="high"
-								decoding="async"
-							/>
+				<div class="hero-record-shell">
+					<a
+						class="hero-record"
+						href={`/archive/${featuredView.id}/`}
+						aria-label={`查看本期档案：${featuredView.title}`}
+						data-home-featured-record={featuredView.id}
+					>
+						<figure>
+							<div class="hero-record-image">
+								<span class="hero-record-index" aria-hidden="true">精选<br />01</span>
+								<img
+									src={featuredImage.src}
+									srcset={featuredImage.srcset}
+									sizes="(max-width: 760px) calc(100vw - 32px), 600px"
+									alt={featuredView.imageDescriptions[0]}
+									width={featuredImage.width}
+									height={featuredImage.height}
+									loading="eager"
+									fetchpriority="high"
+									decoding="async"
+								/>
+							</div>
+							<figcaption>
+								<p class="hero-record-context">本期档案 · {featuredView.typeLabel}</p>
+								<div class="hero-record-meta" aria-label="精选档案标识">
+									<span><b>档案号</b>{featuredView.id}</span>
+									<span><b>年代</b>{featuredView.dateDisplay}</span>
+								</div>
+								<strong>{featuredView.title}</strong>
+								<small class="hero-record-open">打开档案 →</small>
+							</figcaption>
+						</figure>
+					</a>
+					<div class="hero-record-actions">
+						<ArchiveLikeButton itemId={featuredView.id} title={featuredView.title} />
 					</div>
-					<figcaption>
-						<p class="hero-record-context">本期档案 · {featuredView.typeLabel}</p>
-						<div class="hero-record-meta" aria-label="精选档案标识">
-							<span><b>档案号</b>{featuredView.id}</span>
-							<span><b>年代</b>{featuredView.dateDisplay}</span>
-						</div>
-						<strong>{featuredView.title}</strong>
-						<small class="hero-record-open">打开档案 →</small>
-					</figcaption>
-					</figure>
-				</a>
+				</div>
 			)}
 		</div>
 
@@ -184,6 +190,9 @@ const categoryEntries = archiveCategories.map((category, index) => {
 										<em>查看档案 →</em>
 									</span>
 								</a>
+								<div class="recent-record-actions">
+									<ArchiveLikeButton itemId={view.id} title={view.title} compact />
+								</div>
 							</li>
 						))}
 					</ul>
@@ -191,6 +200,9 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			</section>
 		)}
 	</div>
+	<script>
+		import '../scripts/archive-likes';
+	</script>
 </BaseLayout>
 
 <style>
@@ -299,6 +311,10 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	.browse-link {
 		margin-top: 15px;
 		letter-spacing: 0.1em;
+	}
+
+	.hero-record-shell {
+		min-width: 0;
 	}
 
 	.hero-record {
@@ -424,6 +440,13 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		text-decoration: underline;
 		text-decoration-thickness: 1px;
 		text-underline-offset: 0.3em;
+	}
+
+	.hero-record-actions,
+	.recent-record-actions {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 0.72rem;
 	}
 
 	.browse-link:focus-visible,
@@ -663,11 +686,14 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	}
 
 	.recent-records li {
+		display: flex;
+		flex-direction: column;
 		border: 0;
 	}
 
 	.recent-records a {
 		display: grid;
+		flex: 1;
 		grid-template-rows: auto 1fr;
 		gap: 0.85rem;
 		align-items: start;
@@ -754,6 +780,11 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		transform: translateX(3px);
 	}
 
+	.recent-record-actions {
+		margin-top: -0.5rem;
+		padding-bottom: 0.25rem;
+	}
+
 	@media (max-width: 760px) {
 		.hero {
 			display: flex;
@@ -771,10 +802,14 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			order: 1;
 		}
 
-		.hero-record {
+		.hero-record-shell {
 			order: 2;
 			width: 100%;
 			margin-top: 1.25rem;
+		}
+
+		.hero-record-actions {
+			margin-top: 0.65rem;
 		}
 
 		.introduction {
@@ -859,8 +894,16 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		}
 
 		.recent-records li {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			align-items: center;
 			border-top: 0;
 			border-bottom: 1px solid #bcb5a4;
+		}
+
+		.recent-record-actions {
+			margin: 0;
+			padding: 0 0 0 0.75rem;
 		}
 
 		.recent-records img {

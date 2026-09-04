@@ -1,0 +1,37 @@
+[Unit]
+Description=老旧默片公开点赞服务
+After=network.target
+
+[Service]
+Type=simple
+User=ljmlikes
+Group=ljmlikes
+SupplementaryGroups=ljmadmin
+WorkingDirectory=/srv/laojiumopian-admin/app/current/site/server/likes
+EnvironmentFile=/etc/laojiumopian-likes.env
+ExecStartPre=/snap/node/current/bin/node /srv/laojiumopian-admin/app/current/site/server/likes/server.mjs --check-config
+ExecStart=/snap/node/current/bin/node /srv/laojiumopian-admin/app/current/site/server/likes/server.mjs
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+ReadWritePaths=/srv/laojiumopian-interactions/data
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target
