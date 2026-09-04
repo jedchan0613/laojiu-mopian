@@ -20,32 +20,34 @@ for (const item of publishedItems) {
 	categoryCounts.set(slug, (categoryCounts.get(slug) ?? 0) + 1);
 }
 
-const configuredFeaturedView = publishedViews.find(
-	(view) => view.id === siteCuration.homeFeaturedRecordId,
-);
-const featuredView = configuredFeaturedView
-	?? publishedViews.find((view) => view.description && view.images.length > 1)
-	?? publishedViews.find((view) => view.description)
-	?? publishedViews[0];
-const recentViews = [...publishedViews]
-	.sort((left, right) => {
-		const leftDate = left.item.core.accession_date ?? left.item.core.created_date ?? '';
-		const rightDate = right.item.core.accession_date ?? right.item.core.created_date ?? '';
-		return rightDate.localeCompare(leftDate) || right.id.localeCompare(left.id);
-	})
-	.filter((view) => view.id !== featuredView?.id)
-	.slice(0, 3);
-const carouselViews = featuredView
-	? [featuredView, ...publishedViews.filter((view) => view.id !== featuredView.id)]
-	: publishedViews;
-const featuredSlides = carouselViews.flatMap((view) => view.images.map((source, index) => ({
-	image: getResponsiveImage(source),
-	description: view.imageDescriptions[index],
-	itemId: view.id,
-	title: view.title,
-	dateDisplay: view.dateDisplay,
-	href: `/archive/${view.id}/`,
-})));
+const compareViewsByRecency = (left: (typeof publishedViews)[number], right: (typeof publishedViews)[number]) => {
+	const leftDate = left.item.core.accession_date ?? left.item.core.created_date ?? '';
+	const rightDate = right.item.core.accession_date ?? right.item.core.created_date ?? '';
+	return rightDate.localeCompare(leftDate) || right.id.localeCompare(left.id);
+};
+const categoryViewGroups = archiveCategories.map((category) => ({
+	category,
+	views: publishedViews
+		.filter((view) => getArchiveCategorySlug(view.objectType) === category.slug)
+		.sort(compareViewsByRecency),
+}));
+const recentViews = categoryViewGroups.flatMap(({ views }) => views[0] ? [views[0]] : []);
+const excludedCarouselImages = new Set<string>(siteCuration.homeCarouselExcludedImagePaths);
+const carouselSlideGroups = categoryViewGroups.map(({ category, views }) => views.flatMap((view) =>
+	view.images.flatMap((source, index) => excludedCarouselImages.has(source) ? [] : [{
+		image: getResponsiveImage(source),
+		description: view.imageDescriptions[index],
+		itemId: view.id,
+		title: view.title,
+		dateDisplay: view.dateDisplay,
+		href: `/archive/${view.id}/`,
+		categorySlug: category.slug,
+	}]),
+));
+const carouselRoundCount = Math.max(0, ...carouselSlideGroups.map((slides) => slides.length));
+const featuredSlides = Array.from({ length: carouselRoundCount }, (_, roundIndex) =>
+	carouselSlideGroups.flatMap((slides) => slides[roundIndex] ? [slides[roundIndex]] : []),
+).flat();
 const featuredImage = featuredSlides[0]?.image;
 const firstFeaturedSlide = featuredSlides[0];
 const carouselItemIds = [...new Set(featuredSlides.map((slide) => slide.itemId))];
@@ -96,11 +98,12 @@ const categoryEntries = archiveCategories.map((category, index) => {
 				</section>
 			</div>
 
-			{featuredView && featuredImage && firstFeaturedSlide && (
+			{featuredImage && firstFeaturedSlide && (
 				<div
 					class="hero-record-shell"
-					data-home-featured-record={featuredView.id}
+					data-home-featured-record={firstFeaturedSlide.itemId}
 					data-home-featured-carousel={featuredSlides.length > 1 ? '' : undefined}
+					data-carousel-category-order={featuredSlides.map((slide) => slide.categorySlug).join(',')}
 					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description, itemId, title, dateDisplay, href }) => ({
 						src: image.src,
 						srcset: image.srcset ?? '',
@@ -129,7 +132,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 									src={featuredImage.src}
 									srcset={featuredImage.srcset}
 									sizes="(max-width: 760px) calc(100vw - 32px), 600px"
-									alt={featuredView.imageDescriptions[0]}
+									alt={firstFeaturedSlide.description}
 									width={featuredImage.width}
 									height={featuredImage.height}
 									loading="eager"
@@ -228,6 +231,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 									href={`/archive/${view.id}/`}
 									aria-label={`查看档案：${view.title}`}
 									data-home-recent-record={view.id}
+									data-home-recent-category={getArchiveCategorySlug(view.objectType)}
 								>
 									<span class="recent-record-image">
 										<span class="recent-record-index" aria-hidden="true">{String(index + 2).padStart(2, '0')}</span>

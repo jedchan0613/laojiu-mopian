@@ -1,11 +1,13 @@
 /**
  * 公开网站的人工策展配置。
  *
- * 这里只保存公开页面的展示选择，不修改任何档案元数据。
- * 当指定编号不存在或不再公开时，首页会自动回退到现有的安全选择规则。
+ * 这里只保存公开页面的展示选择，不修改任何档案元数据或发布图片。
  */
 export const siteCuration = {
-	homeFeaturedRecordId: 'LJM-20260808-PST-001',
+	homeCarouselExcludedImagePaths: [
+		'/archive/LJM-20260808-PST-001/back-public.jpg',
+		'/archive/LJM-20260808-PCD-001/back-public.jpg',
+	],
 } as const;
 
 export interface ArchiveTopicCuration {
