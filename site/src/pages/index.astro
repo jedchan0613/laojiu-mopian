@@ -35,7 +35,11 @@ const recentViews = [...publishedViews]
 	})
 	.filter((view) => view.id !== featuredView?.id)
 	.slice(0, 3);
-const featuredImage = featuredView?.images[0] ? getResponsiveImage(featuredView.images[0]) : undefined;
+const featuredSlides = featuredView?.images.map((source, index) => ({
+	image: getResponsiveImage(source),
+	description: featuredView.imageDescriptions[index],
+})) ?? [];
+const featuredImage = featuredSlides[0]?.image;
 const recentEntries = recentViews.map((view) => ({
 	view,
 	image: view.images[0] ? getResponsiveImage(view.images[0]) : undefined,
@@ -84,12 +88,25 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			</div>
 
 			{featuredView && featuredImage && (
-				<div class="hero-record-shell">
+				<div
+					class="hero-record-shell"
+					data-home-featured-record={featuredView.id}
+					data-home-featured-carousel={featuredSlides.length > 1 ? '' : undefined}
+					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description }) => ({
+						src: image.src,
+						srcset: image.srcset ?? '',
+						width: image.width,
+						height: image.height,
+						description,
+					}))) : undefined}
+					role={featuredSlides.length > 1 ? 'region' : undefined}
+					aria-roledescription={featuredSlides.length > 1 ? '轮播图' : undefined}
+					aria-label={featuredSlides.length > 1 ? `${featuredView.title}的精选图片` : undefined}
+				>
 					<a
 						class="hero-record"
 						href={`/archive/${featuredView.id}/`}
 						aria-label={`查看本期档案：${featuredView.title}`}
-						data-home-featured-record={featuredView.id}
 					>
 						<figure>
 							<div class="hero-record-image">
@@ -104,6 +121,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 									loading="eager"
 									fetchpriority="high"
 									decoding="async"
+									data-home-carousel-image={featuredSlides.length > 1 ? '' : undefined}
 								/>
 							</div>
 							<figcaption>
@@ -117,8 +135,44 @@ const categoryEntries = archiveCategories.map((category, index) => {
 							</figcaption>
 						</figure>
 					</a>
-					<div class="hero-record-actions">
-						<ArchiveLikeButton itemId={featuredView.id} title={featuredView.title} />
+					<div class="hero-record-toolbar">
+						{featuredSlides.length > 1 && (
+							<div class="hero-carousel-controls" aria-label="精选图片轮播控制">
+								<button type="button" data-home-carousel-previous aria-label="查看上一张精选图片">
+									<span aria-hidden="true">←</span><span class="carousel-control-label">上一张</span>
+								</button>
+								<div class="hero-carousel-progress">
+									<span data-home-carousel-status>第 1 张，共 {featuredSlides.length} 张</span>
+									<div class="hero-carousel-dots" aria-label="选择精选图片">
+										{featuredSlides.map(({ description }, index) => (
+											<button
+												type="button"
+												data-home-carousel-dot={index}
+												aria-label={`查看第 ${index + 1} 张：${description}`}
+												aria-current={index === 0 ? 'true' : 'false'}
+											></button>
+										))}
+									</div>
+								</div>
+								<button type="button" data-home-carousel-next aria-label="查看下一张精选图片">
+									<span class="carousel-control-label">下一张</span><span aria-hidden="true">→</span>
+								</button>
+								<button
+									class="hero-carousel-toggle"
+									type="button"
+									data-home-carousel-toggle
+									aria-label="暂停自动轮播"
+									aria-pressed="false"
+								>
+									<span data-home-carousel-toggle-icon aria-hidden="true">Ⅱ</span>
+									<span data-home-carousel-toggle-label>暂停</span>
+								</button>
+								<span class="carousel-announcement" data-home-carousel-announcement aria-live="polite"></span>
+							</div>
+						)}
+						<div class="hero-record-actions">
+							<ArchiveLikeButton itemId={featuredView.id} title={featuredView.title} />
+						</div>
 					</div>
 				</div>
 			)}
@@ -202,6 +256,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	</div>
 	<script>
 		import '../scripts/archive-likes';
+		import '../scripts/home-featured-carousel';
 	</script>
 </BaseLayout>
 
@@ -315,6 +370,15 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 	.hero-record-shell {
 		min-width: 0;
+	}
+
+	.hero-record-toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 0.72rem;
+		margin-top: 0.72rem;
 	}
 
 	.hero-record {
@@ -442,11 +506,119 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		text-underline-offset: 0.3em;
 	}
 
-	.hero-record-actions,
+	.hero-record-actions {
+		display: flex;
+		justify-content: flex-end;
+		margin-left: auto;
+	}
+
 	.recent-record-actions {
 		display: flex;
 		justify-content: flex-end;
 		margin-top: 0.72rem;
+	}
+
+	.hero-carousel-controls {
+		display: none;
+		flex: 1 1 20rem;
+		grid-template-columns: auto minmax(5rem, 1fr) auto auto;
+		align-items: center;
+		gap: 0.45rem;
+	}
+
+	.hero-record-shell[data-carousel-ready] .hero-carousel-controls {
+		display: grid;
+	}
+
+	.hero-carousel-controls > button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+		min-height: 2.25rem;
+		padding: 0.38rem 0.58rem;
+		color: #5f5a50;
+		background: rgba(248, 244, 234, 0.66);
+		border: 1px solid #bdb4a3;
+		cursor: pointer;
+		font: inherit;
+		font-size: 0.72rem;
+		line-height: 1.35;
+		letter-spacing: 0.05em;
+		transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+	}
+
+	.hero-carousel-controls > button:hover,
+	.hero-carousel-controls > button:focus-visible {
+		color: var(--site-accent);
+		background: #f8f2e6;
+		border-color: rgba(154, 63, 46, 0.62);
+	}
+
+	.hero-carousel-progress {
+		display: grid;
+		justify-items: center;
+		gap: 0.18rem;
+		min-width: 0;
+		color: #777166;
+		font-size: var(--site-text-micro);
+		line-height: 1.35;
+		letter-spacing: 0.04em;
+		text-align: center;
+	}
+
+	.hero-carousel-dots {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.18rem;
+	}
+
+	.hero-carousel-dots button {
+		position: relative;
+		width: 1.25rem;
+		height: 1rem;
+		padding: 0;
+		background: transparent;
+		border: 0;
+		cursor: pointer;
+	}
+
+	.hero-carousel-dots button::before {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 0.42rem;
+		height: 0.42rem;
+		background: #aaa294;
+		border: 1px solid transparent;
+		border-radius: 50%;
+		content: '';
+		transform: translate(-50%, -50%);
+		transition: width 160ms ease, background-color 160ms ease, border-color 160ms ease;
+	}
+
+	.hero-carousel-dots button[aria-current='true']::before {
+		width: 0.8rem;
+		background: var(--site-accent);
+		border-color: var(--site-accent);
+		border-radius: 999px;
+	}
+
+	.hero-carousel-toggle {
+		min-width: 3.8rem;
+	}
+
+	.carousel-announcement {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 
 	.browse-link:focus-visible,
@@ -809,7 +981,30 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		}
 
 		.hero-record-actions {
+			margin-top: 0;
+		}
+
+		.hero-record-toolbar {
 			margin-top: 0.65rem;
+		}
+
+		.hero-carousel-controls {
+			flex-basis: 100%;
+			grid-template-columns: auto minmax(4.25rem, 1fr) auto auto;
+			gap: 0.32rem;
+		}
+
+		.carousel-control-label {
+			display: none;
+		}
+
+		.hero-carousel-controls > button {
+			padding-right: 0.5rem;
+			padding-left: 0.5rem;
+		}
+
+		.hero-carousel-toggle {
+			min-width: 3.35rem;
 		}
 
 		.introduction {
@@ -932,6 +1127,8 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	@media (prefers-reduced-motion: reduce) {
 		.hero-record img,
 		.hero-record figure,
+		.hero-carousel-controls > button,
+		.hero-carousel-dots button::before,
 		.recent-records img,
 		.recent-record-image,
 		.recent-records em,
