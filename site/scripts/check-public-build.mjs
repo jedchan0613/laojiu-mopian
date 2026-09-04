@@ -27,12 +27,38 @@ const listFiles = async (directory) => {
 	return nested.flat();
 };
 
-const htmlFiles = (await listFiles(distRoot)).filter((path) => path.endsWith('.html'));
+const distFiles = await listFiles(distRoot);
+const htmlFiles = distFiles.filter((path) => path.endsWith('.html'));
 const htmlEntries = await Promise.all(htmlFiles.map(async (path) => ({
 	path,
 	relativePath: relative(distRoot, path).split(sep).join('/'),
 	html: await readFile(path, 'utf8'),
 })));
+const scriptEntries = await Promise.all(
+	distFiles.filter((path) => path.endsWith('.js')).map(async (path) => ({
+		publicPath: `/${relative(distRoot, path).split(sep).join('/')}`,
+		contents: await readFile(path, 'utf8'),
+	})),
+);
+const scriptsByPublicPath = new Map(scriptEntries.map((entry) => [entry.publicPath, entry.contents]));
+const normalizePublicPath = (value, basePath = '/') =>
+	new URL(value, `https://public-build.invalid${basePath}`).pathname;
+const scriptTreeIncludes = (scriptPath, marker, visited = new Set()) => {
+	const normalizedPath = normalizePublicPath(scriptPath);
+	if (visited.has(normalizedPath)) return false;
+	visited.add(normalizedPath);
+	const contents = scriptsByPublicPath.get(normalizedPath);
+	if (!contents) return false;
+	if (contents.includes(marker)) return true;
+	const basePath = normalizedPath.slice(0, normalizedPath.lastIndexOf('/') + 1);
+	const imports = [...contents.matchAll(/\bimport\s*(?:[^"'()]*?\sfrom\s*)?["']([^"']+)["']/g)];
+	return imports.some((match) => scriptTreeIncludes(normalizePublicPath(match[1], basePath), marker, visited));
+};
+const pageLoadsScriptMarker = (page, marker) => {
+	const scriptSources = [...page.html.matchAll(/<script\b[^>]*\btype="module"[^>]*\bsrc="([^"]+)"[^>]*>/g)]
+		.map((match) => match[1]);
+	return scriptSources.some((source) => scriptTreeIncludes(source, marker));
+};
 const home = htmlEntries.find((entry) => entry.relativePath === 'index.html');
 const archiveIndex = htmlEntries.find((entry) => entry.relativePath === 'archive/index.html');
 const notFoundPage = htmlEntries.find((entry) => entry.relativePath === '404.html');
@@ -72,12 +98,17 @@ if (home) {
 	check(likeIds.length === featuredIds.length + recentIds.length, '首页展示档案没有逐件提供点赞入口。');
 	check(new Set(likeIds).size === likeIds.length, '首页同一件档案出现了重复点赞入口。');
 	check([...featuredIds, ...recentIds].every((itemId) => likeIds.includes(itemId)), '首页点赞入口与展示档案不一致。');
-	check(home.html.includes('/api/likes'), '首页缺少点赞计数程序。');
+	check(pageLoadsScriptMarker(home, '/api/likes?items='), '首页缺少点赞计数程序。');
 }
 
 if (archiveIndex) {
 	const archiveIds = [...archiveIndex.html.matchAll(/data-archive-id="([^"]+)"/g)].map((match) => match[1]);
+	const likeIds = [...archiveIndex.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
 	check(archiveIds.length === detailPages.length, '档案列表数量与公开详情页数量不一致。');
+	check(likeIds.length === archiveIds.length, '档案列表没有逐件提供点赞入口。');
+	check(new Set(likeIds).size === likeIds.length, '档案列表同一件档案出现了重复点赞入口。');
+	check(archiveIds.every((itemId) => likeIds.includes(itemId)), '档案列表点赞入口与展示档案不一致。');
+	check(pageLoadsScriptMarker(archiveIndex, '/api/likes?items='), '档案列表缺少点赞计数程序。');
 	check(archiveIndex.html.includes('id="archive-sort"'), '档案列表缺少排序控件。');
 	check(archiveIndex.html.includes('class="archive-paths"'), '档案列表缺少专题、年代与地点浏览入口。');
 	check(archiveIndex.html.includes('data-topic-link="posted-postcards"'), '档案列表缺少人工策划专题。');
@@ -90,7 +121,11 @@ if (archiveIndex) {
 }
 
 for (const page of detailPages) {
+	const itemId = page.relativePath.split('/')[1];
+	const likeIds = [...page.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
 	check(page.html.includes('class="record-status"'), `${page.relativePath} 缺少资料状态摘要。`);
+	check(likeIds.length === 1 && likeIds[0] === itemId, `${page.relativePath} 缺少对应档案的唯一点赞入口。`);
+	check(pageLoadsScriptMarker(page, '/api/likes?items='), `${page.relativePath} 缺少点赞计数程序。`);
 	check(page.html.includes('data-record-citation'), `${page.relativePath} 缺少引用与复制入口。`);
 	check(page.html.includes('data-record-usage'), `${page.relativePath} 缺少权利与下载说明。`);
 	const usageSection = page.html.match(/<section\s+class="record-usage"[\s\S]*?<\/section>/)?.[0] ?? '';

@@ -9,6 +9,7 @@ type LikeButton = HTMLButtonElement & {
 
 const buttons = [...document.querySelectorAll<LikeButton>('[data-archive-like]')];
 const numberFormatter = new Intl.NumberFormat('zh-CN');
+const maxItemsPerRequest = 20;
 
 function buttonsFor(itemId: string) {
 	return buttons.filter((button) => button.dataset.itemId === itemId);
@@ -52,15 +53,18 @@ async function initializeLikes() {
 	if (buttons.length === 0) return;
 	const itemIds = [...new Set(buttons.map((button) => button.dataset.itemId).filter(Boolean))] as string[];
 	try {
-		const payload = await requestJson(`/api/likes?items=${encodeURIComponent(itemIds.join(','))}`) as {
-			items?: Record<string, LikeState>;
-		};
-		for (const itemId of itemIds) {
-			const state = payload.items?.[itemId];
-			if (!state || !Number.isInteger(state.count) || state.count < 0 || typeof state.liked !== 'boolean') {
-				throw new Error('点赞接口数据格式不正确');
+		for (let index = 0; index < itemIds.length; index += maxItemsPerRequest) {
+			const batch = itemIds.slice(index, index + maxItemsPerRequest);
+			const payload = await requestJson(`/api/likes?items=${encodeURIComponent(batch.join(','))}`) as {
+				items?: Record<string, LikeState>;
+			};
+			for (const itemId of batch) {
+				const state = payload.items?.[itemId];
+				if (!state || !Number.isInteger(state.count) || state.count < 0 || typeof state.liked !== 'boolean') {
+					throw new Error('点赞接口数据格式不正确');
+				}
+				setState(itemId, state);
 			}
-			setState(itemId, state);
 		}
 	} catch {
 		setUnavailable();
