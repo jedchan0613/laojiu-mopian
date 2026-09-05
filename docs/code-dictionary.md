@@ -6,7 +6,7 @@
 
 `site/src/data/standards/code-dictionary.json`
 
-本次读取结果：36 个字典键、255 条代码、255 条均为启用状态。
+本次读取结果：41 个字典键、295 条代码、295 条均为启用状态。
 
 每条数据完整保存：`dictionary_key`、`dimension_category`、`code`、`label`、`definition`、`field`、`input_mode`、`enabled`、`sort`。
 
@@ -15,13 +15,13 @@
 | 字典键 | 维度/类别 | 条数 |
 | --- | --- | ---: |
 | `record_status` | 档案状态 | 3 |
-| `object_type` | 资料类型 | 12 |
+| `object_type` | 资料类型 | 13 |
 | `event_scene` | 事件/场景 | 15 |
 | `theme` | 主题 | 15 |
 | `photo_function` | 照片功能 | 9 |
 | `shot_form` | 拍摄形式 | 8 |
 | `photography_source` | 摄影来源 | 5 |
-| `carrier` | 载体 | 8 |
+| `carrier` | 载体 | 10 |
 | `color` | 色彩 | 4 |
 | `process` | 工艺 | 8 |
 | `verso` | 背面信息 | 8 |
@@ -49,9 +49,14 @@
 | `portrait_status` | 证件照片状态 | 5 |
 | `security_feature` | 安全/认证特征 | 8 |
 | `credential_status` | 证件状态 | 6 |
-| `redaction_status` | 公开副本处理 | 4 |
+| `redaction_status` | 公开副本处理 | 5 |
+| `card_type` | 卡片类别 | 10 |
+| `card_function` | 卡片原始功能 | 9 |
+| `card_status` | 卡片状态 | 5 |
+| `card_technology` | 机读/储存技术 | 8 |
+| `card_completeness` | 卡片完整性 | 4 |
 
-合计 255 条。
+合计 295 条。
 
 ## 3. 使用规则
 
@@ -66,4 +71,4 @@
 
 部分维度表提到的结构，例如 `EF-*`、`JG-*`、`BD-*`、`LG-*`、`CF-*` 以及书写层 `L1/L2`，在当前 `04_代码字典` 中没有对应完整值表。项目只保留维度定义和原始文字字段，不自行发明这些代码；等来源 Excel 增补后再加入字典。
 
-`card` 同样没有正式 `object_type` 代码，暂列待扩展类型。
+旧卡片已经使用正式对象类型 `CRD`，并由 `card_type`、`card_function`、`card_status`、`card_technology`、`card_completeness` 等字典支持录入和编码。

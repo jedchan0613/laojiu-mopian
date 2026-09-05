@@ -48,11 +48,10 @@ LJM-YYYYMMDD-TYP-NNN
 | `DIA` | 日记 | diary_notebook |
 | `NTB` | 笔记本 | diary_notebook |
 | `IDC` | 证件 | credential |
+| `CRD` | 商业与服务卡片 | card |
 | `LET` | 信件 | common |
 | `RPR` | 复制件 | common |
 | `OTH` | 其他 | common |
-
-`card` 为待扩展类型，Excel v1 尚无正式对象代码。真实卡片在分配永久编号前必须由用户先确认扩展规则，Codex 不得自行创造 `TYP`。
 
 永久编号一旦正式建立，原则上不得修改、不得复用，也不因日后分类或研究结论改变而重新编号。网站 URL、图片目录、JSON 和网站数据使用同一个 `item_id`。编号只使用英文字母、数字和短横线，不写人物姓名。
 
@@ -121,7 +120,7 @@ public_view  访客可见文字投影
 
 | 字段 | 用途 |
 | --- | --- |
-| `schema` | 根据 `object_type` 选择 `photo`、`postcard`、`diary_notebook`、`credential` 或 `common`。 |
+| `schema` | 根据 `object_type` 选择 `photo`、`postcard`、`diary_notebook`、`credential`、`card` 或 `common`。 |
 | `dimensions` | 对应 schema 的专属维度对象。没有资料时不编造；未知和不适用按附件规则区分。 |
 
 ### `public_view` 模板字段
@@ -142,7 +141,8 @@ public_view  访客可见文字投影
 - `PST/PCD` 使用 PC01-PC21。
 - `DIA/NTB` 使用 DN01-DN21。
 - `IDC` 使用 ID01-ID21。
-- `LET/RPR/OTH/card` 暂时使用 `common`，不得伪造专属维度。
+- `CRD` 使用 CD01-CD21。
+- `LET/RPR/OTH` 使用 `common`，不得伪造专属维度。
 
 完整维度定义见 `docs/metadata-dimensions.md` 和 `site/src/data/standards/*-dimensions.json`。
 
@@ -158,6 +158,7 @@ public_view  访客可见文字投影
 - `privacy_level = G`。
 - `record_status = ACT`。
 - 候选状态使用 `use_status = U1`，不能提前写 `U3`。
+- `CRD` 还必须填写 `CD21.redaction_status`；只有 `RD-CLEAR`、`RD-MASK` 或 `RD-PART` 可以进入发布流程。
 
 只有用户明确批准后，Codex 才能复制文件到网站公开目录，并把 `use_status` 改为 `U3`。`Y`、`R` 或任何无法确认的情况都必须暂停。
 

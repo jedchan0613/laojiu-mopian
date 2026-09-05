@@ -65,11 +65,15 @@ export const sampleArchiveItems = [
 	{
 		core: {
 			record_status: 'SUS',
-			item_id: 'LJM-TEST-CARD-003',
-			object_type: 'card',
+			item_id: 'LJM-TEST-CRD-003',
+			object_type: 'CRD',
 			title: '九十年代的商店会员卡',
 			date_display: '1998',
 			city: '佛山',
+			carrier: 'MT-PLS',
+			color: 'CL-COL',
+			condition_grade: 'C2',
+			condition_details: ['DM-ABR'],
 			provenance_notes: '虚构测试资料',
 			privacy_level: 'G',
 			research_status: 'R0',
@@ -78,7 +82,18 @@ export const sampleArchiveItems = [
 			publication_file_path: ['./placeholders/card-placeholder.svg'],
 			use_status: 'U0',
 		},
-		metadata: { schema: 'common', dimensions: {} },
+		metadata: {
+			schema: 'card',
+			dimensions: {
+				CD01: { card_type: 'CT-MEM' },
+				CD02: { card_functions: ['KF-LOY', 'KF-DIS'] },
+				CD12: { card_status: 'KS-EXP' },
+				CD16: { material_details: '塑料' },
+				CD17: { card_technologies: ['KT-NON'] },
+				CD20: { card_completeness: 'KC-DAM' },
+				CD21: { redaction_status: 'RD-CLEAR', restricted_fields: [] },
+			},
+		},
 		public_view: {
 			description: '一张模拟的旧卡片，用于测试老信用卡、会员卡和其他卡片类型的档案展示方式。',
 			transcription: '卡片内容为虚构测试信息。',

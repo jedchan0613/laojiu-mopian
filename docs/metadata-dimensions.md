@@ -2,14 +2,15 @@
 
 ## 1. 来源与保存方式
 
-四套对象专属维度来自 `docs/reference/archive-metadata-standard-v1.xlsx`：
+五套对象专属维度来自 `docs/reference/archive-metadata-standard-v1.xlsx`：
 
 - `01_21照片维度`：照片 D01-D21。
 - `05_明信片维度`：明信片 PC01-PC21。
 - `06_日记笔记维度`：日记/笔记 DN01-DN21。
 - `07_证件维度`：证件 ID01-ID21。
+- `08_旧卡片维度`：旧卡片 CD01-CD21。
 
-本次共读取 4 套、84 个维度。每个维度在 `site/src/data/standards/` 对应 JSON 中完整保存：
+本次共读取 5 套、105 个维度。每个维度在 `site/src/data/standards/` 对应 JSON 中完整保存：
 
 - `dimension_code`
 - `name`
@@ -34,10 +35,11 @@
 | 明信片 | PC01、PC02、PC04、PC07、PC12、PC19、PC21 | PC01 `postcard_type`；PC02 `postcard_function`；PC12 `themes`、`event_scene`；PC19 `postal_mark_types`；PC21 `postcard_use` |
 | 日记/笔记 | DN01、DN08、DN10、DN11、DN14、DN19 | DN01 `notebook_type`；DN11 `themes`；DN19 `notebook_completeness` |
 | 证件 | ID01、ID02、ID05、ID09、ID10、ID16、ID20 | ID01 `credential_type`；ID09 `portrait_status`；ID16 `carrier`、`color`、`process`；ID20 `credential_status` |
+| 旧卡片 | CD01、CD02、CD12、CD16、CD17、CD20 | CD01 `card_type`；CD02 `card_functions`；CD12 `card_status`；CD16 `carrier`、`color`；CD17 `card_technologies`；CD20 `card_completeness`、`condition_grade`、`condition_details` |
 
 完整的机器可读规则保存在 `site/src/data/standards/collection-code-rules.json`。
 
-除全局必填的显示年代外，现有代码字典已覆盖 21 个参与编码的专属字段。根据 2026-08-29 的录入规则调整，明信片 PC11 和 PC18 改为非必填；仍无正式字典值表的 9 个必填维度及待定义内容见 `docs/missing-required-code-definitions.md`。
+现有代码字典已补齐旧卡片参与编码的正式代码。根据 2026-08-29 的录入规则调整，明信片 PC11 和 PC18 改为非必填；其他类型仍无正式字典值表的必填维度及待定义内容见 `docs/missing-required-code-definitions.md`。
 
 ## 3. 照片 D01-D21
 
@@ -117,6 +119,26 @@
 
 网站发布层只能保存遮盖后的 `document_number_masked`、`address_masked` 等字段。完整证件号码、完整私人地址、签名和指纹不得进入网站数据。
 
-## 7. 未提供专属 21 维的类型
+## 7. 旧卡片 CD01-CD21
 
-`LET`、`RPR`、`OTH` 和待扩展 `card` 当前只使用通用管理元数据。项目不会为这些类型伪造不存在的专属维度。
+适用于 `CRD`，TypeScript 类型为 `CardMetadata`。
+
+| 代码 | 名称 | 代码 | 名称 |
+| --- | --- | --- | --- |
+| CD01 | 卡片类别 | CD12 | 卡片状态 |
+| CD02 | 原始功能/使用场景 | CD13 | 卡面图像/主题 |
+| CD03 | 发行/制作时间 | CD14 | 语言/文字与转录 |
+| CD04 | 有效期 | CD15 | 版式/尺寸 |
+| CD05 | 发行机构 | CD16 | 载体/材料/色彩 |
+| CD06 | 品牌/商户/服务网络 | CD17 | 机读/储存技术 |
+| CD07 | 发行地/适用地区 | CD18 | 防伪/签名/肖像状态 |
+| CD08 | 持卡人/使用人 | CD19 | 卡套/附件/原始组合 |
+| CD09 | 卡号/账号 | CD20 | 完整性/保存状态 |
+| CD10 | 面值/余额/权益 | CD21 | 敏感内容/公开处理 |
+| CD11 | 使用痕迹 |  |  |
+
+网站发布层只能保存遮盖后的 `holder_name_masked`、`card_number_masked`；卡号最多保留末四位。完整姓名、卡号、账户、安全码、密码、磁条/芯片数据和签名内容不得进入项目。`CD21.redaction_status` 未确认时不得发布。
+
+## 8. 未提供专属 21 维的类型
+
+`LET`、`RPR`、`OTH` 当前只使用通用管理元数据。项目不会为这些类型伪造不存在的专属维度。

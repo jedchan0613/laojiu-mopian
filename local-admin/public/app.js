@@ -41,7 +41,9 @@ const arrayFields = new Set([
 	'issuing_organization_id', 'issuing_organization', 'aliases', 'occupation', 'qualification',
 	'position', 'other_attributes', 'affiliation', 'rank', 'class_code', 'printed_handwritten',
 	'security_features', 'seal_types', 'endorsements', 'amendments', 'cancellation_marks',
-	'missing_parts', 'restricted_fields',
+	'missing_parts', 'restricted_fields', 'card_functions', 'issuer_id', 'issuer_name', 'issuer_place',
+	'brand_name', 'merchant_name', 'service_network', 'service_area', 'face_value', 'currency',
+	'benefit_text', 'usage_evidence', 'card_technologies', 'accessories',
 ]);
 
 const dateFields = new Set([
@@ -57,7 +59,9 @@ const longTextFields = new Set([
 	'place_notes', 'provenance_notes', 'condition_details', 'treatment_notes', 'evidence_basis',
 	'research_notes', 'next_action', 'notes', 'description', 'transcription', 'message_transcription',
 	'postmark_transcription', 'image_subject', 'reuse_notes', 'portrait_notes', 'seal_transcription',
-	'validity_text', 'address_masked', 'document_number_masked', 'revision_note',
+	'validity_text', 'address_masked', 'document_number_masked', 'revision_note', 'holder_name_masked',
+	'card_number_masked', 'usage_notes', 'front_subject', 'back_subject', 'front_transcription',
+	'back_transcription', 'material_details',
 ]);
 
 const specialDictionaryFields = {
@@ -66,24 +70,26 @@ const specialDictionaryFields = {
 	entry_structure: 'entry_structure', notebook_completeness: 'notebook_completeness',
 	writing_medium: 'writing_medium', credential_type: 'credential_type', portrait_status: 'portrait_status',
 	credential_status: 'credential_status', redaction_status: 'redaction_status',
+	card_type: 'card_type', card_functions: 'card_function', card_status: 'card_status',
+	card_technologies: 'card_technology', card_completeness: 'card_completeness',
 	security_features: 'security_feature', carrier: 'carrier', color: 'color',
 	process: 'process', event_scene: 'event_scene', themes: 'theme',
 	privacy_level: 'privacy', transcription_status: 'transcription',
 };
 
 const wordLabels = {
-	accession: '入藏', address: '地址', affiliation: '隶属', aliases: '别名', amendments: '变更',
+	accession: '入藏', accessories: '附件', address: '地址', affiliation: '隶属', aliases: '别名', amendments: '变更',
 	annotation: '批注', arrival: '到达', attachment: '附件', attachments: '附件', basis: '依据',
-	binding: '装帧', birth: '出生', cancellation: '注销', carrier: '载体', class: '类别', code: '代码',
+	binding: '装帧', birth: '出生', brand: '品牌', cancellation: '注销', card: '卡片', carrier: '载体', class: '类别', code: '代码',
 	color: '色彩', content: '内容', correspondence: '通信关系', country: '国家', cover: '封面',
 	creator: '创作者', credential: '证件', date: '日期', destination: '目的地', dispatch: '寄出',
 	district: '区县', document: '证件', endorsements: '签注', entry: '条目', event: '事件', evidence: '证据',
-	description: '公开简介', display: '显示', file: '文件', filters: '筛选值', format: '版式', function: '功能', grade: '等级', hands: '书写者', height: '高度',
+	description: '公开简介', display: '显示', file: '文件', filters: '筛选值', format: '版式', function: '功能', functions: '功能', grade: '等级', hands: '书写者', height: '高度',
 	holder: '持证人', household: '户籍', id: '编号', identities: '身份', image: '图像', ink: '墨水',
-	inserts: '插页', issue: '签发／发行', issuing: '签发', language: '语言', later: '后加内容',
+	inserts: '插页', issue: '签发／发行', issuer: '发行机构', issuing: '签发', language: '语言', later: '后加内容',
 	leaf: '页叶', legibility: '可读性', level: '等级', life: '生活', local: '地方', manufacturer: '制造者',
 	mark: '标记', masked: '已遮盖', material: '材料', message: '正文', mentioned: '涉及', method: '方式',
-	missing: '缺失', name: '名称', nationality: '国籍', notebook: '册簿', notes: '说明', number: '号码',
+	merchant: '商户', missing: '缺失', name: '名称', nationality: '国籍', network: '网络', notebook: '册簿', notes: '说明', number: '号码',
 	occupation: '职业', office: '邮局', organization: '机构', organizations: '机构', orientation: '方向',
 	original: '原始', owner: '所有者', ownership: '所有权流转', page: '页', paper: '纸张', people: '人物',
 	person: '人物', place: '地点', portrait: '肖像', position: '位置／职务', postal: '邮政', postcard: '明信片',
@@ -95,12 +101,12 @@ const wordLabels = {
 	specific: '具体', stamp: '邮票', status: '状态', street: '街道', structure: '结构', studio: '摄影来源',
 	subject: '主题', themes: '主题', time: '时间', title: '称谓／题名', town: '乡镇', transcription: '转录',
 	transit: '经转', treatment: '处理', type: '类型', types: '类型', unit: '单位', use: '使用', used: '使用范围',
-	valid: '有效', validity: '有效期', value: '面值', verso: '背面', width: '宽度', work: '工作', writing: '书写',
+	technologies: '技术', valid: '有效', validity: '有效期', value: '面值', verso: '背面', width: '宽度', work: '工作', writing: '书写',
 };
 
 const privacyChecks = [
 	'图片和公开文字中没有未遮盖的身份证号、护照号或其他身份识别号码。',
-	'没有银行卡号、账户号码或其他完整卡号。',
+	'没有银行卡号、账户号码、完整卡号、安全码、密码或磁条／芯片可读数据。',
 	'没有电话号码或其他私人联系方式。',
 	'没有门牌号、收件地址等精确私人住址。',
 	'没有可以直接复制或辨认的清晰签名。',
@@ -197,6 +203,7 @@ const schemaForType = (objectType) => {
 	if (['PCD', 'PST'].includes(objectType)) return 'postcard';
 	if (['DIA', 'NTB'].includes(objectType)) return 'diary_notebook';
 	if (objectType === 'IDC') return 'credential';
+	if (objectType === 'CRD') return 'card';
 	return 'common';
 };
 
@@ -205,6 +212,7 @@ const specificSchemaLabels = {
 	postcard: '明信片专属信息',
 	diary_notebook: '日记／笔记专属信息',
 	credential: '证件专属信息',
+	card: '旧卡片专属信息',
 };
 
 const hasMeaningfulValue = (value) =>
@@ -1332,7 +1340,7 @@ const renderObjectTypeControl = (options, value, { readonly = false, required = 
 		const option = exactOptions[0];
 		exactControl = `<p class="object-type-note">正式类型已自动对应为 <strong>${escapeHtml(option.label)}（${escapeHtml(option.code)}）</strong>。</p>`;
 	} else if (selectedCategorySlug) {
-		exactControl = '<p class="object-type-note is-warning">旧卡片尚无正式对象代码，当前不能新建；待数据规范扩展后再开放。</p>';
+		exactControl = '<p class="object-type-note is-warning">该分类尚无正式对象代码，当前不能新建。</p>';
 	}
 	return `<div class="object-type-controls">
 		<label class="object-category-detail"><span>首页分类</span>
@@ -1831,7 +1839,7 @@ const pvCodeEntry = (code) => {
 };
 const pvCodeLabel = (code) => pvCodeEntry(code)?.label ?? code;
 const pvDisplayCode = (code) => (pvHasText(code) ? `${pvCodeLabel(code)}（${code.trim()}）` : '');
-const pvTypeLabel = (type) => (type === 'card' ? '旧卡片' : pvCodeLabel(type));
+const pvTypeLabel = (type) => pvCodeLabel(type);
 const pvIsPublished = (record) =>
 	record.core.record_status === 'ACT' && record.core.use_status === 'U3' && record.core.privacy_level === 'G';
 const pvDecade = (dateDisplay) => {

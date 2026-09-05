@@ -1159,7 +1159,7 @@
       "field": "07_证件维度/ID21",
       "input_mode": "单值下拉",
       "enabled": true,
-      "sort": 2
+      "sort": 3
     },
     {
       "dictionary_key": "redaction_status",
@@ -1170,7 +1170,7 @@
       "field": "07_证件维度/ID21",
       "input_mode": "单值下拉",
       "enabled": true,
-      "sort": 3
+      "sort": 4
     },
     {
       "dictionary_key": "redaction_status",
@@ -1181,7 +1181,7 @@
       "field": "07_证件维度/ID21",
       "input_mode": "单值下拉",
       "enabled": true,
-      "sort": 4
+      "sort": 5
     },
     {
       "dictionary_key": "event_scene",
@@ -2810,6 +2810,446 @@
       "input_mode": "单值下拉",
       "enabled": true,
       "sort": 5
+    },
+    {
+      "dictionary_key": "object_type",
+      "dimension_category": "资料类型",
+      "code": "CRD",
+      "label": "商业与服务卡片",
+      "definition": "以支付、储值、会员、积分、通信、交通或其他消费服务为主要功能的非邮政卡片",
+      "field": "object_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 13
+    },
+    {
+      "dictionary_key": "card_type",
+      "dimension_category": "卡片类别",
+      "code": "CT-CRD",
+      "label": "信用卡",
+      "definition": "以信用额度支付为主要功能的银行卡",
+      "field": "card_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 1
+    },
+    {
+      "dictionary_key": "card_type",
+      "dimension_category": "卡片类别",
+      "code": "CT-DEB",
+      "label": "借记卡/储蓄卡",
+      "definition": "直接关联存款账户的支付卡",
+      "field": "card_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 2
+    },
+    {
+      "dictionary_key": "card_type",
+      "dimension_category": "卡片类别",
+      "code": "CT-PAY",
+      "label": "其他支付/预付卡",
+      "definition": "不属于信用卡或借记卡的支付、预付卡",
+      "field": "card_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 3
+    },
+    {
+      "dictionary_key": "card_type",
+      "dimension_category": "卡片类别",
+      "code": "CT-MEM",
+      "label": "会员/积分卡",
+      "definition": "以消费会员识别、积分或折扣为主要功能",
+      "field": "card_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 4
+    },
+    {
+      "dictionary_key": "card_type",
+      "dimension_category": "卡片类别",
+      "code": "CT-STV",
+      "label": "储值/礼品卡",
+      "definition": "预先储值、兑换商品或赠礼使用的卡片",
+      "field": "card_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 5
+    },
+    {
+      "dictionary_key": "card_type",
+      "dimension_category": "卡片类别",
+      "code": "CT-TEL",
+      "label": "电话/通讯卡",
+      "definition": "电话计费、通信服务或充值使用的卡片",
+      "field": "card_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 6
+    },
+    {
+      "dictionary_key": "card_type",
+      "dimension_category": "卡片类别",
+      "code": "CT-TRN",
+      "label": "交通卡",
+      "definition": "公共交通、道路或出行服务使用的卡片",
+      "field": "card_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 7
+    },
+    {
+      "dictionary_key": "card_type",
+      "dimension_category": "卡片类别",
+      "code": "CT-SVC",
+      "label": "其他服务卡",
+      "definition": "领取或使用商业服务、次数或权益的卡片",
+      "field": "card_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 8
+    },
+    {
+      "dictionary_key": "card_type",
+      "dimension_category": "卡片类别",
+      "code": "CT-OTH",
+      "label": "其他卡片",
+      "definition": "符合CRD边界但不能归入现有类别的卡片",
+      "field": "card_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 9
+    },
+    {
+      "dictionary_key": "card_type",
+      "dimension_category": "卡片类别",
+      "code": "CT-UNK",
+      "label": "类别未知",
+      "definition": "卡片主要类别暂时无法确认",
+      "field": "card_type",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 10
+    },
+    {
+      "dictionary_key": "card_function",
+      "dimension_category": "卡片原始功能",
+      "code": "KF-PAY",
+      "label": "支付",
+      "definition": "购买商品或服务时用于付款",
+      "field": "card_functions",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 1
+    },
+    {
+      "dictionary_key": "card_function",
+      "dimension_category": "卡片原始功能",
+      "code": "KF-STO",
+      "label": "储值",
+      "definition": "预存金额、次数或额度后使用",
+      "field": "card_functions",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 2
+    },
+    {
+      "dictionary_key": "card_function",
+      "dimension_category": "卡片原始功能",
+      "code": "KF-DIS",
+      "label": "折扣",
+      "definition": "凭卡获得价格优惠",
+      "field": "card_functions",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 3
+    },
+    {
+      "dictionary_key": "card_function",
+      "dimension_category": "卡片原始功能",
+      "code": "KF-LOY",
+      "label": "积分/会员权益",
+      "definition": "记录积分或获得会员服务",
+      "field": "card_functions",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 4
+    },
+    {
+      "dictionary_key": "card_function",
+      "dimension_category": "卡片原始功能",
+      "code": "KF-COM",
+      "label": "通信计费",
+      "definition": "电话、通信或充值服务使用",
+      "field": "card_functions",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 5
+    },
+    {
+      "dictionary_key": "card_function",
+      "dimension_category": "卡片原始功能",
+      "code": "KF-TRN",
+      "label": "交通使用",
+      "definition": "公共交通、道路或出行服务使用",
+      "field": "card_functions",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 6
+    },
+    {
+      "dictionary_key": "card_function",
+      "dimension_category": "卡片原始功能",
+      "code": "KF-SVC",
+      "label": "领取/使用服务",
+      "definition": "兑换、领取或使用特定商品、次数或服务",
+      "field": "card_functions",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 7
+    },
+    {
+      "dictionary_key": "card_function",
+      "dimension_category": "卡片原始功能",
+      "code": "KF-OTH",
+      "label": "其他功能",
+      "definition": "其他已经确认的原始功能",
+      "field": "card_functions",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 8
+    },
+    {
+      "dictionary_key": "card_function",
+      "dimension_category": "卡片原始功能",
+      "code": "KF-UNK",
+      "label": "功能未知",
+      "definition": "原始功能暂时无法确认",
+      "field": "card_functions",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 9
+    },
+    {
+      "dictionary_key": "card_status",
+      "dimension_category": "卡片状态",
+      "code": "KS-ACT",
+      "label": "原使用期有效",
+      "definition": "材料显示该卡在原使用期内有效",
+      "field": "card_status",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 1
+    },
+    {
+      "dictionary_key": "card_status",
+      "dimension_category": "卡片状态",
+      "code": "KS-EXP",
+      "label": "已过期",
+      "definition": "卡面有效期已结束或有明确过期证据",
+      "field": "card_status",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 2
+    },
+    {
+      "dictionary_key": "card_status",
+      "dimension_category": "卡片状态",
+      "code": "KS-CAN",
+      "label": "已注销/作废",
+      "definition": "有注销、剪角、作废章或其他明确终止使用痕迹",
+      "field": "card_status",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 3
+    },
+    {
+      "dictionary_key": "card_status",
+      "dimension_category": "卡片状态",
+      "code": "KS-SAM",
+      "label": "样卡/展示卡",
+      "definition": "用于展示、宣传、培训或测试，不对应实际账户",
+      "field": "card_status",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 4
+    },
+    {
+      "dictionary_key": "card_status",
+      "dimension_category": "卡片状态",
+      "code": "KS-UNK",
+      "label": "状态未知",
+      "definition": "无法确认原使用状态",
+      "field": "card_status",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 5
+    },
+    {
+      "dictionary_key": "card_technology",
+      "dimension_category": "机读/储存技术",
+      "code": "KT-NON",
+      "label": "无机读结构",
+      "definition": "未见磁条、芯片、条码或其他机读结构",
+      "field": "card_technologies",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 1
+    },
+    {
+      "dictionary_key": "card_technology",
+      "dimension_category": "机读/储存技术",
+      "code": "KT-MAG",
+      "label": "磁条",
+      "definition": "卡面带有磁条",
+      "field": "card_technologies",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 2
+    },
+    {
+      "dictionary_key": "card_technology",
+      "dimension_category": "机读/储存技术",
+      "code": "KT-CHP",
+      "label": "接触式芯片",
+      "definition": "带金属触点的接触式芯片",
+      "field": "card_technologies",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 3
+    },
+    {
+      "dictionary_key": "card_technology",
+      "dimension_category": "机读/储存技术",
+      "code": "KT-NFC",
+      "label": "非接触式芯片",
+      "definition": "非接触式芯片或射频结构",
+      "field": "card_technologies",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 4
+    },
+    {
+      "dictionary_key": "card_technology",
+      "dimension_category": "机读/储存技术",
+      "code": "KT-BAR",
+      "label": "条码/二维码",
+      "definition": "以条码、二维码或其他光学编码承载信息",
+      "field": "card_technologies",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 5
+    },
+    {
+      "dictionary_key": "card_technology",
+      "dimension_category": "机读/储存技术",
+      "code": "KT-PUN",
+      "label": "打孔/机械编码",
+      "definition": "通过打孔、缺口或其他机械结构编码",
+      "field": "card_technologies",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 6
+    },
+    {
+      "dictionary_key": "card_technology",
+      "dimension_category": "机读/储存技术",
+      "code": "KT-OTH",
+      "label": "其他技术",
+      "definition": "其他可见的机读或储存技术",
+      "field": "card_technologies",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 7
+    },
+    {
+      "dictionary_key": "card_technology",
+      "dimension_category": "机读/储存技术",
+      "code": "KT-UNK",
+      "label": "技术未知",
+      "definition": "无法确认机读或储存技术",
+      "field": "card_technologies",
+      "input_mode": "多值下拉",
+      "enabled": true,
+      "sort": 8
+    },
+    {
+      "dictionary_key": "card_completeness",
+      "dimension_category": "卡片完整性",
+      "code": "KC-COM",
+      "label": "完整",
+      "definition": "卡片主体和原有组成完整",
+      "field": "card_completeness",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 1
+    },
+    {
+      "dictionary_key": "card_completeness",
+      "dimension_category": "卡片完整性",
+      "code": "KC-DAM",
+      "label": "主体完整但受损",
+      "definition": "主体完整，但存在磨损、折裂、脱层或其他损伤",
+      "field": "card_completeness",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 2
+    },
+    {
+      "dictionary_key": "card_completeness",
+      "dimension_category": "卡片完整性",
+      "code": "KC-PAR",
+      "label": "残缺/部分缺失",
+      "definition": "卡片主体或原有组成部分缺失",
+      "field": "card_completeness",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 3
+    },
+    {
+      "dictionary_key": "card_completeness",
+      "dimension_category": "卡片完整性",
+      "code": "KC-UNK",
+      "label": "完整性未知",
+      "definition": "无法确认卡片原始完整状态",
+      "field": "card_completeness",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 4
+    },
+    {
+      "dictionary_key": "carrier",
+      "dimension_category": "载体",
+      "code": "MT-PLS",
+      "label": "塑料卡片",
+      "definition": "以塑料为主要材料的卡片载体",
+      "field": "carrier",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 9
+    },
+    {
+      "dictionary_key": "carrier",
+      "dimension_category": "载体",
+      "code": "MT-CMP",
+      "label": "复合材料卡片",
+      "definition": "由塑料、纸、金属或其他材料复合制成的卡片载体",
+      "field": "carrier",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 10
+    },
+    {
+      "dictionary_key": "redaction_status",
+      "dimension_category": "公开副本处理",
+      "code": "RD-CLEAR",
+      "label": "已检查，无需遮盖",
+      "definition": "已完成逐项隐私检查，确认公开副本没有需要遮盖的敏感内容",
+      "field": "redaction_status",
+      "input_mode": "单值下拉",
+      "enabled": true,
+      "sort": 2
     }
   ]
 }

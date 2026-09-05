@@ -465,6 +465,120 @@
           ]
         }
       ]
+    },
+    "card": {
+      "required_dimensions": [
+        {
+          "dimension_code": "CD01",
+          "name": "卡片类别",
+          "fields": [
+            "card_type"
+          ],
+          "code_fields": [
+            {
+              "field_code": "card_type",
+              "dictionary_key": "card_type"
+            }
+          ]
+        },
+        {
+          "dimension_code": "CD02",
+          "name": "原始功能/使用场景",
+          "fields": [
+            "card_functions"
+          ],
+          "code_fields": [
+            {
+              "field_code": "card_functions",
+              "dictionary_key": "card_function"
+            }
+          ]
+        },
+        {
+          "dimension_code": "CD12",
+          "name": "卡片状态",
+          "fields": [
+            "card_status"
+          ],
+          "code_fields": [
+            {
+              "field_code": "card_status",
+              "dictionary_key": "card_status"
+            }
+          ]
+        },
+        {
+          "dimension_code": "CD16",
+          "name": "载体/材料/色彩",
+          "fields": [
+            {
+              "field_code": "carrier",
+              "scope": "core"
+            },
+            "material_details",
+            {
+              "field_code": "color",
+              "scope": "core"
+            }
+          ],
+          "code_fields": [
+            {
+              "field_code": "carrier",
+              "dictionary_key": "carrier",
+              "scope": "core"
+            },
+            {
+              "field_code": "color",
+              "dictionary_key": "color",
+              "scope": "core"
+            }
+          ]
+        },
+        {
+          "dimension_code": "CD17",
+          "name": "机读/储存技术",
+          "fields": [
+            "card_technologies"
+          ],
+          "code_fields": [
+            {
+              "field_code": "card_technologies",
+              "dictionary_key": "card_technology"
+            }
+          ]
+        },
+        {
+          "dimension_code": "CD20",
+          "name": "完整性/保存状态",
+          "fields": [
+            "card_completeness",
+            {
+              "field_code": "condition_grade",
+              "scope": "core"
+            },
+            {
+              "field_code": "condition_details",
+              "scope": "core"
+            }
+          ],
+          "code_fields": [
+            {
+              "field_code": "card_completeness",
+              "dictionary_key": "card_completeness"
+            },
+            {
+              "field_code": "condition_grade",
+              "dictionary_key": "condition",
+              "scope": "core"
+            },
+            {
+              "field_code": "condition_details",
+              "dictionary_key": "damage",
+              "scope": "core"
+            }
+          ]
+        }
+      ]
     }
   },
   "global_code_fields": [

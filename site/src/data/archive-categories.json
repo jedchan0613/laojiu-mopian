@@ -23,7 +23,7 @@
 		{
 			"slug": "cards",
 			"label": "旧卡片",
-			"object_types": ["card"]
+			"object_types": ["CRD"]
 		},
 		{
 			"slug": "notes",
