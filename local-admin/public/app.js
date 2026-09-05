@@ -119,11 +119,13 @@ const state = {
 	current: null, isNew: false, dirty: false, search: '', activeTab: 'basic', images: [],
 	confirmedPublicationCopies: false, workspaceMode: 'records', drafts: [], history: [], recycleBin: [],
 	pendingRemovedImages: [], validationIssues: [], pendingObjectCategory: '', recordStatusFilter: 'normal',
+	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '',
+	recordPage: 1, recordPageSize: 30,
 	integrityReport: null, imagePreflight: [], adminMode: 'local', publicSiteUrl: '',
 	query: {
 		loaded: false, loading: false, error: '', records: [], selectedId: '', status: 'normal',
 		search: '', category: '', objectType: '', decade: '', research: '', evidence: '', rights: '',
-		imageStatus: '', page: 1, pageSize: 50,
+		imageStatus: '', page: 1, pageSize: 50, sort: 'updated-desc',
 	},
 };
 
@@ -136,6 +138,11 @@ const publicPreviewUrl = (pathname = '/') => {
 const elements = {
 	recordList: document.querySelector('#record-list'), recordCount: document.querySelector('#record-count'),
 	recordSearch: document.querySelector('#record-search'), recordTitle: document.querySelector('#record-title'),
+	recordSort: document.querySelector('#record-sort'),
+	recordTypeFilter: document.querySelector('#record-type-filter'),
+	recordDecadeFilter: document.querySelector('#record-decade-filter'),
+	recordQuickStatusFilter: document.querySelector('#record-quick-status-filter'),
+	recordPagination: document.querySelector('#record-pagination'),
 	recordId: document.querySelector('#record-id'), recordKicker: document.querySelector('#record-kicker'),
 	editorSurface: document.querySelector('#editor-surface'), previewLink: document.querySelector('#preview-link'),
 	newRecordButton: document.querySelector('#new-record-button'), saveDraftButton: document.querySelector('#save-draft-button'),
@@ -557,15 +564,55 @@ const statusLabel = (record) => {
 	return '未发布';
 };
 
+const recordDecade = (record) => {
+	const year = String(record?.core?.date_display ?? '').match(/(?:18|19|20)\d{2}/)?.[0];
+	return year ? `${year.slice(0, 3)}0` : '';
+};
+
+const recordsInCurrentStatusTab = () => state.records.filter((record) =>
+	state.recordStatusFilter === 'withdrawn' ? recordIsWithdrawn(record) : !recordIsWithdrawn(record));
+
 const filteredRecords = () => {
 	const query = state.search.trim().toLocaleLowerCase('zh-CN');
-	const records = state.records.filter((record) =>
-		state.recordStatusFilter === 'withdrawn' ? recordIsWithdrawn(record) : !recordIsWithdrawn(record));
+	let records = recordsInCurrentStatusTab();
+	if (state.recordTypeFilter) {
+		records = records.filter((record) => record.core.object_type === state.recordTypeFilter);
+	}
+	if (state.recordDecadeFilter) {
+		records = records.filter((record) => recordDecade(record) === state.recordDecadeFilter);
+	}
+	if (state.recordQuickStatus) {
+		records = records.filter((record) => statusLabel(record) === state.recordQuickStatus);
+	}
 	if (!query) return records;
 	return records.filter((record) => [
 		record.core.item_id, record.core.collection_code, record.core.title, record.core.object_type,
+		record.core.date_display, record.core.province, record.core.city, record.core.district,
+		record.core.source_name, record.core.source_place,
 	]
-		.join(' ').toLocaleLowerCase('zh-CN').includes(query));
+		.filter(Boolean).join(' ').toLocaleLowerCase('zh-CN').includes(query));
+};
+
+const chineseCollator = new Intl.Collator('zh-CN');
+
+const sortedRecords = (records) => {
+	const sorted = [...records];
+	switch (state.recordSort) {
+		case 'accession-desc':
+			sorted.sort((left, right) => String(right.core.accession_date ?? right.core.created_date ?? '')
+				.localeCompare(String(left.core.accession_date ?? left.core.created_date ?? '')));
+			break;
+		case 'id-asc':
+			sorted.sort((left, right) => chineseCollator.compare(String(left.core.item_id ?? ''), String(right.core.item_id ?? '')));
+			break;
+		case 'title-asc':
+			sorted.sort((left, right) => chineseCollator.compare(String(left.core.title ?? ''), String(right.core.title ?? '')));
+			break;
+		default:
+			sorted.sort((left, right) => String(right.core.updated_date ?? right.core.created_date ?? '')
+				.localeCompare(String(left.core.updated_date ?? left.core.created_date ?? '')));
+	}
+	return sorted;
 };
 
 const queryCodeLabel = (dictionaryKey, code) => {
@@ -609,6 +656,27 @@ const queryFilteredRecords = () => {
 	});
 };
 
+const sortQueryRecords = (records) => {
+	const sorted = [...records];
+	switch (state.query.sort) {
+		case 'updated-asc':
+			sorted.sort((left, right) => String(left.updated_date ?? '').localeCompare(String(right.updated_date ?? '')));
+			break;
+		case 'id-asc':
+			sorted.sort((left, right) => chineseCollator.compare(String(left.item_id ?? ''), String(right.item_id ?? '')));
+			break;
+		case 'title-asc':
+			sorted.sort((left, right) => chineseCollator.compare(String(left.title ?? ''), String(right.title ?? '')));
+			break;
+		case 'decade-asc':
+			sorted.sort((left, right) => String(left.decade || '9999').localeCompare(String(right.decade || '9999')));
+			break;
+		default:
+			sorted.sort((left, right) => String(right.updated_date ?? '').localeCompare(String(left.updated_date ?? '')));
+	}
+	return sorted;
+};
+
 const queryOptionMarkup = (records, field, currentValue, labelFor = (value) => value) =>
 	[...new Set(records.map((record) => record[field]).filter(Boolean))]
 		.sort((left, right) => String(left).localeCompare(String(right), 'zh-CN'))
@@ -649,7 +717,7 @@ const renderQueryCenter = () => {
 	if (queryState.loading) return '<div class="loading-state"><div class="loading-line"></div><div class="loading-line short"></div></div>';
 	if (queryState.error) return `<div class="empty-state">${escapeHtml(queryState.error)}<br /><button class="quiet-button" data-query-action="refresh" type="button">重新读取</button></div>`;
 	if (!queryState.loaded) return '<div class="empty-state">资料查询尚未读取。</div>';
-	const filtered = queryFilteredRecords();
+	const filtered = sortQueryRecords(queryFilteredRecords());
 	const pageCount = Math.max(1, Math.ceil(filtered.length / queryState.pageSize));
 	queryState.page = Math.min(queryState.page, pageCount);
 	const startIndex = (queryState.page - 1) * queryState.pageSize;
@@ -685,7 +753,11 @@ const renderQueryCenter = () => {
 		<label><span>研究状态</span><select data-query-filter="research"><option value="">全部状态</option>${queryOptionMarkup(allStatusRecords, 'research_status', queryState.research, (value) => queryCodeLabel('research_status', value))}</select></label>
 		<label><span>证据等级</span><select data-query-filter="evidence"><option value="">全部等级</option>${queryOptionMarkup(allStatusRecords, 'evidence_level', queryState.evidence, (value) => queryCodeLabel('evidence_level', value))}</select></label>
 		<label><span>权利状态</span><select data-query-filter="rights"><option value="">全部状态</option>${queryOptionMarkup(allStatusRecords, 'rights_status', queryState.rights, (value) => queryCodeLabel('rights_status', value))}</select></label>
-		<label><span>图片结构</span><select data-query-filter="imageStatus"><option value="">全部状态</option><option value="complete" ${queryState.imageStatus === 'complete' ? 'selected' : ''}>结构完整</option><option value="warning" ${queryState.imageStatus === 'warning' ? 'selected' : ''}>需要检查</option><option value="missing" ${queryState.imageStatus === 'missing' ? 'selected' : ''}>没有发布图片</option></select></label></div>
+		<label><span>图片结构</span><select data-query-filter="imageStatus"><option value="">全部状态</option><option value="complete" ${queryState.imageStatus === 'complete' ? 'selected' : ''}>结构完整</option><option value="warning" ${queryState.imageStatus === 'warning' ? 'selected' : ''}>需要检查</option><option value="missing" ${queryState.imageStatus === 'missing' ? 'selected' : ''}>没有发布图片</option></select></label>
+		<label><span>排序</span><select data-query-sort>${[
+		['updated-desc', '最后更新（新→旧）'], ['updated-asc', '最后更新（旧→新）'],
+		['id-asc', '按编号'], ['title-asc', '按题名'], ['decade-asc', '按年代（旧→新）'],
+	].map(([value, label]) => `<option value="${value}" ${queryState.sort === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label></div>
 		<div class="query-result-summary"><span>命中 <strong>${filtered.length}</strong> 条${activeFilterCount ? ` · 当前 ${activeFilterCount} 个条件` : ''}</span>${activeFilterCount ? '<button class="quiet-button" data-query-action="clear" type="button">清除条件</button>' : ''}</div></section>
 		<div class="query-results-layout"><section class="query-results" aria-label="查询结果">${pageRecords.length ? `<div class="query-table-wrap"><table><thead><tr><th>永久编号</th><th>题名</th><th>类型</th><th>年代与地点</th><th>研究判断</th><th>图片结构</th></tr></thead><tbody>${rows}</tbody></table></div><div class="query-cards">${cards}</div>` : '<div class="empty-state">当前条件没有匹配档案。可以清除部分条件后再试。</div>'}
 		${pageCount > 1 ? `<nav class="query-pagination" aria-label="查询结果分页"><button class="quiet-button" data-query-page="${queryState.page - 1}" type="button" ${queryState.page === 1 ? 'disabled' : ''}>上一页</button><span>第 ${queryState.page} / ${pageCount} 页</span><button class="quiet-button" data-query-page="${queryState.page + 1}" type="button" ${queryState.page === pageCount ? 'disabled' : ''}>下一页</button></nav>` : ''}</section>${renderQueryDetails(selected)}</div>
@@ -775,15 +847,51 @@ const getMaintenanceOverview = () => {
 	};
 };
 
+const syncRecordToolOptions = (tabRecords) => {
+	const typeLabels = new Map((state.dictionary.get('object_type') ?? []).map((entry) => [entry.code, entry.label]));
+	const types = [...new Set(tabRecords.map((record) => record.core.object_type).filter(Boolean))]
+		.sort((left, right) => chineseCollator.compare(typeLabels.get(left) ?? left, typeLabels.get(right) ?? right));
+	elements.recordTypeFilter.innerHTML = `<option value="">全部类型</option>${types
+		.map((value) => `<option value="${escapeHtml(value)}" ${value === state.recordTypeFilter ? 'selected' : ''}>${escapeHtml(typeLabels.get(value) ?? value)}（${escapeHtml(value)}）</option>`)
+		.join('')}`;
+	const decades = [...new Set(tabRecords.map(recordDecade).filter(Boolean))]
+		.sort((left, right) => right.localeCompare(left));
+	elements.recordDecadeFilter.innerHTML = `<option value="">全部年代</option>${decades
+		.map((value) => `<option value="${escapeHtml(value)}" ${value === state.recordDecadeFilter ? 'selected' : ''}>${escapeHtml(value)}年代</option>`)
+		.join('')}`;
+	const statusOrder = ['草稿', '恢复草稿', '有未发布修改', '未发布', '候选', '已发布', '已撤销'];
+	const statuses = [...new Set(tabRecords.map(statusLabel))]
+		.sort((left, right) => (statusOrder.indexOf(left) + statusOrder.length) % statusOrder.length
+			- ((statusOrder.indexOf(right) + statusOrder.length) % statusOrder.length));
+	elements.recordQuickStatusFilter.innerHTML = `<option value="">全部状态</option>${statuses
+		.map((value) => `<option value="${escapeHtml(value)}" ${value === state.recordQuickStatus ? 'selected' : ''}>${escapeHtml(value)}</option>`)
+		.join('')}`;
+};
+
 const renderRecordList = () => {
-	const records = filteredRecords();
+	const tabRecords = recordsInCurrentStatusTab();
+	syncRecordToolOptions(tabRecords);
+	const records = sortedRecords(filteredRecords());
 	const statusName = state.recordStatusFilter === 'withdrawn' ? '已撤销' : '正常';
-	elements.recordCount.textContent = `${statusName}档案 ${records.length} 条`;
-	elements.recordList.innerHTML = records.length ? records.map((record) => `
+	const activeConditions = [state.search.trim(), state.recordTypeFilter, state.recordDecadeFilter, state.recordQuickStatus]
+		.filter(Boolean).length;
+	elements.recordCount.textContent = activeConditions
+		? `${statusName}档案命中 ${records.length} / ${tabRecords.length} 条 · ${activeConditions} 个条件`
+		: `${statusName}档案 ${records.length} 条`;
+	const pageCount = Math.max(1, Math.ceil(records.length / state.recordPageSize));
+	state.recordPage = Math.min(Math.max(1, state.recordPage), pageCount);
+	const startIndex = (state.recordPage - 1) * state.recordPageSize;
+	const pageRecords = records.slice(startIndex, startIndex + state.recordPageSize);
+	elements.recordList.innerHTML = pageRecords.length ? pageRecords.map((record) => `
 		<button class="record-card ${record.core.item_id === state.activeId ? 'is-active' : ''}" data-id="${escapeHtml(record.core.item_id)}" type="button">
 			<strong>${escapeHtml(record.core.title)}</strong><span>${escapeHtml(record.core.item_id)}</span>
 			<small>${escapeHtml(statusLabel(record))}${record._admin?.issues?.length ? ` · 待处理 ${record._admin.issues.length} 项` : ''}</small>
-		</button>`).join('') : `<div class="record-list-empty">${state.search ? '当前搜索没有匹配记录' : `暂无${statusName}档案`}</div>`;
+		</button>`).join('') : `<div class="record-list-empty">${activeConditions ? '当前搜索或筛选没有匹配记录，可以放宽部分条件' : `暂无${statusName}档案`}</div>`;
+	elements.recordPagination.hidden = pageCount <= 1;
+	elements.recordPagination.innerHTML = pageCount > 1 ? `
+		<button class="record-page-button" data-record-page="${state.recordPage - 1}" type="button" ${state.recordPage === 1 ? 'disabled' : ''}>上一页</button>
+		<span>第 ${state.recordPage} / ${pageCount} 页 · 每页 ${state.recordPageSize} 条</span>
+		<button class="record-page-button" data-record-page="${state.recordPage + 1}" type="button" ${state.recordPage === pageCount ? 'disabled' : ''}>下一页</button>` : '';
 };
 
 const renderWorkspaceNavigation = () => {
@@ -920,9 +1028,11 @@ const setWorkspaceMode = (mode) => {
 const setRecordStatusFilter = (filter) => {
 	if (!['normal', 'withdrawn'].includes(filter) || filter === state.recordStatusFilter) return;
 	state.recordStatusFilter = filter;
+	state.recordPage = 1;
+	state.recordQuickStatus = '';
 	renderRecordList();
 	renderWorkspaceNavigation();
-	const visibleRecords = filteredRecords();
+	const visibleRecords = sortedRecords(filteredRecords());
 	if (visibleRecords.some((record) => record.core.item_id === state.activeId)) return;
 	if (visibleRecords[0]) selectRecord(visibleRecords[0].core.item_id);
 	else {
@@ -2177,7 +2287,7 @@ const loadBootstrap = async (selectedId = state.activeId) => {
 	elements.previewLink.href = publicPreviewUrl('/');
 	renderRecordList();
 	renderWorkspaceNavigation();
-	const visibleRecords = filteredRecords();
+	const visibleRecords = sortedRecords(filteredRecords());
 	const targetId = selectedId === null || selectedId === undefined
 		? null
 		: visibleRecords.some((record) => record.core.item_id === selectedId)
@@ -2202,6 +2312,40 @@ elements.recordList.addEventListener('click', (event) => {
 
 elements.recordSearch.addEventListener('input', (event) => {
 	state.search = event.target.value;
+	state.recordPage = 1;
+	renderRecordList();
+});
+
+elements.recordSort.addEventListener('change', (event) => {
+	state.recordSort = event.target.value;
+	state.recordPage = 1;
+	renderRecordList();
+});
+
+elements.recordTypeFilter.addEventListener('change', (event) => {
+	state.recordTypeFilter = event.target.value;
+	state.recordPage = 1;
+	renderRecordList();
+});
+
+elements.recordDecadeFilter.addEventListener('change', (event) => {
+	state.recordDecadeFilter = event.target.value;
+	state.recordPage = 1;
+	renderRecordList();
+});
+
+elements.recordQuickStatusFilter.addEventListener('change', (event) => {
+	state.recordQuickStatus = event.target.value;
+	state.recordPage = 1;
+	renderRecordList();
+});
+
+elements.recordPagination.addEventListener('click', (event) => {
+	const button = event.target.closest('[data-record-page]');
+	if (!button || button.disabled) return;
+	const nextPage = Number(button.dataset.recordPage);
+	if (!Number.isInteger(nextPage) || nextPage < 1) return;
+	state.recordPage = nextPage;
 	renderRecordList();
 });
 
@@ -2293,6 +2437,12 @@ elements.editorSurface.addEventListener('change', async (event) => {
 	const control = event.target;
 	if (state.workspaceMode === 'query' && control.matches('[data-query-filter]')) {
 		state.query[control.dataset.queryFilter] = control.value;
+		state.query.page = 1;
+		renderWorkspaceCenter();
+		return;
+	}
+	if (state.workspaceMode === 'query' && control.matches('[data-query-sort]')) {
+		state.query.sort = control.value;
 		state.query.page = 1;
 		renderWorkspaceCenter();
 		return;
