@@ -2,9 +2,9 @@
 
 ## 一、核对结论
 
-依据 `docs/reference/archive-metadata-standard-v1.xlsx` 的四个对象维度页和 `04_代码字典` 重新核对：
+依据 `docs/reference/archive-metadata-standard-v1.xlsx` 的五个对象维度页和 `04_代码字典` 重新核对：
 
-- 基本信息中的 `date_display` 已作为所有类型共用的必填编码字段，不使用代码字典；此外已有 21 个参与收藏品编码的专属字段能可靠匹配现有代码字典：照片 6 个、明信片 6 个、日记/笔记 3 个、证件 6 个。
+- 基本信息中的 `date_display` 已作为所有类型共用的必填编码字段，不使用代码字典；此外已有 30 个参与收藏品编码的专属字段能可靠匹配现有代码字典：照片 6 个、明信片 6 个、日记/笔记 3 个、证件 6 个、旧卡片 9 个。
 - 这些字段在维护页中使用明确的字典键：单值字段显示下拉，多值字段显示代码选项列表。照片 D17 `privacy_level` 由草稿和正式发布流程自动维护，显示字典参照但不允许在属性页手工绕过隐私状态。
 - 根据 2026-08-29 的录入规则调整，明信片 PC11 和 PC18 已改为非必填；当前仍有 9 个必填维度没有可直接使用的正式字典值表。项目不能根据示例前缀自行创造代码，因此暂时保留日期、文本或编号输入。
 
@@ -14,6 +14,7 @@
 | 明信片 | PC01 `postcard_type`；PC02 `postcard_function`；PC12 `themes`、`event_scene`；PC19 `postal_mark_types`；PC21 `postcard_use` |
 | 日记/笔记 | DN01 `notebook_type`；DN11 `themes`；DN19 `notebook_completeness` |
 | 证件 | ID01 `credential_type`；ID09 `portrait_status`；ID16 `carrier`、`color`、`process`；ID20 `credential_status` |
+| 旧卡片 | CD01 `card_type`；CD02 `card_functions`；CD12 `card_status`；CD16 `carrier`、`color`；CD17 `card_technologies`；CD20 `card_completeness`、`condition_grade`、`condition_details` |
 
 ## 二、照片：2 类待定义
 

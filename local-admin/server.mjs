@@ -82,6 +82,7 @@ const objectSchema = {
 	DIA: 'diary_notebook',
 	NTB: 'diary_notebook',
 	IDC: 'credential',
+	CRD: 'card',
 	LET: 'common',
 	RPR: 'common',
 	OTH: 'common',
@@ -870,6 +871,12 @@ const getPublicationIssues = async (
 	if (collectionCodeRules && codeDictionary) {
 		issues.push(...getCollectionCodeResult(record, collectionCodeRules, codeDictionary).issues);
 	}
+	if (record?.core?.object_type === 'CRD') {
+		const redactionStatus = record?.metadata?.dimensions?.CD21?.redaction_status;
+		if (!['RD-CLEAR', 'RD-MASK', 'RD-PART'].includes(redactionStatus)) {
+			add('card_redaction_status', 'privacy', '旧卡片发布前必须完成隐私检查，并选择“无需遮盖”“已遮盖”或“部分遮盖”。', 'redaction_status');
+		}
+	}
 	const paths = record?.core?.publication_file_path ?? [];
 	if (!paths.length) add('images_empty', 'images', '正式发布前至少需要一张发布图片。');
 	for (const publicPath of paths) {
@@ -890,7 +897,7 @@ const getPublicationIssues = async (
 };
 
 const loadBootstrap = async () => {
-	const [officialRecords, drafts, commonFields, codeDictionary, collectionCodeRules, fieldRouting, archiveCategories, administrativeRegions, photo, postcard, diaryNotebook, credential, history, recycleBin] =
+	const [officialRecords, drafts, commonFields, codeDictionary, collectionCodeRules, fieldRouting, archiveCategories, administrativeRegions, photo, postcard, diaryNotebook, credential, card, history, recycleBin] =
 		await Promise.all([
 			loadOfficialRecords(),
 			loadDrafts(),
@@ -904,6 +911,7 @@ const loadBootstrap = async () => {
 			readJson(path.join(standardsDirectory, 'postcard-dimensions.json')),
 			readJson(path.join(standardsDirectory, 'diary-notebook-dimensions.json')),
 			readJson(path.join(standardsDirectory, 'credential-dimensions.json')),
+			readJson(path.join(standardsDirectory, 'card-dimensions.json')),
 			loadHistoryEntries(),
 			loadRecycleEntries(),
 		]);
@@ -981,7 +989,7 @@ const loadBootstrap = async () => {
 			fieldRouting,
 			archiveCategories,
 			administrativeRegions,
-			dimensions: { photo, postcard, diary_notebook: diaryNotebook, credential },
+			dimensions: { photo, postcard, diary_notebook: diaryNotebook, credential, card },
 		},
 		paths: {
 			projectName: '老旧默片',
@@ -1005,6 +1013,8 @@ const safeSpecificQueryFields = new Set([
 	'postcard_type', 'view_subject', 'sender_name', 'recipient_name', 'postmark_place', 'postmark_date',
 	'diary_type', 'notebook_type', 'content_date_start', 'content_date_end', 'language',
 	'document_type', 'document_number_masked', 'address_masked', 'credential_status', 'redaction_status',
+	'card_type', 'card_functions', 'card_status', 'card_technologies', 'card_completeness',
+	'issuer_name', 'brand_name', 'merchant_name',
 ]);
 
 const createQueryRecords = async () => {
@@ -1124,10 +1134,27 @@ const assertSafeRecord = (record) => {
 			}
 		}
 	}
-	const credentialDimensions = record.metadata?.dimensions ?? {};
-	for (const dimension of Object.values(credentialDimensions)) {
+	const dimensions = record.metadata?.dimensions ?? {};
+	for (const dimension of Object.values(dimensions)) {
 		if (dimension && typeof dimension === 'object' && ('signatures' in dimension || 'fingerprints' in dimension)) {
 			throw new Error('完整签名和指纹不得进入网站数据。');
+		}
+	}
+	if (record.core.object_type === 'CRD') {
+		const forbiddenCardFields = new Set([
+			'holder_name', 'cardholder_name', 'card_number', 'account_number', 'account_number_full',
+			'security_code', 'cvv', 'cvc', 'pin', 'magnetic_stripe_data', 'chip_data',
+			'signature', 'signature_text',
+		]);
+		for (const dimension of Object.values(dimensions)) {
+			if (!dimension || typeof dimension !== 'object') continue;
+			for (const fieldCode of forbiddenCardFields) {
+				if (fieldCode in dimension) throw new Error('旧卡片数据不得保存完整姓名、完整卡号/账户、安全码、密码、磁条/芯片数据或签名内容。');
+			}
+		}
+		const maskedNumber = record.metadata?.dimensions?.CD09?.card_number_masked;
+		if (typeof maskedNumber === 'string' && (maskedNumber.match(/[A-Za-z0-9]/g) ?? []).length > 4) {
+			throw new Error('旧卡片的公开卡号最多只能保留末四位，其余位置必须遮盖。');
 		}
 	}
 };

@@ -47,8 +47,7 @@ const hasText = (value: unknown): value is string =>
 const uniqueText = (values: Array<string | undefined>) =>
 	[...new Set(values.filter(hasText).map((value) => value.trim()))];
 
-export const getObjectTypeLabel = (type: ObjectType) =>
-	type === 'card' ? '旧卡片' : getCodeLabel(type);
+export const getObjectTypeLabel = (type: ObjectType) => getCodeLabel(type);
 
 export const isPublishedArchiveItem = (item: ArchiveItem) =>
 	item.core.record_status === 'ACT' &&

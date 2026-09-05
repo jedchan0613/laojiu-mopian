@@ -11,13 +11,12 @@ export type OfficialObjectType =
 	| 'DIA'
 	| 'NTB'
 	| 'IDC'
+	| 'CRD'
 	| 'LET'
 	| 'RPR'
 	| 'OTH';
 
-// card 是网站旧有类型，Excel v1 尚未为它定义正式代码和专属维度。
-export type PendingObjectType = 'card';
-export type ObjectType = OfficialObjectType | PendingObjectType;
+export type ObjectType = OfficialObjectType;
 
 export type RecordStatus = 'ACT' | 'SUS' | 'WDR';
 export type PrivacyLevel = 'G' | 'Y' | 'R';
@@ -308,6 +307,45 @@ export interface CredentialMetadata {
 	};
 }
 
+export interface CardMetadata {
+	CD01?: { card_type?: Code };
+	CD02?: { card_functions?: Code[] };
+	CD03?: { issue_date?: DateText; issue_date_text?: string };
+	CD04?: { valid_from?: DateText; valid_to?: DateText; validity_text?: string };
+	CD05?: { issuer_id?: string[]; issuer_name?: string[]; issuer_place?: string[] };
+	CD06?: { brand_name?: string[]; merchant_name?: string[]; service_network?: string[] };
+	CD07?: { issue_place_code?: string; issue_place?: string; service_area?: string[] };
+	CD08?: { holder_name_masked?: string; holder_status?: string };
+	CD09?: { card_number_masked?: string; number_type?: string };
+	CD10?: { face_value?: string[]; currency?: string[]; benefit_text?: string[] };
+	CD11?: { usage_evidence?: string[]; usage_notes?: string };
+	CD12?: { card_status?: Code };
+	CD13?: { front_subject?: string; back_subject?: string; themes?: Code[] };
+	CD14?: {
+		language?: string[];
+		script?: string[];
+		front_transcription?: string;
+		back_transcription?: string;
+	};
+	CD15?: {
+		card_format?: string;
+		orientation?: string;
+		width_mm?: number;
+		height_mm?: number;
+		size_notes?: string;
+	};
+	CD16?: { carrier?: Code; material_details?: string; color?: Code };
+	CD17?: { card_technologies?: Code[] };
+	CD18?: { security_features?: Code[]; signature_status?: string; portrait_status?: Code };
+	CD19?: { accessories?: string[]; related_item_ids?: string[]; original_position?: string };
+	CD20?: { card_completeness?: Code; condition_grade?: Code; condition_details?: Code[] };
+	CD21?: {
+		privacy_level?: PrivacyLevel;
+		redaction_status?: Code;
+		restricted_fields?: string[];
+	};
+}
+
 /** 访客可见的文字投影，不属于另一套档案元数据。 */
 export interface ArchivePublicView {
 	description?: string;
@@ -352,8 +390,14 @@ export type CredentialArchiveItem = ArchiveItemBase<
 	CredentialMetadata
 >;
 
+export type CardArchiveItem = ArchiveItemBase<
+	ArchiveItemCore & { object_type: 'CRD' },
+	'card',
+	CardMetadata
+>;
+
 export type CommonOnlyArchiveItem = ArchiveItemBase<
-	ArchiveItemCore & { object_type: 'LET' | 'RPR' | 'OTH' | 'card' },
+	ArchiveItemCore & { object_type: 'LET' | 'RPR' | 'OTH' },
 	'common',
 	Record<string, never>
 >;
@@ -363,4 +407,5 @@ export type ArchiveItem =
 	| PostcardArchiveItem
 	| DiaryNotebookArchiveItem
 	| CredentialArchiveItem
+	| CardArchiveItem
 	| CommonOnlyArchiveItem;

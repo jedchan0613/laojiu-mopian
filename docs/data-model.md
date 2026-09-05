@@ -18,6 +18,7 @@ ArchiveItem
     ├── postcard
     ├── diary_notebook
     ├── credential
+    ├── card
     └── common           暂无专属 schema 的类型
 ```
 
@@ -56,12 +57,12 @@ Excel 标记为必填但旧记录暂缺的字段，不得为了通过检查而�
 | `PST`、`PCD` | 明信片、照片明信片 | `PostcardMetadata`，PC01-PC21 |
 | `DIA`、`NTB` | 日记、笔记本 | `DiaryNotebookMetadata`，DN01-DN21 |
 | `IDC` | 证件 | `CredentialMetadata`，ID01-ID21 |
+| `CRD` | 商业与服务卡片 | `CardMetadata`，CD01-CD21 |
 | `LET` | 信件 | 仅通用管理元数据；待定义专属 schema |
 | `RPR` | 复制件 | 仅通用管理元数据；待定义专属 schema |
 | `OTH` | 其他 | 仅通用管理元数据；待定义专属 schema |
-| `card` | 旧卡片 / 信用卡 | 旧有待扩展类型，仅通用管理元数据；正式对象代码和专属 schema 待定义 |
 
-不能把四套共 84 个专属维度全部平铺到所有对象。`ArchiveItem` 通过 `core.object_type` 和 `metadata.schema` 建立对应关系。
+不能把五套共 105 个专属维度全部平铺到所有对象。`ArchiveItem` 通过 `core.object_type` 和 `metadata.schema` 建立对应关系。
 
 ### 4.1 公开网站访客分类
 
@@ -118,10 +119,10 @@ Excel 标记为必填但旧记录暂缺的字段，不得为了通过检查而�
 - `site/src/data/archive-schema.ts`：TypeScript 数据类型和对象类型路由。
 - `site/src/data/archive.ts`：当前正式发布记录。
 - `site/src/data/standards/common-fields.json`：86 个通用字段定义。
-- `site/src/data/standards/*-dimensions.json`：四套 21 维定义。
+- `site/src/data/standards/*-dimensions.json`：五套 21 维定义。
 - `site/src/data/standards/code-dictionary.json`：正式代码字典。
 - `site/src/data/standards/collection-code-rules.json`：Excel 打勾必填维度、可编码字段和收藏品编码顺序。
 - `archive-data/metadata-template.json`：单件档案发布层入站模板。
 - `samples/archive-test-data.ts`：迁移后的虚构测试资料，不参与正式网站统计。
 
-永久编号规则见 `docs/coding-standard.md`，84 个维度见 `docs/metadata-dimensions.md`，代码字典见 `docs/code-dictionary.md`。
+永久编号规则见 `docs/coding-standard.md`，105 个维度见 `docs/metadata-dimensions.md`，代码字典见 `docs/code-dictionary.md`。
