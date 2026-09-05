@@ -263,6 +263,73 @@ a {
 	outline-offset: 3px;
 }
 
+.record-tools {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.4rem;
+	margin-top: 0.5rem;
+}
+
+.record-tools select {
+	width: 100%;
+	padding: 0.42rem 0.5rem;
+	color: #e8e2d4;
+	background: #1c201c;
+	border: 1px solid #4a5047;
+	border-radius: 0.2rem;
+	font-size: 0.72rem;
+	outline: none;
+}
+
+.record-tools select:focus-visible {
+	border-color: #a79d89;
+	outline: 2px solid #c6bca8;
+	outline-offset: 3px;
+}
+
+.record-tools option {
+	color: #1c201c;
+	background: #f7f2e8;
+}
+
+.record-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-top: 0.45rem;
+	padding: 0 0.2rem;
+}
+
+.record-pagination span {
+	color: #979d94;
+	font-size: 0.68rem;
+}
+
+.record-page-button {
+	padding: 0.35rem 0.6rem;
+	color: #d8d2c6;
+	background: #262b25;
+	border: 1px solid #4a5047;
+	border-radius: 0.2rem;
+	font-size: 0.7rem;
+	cursor: pointer;
+}
+
+.record-page-button:hover:not(:disabled) {
+	background: #30362f;
+}
+
+.record-page-button:focus-visible {
+	outline: 2px solid #c6bca8;
+	outline-offset: 3px;
+}
+
+.record-page-button:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
 .record-count {
 	margin: 0.75rem 0.4rem 0.4rem;
 	color: #979d94;
