@@ -13,7 +13,7 @@ import {
   isPublishedArchiveItem,
   type DisplayFact,
 } from '../../data/archive-view';
-import { getCodeEntry, getCodeLabel } from '../../data/code-dictionary';
+import { getCodeLabel } from '../../data/code-dictionary';
 import { getPublicUsagePolicy } from '../../data/archive-rights';
 import { getResponsiveImage } from '../../data/responsive-images';
 
@@ -85,16 +85,6 @@ const formatDisplayDate = (value: string | undefined) => {
   if (!match) return value?.trim() ?? '';
   return `${match[1]}年${Number(match[2])}月${Number(match[3])}日`;
 };
-const codeStatusFact = (label: string, code: string | undefined): RecordStatusFact | undefined => {
-  if (!code) return undefined;
-  const entry = getCodeEntry(code);
-  return {
-    label,
-    value: entry?.label ?? code,
-    description: entry?.definition ?? '以当前档案记录为准。',
-  };
-};
-
 const basicFacts = compactFacts<LinkedDisplayFact>([
   {
     label: '类型',
@@ -114,9 +104,8 @@ const basicFacts = compactFacts<LinkedDisplayFact>([
   { label: '人物', value: joinText(item.core.people) },
 ]);
 
+// 研究状态与证据等级属于内部工作记录，不在公开页展示；公开摘要只保留最后更新日期。
 const recordStatusFacts = [
-  codeStatusFact('研究状态', item.core.research_status),
-  codeStatusFact('证据等级', item.core.evidence_level),
   item.core.updated_date
     ? {
       label: '最后更新',
@@ -132,19 +121,10 @@ const specificFacts = getSpecificMetadataFacts(item);
 // 维度代码等内部编码不在公开页展示；永久编号仍保留在“引用与分享”区块供核对使用。
 const displayLabel = (code: string | undefined) => hasText(code) ? getCodeLabel(code) : '';
 const researchManagementFacts = compactFacts([
-  { label: '获得方式', value: displayLabel(item.core.acquisition_method) },
   { label: '来源地点', value: item.core.source_place ?? '' },
-  { label: '研究状态', value: displayLabel(item.core.research_status) },
-  { label: '证据等级', value: displayLabel(item.core.evidence_level) },
-  { label: '数字化状态', value: displayLabel(item.core.digitization_status) },
-  { label: '转录状态', value: displayLabel(item.core.transcription_status) },
   { label: '备份状态', value: displayLabel(item.core.backup_status) },
   { label: '保存等级', value: displayLabel(item.core.condition_grade) },
   { label: '发布副本', value: view.images.length > 0 ? `${view.images.length} 个文件` : '' },
-  { label: '隐私等级', value: displayLabel(item.core.privacy_level) },
-  { label: '权利状态', value: displayLabel(item.core.rights_status) },
-  { label: '利用状态', value: displayLabel(item.core.use_status) },
-  { label: '档案状态', value: displayLabel(item.core.record_status) },
 ]);
 const getImageRole = (description: string, index: number) => {
   const matchedRole = ['正面', '背面', '封面', '内页', '全景', '细节'].find((role) =>
@@ -305,7 +285,6 @@ const breadcrumbStructuredData = {
             <div>
               <h2 id="letter-transcription-heading">电子文字</h2>
             </div>
-            <span>{item.core.transcription_status ? getCodeLabel(item.core.transcription_status) : '公开转录'}</span>
           </header>
           <div class="letter-transcription-text">{view.transcription}</div>
           <footer>
@@ -462,7 +441,7 @@ const breadcrumbStructuredData = {
       </section>
     </div>
 
-    {recordStatusFacts.length > 0 && (
+    {(recordStatusFacts.length > 0 || hasText(revisionNote)) && (
       <aside class="record-status" aria-labelledby="record-status-heading">
         <div class="record-status-heading">
           <div>
@@ -546,7 +525,7 @@ const breadcrumbStructuredData = {
           <details class="management-information">
             <summary>
               <span class="icon-heading"><SiteIcon name="archive" /><span>档案信息</span></span>
-              <small>研究用元数据 · {researchManagementFacts.length} 项</small>
+              <small>{researchManagementFacts.length} 项</small>
             </summary>
             <dl class="section-facts">
               {researchManagementFacts.map((fact) => (
