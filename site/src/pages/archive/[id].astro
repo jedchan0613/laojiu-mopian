@@ -58,7 +58,8 @@ const hasText = (value: string | undefined) => Boolean(value?.trim());
 const isLetter = item.core.object_type === 'LET';
 const hasPublicTranscription = hasText(view.transcription);
 const hasPublicOriginal = view.images.length > 0;
-const initialLetterMode = hasPublicTranscription ? 'text' : 'original';
+// 访客看信件首先想看原件：有原件发布副本时默认“只看原件”，没有原件时才回退到文字阅读。
+const initialLetterMode = hasPublicOriginal ? 'original' : 'text';
 const letterReadingModes = [
   hasPublicTranscription ? { value: 'text', label: '文字阅读' } : undefined,
   hasPublicTranscription && hasPublicOriginal ? { value: 'compare', label: '原件对照' } : undefined,
@@ -300,7 +301,7 @@ const breadcrumbStructuredData = {
           )}
           <p class="letter-reading-introduction">
             {hasPublicTranscription
-              ? '以下为经过公开与隐私检查的电子转录，保留原有段落与换行；原件图片是最终核对依据。'
+              ? '默认先看原件：原件图片是最终核对依据；电子转录保留原有段落与换行，可随时切换查看方式。'
               : '这封信暂未提供公开电子转录，当前仅展示经过检查的原件发布副本。'}
           </p>
         </header>
