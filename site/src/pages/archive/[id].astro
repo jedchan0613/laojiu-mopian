@@ -9,7 +9,6 @@ import {
 } from '../../data/archive-categories';
 import {
   createArchiveRecordView,
-  displayCode,
   getSpecificMetadataFacts,
   isPublishedArchiveItem,
   type DisplayFact,
@@ -128,30 +127,24 @@ const recordStatusFacts = [
 ].filter((fact): fact is RecordStatusFact => Boolean(fact));
 
 const specificFacts = getSpecificMetadataFacts(item);
-const specificTechnicalFacts = getSpecificMetadataFacts(item, { includeCodes: true });
 
+// 面向访客的“档案信息”只显示中文标签：永久编号、收藏品编码、类型代码、
+// 维度代码等内部编码不在公开页展示；永久编号仍保留在“引用与分享”区块供核对使用。
+const displayLabel = (code: string | undefined) => hasText(code) ? getCodeLabel(code) : '';
 const researchManagementFacts = compactFacts([
-  { label: '永久编号', value: view.id },
-  { label: '收藏品编码', value: view.collectionCode },
-  { label: '对象类型', value: view.typeLabel, code: item.core.object_type },
-  { label: '获得方式', value: displayCode(item.core.acquisition_method) },
+  { label: '获得方式', value: displayLabel(item.core.acquisition_method) },
   { label: '来源地点', value: item.core.source_place ?? '' },
-  { label: '研究状态', value: displayCode(item.core.research_status) },
-  { label: '证据等级', value: displayCode(item.core.evidence_level) },
-  { label: '数字化状态', value: displayCode(item.core.digitization_status) },
-  { label: '转录状态', value: displayCode(item.core.transcription_status) },
-  { label: '备份状态', value: displayCode(item.core.backup_status) },
-  { label: '保存等级', value: displayCode(item.core.condition_grade) },
+  { label: '研究状态', value: displayLabel(item.core.research_status) },
+  { label: '证据等级', value: displayLabel(item.core.evidence_level) },
+  { label: '数字化状态', value: displayLabel(item.core.digitization_status) },
+  { label: '转录状态', value: displayLabel(item.core.transcription_status) },
+  { label: '备份状态', value: displayLabel(item.core.backup_status) },
+  { label: '保存等级', value: displayLabel(item.core.condition_grade) },
   { label: '发布副本', value: view.images.length > 0 ? `${view.images.length} 个文件` : '' },
-  { label: '隐私等级', value: displayCode(item.core.privacy_level) },
-  { label: '权利状态', value: displayCode(item.core.rights_status) },
-  { label: '利用状态', value: displayCode(item.core.use_status) },
-  { label: '档案状态', value: displayCode(item.core.record_status) },
-	...specificTechnicalFacts.map((fact) => ({
-		label: `专属维度 · ${fact.label}`,
-		value: fact.value,
-		code: fact.code,
-	})),
+  { label: '隐私等级', value: displayLabel(item.core.privacy_level) },
+  { label: '权利状态', value: displayLabel(item.core.rights_status) },
+  { label: '利用状态', value: displayLabel(item.core.use_status) },
+  { label: '档案状态', value: displayLabel(item.core.record_status) },
 ]);
 const getImageRole = (description: string, index: number) => {
   const matchedRole = ['正面', '背面', '封面', '内页', '全景', '细节'].find((role) =>
@@ -267,7 +260,7 @@ const breadcrumbStructuredData = {
     <a class="back-link ui-text-link" href={defaultBackHref} data-record-back>← 返回档案</a>
 
     <header class="record-heading">
-      <p class="section-mark icon-heading"><SiteIcon name="archive" /><span>ARCHIVE RECORD · {view.typeLabel}</span></p>
+      <p class="section-mark icon-heading"><SiteIcon name="archive" /><span>{view.typeLabel}</span></p>
       <h1>{view.title}</h1>
       {hasText(view.description) && <p class="record-lead">{view.description}</p>}
       <div class="record-heading-actions" aria-label="档案互动操作">
@@ -283,7 +276,6 @@ const breadcrumbStructuredData = {
       {isLetter && (
         <header class="letter-reading-header">
           <div>
-            <p>LETTER READING</p>
             <h2 class="icon-heading"><SiteIcon name="story" /><span>信件阅读</span></h2>
           </div>
           {letterReadingModes.length > 1 && (
@@ -311,7 +303,6 @@ const breadcrumbStructuredData = {
         <article class="letter-transcription" aria-labelledby="letter-transcription-heading">
           <header>
             <div>
-              <p>PUBLIC TRANSCRIPTION</p>
               <h2 id="letter-transcription-heading">电子文字</h2>
             </div>
             <span>{item.core.transcription_status ? getCodeLabel(item.core.transcription_status) : '公开转录'}</span>
@@ -463,7 +454,6 @@ const breadcrumbStructuredData = {
                       <small>查看相关档案 →</small>
                     </a>
                   ) : fact.value}
-                  {fact.code && <small>{fact.code}</small>}
                 </dd>
               </div>
             ))
@@ -556,15 +546,12 @@ const breadcrumbStructuredData = {
           <details class="management-information">
             <summary>
               <span class="icon-heading"><SiteIcon name="archive" /><span>档案信息</span></span>
-              <small>研究用元数据 · {researchManagementFacts.length} 项 · 包含编号与技术代码</small>
+              <small>研究用元数据 · {researchManagementFacts.length} 项</small>
             </summary>
             <dl class="section-facts">
               {researchManagementFacts.map((fact) => (
                 <div>
-                  <dt>
-                    {fact.label}
-                    {fact.code && <small>{fact.code}</small>}
-                  </dt>
+                  <dt>{fact.label}</dt>
                   <dd>{fact.value}</dd>
                 </div>
               ))}
@@ -577,7 +564,6 @@ const breadcrumbStructuredData = {
     {relatedRecordEntries.length > 0 && (
       <section class="record-related" aria-labelledby="record-related-heading">
         <div class="record-related-heading">
-          <p>RELATED RECORDS</p>
           <h2 class="icon-heading" id="record-related-heading"><SiteIcon name="related" /><span>沿着线索继续看</span></h2>
           <span>根据共同标签、地点、年代或分类自动关联。</span>
         </div>
@@ -617,7 +603,6 @@ const breadcrumbStructuredData = {
       data-download-available={String(usagePolicy.canDownloadPublicationCopy)}
     >
       <div class="record-usage-heading">
-        <p>RIGHTS AND USE</p>
         <h2 class="icon-heading" id="record-usage-heading"><SiteIcon name="rights" /><span>使用与下载</span></h2>
       </div>
       <div class="record-usage-content">
@@ -649,7 +634,6 @@ const breadcrumbStructuredData = {
       data-record-identifier={view.id}
     >
       <div class="record-citation-heading">
-        <p>CITE THIS RECORD</p>
         <h2 class="icon-heading" id="record-citation-heading"><SiteIcon name="citation" /><span>引用与分享</span></h2>
       </div>
       <div class="record-citation-content">
@@ -1160,15 +1144,7 @@ const breadcrumbStructuredData = {
     margin: 0;
   }
 
-  .letter-reading-header > div:first-child > p {
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.15em;
-  }
-
   .letter-reading-header h2 {
-    margin-top: 0.25rem;
     font-size: 0.96rem;
     font-weight: 600;
     letter-spacing: 0.12em;
@@ -1246,20 +1222,11 @@ const breadcrumbStructuredData = {
     border-bottom: 1px solid #d1c9b9;
   }
 
-  .letter-transcription > header p,
   .letter-transcription > header h2 {
     margin: 0;
   }
 
-  .letter-transcription > header p {
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.14em;
-  }
-
   .letter-transcription > header h2 {
-    margin-top: 0.22rem;
     font-size: 1.08rem;
     font-weight: 600;
     letter-spacing: 0.1em;
@@ -1632,8 +1599,8 @@ const breadcrumbStructuredData = {
   .section-facts > div {
     display: grid;
     grid-template-columns: minmax(6.5rem, 0.75fr) minmax(0, 1.25fr);
-    gap: 1rem;
-    padding: 1rem 0;
+    gap: 0.5rem 1rem;
+    padding: 0.62rem 0;
     border-bottom: 1px solid #c9c2b2;
   }
 
@@ -1642,7 +1609,7 @@ const breadcrumbStructuredData = {
     color: #777165;
     font-size: 0.75rem;
     letter-spacing: 0.1em;
-    line-height: 1.7;
+    line-height: 1.55;
   }
 
   .record-facts dd,
@@ -1650,7 +1617,7 @@ const breadcrumbStructuredData = {
     margin: 0;
     overflow-wrap: anywhere;
     font-size: 0.93rem;
-    line-height: 1.7;
+    line-height: 1.55;
   }
 
   .fact-filter-link {
@@ -1766,24 +1733,15 @@ const breadcrumbStructuredData = {
   }
 
   .record-related-heading {
-    display: grid;
-    grid-template-columns: minmax(8.5rem, 0.3fr) minmax(0, 0.7fr);
-    gap: 0.15rem clamp(1.5rem, 5vw, 4rem);
+    display: flex;
     align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.1rem;
   }
 
-  .record-related-heading p,
   .record-related-heading h2,
   .record-related-heading span {
     margin: 0;
-  }
-
-  .record-related-heading p {
-    grid-row: 1 / span 2;
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.15em;
   }
 
   .record-related-heading h2 {
@@ -1873,7 +1831,6 @@ const breadcrumbStructuredData = {
     border-left: 3px solid var(--site-accent);
   }
 
-  .record-usage-heading p,
   .record-usage-heading h2,
   .record-usage-summary p,
   .record-usage-summary small,
@@ -1881,15 +1838,7 @@ const breadcrumbStructuredData = {
     margin: 0;
   }
 
-  .record-usage-heading p {
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.15em;
-  }
-
   .record-usage-heading h2 {
-    margin-top: 0.35rem;
     color: #6b665b;
     font-size: 0.78rem;
     font-weight: 400;
@@ -1974,22 +1923,13 @@ const breadcrumbStructuredData = {
     border: 1px solid #c7bfaf;
   }
 
-  .record-citation-heading p,
   .record-citation-heading h2,
   .citation-preview,
   .citation-feedback {
     margin: 0;
   }
 
-  .record-citation-heading p {
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.15em;
-  }
-
   .record-citation-heading h2 {
-    margin-top: 0.35rem;
     color: #6b665b;
     font-size: 0.78rem;
     font-weight: 400;
@@ -2291,14 +2231,9 @@ const breadcrumbStructuredData = {
       gap: 0.8rem;
     }
 
-    .record-related-heading,
     .record-usage {
       grid-template-columns: 1fr;
       gap: 0.8rem;
-    }
-
-    .record-related-heading p {
-      grid-row: auto;
     }
 
     .record-related-grid {
