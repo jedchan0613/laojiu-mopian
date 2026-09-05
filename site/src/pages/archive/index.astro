@@ -29,32 +29,35 @@ const availableDecades = [
 
 const availablePlaces = [...new Set(publishedViews.flatMap((view) => view.placeFilters))];
 const availableTags = [...new Set(publishedViews.flatMap((view) => view.tags))];
+
+// 列表卡片展示用标签：去掉与地点重复的标签，避免「珠海」同时出现在地点和标签里。
+// 过滤规则：标签与 placeFilters 精确匹配，或标签是 placeDisplay 的子串，均视为重复。
+const filterDisplayTags = (tags: string[], placeDisplay: string, placeFilters: string[]) =>
+  tags.filter((tag) => !placeFilters.includes(tag) && !placeDisplay.includes(tag));
 const decadeBrowseEntries = availableDecades.map((decade) => ({
   label: `${decade}年代`,
   value: decade,
   count: publishedViews.filter((view) => view.decade === decade).length,
 }));
 const normalizePlaceLabel = (value: string) => value.trim().replace(/[省市区县]$/, '');
+// “按地点浏览”取每条档案最能定位的一层结构化地点（优先市级），
+// 含“未知”的层级跳过；再回匹配到该档案地点筛选值中的对应项。
+const browsePlaceLevels = ['city', 'district', 'street_town', 'specific_place', 'province', 'country'] as const;
 const browsePlaceMap = new Map<string, { label: string; value: string; count: number }>();
 for (const view of publishedViews) {
-  const maintainedFilters = (view.item.public_view.place_filters ?? [])
-    .filter((place) => place.trim() && !place.includes('未知'));
-  const preferredPlaces = maintainedFilters.length
-    ? maintainedFilters.map((place) => ({ label: place, value: place }))
-    : (() => {
-      const display = view.item.public_view.place_display?.trim() ?? '';
-      if (!display || display.includes('未知')) return [];
-      const filterValue = view.placeFilters.find((place) => place === display)
-        ?? view.placeFilters.find((place) => normalizePlaceLabel(place) === normalizePlaceLabel(display));
-      return filterValue ? [{ label: display, value: filterValue }] : [];
-    })();
-  for (const place of preferredPlaces) {
-    const existing = browsePlaceMap.get(place.value);
-    browsePlaceMap.set(place.value, {
-      ...place,
-      count: (existing?.count ?? 0) + 1,
-    });
-  }
+  const preferred = browsePlaceLevels
+    .map((field) => view.item.core[field]?.trim())
+    .find((value): value is string => Boolean(value) && !value!.includes('未知'));
+  if (!preferred) continue;
+  const filterValue = view.placeFilters.find((place) => place === preferred)
+    ?? view.placeFilters.find((place) => normalizePlaceLabel(place) === normalizePlaceLabel(preferred));
+  if (!filterValue) continue;
+  const existing = browsePlaceMap.get(filterValue);
+  browsePlaceMap.set(filterValue, {
+    label: preferred,
+    value: filterValue,
+    count: (existing?.count ?? 0) + 1,
+  });
 }
 const placeBrowseEntries = [...browsePlaceMap.values()]
   .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, 'zh-CN'))
@@ -63,6 +66,11 @@ const publishedEntries = publishedViews.map((view) => ({
   view,
   coverImage: view.images[0] ? getResponsiveImage(view.images[0]) : undefined,
 }));
+// 构建时生成的搜索索引：只包含公开展示层已有的文字字段，按永久编号索引。
+// 转义所有“<”，避免档案文字中出现标签开头时截断脚本数据。
+const searchIndexJson = JSON.stringify(
+  publishedViews.map((view) => ({ id: view.id, fields: view.searchFields })),
+).replaceAll('<', '\\u003c');
 ---
 
 <BaseLayout
@@ -166,6 +174,7 @@ const publishedEntries = publishedViews.map((view) => ({
         <div class="archive-control">
           <label for="archive-sort">排序方式</label>
           <select id="archive-sort" aria-controls="archive-list">
+            <option value="relevance" disabled>按相关度</option>
             <option value="recent">最近收录</option>
             <option value="date-asc">年代从早到晚</option>
             <option value="date-desc">年代从晚到早</option>
@@ -239,7 +248,6 @@ const publishedEntries = publishedViews.map((view) => ({
               data-archive-decade={view.decade}
               data-archive-places={`|${view.placeFilters.join('|')}|`}
               data-archive-tags={`|${view.tags.join('|')}|`}
-              data-search-text={view.searchText}
               data-archive-id={view.id}
               data-archive-accession={view.item.core.accession_date ?? ''}
               data-archive-year={view.dateDisplay.match(/\d{4}/)?.[0] ?? ''}
@@ -289,8 +297,10 @@ const publishedEntries = publishedViews.map((view) => ({
                   </dl>
 
                   <ul class="archive-tags" aria-label="标签">
-                    {view.tags.map((tag) => <li data-search-highlight>{tag}</li>)}
+                    {filterDisplayTags(view.tags, view.placeDisplay, view.placeFilters).map((tag) => <li data-search-highlight>{tag}</li>)}
                   </ul>
+
+                  <p class="archive-match-reason" data-match-reason hidden></p>
 
                   <span class="archive-entry-action" aria-hidden="true">查看档案 →</span>
                 </div>
@@ -311,12 +321,21 @@ const publishedEntries = publishedViews.map((view) => ({
           <button class="ui-action ui-action--secondary" id="archive-page-next" type="button">下一页 →</button>
         </div>
       </nav>
+      <script type="application/json" id="archive-search-index" set:html={searchIndexJson} />
     </section>
   </div>
 </BaseLayout>
 
 <script>
   import '../../scripts/archive-likes';
+  import {
+    SEARCH_FIELD_LABELS,
+    normalizeSearchText,
+    scoreEntryAgainstFields,
+    searchTermsFrom,
+    type ArchiveSearchMatch,
+  } from '../../scripts/archive-search';
+  import type { ArchiveSearchFields } from '../../data/archive-view';
 
   const archiveIndex = document.querySelector<HTMLElement>('.archive-index');
   const searchInput = document.querySelector<HTMLInputElement>('#archive-search');
@@ -348,9 +367,21 @@ const publishedEntries = publishedViews.map((view) => ({
   const browseStateKey = 'ljm-archive-browse-state';
   const pageSize = Math.max(1, Number(archiveIndex?.dataset.archivePageSize) || 12);
   let currentPage = 1;
+  // 访客手动选择过排序方式后，不再自动切换到“按相关度”。
+  let userChosenSort = false;
 
-  const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('zh-CN');
-  const searchTermsFrom = (value: string) => normalizeSearchText(value).split(/\s+/).filter(Boolean);
+  // 构建时写入页面的搜索索引：永久编号 → 分字段搜索文字。
+  const searchFieldsByItemId = new Map<string, ArchiveSearchFields>();
+  try {
+    const indexElement = document.querySelector<HTMLElement>('#archive-search-index');
+    const entries = JSON.parse(indexElement?.textContent ?? '[]') as Array<{ id: string; fields: ArchiveSearchFields }>;
+    for (const entry of entries) {
+      if (entry?.id && entry.fields) searchFieldsByItemId.set(entry.id, entry.fields);
+    }
+  } catch {
+    // 索引损坏时搜索退化为“找不到结果”，不影响分类、年代等结构化筛选。
+  }
+
   const splitDataValues = (value: string | undefined) => (value ?? '').split('|').filter(Boolean);
 
   const setAddressParameter = (url: URL, name: string, value: string) => {
@@ -409,7 +440,7 @@ const publishedEntries = publishedViews.map((view) => ({
   const compareText = (left: string, right: string) =>
     left.localeCompare(right, 'zh-CN', { numeric: true, sensitivity: 'base' });
 
-  const sortArchiveEntries = () => {
+  const sortArchiveEntries = (scoreMap: Map<HTMLElement, ArchiveSearchMatch>) => {
     if (!sortSelect || !archiveList) return;
     const sortMode = sortSelect.value;
     archiveEntries.sort((left, right) => {
@@ -417,7 +448,14 @@ const publishedEntries = publishedViews.map((view) => ({
       const rightYear = Number(right.dataset.archiveYear);
       const leftHasYear = Number.isFinite(leftYear) && leftYear > 0;
       const rightHasYear = Number.isFinite(rightYear) && rightYear > 0;
-      if (sortMode === 'date-asc' || sortMode === 'date-desc') {
+      if (sortMode === 'relevance') {
+        // 没有关键词时所有条目得分一致，自然落到“最近收录”的次序。
+        const leftScore = scoreMap.get(left)?.score ?? -1;
+        const rightScore = scoreMap.get(right)?.score ?? -1;
+        if (leftScore !== rightScore) return rightScore - leftScore;
+        const accessionOrder = (right.dataset.archiveAccession ?? '').localeCompare(left.dataset.archiveAccession ?? '');
+        if (accessionOrder !== 0) return accessionOrder;
+      } else if (sortMode === 'date-asc' || sortMode === 'date-desc') {
         if (leftHasYear !== rightHasYear) return leftHasYear ? -1 : 1;
         if (leftHasYear && rightHasYear && leftYear !== rightYear) {
           return sortMode === 'date-asc' ? leftYear - rightYear : rightYear - leftYear;
@@ -477,6 +515,39 @@ const publishedEntries = publishedViews.map((view) => ({
       }
       if (cursor < original.length) element.append(document.createTextNode(original.slice(cursor)));
     });
+  };
+
+  const renderMatchReasons = (scoreMap: Map<HTMLElement, ArchiveSearchMatch>, hasTerms: boolean) => {
+    for (const entry of archiveEntries) {
+      const reason = entry.querySelector<HTMLElement>('[data-match-reason]');
+      if (!reason) continue;
+      const match = scoreMap.get(entry);
+      if (!hasTerms || !match) {
+        reason.hidden = true;
+        reason.textContent = '';
+        continue;
+      }
+      reason.hidden = false;
+      reason.textContent = `匹配：${match.matchedFields.map((field) => SEARCH_FIELD_LABELS[field]).join(' · ')}`;
+    }
+  };
+
+  // 输入关键词时把“按相关度”开放为可用排序；此前未手动选过排序时自动切换。
+  // 清空关键词后关闭该选项，并恢复默认的“最近收录”。
+  const syncRelevanceSort = (hasTerms: boolean) => {
+    if (!sortSelect) return;
+    const relevanceOption = sortSelect.querySelector<HTMLOptionElement>('option[value="relevance"]');
+    if (!relevanceOption) return;
+    if (hasTerms) {
+      relevanceOption.disabled = false;
+      if (!userChosenSort && sortSelect.value === 'recent') sortSelect.value = 'relevance';
+    } else {
+      relevanceOption.disabled = true;
+      if (sortSelect.value === 'relevance') {
+        sortSelect.value = 'recent';
+        userChosenSort = false;
+      }
+    }
   };
 
   const renderSearchSuggestions = (matchingEntries: HTMLElement[], terms: string[]) => {
@@ -539,24 +610,32 @@ const publishedEntries = publishedViews.map((view) => ({
 
   const updateArchiveResults = () => {
     if (!searchInput || !categorySelect || !sortSelect || !decadeSelect || !placeSelect || !tagSelect || !resultsSummary) return;
-    sortArchiveEntries();
     const terms = searchTermsFrom(searchInput.value);
+    syncRelevanceSort(terms.length > 0);
     const selectedCategory = categorySelect.value;
     const selectedDecade = decadeSelect.value;
     const selectedPlace = placeSelect.value;
     const selectedTag = tagSelect.value;
+    const scoreMap = new Map<HTMLElement, ArchiveSearchMatch>();
     const matchingEntries = archiveEntries.filter((entry) => {
-      const searchText = entry.dataset.searchText ?? '';
-      const matchesKeyword = terms.every((term) => searchText.includes(term));
+      const fields = searchFieldsByItemId.get(entry.dataset.archiveId ?? '');
+      const keywordMatch = terms.length === 0
+        ? { score: 0, matchedFields: [] }
+        : fields
+          ? scoreEntryAgainstFields(terms, fields)
+          : null;
       const matchesCategory = !selectedCategory || entry.dataset.archiveCategory === selectedCategory;
       const matchesDecade = !selectedDecade || entry.dataset.archiveDecade === selectedDecade;
       const matchesPlace = !selectedPlace || (entry.dataset.archivePlaces ?? '').includes(`|${selectedPlace}|`);
       const matchesTag = !selectedTag || (entry.dataset.archiveTags ?? '').includes(`|${selectedTag}|`);
-      const isMatch = matchesKeyword && matchesCategory && matchesDecade && matchesPlace && matchesTag;
+      const isMatch = keywordMatch !== null && matchesCategory && matchesDecade && matchesPlace && matchesTag;
+      if (isMatch && terms.length > 0 && keywordMatch) scoreMap.set(entry, keywordMatch);
       entry.hidden = !isMatch;
       return isMatch;
     });
+    sortArchiveEntries(scoreMap);
     renderSearchHighlights(terms);
+    renderMatchReasons(scoreMap, terms.length > 0);
     renderSearchSuggestions(matchingEntries, terms);
     const pageState = renderPagination(matchingEntries);
     const hasActiveFilters = terms.length > 0 || Boolean(selectedCategory || selectedDecade || selectedPlace || selectedTag);
@@ -567,11 +646,14 @@ const publishedEntries = publishedViews.map((view) => ({
     if (emptyState) emptyState.hidden = matchingEntries.length !== 0;
     if (!matchingEntries.length) {
       const hasOnlyCategoryFilter = Boolean(selectedCategory) && !terms.length && !selectedDecade && !selectedPlace && !selectedTag;
+      const hasKeywordFilter = terms.length > 0;
       resultsSummary.textContent = hasOnlyCategoryFilter ? '当前暂无此类档案。' : '没有找到符合条件的档案。';
       if (emptyTitle) emptyTitle.textContent = hasOnlyCategoryFilter ? '这个分类还没有公开档案' : '没有找到符合条件的档案';
       if (emptyDescription) emptyDescription.textContent = hasOnlyCategoryFilter
         ? '可以先浏览其他分类；新内容通过发布检查后会出现在这里。'
-        : '可以移除部分筛选条件，或清除后浏览全部档案。';
+        : hasKeywordFilter
+          ? '可以换一个更短的关键词、减少同时搜索的词数，或清除后浏览全部档案。'
+          : '可以移除部分筛选条件，或清除后浏览全部档案。';
       return;
     }
     const rangeText = pageState.totalPages > 1 ? `，显示第 ${pageState.startIndex + 1}–${pageState.endIndex} 件` : '';
@@ -587,7 +669,10 @@ const publishedEntries = publishedViews.map((view) => ({
 
   searchInput?.addEventListener('input', applyFilterChange);
   categorySelect?.addEventListener('change', applyFilterChange);
-  sortSelect?.addEventListener('change', applyFilterChange);
+  sortSelect?.addEventListener('change', () => {
+    userChosenSort = true;
+    applyFilterChange();
+  });
   decadeSelect?.addEventListener('change', applyFilterChange);
   placeSelect?.addEventListener('change', applyFilterChange);
   tagSelect?.addEventListener('change', applyFilterChange);
@@ -1263,11 +1348,23 @@ const publishedEntries = publishedViews.map((view) => ({
   .archive-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6rem 1.3rem;
+    gap: 0.55rem 1.8rem;
     margin-top: 0.9rem;
     color: #666156;
     font-size: 0.82rem;
     line-height: 1.7;
+  }
+
+  .archive-match-reason {
+    margin: 0.65rem 0 0;
+    color: var(--site-accent);
+    font-size: 0.72rem;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+  }
+
+  .archive-match-reason[hidden] {
+    display: none;
   }
 
   .archive-entry-action {
@@ -1294,9 +1391,10 @@ const publishedEntries = publishedViews.map((view) => ({
 
   .archive-tags li:not(:last-child)::after {
     position: absolute;
-    right: -0.7rem;
-    color: #a09a8c;
+    right: -0.9rem;
+    color: #b0a99b;
     content: '·';
+    font-size: 0.9rem;
   }
 
   .archive-pagination {

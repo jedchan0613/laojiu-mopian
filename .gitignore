@@ -156,3 +156,6 @@ outputs/
 
 # Astro generated cache
 .astro/
+
+# 投稿内容、联系方式、审核记录仅供私密管理，不能提交到代码仓库。
+local-admin/submissions/

@@ -168,13 +168,22 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   if (!Array.isArray(selected) || !selected.length || new Set(selected).size !== selected.length || selected.some((name) => !r.images.some((i) => i.filename === name))) fail('请选择已经人工确认可用的图片。');
   const title = text(payload.title, '草稿题名', 2, 80);
   const description = text(payload.description, '已整理的公开介绍', 0, 3000);
-  const transferred = await createDraft({ id, title, description, object_type: payload.object_type, accession_date: payload.accession_date, images: await Promise.all(selected.map(async (filename) => ({ kind: 'new', originalName: filename, data: `data:image/jpeg;base64,${(await getImage(id, filename)).toString('base64')}`))) });
+  const transferred = await createDraft({ id, title, description, object_type: payload.object_type, accession_date: payload.accession_date, images: await Promise.all(selected.map(async (filename) => ({ kind: 'new', originalName: filename, data: `data:image/jpeg;base64,${(await getImage(id, filename)).toString('base64')}` }))) });
   r.linked_item_id = transferred; r.updated_at = new Date().toISOString(); r.revision++;
   r.history.push({ at: r.updated_at, action: 'draft_created', item_id: transferred, checks: [...payload.checks], images: selected });
   await atomicJson(recordPath(id), r);
   return { item_id: transferred, repeated: false };
  });
- return { create, lookup, withdraw, review, list, detail: async (id) => detail(await read(id)), getImage, transfer };
+ const guardPublication = async (itemId, operation) => {
+  const linked = (await all()).find(r => r.linked_item_id === itemId);
+  if (!linked) return operation();
+  return locked(linked.id, async () => {
+   const current = await read(linked.id);
+   if (current.withdrawal_requested || current.status !== 'approved') fail('投稿人已申请停止处理或审核状态不允许发布，请先核查。', 409);
+   return operation();
+  });
+ };
+ return { create, lookup, withdraw, review, list, detail: async (id) => detail(await read(id)), getImage, transfer, guardPublication };
 }
 
 export async function readSubmissionJson(request, maximum = submissionLimits.requestBytes) {
@@ -182,7 +191,11 @@ export async function readSubmissionJson(request, maximum = submissionLimits.req
  if (Number(request.headers['content-length']) > maximum) fail('提交内容过大。', 413);
  const chunks = []; let bytes = 0;
  for await (const chunk of request) { bytes += chunk.length; if (bytes > maximum) fail('提交内容过大。', 413); chunks.push(chunk); }
- try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { fail('提交内容无法读取。'); }
+ try {
+  const result = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  if (!result || typeof result !== 'object' || Array.isArray(result)) fail('提交内容必须是有效表单。');
+  return result;
+ } catch { fail('提交内容无法读取。'); }
 }
 
 export function createPublicSubmissionHandler({ store, origin, local = false, trustProxy = false }) {

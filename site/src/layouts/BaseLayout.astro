@@ -20,6 +20,7 @@ const currentPath = Astro.url.pathname;
 const isHome = currentPath === '/';
 const isArchive = currentPath.startsWith('/archive');
 const isAbout = currentPath.startsWith('/about');
+const isContribute = currentPath.startsWith('/contribute');
 const canonicalUrl = Astro.site ? new URL(currentPath, Astro.site) : undefined;
 const shareImageUrl = image && Astro.site ? new URL(image, Astro.site) : undefined;
 const serializedStructuredData = structuredData
@@ -80,6 +81,7 @@ const serializedStructuredData = structuredData
 					<div class="site-links">
 						<a href="/archive/" aria-current={isArchive ? 'page' : undefined}>档案</a>
 						<a href="/about/" aria-current={isAbout ? 'page' : undefined}>关于</a>
+						<a href="/contribute/" aria-current={isContribute ? 'page' : undefined}>我要投稿</a>
 					</div>
 				</nav>
 			</header>

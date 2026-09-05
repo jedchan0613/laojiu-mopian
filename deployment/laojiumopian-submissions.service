@@ -1,0 +1,34 @@
+[Unit]
+Description=老旧默片私密投稿接收
+After=network.target
+
+[Service]
+Type=simple
+User=ljmadmin
+Group=ljmadmin
+WorkingDirectory=/srv/laojiumopian-admin/app/current
+EnvironmentFile=/etc/laojiumopian-submissions.env
+Environment=PATH=/snap/node/current/bin:/usr/bin:/bin
+ExecStart=/snap/node/current/bin/node /srv/laojiumopian-admin/app/current/local-admin/submission-server.mjs
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=130
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/srv/laojiumopian-admin/data/submissions
+InaccessiblePaths=/srv/laojiumopian-admin/data/archive-data /srv/laojiumopian-admin/data/drafts /srv/laojiumopian-admin/data/history /srv/laojiumopian-admin/data/recycle-bin /srv/laojiumopian-admin/data/inbox
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=true
+MemoryMax=512M
+CPUQuota=100%
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

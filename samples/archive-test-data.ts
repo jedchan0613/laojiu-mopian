@@ -30,8 +30,6 @@ export const sampleArchiveItems = [
 			description: '一张模拟的八十年代城市合影，用于测试老旧默片照片档案的页面展示。',
 			transcription: '照片背面无文字。',
 			tags: ['佛山', '1980年代', '合影', '照相馆'],
-			place_display: '佛山',
-			place_filters: ['佛山'],
 		},
 	},
 	{
@@ -62,8 +60,6 @@ export const sampleArchiveItems = [
 			description: '一张模拟九十年代明信片，用于测试正反面材料、文字转录和档案描述。',
 			transcription: '这是完全虚构的测试文字，不对应任何真实人物或地址。',
 			tags: ['明信片', '广州', '佛山', '1990年代'],
-			place_display: '广州 / 佛山',
-			place_filters: ['广州', '佛山'],
 		},
 	},
 	{
@@ -87,8 +83,6 @@ export const sampleArchiveItems = [
 			description: '一张模拟的旧卡片，用于测试老信用卡、会员卡和其他卡片类型的档案展示方式。',
 			transcription: '卡片内容为虚构测试信息。',
 			tags: ['卡片', '商业', '佛山', '1990年代'],
-			place_display: '佛山',
-			place_filters: ['佛山'],
 		},
 	},
 	{
@@ -112,8 +106,6 @@ export const sampleArchiveItems = [
 			description: '一封模拟的七十年代私人信件，用于测试信件类型、年代和地点筛选。',
 			transcription: '近来一切平静，街边的木棉已经开了。愿你安好。以上为完全虚构的测试文字。',
 			tags: ['信件', '广州', '1970年代', '日常生活'],
-			place_display: '广州',
-			place_filters: ['广州'],
 		},
 	},
 	{
@@ -137,8 +129,6 @@ export const sampleArchiveItems = [
 			description: '一份模拟的八十年代学习证明，用于测试老证件与纸本文书的档案展示。',
 			transcription: '本页仅用于测试文书版式，不含真实姓名、编号、学校或单位资料。',
 			tags: ['证件', '学习', '佛山', '1980年代'],
-			place_display: '佛山',
-			place_filters: ['佛山'],
 		},
 	},
 	{
@@ -162,8 +152,6 @@ export const sampleArchiveItems = [
 			description: '一本模拟的九十年代日常笔记本，用于测试笔记、地点和标签信息。',
 			transcription: '三月：纸张、墨水与车票。以上为完全虚构的测试记录。',
 			tags: ['笔记本', '顺德', '1990年代', '日常记录'],
-			place_display: '顺德',
-			place_filters: ['顺德'],
 		},
 	},
 	{
@@ -193,8 +181,6 @@ export const sampleArchiveItems = [
 			description: '一张模拟的六十年代户外合影，用于测试更早年代的照片档案。',
 			transcription: '照片背面写有“春日留影”。文字为完全虚构的测试内容。',
 			tags: ['照片', '南海', '1960年代', '合影'],
-			place_display: '南海',
-			place_filters: ['南海'],
 		},
 	},
 	{
@@ -225,8 +211,6 @@ export const sampleArchiveItems = [
 			description: '一张模拟的新世纪初城市明信片，用于测试二〇〇〇年代的档案记录。',
 			transcription: '愿这座城的风景被好好记住。此内容为完全虚构的测试文字。',
 			tags: ['明信片', '佛山', '2000年代', '城市'],
-			place_display: '佛山',
-			place_filters: ['佛山'],
 		},
 	},
 ] satisfies ArchiveItem[];

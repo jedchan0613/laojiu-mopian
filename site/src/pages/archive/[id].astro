@@ -14,7 +14,7 @@ import {
   isPublishedArchiveItem,
   type DisplayFact,
 } from '../../data/archive-view';
-import { getCodeEntry } from '../../data/code-dictionary';
+import { getCodeEntry, getCodeLabel } from '../../data/code-dictionary';
 import { getPublicUsagePolicy } from '../../data/archive-rights';
 import { getResponsiveImage } from '../../data/responsive-images';
 
@@ -69,13 +69,17 @@ const joinText = (value: string[] | undefined) => value?.filter(hasText).join('�
 const archiveFilterHref = (name: 'category' | 'decade' | 'place' | 'tag', value: string) =>
   `/archive/?${name}=${encodeURIComponent(value)}`;
 const normalizePlaceLabel = (value: string) => value.trim().replace(/[省市区县]$/, '');
-const preferredPlaceFilter = view.placeFilters.find((place) => place === view.placeDisplay)
-  ?? view.placeFilters.find(
-    (place) => normalizePlaceLabel(place) === normalizePlaceLabel(view.placeDisplay),
-  )
-  ?? (view.placeFilters.length === 1 && !view.placeDisplay.includes('未知')
-    ? view.placeFilters[0]
-    : undefined);
+// “地点”行的同地点链接取最能定位的一层结构化地点（优先市级），含“未知”的层级跳过。
+const placeLinkLevels = ['city', 'district', 'street_town', 'specific_place', 'province', 'country'] as const;
+const preferredPlace = placeLinkLevels
+  .map((field) => item.core[field]?.trim())
+  .find((value): value is string => Boolean(value) && !value!.includes('未知'));
+const preferredPlaceFilter = preferredPlace
+  ? view.placeFilters.find((place) => place === preferredPlace)
+    ?? view.placeFilters.find(
+      (place) => normalizePlaceLabel(place) === normalizePlaceLabel(preferredPlace),
+    )
+  : undefined;
 const formatDisplayDate = (value: string | undefined) => {
   const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return value?.trim() ?? '';
@@ -218,6 +222,23 @@ const recordStructuredData = {
     url: archiveIndexUrl?.href,
   },
 };
+
+const breadcrumbItems = [
+  { name: '首页', url: '/' },
+  { name: '档案', url: '/archive/' },
+  ...(currentCategory ? [{ name: currentCategory.label, url: `/archive/?category=${currentCategorySlug}` }] : []),
+  { name: view.title, url: `/archive/${view.id}/` },
+];
+const breadcrumbStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: breadcrumbItems.map((item, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: item.name,
+    item: Astro.site ? new URL(item.url, Astro.site).href : item.url,
+  })),
+};
 ---
 
 <BaseLayout
@@ -225,9 +246,23 @@ const recordStructuredData = {
   description={view.description || `${view.title}，${view.typeLabel}，${view.dateDisplay || '年代未知'}。`}
   image={galleryImages[0]?.src}
   pageType="article"
-  structuredData={recordStructuredData}
+  structuredData={[recordStructuredData, breadcrumbStructuredData]}
 >
   <article class="record-page" data-record-id={view.id}>
+    <nav class="record-breadcrumb" aria-label="面包屑">
+      <a href="/" class="breadcrumb-link">首页</a>
+      <span class="breadcrumb-sep" aria-hidden="true">/</span>
+      <a href="/archive/" class="breadcrumb-link">档案</a>
+      {currentCategory && (
+        <Fragment>
+          <span class="breadcrumb-sep" aria-hidden="true">/</span>
+          <a href={`/archive/?category=${currentCategorySlug}`} class="breadcrumb-link">{currentCategory.label}</a>
+        </Fragment>
+      )}
+      <span class="breadcrumb-sep" aria-hidden="true">/</span>
+      <span class="breadcrumb-current" aria-current="page">{view.title}</span>
+    </nav>
+
     <a class="back-link ui-text-link" href={defaultBackHref} data-record-back>← 返回档案</a>
 
     <header class="record-heading">
@@ -278,7 +313,7 @@ const recordStructuredData = {
               <p>PUBLIC TRANSCRIPTION</p>
               <h2 id="letter-transcription-heading">电子文字</h2>
             </div>
-            <span>{displayCode(item.core.transcription_status) || '公开转录'}</span>
+            <span>{item.core.transcription_status ? getCodeLabel(item.core.transcription_status) : '公开转录'}</span>
           </header>
           <div class="letter-transcription-text">{view.transcription}</div>
           <footer>
@@ -520,7 +555,7 @@ const recordStructuredData = {
           <details class="management-information">
             <summary>
               <span class="icon-heading"><SiteIcon name="archive" /><span>档案信息</span></span>
-              <small>{researchManagementFacts.length} 项 · 包含编号与技术代码</small>
+              <small>研究用元数据 · {researchManagementFacts.length} 项 · 包含编号与技术代码</small>
             </summary>
             <dl class="section-facts">
               {researchManagementFacts.map((fact) => (
@@ -879,7 +914,51 @@ const recordStructuredData = {
     padding-top: clamp(2.5rem, 5vw, 4rem);
   }
 
+  .record-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0;
+    color: #8a8478;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    line-height: 1.6;
+  }
+
+  .breadcrumb-link {
+    color: #6b6557;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .breadcrumb-link:hover,
+  .breadcrumb-link:focus-visible {
+    color: var(--site-accent);
+    border-bottom-color: currentColor;
+  }
+
+  .breadcrumb-link:focus-visible {
+    outline: 2px solid #575349;
+    outline-offset: 0.3rem;
+  }
+
+  .breadcrumb-sep {
+    margin: 0 0.45rem;
+    color: #b5ae9f;
+  }
+
+  .breadcrumb-current {
+    color: #575349;
+    max-width: 24rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .back-link {
+    display: inline-block;
+    margin-top: 0.6rem;
     font-size: 0.86rem;
     letter-spacing: 0.08em;
   }
@@ -2039,7 +2118,7 @@ const recordStructuredData = {
   .record-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.55rem 1.4rem;
+    gap: 0.55rem 1.8rem;
     margin: 0;
     padding: 0;
     color: #5f5b51;
@@ -2067,14 +2146,19 @@ const recordStructuredData = {
 
   .record-tags li:not(:last-child)::after {
     position: absolute;
-    right: -0.78rem;
-    color: #9b9588;
+    right: -0.9rem;
+    color: #a8a195;
     content: '·';
+    font-size: 0.92rem;
   }
 
   @media (max-width: 760px) {
     .record-page {
       padding-top: 1.65rem;
+    }
+
+    .breadcrumb-current {
+      max-width: 100%;
     }
 
     .record-heading {

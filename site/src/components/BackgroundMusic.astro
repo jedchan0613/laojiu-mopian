@@ -10,13 +10,12 @@ const firstTrack = playlist[0];
 	class="background-music"
 	data-background-music
 	data-background-music-playlist={JSON.stringify(playlist)}
-	data-state="waiting"
+	data-state="paused"
 	aria-label="背景音乐"
 >
 	<audio
 		data-background-music-audio
 		src={firstTrack.src}
-		autoplay
 		preload="metadata"
 	></audio>
 	<button
@@ -68,17 +67,19 @@ const firstTrack = playlist[0];
 		}
 
 		let currentTrackIndex = 0;
-		let wantsPlayback = true;
+		let wantsPlayback = false;
 		const failedTrackIndexes = new Set<number>();
 
 		try {
-			wantsPlayback = sessionStorage.getItem(preferenceKey) !== 'paused';
+			// 只有访客主动点过"播放音乐"，才在本次浏览的后续页面延续播放；
+			// 首次来访一律保持安静，绝不在访客点击其他内容时突然出声。
+			wantsPlayback = sessionStorage.getItem(preferenceKey) === 'playing';
 			const savedTrackIndex = Number(sessionStorage.getItem(trackIndexKey));
 			if (Number.isInteger(savedTrackIndex) && savedTrackIndex >= 0 && savedTrackIndex < playlist.length) {
 				currentTrackIndex = savedTrackIndex;
 			}
 		} catch {
-			wantsPlayback = true;
+			wantsPlayback = false;
 		}
 
 		audio.volume = 0.24;
