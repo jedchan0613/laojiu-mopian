@@ -2,6 +2,20 @@ import type { ArchiveItem, ObjectType } from './archive-schema';
 import { getCodeEntry, getCodeLabel } from './code-dictionary';
 import { getDimensionsForItem } from './dimension-definitions';
 
+// 搜索字段按用途分开保存，档案列表在构建时输出为 JSON 搜索索引，
+// 访客搜索时按字段重要程度加权评分，并据此显示“匹配位置”。
+// 所有字段值已统一转为小写，客户端不需要再次规范化大小写。
+export interface ArchiveSearchFields {
+	title: string;
+	identifiers: string;
+	typeLabel: string;
+	dateDisplay: string;
+	place: string;
+	description: string;
+	transcription: string;
+	tags: string;
+}
+
 export interface ArchiveRecordView {
 	item: ArchiveItem;
 	id: string;
@@ -18,7 +32,7 @@ export interface ArchiveRecordView {
 	tags: string[];
 	images: string[];
 	imageDescriptions: string[];
-	searchText: string;
+	searchFields: ArchiveSearchFields;
 }
 
 export interface DisplayFact {
@@ -51,18 +65,8 @@ export const getDecade = (dateDisplay: string) => {
 
 export const createArchiveRecordView = (item: ArchiveItem): ArchiveRecordView => {
 	const dateDisplay = item.core.date_display?.trim() ?? '';
-	const placeDisplay =
-		item.public_view.place_display?.trim() ||
-		uniqueText([
-			item.core.country,
-			item.core.province,
-			item.core.city,
-			item.core.district,
-			item.core.street_town,
-			item.core.specific_place,
-		]).join(' / ');
+	// 地点只有 core 结构化字段一个填写位置，展示文字和筛选值都由它推导。
 	const placeFilters = uniqueText([
-		...(item.public_view.place_filters ?? []),
 		item.core.country,
 		item.core.province,
 		item.core.city,
@@ -70,6 +74,7 @@ export const createArchiveRecordView = (item: ArchiveItem): ArchiveRecordView =>
 		item.core.street_town,
 		item.core.specific_place,
 	]);
+	const placeDisplay = placeFilters.join(' / ');
 	const tags = uniqueText(item.public_view.tags);
 	const description = item.public_view.description?.trim() ?? '';
 	const transcription = item.public_view.transcription?.trim() ?? '';
@@ -86,21 +91,17 @@ export const createArchiveRecordView = (item: ArchiveItem): ArchiveRecordView =>
 	});
 	const typeLabel = getObjectTypeLabel(item.core.object_type);
 	const collectionCode = item.core.collection_code?.trim() ?? '';
-	const searchText = [
-		item.core.title,
-		item.core.item_id,
-		collectionCode,
-		item.core.object_type,
-		typeLabel,
-		dateDisplay,
-		placeDisplay,
-		...placeFilters,
-		description,
-		transcription,
-		...tags,
-	]
-		.join(' ')
-		.toLocaleLowerCase('zh-CN');
+	const toSearchValue = (value: string) => value.toLocaleLowerCase('zh-CN');
+	const searchFields: ArchiveSearchFields = {
+		title: toSearchValue(item.core.title),
+		identifiers: toSearchValue([item.core.item_id, collectionCode, item.core.object_type].filter(Boolean).join(' ')),
+		typeLabel: toSearchValue(typeLabel),
+		dateDisplay: toSearchValue(dateDisplay),
+		place: toSearchValue([placeDisplay, ...placeFilters].filter(Boolean).join(' ')),
+		description: toSearchValue(description),
+		transcription: toSearchValue(transcription),
+		tags: toSearchValue(tags.join(' ')),
+	};
 
 	return {
 		item,
@@ -118,7 +119,7 @@ export const createArchiveRecordView = (item: ArchiveItem): ArchiveRecordView =>
 		tags,
 		images,
 		imageDescriptions,
-		searchText,
+		searchFields,
 	};
 };
 

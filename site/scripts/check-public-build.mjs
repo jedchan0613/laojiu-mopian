@@ -162,9 +162,12 @@ if (archiveIndex) {
 	check(!archiveIndex.html.includes('data-topic-link='), '档案列表在暂不设置专题时仍输出专题入口。');
 	check(archiveIndex.html.includes('id="archive-search-suggestions"'), '档案列表缺少相关标签提示区域。');
 	check(archiveIndex.html.includes('data-search-highlight'), '档案列表缺少关键词高亮目标。');
+	check(archiveIndex.html.includes('id="archive-search-index"'), '档案列表缺少构建时生成的搜索索引数据。');
+	check(archiveIndex.html.includes('data-match-reason'), '档案列表缺少关键词匹配位置提示。');
+	check(!archiveIndex.html.includes('data-search-text'), '档案列表重新使用扁平搜索文本而不是分字段搜索索引。');
 	check(archiveIndex.html.includes('id="archive-pagination"'), '档案列表缺少条件式分页控件。');
 	check(archiveIndexSource.includes('.archive-list > li[hidden]'), '档案列表缺少筛选结果卡片的明确隐藏样式。');
-	for (const sortValue of ['recent', 'date-asc', 'date-desc', 'type']) {
+	for (const sortValue of ['recent', 'date-asc', 'date-desc', 'type', 'relevance']) {
 		check(archiveIndex.html.includes(`value="${sortValue}"`), `档案列表缺少排序方式：${sortValue}。`);
 	}
 }
@@ -194,7 +197,7 @@ for (const page of htmlEntries) {
 	for (const publicPath of backgroundMusicPublicPaths) {
 		check(page.html.includes(publicPath), `${page.relativePath} 没有引用背景音乐发布副本：${publicPath}。`);
 	}
-	check(/<audio\b[^>]*\bautoplay\b/.test(page.html), `${page.relativePath} 的背景音乐没有设置自动播放。`);
+	check(!/<audio\b[^>]*\bautoplay\b/.test(page.html), `${page.relativePath} 的背景音乐仍带有自动播放属性，应改为仅手动播放。`);
 	check(page.html.includes('data-background-music-playlist'), `${page.relativePath} 缺少背景音乐播放列表。`);
 	check(pageLoadsScriptMarker(page, 'ljm-background-music-preference'), `${page.relativePath} 缺少背景音乐播放控制程序。`);
 	for (const imageTag of page.html.match(/<img\b[^>]*>/g) ?? []) {
@@ -213,6 +216,24 @@ for (const secretMarker of ['LJM_LIKE_HASH_SECRET', 'LJM_LIKE_DATA_FILE', 'X-LJM
 	check(!publicText.includes(secretMarker), `公开构建混入点赞服务私有配置：${secretMarker}。`);
 }
 check(!(await exists(join(distRoot, 'admin'))), '公开构建中不应存在 admin 目录。');
+
+const contributionPage = htmlEntries.find((entry) => entry.relativePath === 'contribute/index.html');
+check(Boolean(contributionPage), '缺少免注册投稿页面。');
+if (contributionPage) {
+	check(contributionPage.html.includes('id="submission-form"'), '投稿页缺少投稿表单。');
+	check(contributionPage.html.includes('id="lookup-form"'), '投稿页缺少回执查询。');
+	check(contributionPage.html.includes('action="/api/submissions"'), '投稿表单缺少明确的接收地址。');
+	check(!/<form\b(?![^>]*method="post")/i.test(contributionPage.html), '投稿与查询表单必须使用 POST，避免联系方式或密钥进入网址。');
+	check(pageLoadsScriptMarker(contributionPage, '/api/submissions/config'), '投稿页缺少通道可用性检查。');
+	check(pageLoadsScriptMarker(contributionPage, '/api/submissions/lookup'), '投稿页缺少私密回执查询程序。');
+}
+const publicCode = publicText + scriptEntries.map((entry) => entry.contents).join('\n');
+for (const marker of ['/api/admin/submissions', 'LJM_SUBMISSION_DATA_DIR', 'key_hash', 'source_submission_id', 'PRIVATE-NOTE-ONLY', 'synthetic@example.invalid']) {
+	check(!publicCode.includes(marker), `公开构建混入私密投稿信息或管理程序：${marker}。`);
+}
+for (const privateName of ['submissions', 'drafts', 'history', 'recycle-bin', 'local-admin']) {
+	check(!distFiles.some((file) => relative(distRoot, file).split(sep).includes(privateName)), `公开构建混入私密目录：${privateName}。`);
+}
 
 const configuredSiteUrl = process.env.PUBLIC_SITE_URL?.trim();
 const sitemapExists = await exists(join(distRoot, 'sitemap.xml'));

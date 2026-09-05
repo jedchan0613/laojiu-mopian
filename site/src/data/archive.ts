@@ -37,7 +37,7 @@ export const archiveItems = [
 			"scan_date": "2026-08-21",
 			"scan_ppi": 600,
 			"created_date": "2026-09-01",
-			"updated_date": "2026-09-01",
+			"updated_date": "2026-09-05",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
 		},
@@ -76,9 +76,7 @@ export const archiveItems = [
 			"description": "从富士山下  到一句新年快乐",
 			"transcription": "",
 			"revision_note": "",
-			"tags": [],
-			"place_display": "",
-			"place_filters": []
+			"tags": []
 		}
 	},
 	{
@@ -127,7 +125,7 @@ export const archiveItems = [
 			"condition_grade": "C0",
 			"source_date": "2026-08-08",
 			"created_date": "2026-08-29",
-			"updated_date": "2026-08-29",
+			"updated_date": "2026-09-05",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。",
 			"themes": [
@@ -139,7 +137,7 @@ export const archiveItems = [
 			"date_start": "1998-02-01",
 			"date_end": "2004-01-01",
 			"country": "中国",
-			"city": "未知"
+			"specific_place": "海滩"
 		},
 		"metadata": {
 			"schema": "photo",
@@ -160,9 +158,7 @@ export const archiveItems = [
 			"transcription": "",
 			"tags": [
 				"生活"
-			],
-			"place_filters": [],
-			"place_display": "未知地点，海滩"
+			]
 		}
 	},
 	{
@@ -213,7 +209,7 @@ export const archiveItems = [
 			],
 			"scan_ppi": 600,
 			"created_date": "2026-08-30",
-			"updated_date": "2026-08-30",
+			"updated_date": "2026-09-05",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
 		},
@@ -246,9 +242,7 @@ export const archiveItems = [
 			"transcription": "",
 			"tags": [
 				"珠海"
-			],
-			"place_display": "珠海",
-			"place_filters": []
+			]
 		}
 	},
 	{
@@ -287,7 +281,7 @@ export const archiveItems = [
 			],
 			"use_status": "U3",
 			"created_date": "2026-08-27",
-			"updated_date": "2026-08-28",
+			"updated_date": "2026-09-05",
 			"next_action": "无；本次合并、正式构建和页面文件检查已完成。",
 			"notes": "原编号 LJM-20260827-LET-001 的信件实际为本件明信片的附属信件，现已连同两张发布图片并入本主档。用户此前已确认附属信件的收件称呼、落款和通信内容允许公开且无需遮盖。",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
@@ -367,10 +361,6 @@ export const archiveItems = [
 				"明信片",
 				"东北",
 				"1970年代"
-			],
-			"place_display": "哈尔滨",
-			"place_filters": [
-				"哈尔滨"
 			]
 		}
 	},
@@ -407,7 +397,7 @@ export const archiveItems = [
 			"scan_date": "2026-08-21",
 			"scan_ppi": 600,
 			"created_date": "2026-09-01",
-			"updated_date": "2026-09-01",
+			"updated_date": "2026-09-05",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
 		},
@@ -446,9 +436,7 @@ export const archiveItems = [
 			"description": "",
 			"transcription": "",
 			"revision_note": "",
-			"tags": [],
-			"place_display": "",
-			"place_filters": []
+			"tags": []
 		}
 	},
 	{
@@ -470,7 +458,7 @@ export const archiveItems = [
 			],
 			"physical_location": "佛山",
 			"created_date": "2026-08-28",
-			"updated_date": "2026-08-29",
+			"updated_date": "2026-09-05",
 			"batch_id": "FSA-202628-CCQ",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。",
@@ -524,9 +512,7 @@ export const archiveItems = [
 			"tags": [
 				"历史",
 				"苏联"
-			],
-			"place_display": "",
-			"place_filters": []
+			]
 		}
 	}
 ] satisfies ArchiveItem[];

@@ -1,0 +1,19 @@
+{
+  "type": "history",
+  "entry_id": "20260905-181950-127-33dae11e",
+  "item_id": "LJM-20260808-PHO-002",
+  "title": "80年代末的珠海",
+  "created_at": "2026-09-05T10:19:50.129Z",
+  "status": "complete",
+  "images": [
+    "front-public.jpg",
+    "back-public.jpg",
+    "detail-01-public.jpg",
+    "detail-02-public.jpg",
+    "detail-03-public.jpg"
+  ],
+  "snapshot_kind": "published-before-update",
+  "removed_images": [],
+  "withdrawal_reason": null,
+  "completed_at": "2026-09-05T10:19:50.129Z"
+}

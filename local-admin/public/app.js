@@ -23,7 +23,7 @@ const administrativeRegionListIds = {
 const municipalityNames = new Set(['北京市', '天津市', '上海市', '重庆市']);
 
 const arrayFields = new Set([
-	'tags', 'place_filters',
+	'tags',
 	'person_ids', 'people', 'relationships', 'identities', 'organization_ids', 'organizations',
 	'event_scene', 'themes', 'studio_photographer', 'verso_types', 'mark_types', 'related_item_ids',
 	'condition_details', 'access_file_path', 'publication_file_path', 'use_project', 'publication_reference',
@@ -807,42 +807,61 @@ const fallbackImageDescription = (record, image, index, total) => {
 const displayedImageDescription = (record, image, index, total) =>
 	image.description?.trim() || fallbackImageDescription(record, image, index, total);
 
-const qualityIssuesForRecord = (record) => {
+// 维护任务分三层，对应维护概览的三个分组：
+//   urgent  需要立即处理：发布检查失败、图片缺失等会阻止正式发布的问题；
+//   fill    现在可以补齐：公开简介、图片说明、备份与复核登记等可以直接填写的内容；
+//   longterm 长期研究事项：年代待考、来源待核验等，无法考证是档案工作的正常状态，用于持续跟踪。
+// 每条任务都带上 tab 和 field，点击后可直接定位到对应字段。
+const maintenanceTasksForRecord = (record) => {
 	if (recordIsWithdrawn(record)) return [];
-	const issues = [];
-	const add = (code, group, label, tab = 'basic') => issues.push({ code, group, label, tab });
+	const tasks = [];
+	const add = (code, tier, label, tab = 'basic', field = '') => tasks.push({ code, tier, label, tab, field });
+	for (const issue of (record._admin?.issues ?? []).filter((candidate) => candidate.code !== 'privacy_confirmation')) {
+		add(issue.code, 'urgent', issue.message, issue.tab ?? 'basic', issue.field ?? '');
+	}
 	const publicationPaths = Array.isArray(record.core.publication_file_path) ? record.core.publication_file_path : [];
 	const descriptions = Array.isArray(record.public_view?.image_descriptions) ? record.public_view.image_descriptions : [];
 	const missingImageDescriptions = publicationPaths.filter((_, index) => !descriptions[index]?.trim()).length;
-	if (!record.public_view?.description?.trim()) add('public_description', 'content', '公开简介待补');
-	if (missingImageDescriptions) add('image_descriptions', 'images', `${missingImageDescriptions} 张图片说明待补`, 'images');
-	if (record.core.research_status !== 'R4') add('research_status', 'research', '研究尚未完成');
-	if (!record.core.evidence_level || record.core.evidence_level === 'D') add('evidence_level', 'research', '证据等级待明确');
-	if (!record.core.rights_status || record.core.rights_status === 'UNK') add('rights_status', 'rights', '权利状态待核验');
-	if (record.core.backup_status !== 'BU3') add('backup_status', 'preservation', '备份未达到 3-2-1');
-	const reviewDate = record.core.review_date?.trim();
-	if (!reviewDate) add('review_date', 'review', '尚未安排下次复核');
-	else if (!/^\d{4}-\d{2}-\d{2}$/.test(reviewDate)) add('review_date', 'review', '复核日期格式需要检查');
-	else if (reviewDate <= today()) add('review_date', 'review', `复核日期已到（${reviewDate}）`);
-	const publicationIssues = (record._admin?.issues ?? []).filter((issue) => issue.code !== 'privacy_confirmation');
-	if (publicationIssues.length) {
-		add('publication_issues', 'publication', `发布前待处理 ${publicationIssues.length} 项`, publicationIssues[0].tab ?? 'basic');
+	if (!record.public_view?.description?.trim()) add('public_description', 'fill', '公开简介还没有填写', 'basic', 'description');
+	if (missingImageDescriptions) add('image_descriptions', 'fill', `${missingImageDescriptions} 张图片说明待补`, 'images');
+	const backupStatus = record.core.backup_status?.trim();
+	if (!backupStatus) {
+		add('backup_status_unregistered', 'fill', '备份状态尚未登记，需核实', 'basic', 'backup_status');
+	} else if (backupStatus !== 'BU3') {
+		add('backup_status', 'longterm', `备份未达到 3-2-1（当前：${pvDisplayCode(backupStatus)}）`, 'basic', 'backup_status');
 	}
-	return issues;
+	const reviewDate = record.core.review_date?.trim();
+	if (!reviewDate) add('review_date', 'fill', '尚未安排下次复核', 'basic', 'review_date');
+	else if (!/^\d{4}-\d{2}-\d{2}$/.test(reviewDate)) add('review_date_format', 'fill', '复核日期格式需要检查', 'basic', 'review_date');
+	else if (reviewDate <= today()) add('review_date_due', 'fill', `复核日期已到（${reviewDate}），请安排重新复核`, 'basic', 'review_date');
+	if (record.core.research_status !== 'R4') {
+		add('research_status', 'longterm', `研究尚未完成（当前：${pvDisplayCode(record.core.research_status) || '未填写'}）`, 'basic', 'research_status');
+	}
+	if (!record.core.evidence_level || record.core.evidence_level === 'D') {
+		add('evidence_level', 'longterm', '证据等级待明确（年代、来源等待考）', 'basic', 'evidence_level');
+	}
+	if (!record.core.rights_status || record.core.rights_status === 'UNK') {
+		add('rights_status', 'longterm', '权利状态待核验', 'basic', 'rights_status');
+	}
+	return tasks;
 };
 
 const getMaintenanceOverview = () => {
 	const activeRecords = state.records.filter((record) => !recordIsWithdrawn(record));
-	const records = activeRecords.map((record) => ({ record, issues: qualityIssuesForRecord(record) }));
+	const records = activeRecords.map((record) => ({ record, tasks: maintenanceTasksForRecord(record) }));
+	const countTier = (tier) => records.reduce((total, entry) =>
+		total + entry.tasks.filter((task) => task.tier === tier).length, 0);
 	return {
 		records,
-		attentionRecords: records.filter((entry) => entry.issues.length).length,
-		missingImageDescriptions: records.reduce((total, entry) => total + entry.issues
-			.filter((issue) => issue.code === 'image_descriptions')
-			.reduce((count, issue) => count + Number.parseInt(issue.label, 10), 0), 0),
-		researchPending: records.filter((entry) => entry.issues.some((issue) => issue.group === 'research')).length,
-		backupPending: records.filter((entry) => entry.issues.some((issue) => issue.group === 'preservation')).length,
-		reviewDue: records.filter((entry) => entry.issues.some((issue) => issue.group === 'review')).length,
+		attentionRecords: records.filter((entry) => entry.tasks.length).length,
+		urgentTasks: countTier('urgent'),
+		fillTasks: countTier('fill'),
+		longtermTasks: countTier('longterm'),
+		missingImageDescriptions: records.reduce((total, entry) => total + entry.tasks
+			.filter((task) => task.code === 'image_descriptions')
+			.reduce((count, task) => count + Number.parseInt(task.label, 10), 0), 0),
+		backupUnregistered: records.filter((entry) =>
+			entry.tasks.some((task) => task.code === 'backup_status_unregistered')).length,
 		withdrawnRecords: state.records.filter(recordIsWithdrawn).length,
 	};
 };
@@ -963,40 +982,56 @@ const renderMaintenanceCenter = () => {
 	const integrity = state.integrityReport;
 	const integrityPassed = integrity?.status === 'pass';
 	const integrityFailures = integrity?.summary?.failures ?? 0;
-	const issueGroupLabels = {
-		content: '公开内容', images: '图片说明', research: '研究', rights: '权利',
-		preservation: '备份', review: '复核', publication: '发布准备',
+	const tierDefinitions = [
+		{
+			tier: 'urgent', eyebrow: 'ACT NOW', title: '需要立即处理的问题',
+			note: '图片缺失、发布检查失败等问题会阻止正式发布，请优先处理。',
+			empty: '没有需要立即处理的问题。',
+		},
+		{
+			tier: 'fill', eyebrow: 'CAN FINISH NOW', title: '现在可以补齐的内容',
+			note: '公开简介、图片说明、备份与复核登记等；点击一条即可直接定位到对应字段。',
+			empty: '当前没有可以立即补齐的内容。',
+		},
+		{
+			tier: 'longterm', eyebrow: 'LONG-TERM RESEARCH', title: '长期研究事项',
+			note: '一张照片暂时无法考证，是档案工作的正常状态。这些事项用于持续跟踪，不需要立刻完成。',
+			empty: '当前没有长期研究事项。',
+		},
+	];
+	const renderTaskSection = ({ tier, eyebrow, title, note, empty }) => {
+		const cards = overview.records.map(({ record, tasks }) => {
+			const tierTasks = tasks.filter((task) => task.tier === tier);
+			if (!tierTasks.length) return '';
+			return `<article class="maintenance-record-card">
+				<div class="maintenance-record-heading"><div><p>${escapeHtml(statusLabel(record))}</p><h4>${escapeHtml(record.core.title || '未命名藏品')}</h4>
+				<small>${escapeHtml(record.core.item_id)}</small></div></div>
+				<div class="maintenance-issue-list">${tierTasks.map((task) => `<button class="maintenance-issue is-${escapeHtml(tier)}" data-center-action="maintenance-open" data-item-id="${escapeHtml(record.core.item_id)}" data-target-tab="${escapeHtml(task.tab)}" data-target-field="${escapeHtml(task.field ?? '')}" type="button">${escapeHtml(task.label)}<small>定位到对应位置 →</small></button>`).join('')}</div>
+			</article>`;
+		}).join('');
+		return `<section class="maintenance-section is-${escapeHtml(tier)}" aria-labelledby="maintenance-${escapeHtml(tier)}-heading">
+			<div class="maintenance-section-heading"><div><p class="eyebrow">${escapeHtml(eyebrow)}</p><h3 id="maintenance-${escapeHtml(tier)}-heading">${escapeHtml(title)}</h3><p>${escapeHtml(note)}</p></div></div>
+			${cards || `<div class="empty-state">${escapeHtml(empty)}</div>`}
+		</section>`;
 	};
-	const attentionCards = overview.records.filter((entry) => entry.issues.length).map(({ record, issues }) => {
-		const firstIssue = issues[0];
-		return `<article class="maintenance-record-card">
-			<div class="maintenance-record-heading"><div><p>${escapeHtml(statusLabel(record))}</p><h4>${escapeHtml(record.core.title || '未命名藏品')}</h4>
-			<small>${escapeHtml(record.core.item_id)}</small></div>
-			<button class="quiet-button" data-center-action="maintenance-open" data-item-id="${escapeHtml(record.core.item_id)}" data-target-tab="${escapeHtml(firstIssue.tab)}" type="button">打开处理</button></div>
-			<div class="maintenance-issue-list">${issues.map((issue) => `<span class="maintenance-issue is-${escapeHtml(issue.group)}"><small>${escapeHtml(issueGroupLabels[issue.group] ?? '待办')}</small>${escapeHtml(issue.label)}</span>`).join('')}</div>
-		</article>`;
-	}).join('');
 	const integrityIssues = integrity?.issues?.length
 		? `<ul class="integrity-issue-list">${integrity.issues.map((issue) => `<li><div><strong>${escapeHtml(issue.area)}</strong><span>${issue.item_id ? `${escapeHtml(issue.title || issue.item_id)} · ` : ''}${escapeHtml(issue.message)}</span></div>${issue.item_id ? `<button class="quiet-button" data-center-action="maintenance-open" data-item-id="${escapeHtml(issue.item_id)}" data-target-tab="images" type="button">查看档案</button>` : ''}</li>`).join('')}</ul>`
 		: '<div class="integrity-complete"><strong>发布层结构完整</strong><span>正式 JSON、发布图片、响应式副本、构建页面和管理端隔离检查均通过。</span></div>';
 	return `<div class="maintenance-overview">
 		<section class="maintenance-summary" aria-labelledby="maintenance-summary-heading">
-			<div class="section-heading"><div><h3 id="maintenance-summary-heading">维护概览</h3><p>集中查看需要补充或复核的档案；这里只提供提示和入口，不会自动修改资料。</p></div></div>
+			<div class="section-heading"><div><h3 id="maintenance-summary-heading">维护概览</h3><p>按轻重缓急分成三组任务；每条事项都可以直接定位到对应字段，这里不会自动修改资料。</p></div></div>
 			<div class="maintenance-summary-grid">
-				<div><span>需要关注</span><strong>${overview.attentionRecords}</strong><small>条正常档案</small></div>
+				<div class="${overview.urgentTasks ? 'is-alert' : 'is-pass'}"><span>需要立即处理</span><strong>${overview.urgentTasks}</strong><small>项问题</small></div>
+				<div><span>现在可以补齐</span><strong>${overview.fillTasks}</strong><small>项内容</small></div>
+				<div><span>长期研究事项</span><strong>${overview.longtermTasks}</strong><small>项持续跟踪</small></div>
 				<div><span>图片说明</span><strong>${overview.missingImageDescriptions}</strong><small>张待补</small></div>
-				<div><span>研究状态</span><strong>${overview.researchPending}</strong><small>条未完成</small></div>
-				<div><span>备份状态</span><strong>${overview.backupPending}</strong><small>条未达标</small></div>
-				<div><span>复核安排</span><strong>${overview.reviewDue}</strong><small>条待安排／已到期</small></div>
+				<div><span>备份登记</span><strong>${overview.backupUnregistered}</strong><small>条尚未登记，需核实</small></div>
 				<div class="${integrityPassed ? 'is-pass' : 'is-alert'}"><span>完整性巡检</span><strong>${integrityPassed ? '通过' : integrityFailures}</strong><small>${integrityPassed ? `${integrity.summary.checks} 项检查` : '项异常'}</small></div>
 			</div>
-			<p class="maintenance-withdrawn-note">建议每次复核完成后，把“更多通用字段 → 利用与保管 → 复盘日期”安排在未来 12 个月内；到期或未安排会在这里提示。</p>
+			<p class="maintenance-withdrawn-note">建议每次复核完成后，把“更多通用字段 → 利用与保管 → 复盘日期”安排在未来 12 个月内；到期或未安排会列在“现在可以补齐的内容”中。备份状态由人工登记：显示“尚未登记，需核实”时，表示程序没有检查过实际备份，请以你自己的备份记录为准。</p>
 			${overview.withdrawnRecords ? `<p class="maintenance-withdrawn-note">另有 ${overview.withdrawnRecords} 条已撤销追溯记录，只纳入完整性检查，不计入日常补录任务。</p>` : ''}
 		</section>
-		<section class="maintenance-section" aria-labelledby="quality-records-heading">
-			<div class="maintenance-section-heading"><div><p class="eyebrow">QUALITY TASKS</p><h3 id="quality-records-heading">需要处理的档案</h3><p>按当前资料状态自动归纳；处理完成后重新打开本页即可更新。</p></div></div>
-			${attentionCards || '<div class="empty-state">当前正常档案没有需要补充的质量项目。</div>'}
-		</section>
+		${tierDefinitions.map(renderTaskSection).join('')}
 		<section class="maintenance-section" aria-labelledby="integrity-heading">
 			<div class="maintenance-section-heading is-inline"><div><p class="eyebrow">READ-ONLY CHECK</p><h3 id="integrity-heading">本地完整性巡检</h3><p>${integrity ? `检查于 ${escapeHtml(formatDateTime(integrity.checked_at))}，覆盖 ${integrity.summary.records} 份正式 JSON、${integrity.summary.publication_images} 张发布图片和 ${integrity.summary.responsive_variants} 个网页尺寸副本。` : '尚未取得巡检结果。'}</p></div>
 			<button class="quiet-button" data-center-action="maintenance-refresh" type="button">重新检查</button></div>
@@ -1227,7 +1262,7 @@ const startNewRecord = (templateRecord = null) => {
 			publication_file_path: [], ...reusableCore, object_type: objectType,
 		},
 		metadata: { schema: schemaForType(objectType), dimensions: {} },
-		public_view: { description: '', transcription: '', revision_note: '', tags: [], place_display: '', place_filters: [], image_descriptions: [] },
+		public_view: { description: '', transcription: '', revision_note: '', tags: [], image_descriptions: [] },
 	};
 	updateDerivedCollectionCode();
 	state.activeTab = 'basic';
@@ -1308,6 +1343,28 @@ const renderObjectTypeControl = (options, value, { readonly = false, required = 
 	</div>`;
 };
 
+// 发布后会直接显示在公开档案页上的通用字段（对应 site/src/pages/archive/[id].astro 的展示范围：
+// 基本信息、资料状态、档案信息（研究用元数据）、故事与原文）。
+// 不在这个清单里的通用字段只用于档案维护，不会显示在公开页面。
+const publicCoreFieldCodes = new Set([
+	'object_type', 'title', 'date_display', 'people',
+	'country', 'province', 'city', 'district', 'street_town', 'specific_place',
+	'item_id', 'collection_code', 'acquisition_method', 'source_place',
+	'research_status', 'evidence_level', 'digitization_status', 'transcription_status',
+	'backup_status', 'condition_grade', 'privacy_level', 'rights_status', 'use_status',
+	'record_status', 'provenance_notes', 'updated_date', 'publication_file_path',
+]);
+const fieldVisibilityBadge = (scope, fieldCode) => {
+	// 对象专属字段（metadata）会进入公开页面的“藏品细节 / 档案信息”；
+	// 访客内容（public）同样会公开显示。
+	const isPublic = scope === 'metadata'
+		|| scope === 'public'
+		|| (scope === 'core' && publicCoreFieldCodes.has(fieldCode));
+	return isPublic
+		? '<span class="field-visibility is-public" title="发布会显示在公开档案页">会公开</span>'
+		: '<span class="field-visibility is-internal" title="只用于档案维护，不会显示在公开页面">仅用于维护</span>';
+};
+
 const renderField = ({
 	scope = 'core', dimension = '', fieldCode, definition, value, required = false, readonly = false,
 	context = '', dictionaryKey = null,
@@ -1360,7 +1417,7 @@ const renderField = ({
 		: definition?.rule || (multi && !options.length ? '多项内容请每行填写一项。' : '');
 	const notes = `${context ? `<span class="field-context">${escapeHtml(context)}</span>` : ''}${regionState?.message ? `<span class="field-context${regionState.warning ? ' is-warning' : ''}">${escapeHtml(regionState.message)}</span>` : ''}${help ? `<span class="field-help">${escapeHtml(help)}</span>` : ''}`;
 	return `<${wrapperTag} class="form-field ${wide ? 'is-wide' : ''} ${fieldCode === 'object_type' ? 'is-object-type' : ''}">
-		<span class="field-label">${escapeHtml(label)}${required ? '<span class="required-mark">必填</span>' : ''}<small>${escapeHtml(fieldCode)}</small></span>
+		<span class="field-label">${escapeHtml(label)}${required ? '<span class="required-mark">必填</span>' : ''}${fieldVisibilityBadge(scope, fieldCode)}<small>${escapeHtml(fieldCode)}</small></span>
 		${control}${notes ? `<span class="field-notes">${notes}</span>` : ''}
 	</${wrapperTag}>`;
 };
@@ -1435,9 +1492,9 @@ const renderBasic = () => {
 		: undefined;
 	return `<section class="form-section">
 		<div class="section-heading"><div><h3>常用档案信息</h3><p>必填字段已排在前面；永久编号首次保存后不变，收藏品编码由正式对象类型、显示年代和必填属性代码组成。</p></div></div>
-		<div class="form-grid common-info-grid"><label class="form-field is-item-id"><span class="field-label">永久编号 <small>item_id</small></span>
-		<input type="text" value="${escapeHtml(state.current.core.item_id || '尚未分配')}" readonly /></label>
-		<label class="form-field is-code-output"><span class="field-label">收藏品编码 <small>collection_code</small></span>
+	<div class="form-grid common-info-grid"><label class="form-field is-item-id"><span class="field-label">永久编号 ${fieldVisibilityBadge('core', 'item_id')} <small>item_id</small></span>
+	<input type="text" value="${escapeHtml(state.current.core.item_id || '尚未分配')}" readonly /></label>
+	<label class="form-field is-code-output"><span class="field-label">收藏品编码 ${fieldVisibilityBadge('core', 'collection_code')} <small>collection_code</small></span>
 		<input type="text" data-collection-code-output value="${escapeHtml(state.current.core.collection_code || '请先填写收藏品编码组成字段')}" readonly />
 		<span class="field-notes"><span class="field-help">系统自动生成，不需要手工填写。</span></span></label>
 		${objectTypeField}${primary}</div>
@@ -1457,9 +1514,7 @@ const renderBasic = () => {
 			},
 			value: state.current.public_view.revision_note,
 		})}
-		${renderField({ scope: 'public', fieldCode: 'tags', value: state.current.public_view.tags })}
-		${renderField({ scope: 'public', fieldCode: 'place_display', value: state.current.public_view.place_display })}
-		${renderField({ scope: 'public', fieldCode: 'place_filters', value: state.current.public_view.place_filters })}</div>
+		${renderField({ scope: 'public', fieldCode: 'tags', value: state.current.public_view.tags })}</div>
 	</section>
 	<section class="form-section"><div class="section-heading"><div><h3>更多通用字段</h3><p>通用内容只在这里填写；对象专属必填规则会直接标在对应字段上，不再到专属页重复填写。</p></div></div>${moreFields}</section>`;
 };
@@ -1749,34 +1804,544 @@ const renderContentQualityPanel = (warnings, title = '内容质量提示') => `<
 	${warnings.length ? `<ul>${warnings.map((warning) => `<li><button class="issue-button" data-issue-tab="${escapeHtml(warning.tab)}" data-issue-field="${escapeHtml(warning.field)}" type="button">${escapeHtml(warning.message)}</button></li>`).join('')}</ul>` : '<p>当前未发现明显的题名、简介或图片说明质量问题。</p>'}
 </section>`;
 
+// —— 发布前真实预览 ————————————————————————————————————————————
+// 以下函数逐条对应正式网站的实现，保证预览与访客页面一致：
+//   site/src/data/archive-view.ts       → pvCreateRecordView / pvSpecificMetadataFacts / pvDisplayCode
+//   site/src/data/archive-rights.ts     → pvPublicUsagePolicy
+//   site/src/data/archive-categories.ts → pvCategorySlug
+//   site/src/pages/archive/[id].astro   → renderPreview 输出的页面结构与样式
+// 正式页面的展示规则变化时，需要同步修改这里。
+
+const pvHasText = (value) => typeof value === 'string' && value.trim().length > 0;
+const pvUniqueText = (values) => [...new Set(values.filter(pvHasText).map((value) => value.trim()))];
+
+let pvCodeIndex = null;
+const pvCodeEntry = (code) => {
+	if (!pvHasText(code)) return undefined;
+	if (!pvCodeIndex) {
+		pvCodeIndex = new Map();
+		for (const entries of state.dictionary.values()) {
+			for (const entry of entries) if (!pvCodeIndex.has(entry.code)) pvCodeIndex.set(entry.code, entry);
+		}
+	}
+	return pvCodeIndex.get(code.trim());
+};
+const pvCodeLabel = (code) => pvCodeEntry(code)?.label ?? code;
+const pvDisplayCode = (code) => (pvHasText(code) ? `${pvCodeLabel(code)}（${code.trim()}）` : '');
+const pvTypeLabel = (type) => (type === 'card' ? '旧卡片' : pvCodeLabel(type));
+const pvIsPublished = (record) =>
+	record.core.record_status === 'ACT' && record.core.use_status === 'U3' && record.core.privacy_level === 'G';
+const pvDecade = (dateDisplay) => {
+	const match = dateDisplay?.match(/(\d{4})/);
+	return match ? String(Math.floor(Number(match[1]) / 10) * 10) : undefined;
+};
+
+// 对应 createArchiveRecordView；gallery 传入时用编辑器当前图片（含未保存草稿图）替代正式发布路径。
+const pvCreateRecordView = (record, gallery = null) => {
+	const core = record.core;
+	const publicView = record.public_view ?? {};
+	const dateDisplay = core.date_display?.trim() ?? '';
+	// 地点只有 core 结构化字段一个填写位置，展示文字和筛选值都由它推导。
+	const placeFilters = pvUniqueText([
+		core.country, core.province, core.city, core.district, core.street_town, core.specific_place,
+	]);
+	const placeDisplay = placeFilters.join(' / ');
+	const images = gallery ? gallery.map((image) => image.previewUrl) : pvUniqueText(core.publication_file_path ?? []);
+	const maintainedDescriptions = publicView.image_descriptions ?? [];
+	const fallbackDescription = (index) => {
+		const title = core.title?.trim() || '藏品';
+		const source = gallery ? (gallery[index]?.filename ?? '') : (images[index] ?? '');
+		const filename = source.split('/').at(-1)?.toLocaleLowerCase('en-US') ?? '';
+		if (images.length === 1) return `${title}的档案图片`;
+		if (filename.startsWith('front-')) return `${title}，正面`;
+		if (filename.startsWith('back-')) return `${title}，背面`;
+		return `${title}，细节图 ${index + 1}`;
+	};
+	const imageDescriptions = images.map((_, index) => {
+		const maintained = gallery ? gallery[index]?.description?.trim() : maintainedDescriptions[index]?.trim();
+		return maintained || fallbackDescription(index);
+	});
+	return {
+		record,
+		id: core.item_id,
+		collectionCode: core.collection_code?.trim() ?? '',
+		title: core.title,
+		objectType: core.object_type,
+		typeLabel: pvTypeLabel(core.object_type),
+		dateDisplay,
+		decade: pvDecade(dateDisplay),
+		placeDisplay,
+		placeFilters,
+		description: publicView.description?.trim() ?? '',
+		transcription: publicView.transcription?.trim() ?? '',
+		tags: pvUniqueText(publicView.tags ?? []),
+		images,
+		imageDescriptions,
+	};
+};
+
+const pvFormatValue = (value, includeCodes) => {
+	if (Array.isArray(value)) {
+		return value.map((entry) => pvFormatValue(entry, includeCodes)).filter(Boolean).join('、');
+	}
+	if (typeof value === 'number') return String(value);
+	if (typeof value !== 'string' || value.trim() === '') return '';
+	const trimmed = value.trim();
+	const entry = pvCodeEntry(trimmed);
+	return entry ? (includeCodes ? `${entry.label}（${entry.code}）` : entry.label) : trimmed;
+};
+
+const pvSpecificMetadataFacts = (record, { includeCodes = false } = {}) => {
+	const definitions = state.standards?.dimensions?.[record.metadata?.schema]?.dimensions ?? [];
+	const visitorFirstFields = new Set(['people', 'body_transcription', 'message_transcription', 'transcription']);
+	const values = record.metadata?.dimensions ?? {};
+	return definitions.flatMap((definition) => {
+		const dimensionValue = values[definition.dimension_code];
+		if (!dimensionValue) return [];
+		const formattedValues = (definition.fields ?? [])
+			.map((field) => (visitorFirstFields.has(field) ? '' : pvFormatValue(dimensionValue[field], includeCodes)))
+			.filter(Boolean);
+		if (!formattedValues.length) return [];
+		return [{
+			label: definition.name,
+			value: formattedValues.join('；'),
+			code: includeCodes ? definition.dimension_code : undefined,
+		}];
+	});
+};
+
+// 对应 archive-rights.ts 的公开使用政策。
+const pvUsagePolicies = {
+	PD: {
+		canDownloadPublicationCopy: true,
+		title: '可下载网页发布副本',
+		description: '这件档案已核验为公版或无著作权限制，可下载网站使用的压缩发布副本。',
+		attribution: '转载或研究引用时，建议保留题名、永久编号与“老旧默片”来源。',
+	},
+	LIC: {
+		canDownloadPublicationCopy: false,
+		title: '已获展示许可，暂不开放下载',
+		description: '现有许可足以支持网页展示，但下载与再利用范围没有单独确认。',
+		attribution: '如需使用，请先核对具体许可范围，并在引用中保留题名、永久编号与来源。',
+	},
+	OWN: {
+		canDownloadPublicationCopy: false,
+		title: '持有实物，暂不开放下载',
+		description: '持有实物不等同于拥有著作权，因此网站不主动提供图片下载。',
+		attribution: '页面可用于浏览和规范引用，不代表授权复制或再发布。',
+	},
+	RES: {
+		canDownloadPublicationCopy: false,
+		title: '权利受限，不提供下载',
+		description: '这件档案存在明确的合同、隐私或著作权限制。',
+		attribution: '页面内容仅供当前公开展示范围内浏览。',
+	},
+	UNK: {
+		canDownloadPublicationCopy: false,
+		title: '权利尚未核验，不提供下载',
+		description: '在权利情况明确前，网站只提供在线浏览和规范引用。',
+		attribution: '公开展示不等于授权复制、下载或再发布。',
+	},
+};
+const pvPublicUsagePolicy = (rightsStatus) => {
+	const normalizedStatus = rightsStatus?.trim() || 'UNK';
+	const policy = pvUsagePolicies[normalizedStatus] ?? pvUsagePolicies.UNK;
+	return { statusLabel: pvCodeEntry(normalizedStatus)?.label ?? '权利不明', ...policy };
+};
+
+const pvCategorySlug = (objectType) =>
+	objectTypeCategories().find((category) => (category.object_types ?? []).includes(objectType))?.slug;
+const pvCategoryLabel = (slug) =>
+	objectTypeCategories().find((category) => category.slug === slug)?.label ?? '';
+const pvImageRole = (description, index) =>
+	['正面', '背面', '封面', '内页', '全景', '细节'].find((role) => description.includes(role)) ?? `图片 ${index + 1}`;
+const pvFormatDisplayDate = (value) => {
+	const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+	return match ? `${match[1]}年${Number(match[2])}月${Number(match[3])}日` : value?.trim() ?? '';
+};
+const pvNormalizePlaceLabel = (value) => value.trim().replace(/[省市区县]$/, '');
+
 const renderPreview = () => {
 	const record = state.current;
 	const issues = currentPreviewIssues();
 	const qualityWarnings = contentQualityWarnings();
-	const description = record.public_view.description || '尚未填写公开简介。';
-	const transcription = record.public_view.transcription;
-	const tags = record.public_view.tags ?? [];
-	const place = record.public_view.place_display;
-	const imageGallery = state.images.length
-		? state.images.map((image, index) => `<figure><img src="${escapeHtml(image.previewUrl)}" alt="${escapeHtml(displayedImageDescription(record, image, index, state.images.length))}" />
-			<figcaption>${escapeHtml(displayedImageDescription(record, image, index, state.images.length))}</figcaption></figure>`).join('')
-		: '<div class="empty-state">访客页面暂时没有可显示的图片。</div>';
-	return `<div class="preview-shell"><article class="visitor-preview">
-		<p class="preview-label">VISITOR PAGE PREVIEW · 访客页面近似预览</p>
-		<h3>${escapeHtml(record.core.title || '未命名藏品')}</h3>
-		<p class="preview-id">永久编号：${escapeHtml(record.core.item_id || '尚未生成')}${place ? ` · ${escapeHtml(place)}` : ''}</p>
-		<p class="preview-collection-code">收藏品编码：<span data-collection-code-output>${escapeHtml(record.core.collection_code || '请先填写收藏品编码组成字段')}</span></p>
-		<div class="preview-gallery">${imageGallery}</div>
-		<div class="preview-copy"><p>${escapeHtml(description)}</p>
-		${transcription ? `<div class="preview-transcription ${record.core.object_type === 'LET' ? 'is-letter' : ''}"><strong>${record.core.object_type === 'LET' ? '信件电子文字' : '文字记录'}</strong><p>${escapeHtml(transcription)}</p></div>` : ''}
-		${tags.length ? `<div class="preview-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div>` : ''}</div>
-	</article><aside class="check-panel"><h4>发布前缺失项</h4>
+	const isLetter = record.core.object_type === 'LET';
+	const view = pvCreateRecordView(record, state.images);
+	const currentCategorySlug = pvCategorySlug(view.objectType);
+	const currentCategoryLabel = pvCategoryLabel(currentCategorySlug);
+	const hasPublicTranscription = pvHasText(view.transcription);
+	const hasPublicOriginal = view.images.length > 0;
+	const initialLetterMode = hasPublicTranscription ? 'text' : 'original';
+	const letterReadingModes = [
+		hasPublicTranscription ? { value: 'text', label: '文字阅读' } : undefined,
+		hasPublicTranscription && hasPublicOriginal ? { value: 'compare', label: '原件对照' } : undefined,
+		hasPublicOriginal ? { value: 'original', label: '只看原件' } : undefined,
+	].filter(Boolean);
+	const compactFacts = (facts) => facts.filter((fact) => pvHasText(fact.value));
+	const joinText = (value) => (value ?? []).filter(pvHasText).join('、');
+	const archiveFilterHref = (name, value) => publicPreviewUrl(`/archive/?${name}=${encodeURIComponent(value)}`);
+	const recordUrl = publicPreviewUrl(`/archive/${encodeURIComponent(view.id || '')}/`);
+	// “地点”行的同地点链接取最能定位的一层结构化地点（优先市级），含“未知”的层级跳过。
+	const placeLinkLevels = ['city', 'district', 'street_town', 'specific_place', 'province', 'country'];
+	const preferredPlace = placeLinkLevels
+		.map((field) => record.core[field]?.trim())
+		.find((value) => value && !value.includes('未知'));
+	const preferredPlaceFilter = preferredPlace
+		? view.placeFilters.find((place) => place === preferredPlace)
+			?? view.placeFilters.find((place) => pvNormalizePlaceLabel(place) === pvNormalizePlaceLabel(preferredPlace))
+		: undefined;
+	const basicFacts = compactFacts([
+		{ label: '类型', value: view.typeLabel, href: currentCategorySlug ? archiveFilterHref('category', currentCategorySlug) : '' },
+		{ label: '年代', value: view.dateDisplay, href: view.decade ? archiveFilterHref('decade', view.decade) : '' },
+		{ label: '地点', value: view.placeDisplay, href: preferredPlaceFilter ? archiveFilterHref('place', preferredPlaceFilter) : '' },
+		{ label: '人物', value: joinText(record.core.people) },
+	]);
+	const codeStatusFact = (label, code) => {
+		if (!code) return undefined;
+		const entry = pvCodeEntry(code);
+		return { label, value: entry?.label ?? code, description: entry?.definition ?? '以当前档案记录为准。' };
+	};
+	const recordStatusFacts = [
+		codeStatusFact('研究状态', record.core.research_status),
+		codeStatusFact('证据等级', record.core.evidence_level),
+		record.core.updated_date
+			? { label: '最后更新', value: pvFormatDisplayDate(record.core.updated_date), description: '公开档案最近一次修改的日期。' }
+			: undefined,
+	].filter(Boolean);
+	const specificFacts = pvSpecificMetadataFacts(record);
+	const specificTechnicalFacts = pvSpecificMetadataFacts(record, { includeCodes: true });
+	const researchManagementFacts = compactFacts([
+		{ label: '永久编号', value: view.id },
+		{ label: '收藏品编码', value: view.collectionCode },
+		{ label: '对象类型', value: view.typeLabel, code: record.core.object_type },
+		{ label: '获得方式', value: pvDisplayCode(record.core.acquisition_method) },
+		{ label: '来源地点', value: record.core.source_place ?? '' },
+		{ label: '研究状态', value: pvDisplayCode(record.core.research_status) },
+		{ label: '证据等级', value: pvDisplayCode(record.core.evidence_level) },
+		{ label: '数字化状态', value: pvDisplayCode(record.core.digitization_status) },
+		{ label: '转录状态', value: pvDisplayCode(record.core.transcription_status) },
+		{ label: '备份状态', value: pvDisplayCode(record.core.backup_status) },
+		{ label: '保存等级', value: pvDisplayCode(record.core.condition_grade) },
+		{ label: '发布副本', value: view.images.length ? `${view.images.length} 个文件` : '' },
+		{ label: '隐私等级', value: pvDisplayCode(record.core.privacy_level) },
+		{ label: '权利状态', value: pvDisplayCode(record.core.rights_status) },
+		{ label: '利用状态', value: pvDisplayCode(record.core.use_status) },
+		{ label: '档案状态', value: pvDisplayCode(record.core.record_status) },
+		...specificTechnicalFacts.map((fact) => ({ label: `专属维度 · ${fact.label}`, value: fact.value, code: fact.code })),
+	]);
+	const galleryImages = view.images.map((src, index) => ({
+		src,
+		description: view.imageDescriptions[index],
+		role: pvImageRole(view.imageDescriptions[index], index),
+	}));
+	const galleryItemsJson = escapeHtml(JSON.stringify(galleryImages));
+	const revisionNote = record.public_view?.revision_note?.trim() ?? '';
+	const hasNarrativeContent = (!isLetter && hasPublicTranscription) || pvHasText(record.core.provenance_notes);
+	const usagePolicy = pvPublicUsagePolicy(record.core.rights_status);
+	const downloadableImages = usagePolicy.canDownloadPublicationCopy
+		? view.images.map((source, index) => ({
+			source,
+			description: view.imageDescriptions[index],
+			filename: `${view.id || 'draft'}-${String(index + 1).padStart(2, '0')}.jpg`,
+		}))
+		: [];
+	// 对应正式页面“沿着线索继续看”：共同标签 4 分、共同地点 3 分、同年代 2 分、同分类 2 分、跨类型 0.25 分，取前 3 条。
+	const relatedRecords = state.records
+		.filter(pvIsPublished)
+		.filter((candidate) => candidate.core.item_id !== view.id)
+		.map((candidate) => {
+			const candidateView = pvCreateRecordView(candidate);
+			const sharedTags = candidateView.tags.filter((tag) => view.tags.includes(tag));
+			const sharedPlaces = candidateView.placeFilters.filter((place) => view.placeFilters.includes(place));
+			const sameDecade = Boolean(view.decade && candidateView.decade === view.decade);
+			const sameCategory = Boolean(currentCategorySlug && pvCategorySlug(candidateView.objectType) === currentCategorySlug);
+			const reasons = [
+				sharedTags.length ? `共同线索：${sharedTags.slice(0, 2).join('、')}` : '',
+				sharedPlaces.length ? `关联地点：${sharedPlaces.slice(0, 2).join('、')}` : '',
+				sameDecade ? `同属${view.decade}年代` : '',
+				sameCategory ? `同属${currentCategoryLabel || '相近类型'}` : '',
+			].filter(Boolean);
+			const score = sharedTags.length * 4 + sharedPlaces.length * 3 + Number(sameDecade) * 2
+				+ Number(sameCategory) * 2 + Number(candidateView.objectType !== view.objectType) * 0.25;
+			return { view: candidateView, score, reason: reasons[0] ?? '', cover: recordImages(candidate)[0]?.previewUrl ?? '' };
+		})
+		.filter((entry) => entry.score > 0 && entry.reason)
+		.sort((left, right) => right.score - left.score || left.view.title.localeCompare(right.view.title, 'zh-CN'))
+		.slice(0, 3);
+
+	const galleryMarkup = galleryImages.length ? `
+		<div class="record-gallery" data-record-gallery data-gallery-index="0"
+			data-gallery-items="${galleryItemsJson}" aria-label="档案图片">
+			<figure class="record-image">
+				<button class="record-image-open" type="button" data-gallery-open aria-label="放大查看：${escapeHtml(galleryImages[0].description)}">
+					<img data-gallery-main src="${escapeHtml(galleryImages[0].src)}" alt="${escapeHtml(galleryImages[0].description)}" />
+					<span class="record-image-hint">放大查看</span>
+				</button>
+				<figcaption>
+					<span class="record-image-caption"><strong data-gallery-role>${escapeHtml(galleryImages[0].role)}</strong><span data-gallery-caption>${escapeHtml(galleryImages[0].description)}</span></span>
+					<small data-gallery-counter>第 1 张，共 ${galleryImages.length} 张</small>
+				</figcaption>
+			</figure>
+			${galleryImages.length > 1 ? `
+			<div class="record-gallery-controls" aria-label="切换当前档案图片">
+				<button class="gallery-step gallery-step-previous" type="button" data-gallery-previous-inline><span aria-hidden="true">←</span> 上一张</button>
+				<span>点击主图可进入大图查看</span>
+				<button class="gallery-step gallery-step-next" type="button" data-gallery-next-inline>下一张 <span aria-hidden="true">→</span></button>
+			</div>
+			<div class="record-thumbnails" aria-label="切换档案图片">
+				${galleryImages.map((image, index) => `
+				<button type="button" aria-label="查看第 ${index + 1} 张图片：${escapeHtml(image.description)}" aria-current="${index === 0 ? 'true' : 'false'}" data-gallery-thumbnail data-gallery-index="${index + 1}">
+					<img src="${escapeHtml(image.src)}" alt="" loading="lazy" /><span>${escapeHtml(image.role)}</span>
+				</button>`).join('')}
+			</div>` : ''}
+			<dialog class="record-lightbox" data-gallery-lightbox aria-label="放大查看档案图片">
+				<div class="lightbox-shell">
+					<button class="lightbox-close" type="button" data-gallery-close aria-label="关闭放大图片">关闭 ×</button>
+					${galleryImages.length > 1 ? '<button class="lightbox-previous" type="button" data-gallery-previous aria-label="查看上一张图片"><span aria-hidden="true">←</span><small>上一张</small></button>' : ''}
+					<figure class="lightbox-figure">
+						<img data-lightbox-main src="${escapeHtml(galleryImages[0].src)}" alt="${escapeHtml(galleryImages[0].description)}" />
+						<figcaption>
+							<span class="lightbox-caption-copy"><strong data-lightbox-role>${escapeHtml(galleryImages[0].role)}</strong><span data-lightbox-caption>${escapeHtml(galleryImages[0].description)}</span></span>
+							<small data-lightbox-counter>第 1 张，共 ${galleryImages.length} 张</small>
+						</figcaption>
+					</figure>
+					${galleryImages.length > 1 ? '<button class="lightbox-next" type="button" data-gallery-next aria-label="查看下一张图片"><span aria-hidden="true">→</span><small>下一张</small></button>' : ''}
+				</div>
+			</dialog>
+		</div>` : '';
+
+	const letterHeader = isLetter ? `
+		<header class="letter-reading-header">
+			<div><p>LETTER READING</p><h2>信件阅读</h2></div>
+			${letterReadingModes.length > 1 ? `
+			<div class="letter-reading-modes" role="group" aria-label="选择信件查看方式">
+				${letterReadingModes.map((mode) => `<button type="button" data-letter-mode-select="${escapeHtml(mode.value)}" aria-pressed="${String(mode.value === initialLetterMode)}">${escapeHtml(mode.label)}</button>`).join('')}
+			</div>` : ''}
+			<p class="letter-reading-introduction">${hasPublicTranscription
+				? '以下为经过公开与隐私检查的电子转录，保留原有段落与换行；原件图片是最终核对依据。'
+				: '这封信暂未提供公开电子转录，当前仅展示经过检查的原件发布副本。'}</p>
+		</header>` : '';
+	const letterTranscription = isLetter && hasPublicTranscription ? `
+		<article class="letter-transcription" aria-labelledby="letter-transcription-heading">
+			<header>
+				<div><p>PUBLIC TRANSCRIPTION</p><h2 id="letter-transcription-heading">电子文字</h2></div>
+				<span>${record.core.transcription_status ? escapeHtml(pvCodeLabel(record.core.transcription_status)) : '公开转录'}</span>
+			</header>
+			<div class="letter-transcription-text">${escapeHtml(view.transcription)}</div>
+			<footer><span>〔不清〕表示原件难以辨认</span><span>□ 表示原件文字缺失</span></footer>
+		</article>` : '';
+
+	const pageMarkup = `
+	<article class="record-page">
+		<nav class="record-breadcrumb" aria-label="面包屑（预览示意，正式页面可点击）">
+			<span class="breadcrumb-link">首页</span><span class="breadcrumb-sep" aria-hidden="true">/</span>
+			<span class="breadcrumb-link">档案</span>
+			${currentCategoryLabel ? `<span class="breadcrumb-sep" aria-hidden="true">/</span><span class="breadcrumb-link">${escapeHtml(currentCategoryLabel)}</span>` : ''}
+			<span class="breadcrumb-sep" aria-hidden="true">/</span>
+			<span class="breadcrumb-current">${escapeHtml(view.title || '未命名藏品')}</span>
+		</nav>
+		<span class="back-link ui-text-link">← 返回档案</span>
+		<header class="record-heading">
+			<p class="section-mark">ARCHIVE RECORD · ${escapeHtml(view.typeLabel)}</p>
+			<h1>${escapeHtml(view.title || '未命名藏品')}</h1>
+			${pvHasText(view.description) ? `<p class="record-lead">${escapeHtml(view.description)}</p>` : ''}
+		</header>
+		<div class="record-sheet ${isLetter ? 'record-sheet--letter' : ''}" ${isLetter ? `data-letter-reader="true" data-letter-mode="${escapeHtml(initialLetterMode)}"` : ''}>
+			${letterHeader}
+			${letterTranscription}
+			${galleryMarkup}
+			<section class="record-basic-information" aria-labelledby="preview-basic-heading">
+				<h2 class="facts-heading" id="preview-basic-heading">基本信息</h2>
+				<dl class="record-facts">
+					${basicFacts.map((fact) => `<div><dt>${escapeHtml(fact.label)}</dt><dd>${fact.href
+						? `<a class="fact-filter-link" href="${escapeHtml(fact.href)}" target="_blank" rel="noopener">${escapeHtml(fact.value)}<small>查看相关档案 →</small></a>`
+						: escapeHtml(fact.value)}</dd></div>`).join('')}
+				</dl>
+			</section>
+		</div>
+		${recordStatusFacts.length ? `
+		<aside class="record-status" aria-labelledby="preview-status-heading">
+			<div class="record-status-heading"><div><h2 id="preview-status-heading">资料状态</h2></div>
+				<a href="${escapeHtml(publicPreviewUrl('/about/#research'))}" target="_blank" rel="noopener">了解整理与判断方式 →</a></div>
+			<dl>${recordStatusFacts.map((fact) => `<div><dt>${escapeHtml(fact.label)}</dt><dd>${escapeHtml(fact.value)}<small>${escapeHtml(fact.description)}</small></dd></div>`).join('')}</dl>
+			${pvHasText(revisionNote) ? `<div class="record-revision-note"><strong>最近修订</strong><p>${escapeHtml(revisionNote)}</p></div>` : ''}
+		</aside>` : ''}
+		<div class="record-notes">
+			${hasNarrativeContent ? `
+			<section class="record-section" aria-labelledby="preview-description-heading">
+				<h2 id="preview-description-heading">${isLetter ? '流传与来源' : '故事与原文'}</h2>
+				<div class="section-content">
+					${pvHasText(record.core.provenance_notes) ? `<div class="subsection"><h3>流传线索</h3><p>${escapeHtml(record.core.provenance_notes)}</p></div>` : ''}
+					${!isLetter && hasPublicTranscription ? `<div class="subsection"><h3>原文 / 转录</h3><p class="transcription">${escapeHtml(view.transcription)}</p></div>` : ''}
+				</div>
+			</section>` : ''}
+			${view.tags.length ? `
+			<section class="record-section" aria-labelledby="preview-tags-heading">
+				<h2 id="preview-tags-heading">标签</h2>
+				<div class="section-content"><ul class="record-tags">
+					${view.tags.map((tag) => `<li><a href="${escapeHtml(archiveFilterHref('tag', tag))}" target="_blank" rel="noopener">${escapeHtml(tag)}</a></li>`).join('')}
+				</ul></div>
+			</section>` : ''}
+			${specificFacts.length ? `
+			<section class="record-section" aria-labelledby="preview-specific-heading">
+				<h2 id="preview-specific-heading">藏品细节</h2>
+				<dl class="section-facts">${specificFacts.map((fact) => `<div><dt>${escapeHtml(fact.label)}</dt><dd>${escapeHtml(fact.value)}</dd></div>`).join('')}</dl>
+			</section>` : ''}
+			${researchManagementFacts.length ? `
+			<details class="management-information">
+				<summary><span>档案信息</span><small>研究用元数据 · ${researchManagementFacts.length} 项 · 包含编号与技术代码</small></summary>
+				<dl class="section-facts">${researchManagementFacts.map((fact) => `<div><dt>${escapeHtml(fact.label)}${fact.code ? `<small>${escapeHtml(fact.code)}</small>` : ''}</dt><dd>${escapeHtml(fact.value)}</dd></div>`).join('')}</dl>
+			</details>` : ''}
+		</div>
+		${relatedRecords.length ? `
+		<section class="record-related" aria-labelledby="preview-related-heading">
+			<div class="record-related-heading"><p>RELATED RECORDS</p><h2 id="preview-related-heading">沿着线索继续看</h2><span>根据共同标签、地点、年代或分类自动关联。</span></div>
+			<div class="record-related-grid">${relatedRecords.map((entry) => `
+				<a href="${escapeHtml(publicPreviewUrl(`/archive/${encodeURIComponent(entry.view.id)}/`))}" target="_blank" rel="noopener">
+					<figure>${entry.cover ? `<img src="${escapeHtml(entry.cover)}" alt="${escapeHtml(entry.view.imageDescriptions[0] ?? '')}" loading="lazy" />` : ''}</figure>
+					<div><small>${escapeHtml(entry.reason)}</small><strong>${escapeHtml(entry.view.title)}</strong><span>${escapeHtml(entry.view.typeLabel)} · ${escapeHtml(entry.view.dateDisplay)}</span></div>
+				</a>`).join('')}
+			</div>
+		</section>` : ''}
+		<section class="record-usage" aria-labelledby="preview-usage-heading">
+			<div class="record-usage-heading"><p>RIGHTS AND USE</p><h2 id="preview-usage-heading">使用与下载</h2></div>
+			<div class="record-usage-content">
+				<div class="record-usage-summary">
+					<span>权利状态 · ${escapeHtml(usagePolicy.statusLabel)}</span>
+					<strong>${escapeHtml(usagePolicy.title)}</strong>
+					<p>${escapeHtml(usagePolicy.description)}</p>
+					<small>${escapeHtml(usagePolicy.attribution)}</small>
+				</div>
+				${downloadableImages.length ? `
+				<div class="record-downloads" aria-label="可下载的网页发布副本">
+					${downloadableImages.map((image, index) => `<a class="ui-action ui-action--primary" href="${escapeHtml(image.source)}" download="${escapeHtml(image.filename)}">下载发布副本 ${downloadableImages.length > 1 ? index + 1 : ''}<small>${escapeHtml(image.description)}</small></a>`).join('')}
+					<p>下载内容是网站使用的压缩发布副本，不是原始扫描件或档案主文件。</p>
+				</div>` : ''}
+			</div>
+		</section>
+		<section class="record-citation" aria-labelledby="preview-citation-heading" data-record-citation
+			data-record-title="${escapeHtml(view.title || '未命名藏品')}" data-record-identifier="${escapeHtml(view.id || '尚未生成')}" data-record-url="${escapeHtml(recordUrl)}">
+			<div class="record-citation-heading"><p>CITE THIS RECORD</p><h2 id="preview-citation-heading">引用与分享</h2></div>
+			<div class="record-citation-content">
+				<p class="citation-preview">《${escapeHtml(view.title || '未命名藏品')}》（${escapeHtml(view.id || '尚未生成')}），老旧默片。复制时会自动补充当前页面地址和访问日期。</p>
+				<div class="citation-actions">
+					<button class="ui-action ui-action--secondary" type="button" data-copy-record-link>复制页面链接</button>
+					<button class="ui-action ui-action--secondary" type="button" data-copy-record-citation>复制规范引用</button>
+				</div>
+				<p class="citation-feedback" role="status" aria-live="polite" data-citation-feedback></p>
+			</div>
+		</section>
+		<p class="preview-neighbors-note">正式发布后，页面底部还会按同类已发布档案自动出现“上一件 / 下一件”导航；顺序由正式发布数据决定，不在预览中模拟。</p>
+	</article>`;
+
+	return `<div class="preview-shell">
+	<div class="preview-main">
+		<div class="preview-toolbar">
+			<div class="preview-toolbar-copy"><strong>发布前真实预览</strong>
+				<span>与正式档案页使用同一套数据和排版规则，完整显示将要公开的文字、图片、来源和专属资料；全站页首、页脚不在此重复。预览不会把草稿公开。</span></div>
+			<div class="preview-viewport-toggle" role="group" aria-label="切换预览设备">
+				<button type="button" data-preview-viewport="desktop" aria-pressed="true">电脑</button>
+				<button type="button" data-preview-viewport="mobile" aria-pressed="false">手机</button>
+			</div>
+		</div>
+		<div class="preview-viewport is-desktop" data-preview-viewport-shell>
+			<div class="preview-frame pv-site">${pageMarkup}</div>
+		</div>
+	</div>
+	<aside class="check-panel"><h4>发布前缺失项</h4>
 		<p>点击一项可回到相应位置处理。预览不会把草稿公开。</p>
 		${issues.length ? `<ul class="issue-list">${issues.map((issue) => `<li><button class="issue-button" data-issue-tab="${escapeHtml(issue.tab)}" data-issue-field="${escapeHtml(issue.field ?? '')}" type="button">${escapeHtml(issue.message)}</button></li>`).join('')}</ul>`
 			: '<div class="check-complete">字段、图片与隐私检查均已通过，可以正式发布。</div>'}
 		${renderContentQualityPanel(qualityWarnings)}
 	</aside></div>`;
 };
+
+// 预览内的画廊交互：与正式页面同一套切换逻辑（缩略图、上一张／下一张、灯箱）。
+const previewGallerySelect = (gallery, index) => {
+	const items = JSON.parse(gallery.dataset.galleryItems ?? '[]');
+	if (!items.length) return;
+	const active = ((index % items.length) + items.length) % items.length;
+	gallery.dataset.galleryIndex = String(active);
+	const item = items[active];
+	const counterText = `第 ${active + 1} 张，共 ${items.length} 张`;
+	const mainImage = gallery.querySelector('[data-gallery-main]');
+	if (mainImage) { mainImage.src = item.src; mainImage.alt = item.description; }
+	const openButton = gallery.querySelector('[data-gallery-open]');
+	openButton?.setAttribute('aria-label', `放大查看：${item.description}`);
+	const caption = gallery.querySelector('[data-gallery-caption]');
+	if (caption) caption.textContent = item.description;
+	const role = gallery.querySelector('[data-gallery-role]');
+	if (role) role.textContent = item.role;
+	const counter = gallery.querySelector('[data-gallery-counter]');
+	if (counter) counter.textContent = counterText;
+	const lightboxImage = gallery.querySelector('[data-lightbox-main]');
+	if (lightboxImage) { lightboxImage.src = item.src; lightboxImage.alt = item.description; }
+	const lightboxCaption = gallery.querySelector('[data-lightbox-caption]');
+	if (lightboxCaption) lightboxCaption.textContent = item.description;
+	const lightboxRole = gallery.querySelector('[data-lightbox-role]');
+	if (lightboxRole) lightboxRole.textContent = item.role;
+	const lightboxCounter = gallery.querySelector('[data-lightbox-counter]');
+	if (lightboxCounter) lightboxCounter.textContent = counterText;
+	gallery.querySelectorAll('[data-gallery-thumbnail]').forEach((button, thumbnailIndex) =>
+		button.setAttribute('aria-current', String(thumbnailIndex === active)));
+};
+
+// 预览区域的事件：设备切换、信件阅读方式、画廊灯箱和引用复制，不影响编辑器其他功能。
+elements.editorSurface.addEventListener('click', async (event) => {
+	const viewportButton = event.target.closest('[data-preview-viewport]');
+	if (viewportButton) {
+		const shell = viewportButton.closest('.preview-main')?.querySelector('[data-preview-viewport-shell]');
+		const isMobile = viewportButton.dataset.previewViewport === 'mobile';
+		shell?.classList.toggle('is-mobile', isMobile);
+		shell?.classList.toggle('is-desktop', !isMobile);
+		viewportButton.parentElement?.querySelectorAll('[data-preview-viewport]').forEach((button) =>
+			button.setAttribute('aria-pressed', String(button === viewportButton)));
+		return;
+	}
+	const letterButton = event.target.closest('[data-letter-mode-select]');
+	if (letterButton) {
+		const reader = letterButton.closest('[data-letter-reader]');
+		if (!reader) return;
+		reader.dataset.letterMode = letterButton.dataset.letterModeSelect ?? 'text';
+		reader.querySelectorAll('[data-letter-mode-select]').forEach((button) =>
+			button.setAttribute('aria-pressed', String(button === letterButton)));
+		return;
+	}
+	const galleryAction = event.target.closest('[data-gallery-thumbnail], [data-gallery-open], [data-gallery-close], [data-gallery-previous-inline], [data-gallery-next-inline], [data-gallery-previous], [data-gallery-next]');
+	if (galleryAction) {
+		const gallery = galleryAction.closest('[data-record-gallery]');
+		if (!gallery) return;
+		const current = Number(gallery.dataset.galleryIndex ?? '0');
+		if (galleryAction.hasAttribute('data-gallery-thumbnail')) {
+			previewGallerySelect(gallery, (Number(galleryAction.dataset.galleryIndex) || 1) - 1);
+		} else if (galleryAction.hasAttribute('data-gallery-previous-inline') || galleryAction.hasAttribute('data-gallery-previous')) {
+			previewGallerySelect(gallery, current - 1);
+		} else if (galleryAction.hasAttribute('data-gallery-next-inline') || galleryAction.hasAttribute('data-gallery-next')) {
+			previewGallerySelect(gallery, current + 1);
+		} else if (galleryAction.hasAttribute('data-gallery-open')) {
+			gallery.querySelector('[data-gallery-lightbox]')?.showModal();
+		} else if (galleryAction.hasAttribute('data-gallery-close')) {
+			gallery.querySelector('[data-gallery-lightbox]')?.close();
+		}
+		return;
+	}
+	const copyButton = event.target.closest('[data-copy-record-link], [data-copy-record-citation]');
+	if (copyButton) {
+		const citation = copyButton.closest('[data-record-citation]');
+		const feedback = citation?.querySelector('[data-citation-feedback]');
+		const link = citation?.dataset.recordUrl ?? '';
+		const isLinkCopy = copyButton.hasAttribute('data-copy-record-link');
+		const accessDate = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
+		const text = isLinkCopy ? link
+			: `《${citation?.dataset.recordTitle ?? ''}》（${citation?.dataset.recordIdentifier ?? ''}），老旧默片，${link}，访问日期：${accessDate}。`;
+		try {
+			await navigator.clipboard.writeText(text);
+			if (feedback) feedback.textContent = isLinkCopy ? '页面链接已复制（预览地址，正式发布后生效）。' : '规范引用已复制。';
+		} catch {
+			if (feedback) feedback.textContent = '复制失败，请手工选择上方引用信息。';
+		}
+	}
+});
 
 // 记录编辑器内所有折叠区（<details>）当前的展开状态。
 // 仅在同标签页内重新渲染时使用，避免切到其他标签页后把旧展开状态误恢复。
@@ -2283,6 +2848,7 @@ const loadBootstrap = async (selectedId = state.activeId) => {
 		if (!state.dictionary.has(entry.dictionary_key)) state.dictionary.set(entry.dictionary_key, []);
 		state.dictionary.get(entry.dictionary_key).push(entry);
 	}
+	pvCodeIndex = null;
 	refreshAdministrativeRegionOptions();
 	elements.previewLink.href = publicPreviewUrl('/');
 	renderRecordList();
@@ -2591,6 +3157,20 @@ elements.editorSurface.addEventListener('click', async (event) => {
 		if (action === 'maintenance-open') {
 			state.activeTab = centerButton.dataset.targetTab || 'basic';
 			selectRecord(itemId);
+			const targetField = centerButton.dataset.targetField;
+			requestAnimationFrame(() => {
+				// 指定字段：展开所在折叠区并聚焦；图片标签页没有字段控件时，定位到第一张待补说明的图片。
+				const control = targetField
+					? elements.editorSurface.querySelector(`[data-field="${CSS.escape(targetField)}"]`)
+					: state.activeTab === 'images'
+						? [...elements.editorSurface.querySelectorAll('[data-image-description]')]
+							.find((textarea) => !textarea.value.trim())
+						: null;
+				if (!control) return;
+				control.closest('details')?.setAttribute('open', '');
+				control.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				control.focus();
+			});
 			return;
 		}
 		if (action === 'maintenance-refresh') {
@@ -2629,6 +3209,7 @@ elements.editorSurface.addEventListener('click', async (event) => {
 		const field = issueButton.dataset.issueField;
 		if (field) requestAnimationFrame(() => {
 			const control = elements.editorSurface.querySelector(`[data-field="${CSS.escape(field)}"]`);
+			control?.closest('details')?.setAttribute('open', '');
 			control?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			control?.focus();
 		});
@@ -2695,7 +3276,8 @@ window.addEventListener('beforeunload', (event) => {
 	event.returnValue = '';
 });
 
-loadBootstrap().catch((error) => {
+const requestedItem = new URLSearchParams(window.location.search).get('item');
+loadBootstrap(itemIdPattern.test(requestedItem ?? '') ? requestedItem : undefined).catch((error) => {
 	console.error(error);
 	elements.recordCount.textContent = '读取失败';
 	elements.editorSurface.innerHTML = `<div class="empty-state">${escapeHtml(error.message || '暂时无法读取档案，请刷新页面后重试。')}</div>`;

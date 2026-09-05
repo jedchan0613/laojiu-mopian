@@ -1,0 +1,78 @@
+{
+  "core": {
+    "record_status": "ACT",
+    "item_id": "LJM-20260808-PCD-001",
+    "object_type": "PCD",
+    "title": "富士山下的新年祝福",
+    "privacy_level": "G",
+    "rights_status": "UNK",
+    "research_status": "R0",
+    "evidence_level": "D",
+    "digitization_status": "DG2",
+    "transcription_status": "TX0",
+    "use_status": "U3",
+    "publication_file_path": [
+      "/archive/LJM-20260808-PCD-001/front-public.jpg",
+      "/archive/LJM-20260808-PCD-001/back-public.jpg"
+    ],
+    "collection_code": "PCD_1960_PHO_GRT_MEM+DLY_UNK_MAI",
+    "accession_date": "2026-08-08",
+    "batch_id": "FSA-20260808-CCQ",
+    "date_display": "1960",
+    "physical_location": "佛山",
+    "acquisition_method": "PR-PUR",
+    "source_name": "闲鱼老板",
+    "source_place": "北京",
+    "event_scene": [
+      "EV-DLY"
+    ],
+    "themes": [
+      "SU-MEM"
+    ],
+    "scan_date": "2026-08-21",
+    "scan_ppi": 600,
+    "created_date": "2026-09-01",
+    "updated_date": "2026-09-01",
+    "id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+    "required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+  },
+  "metadata": {
+    "schema": "postcard",
+    "dimensions": {
+      "PC01": {
+        "postcard_type": "PT-PHO"
+      },
+      "PC02": {
+        "postcard_function": "PF-GRT"
+      },
+      "PC19": {
+        "postal_mark_types": [
+          "PM-UNK"
+        ]
+      },
+      "PC21": {
+        "postcard_use": "PU-MAI"
+      },
+      "PC04": {
+        "writing_date": "1960-01-01",
+        "writing_date_text": "19600101"
+      },
+      "PC12": {
+        "image_subject": "富士山下的新年祝福"
+      },
+      "PC07": {
+        "dispatch_place": [
+          "日本大阪"
+        ]
+      }
+    }
+  },
+  "public_view": {
+    "description": "从富士山下  到一句新年快乐",
+    "transcription": "",
+    "revision_note": "",
+    "tags": [],
+    "place_display": "",
+    "place_filters": []
+  }
+}

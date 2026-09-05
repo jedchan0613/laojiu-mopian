@@ -315,8 +315,6 @@ export interface ArchivePublicView {
 	/** 只在发生实质修订时填写，面向访客简要说明改了什么。 */
 	revision_note?: string;
 	tags: string[];
-	place_display?: string;
-	place_filters?: string[];
 	/** 与 publication_file_path 顺序一致；空项由页面使用中性的正面／背面／细节图说明。 */
 	image_descriptions?: string[];
 }

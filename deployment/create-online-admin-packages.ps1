@@ -91,7 +91,7 @@ function New-PackageManifest {
 
 function Assert-PackageContents {
 	param([string]$AppRoot, [string]$DataRoot)
-	$forbiddenAppPaths = @('local-admin\drafts', 'local-admin\history', 'local-admin\recycle-bin',
+	$forbiddenAppPaths = @('local-admin\drafts', 'local-admin\history', 'local-admin\recycle-bin', 'local-admin\submissions',
 		'site\node_modules', 'site\dist', 'site\.astro', 'site\public\archive-responsive')
 	foreach ($forbidden in $forbiddenAppPaths) {
 		if (Test-Path -LiteralPath (Join-Path $AppRoot $forbidden)) {
@@ -168,7 +168,7 @@ try {
 
 	$localAdminSource = Join-Path $projectRoot 'local-admin'
 	Copy-TreeFiles -SourceRoot $localAdminSource -DestinationRoot (Join-Path $appStage 'local-admin') `
-		-ExcludedPrefixes @('drafts\', 'history\', 'recycle-bin\')
+		-ExcludedPrefixes @('drafts\', 'history\', 'recycle-bin\', 'submissions\')
 
 	$siteSource = Join-Path $projectRoot 'site'
 	Copy-TreeFiles -SourceRoot $siteSource -DestinationRoot (Join-Path $appStage 'site') `

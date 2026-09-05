@@ -1,0 +1,86 @@
+{
+  "core": {
+    "record_status": "ACT",
+    "item_id": "LJM-20260808-PHO-002",
+    "accession_date": "2026-08-08",
+    "object_type": "PHO",
+    "title": "80年代末的珠海",
+    "date_display": "1989",
+    "privacy_level": "G",
+    "rights_status": "UNK",
+    "research_status": "R0",
+    "evidence_level": "D",
+    "digitization_status": "DG2",
+    "transcription_status": "TX0",
+    "use_status": "U3",
+    "publication_file_path": [
+      "/archive/LJM-20260808-PHO-002/front-public.jpg",
+      "/archive/LJM-20260808-PHO-002/back-public.jpg",
+      "/archive/LJM-20260808-PHO-002/detail-01-public.jpg",
+      "/archive/LJM-20260808-PHO-002/detail-02-public.jpg",
+      "/archive/LJM-20260808-PHO-002/detail-03-public.jpg"
+    ],
+    "collection_code": "PHO_1989_MEM_OTH_NONE_C2+FAD_G",
+    "batch_id": "FSA-20260808-CCQ",
+    "physical_location": "佛山",
+    "acquisition_method": "PR-PUR",
+    "source_name": "旧货市场老板",
+    "source_place": "佛山护红巷",
+    "date_start": "1986-01-01",
+    "date_end": "1989-12-31",
+    "time_notes": "AI",
+    "province": "广东省",
+    "city": "珠海市",
+    "country": "中国",
+    "district": "香洲区",
+    "themes": [
+      "SU-MEM"
+    ],
+    "carrier": "MT-PPR",
+    "color": "CL-COL",
+    "process": "PC-AG",
+    "source_date": "2026-08-08",
+    "condition_grade": "C2",
+    "condition_details": [
+      "DM-FAD"
+    ],
+    "scan_ppi": 600,
+    "created_date": "2026-08-30",
+    "updated_date": "2026-08-30",
+    "id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+    "required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+  },
+  "metadata": {
+    "schema": "photo",
+    "dimensions": {
+      "D07": {
+        "photo_function": "FN-OTH"
+      },
+      "D12": {
+        "verso_types": [
+          "VS-NONE"
+        ]
+      },
+      "D08": {
+        "shot_form": "FM-BLD"
+      },
+      "D09": {
+        "photography_source": "PS-UNK"
+      },
+      "D13": {
+        "mark_types": [
+          "MK-NONE"
+        ]
+      }
+    }
+  },
+  "public_view": {
+    "description": "",
+    "transcription": "",
+    "tags": [
+      "珠海"
+    ],
+    "place_display": "珠海",
+    "place_filters": []
+  }
+}

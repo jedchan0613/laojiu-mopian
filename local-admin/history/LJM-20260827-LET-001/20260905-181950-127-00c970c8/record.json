@@ -1,0 +1,56 @@
+{
+  "core": {
+    "record_status": "WDR",
+    "item_id": "LJM-20260827-LET-001",
+    "batch_id": "hrb202608",
+    "accession_date": "2026-08-27",
+    "object_type": "LET",
+    "item_seq": 1,
+    "title": "给王同志的信",
+    "date_display": "1979",
+    "city": "哈尔滨",
+    "place_notes": "用户确认寄出地为日本东京，收件地为哈尔滨。",
+    "people": [
+      "王同志"
+    ],
+    "acquisition_method": "PR-PUR",
+    "source_name": "旧货市场/闲鱼",
+    "provenance_notes": "旧货市场/闲鱼",
+    "related_item_ids": [
+      "LJM-20260808-PST-001"
+    ],
+    "privacy_level": "G",
+    "rights_status": "OWN",
+    "research_status": "R0",
+    "evidence_level": "D",
+    "digitization_status": "DG2",
+    "transcription_status": "TX1",
+    "backup_status": "BU0",
+    "publication_file_path": [
+      "/archive/LJM-20260808-PST-001/letter-public.jpg",
+      "/archive/LJM-20260808-PST-001/letter-translation-public.png"
+    ],
+    "use_status": "U4",
+    "created_date": "2026-08-27",
+    "updated_date": "2026-08-27",
+    "next_action": "无；本记录仅作为已并入主档的历史追溯记录保留。",
+    "notes": "用户最终确认该信件实际为 LJM-20260808-PST-001 的附属信件，原记录已撤销并并入该主档。两张发布图片现由主档统一管理；此前关于收件称呼、落款和通信内容允许公开且无需遮盖的确认继续有效。",
+    "id_check": "原永久编号保持不变，仅作为撤销记录保留；有效主档为 LJM-20260808-PST-001。",
+    "required_check": "合并关系、图片新路径、撤销状态和隐私状态已复核。",
+    "collection_code": "LET_1979"
+  },
+  "metadata": {
+    "schema": "common",
+    "dimensions": {}
+  },
+  "public_view": {
+    "tags": [
+      "海外",
+      "日本"
+    ],
+    "place_display": "哈尔滨",
+    "place_filters": [
+      "哈尔滨"
+    ]
+  }
+}

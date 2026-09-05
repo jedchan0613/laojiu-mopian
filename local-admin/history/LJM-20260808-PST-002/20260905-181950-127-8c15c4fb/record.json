@@ -1,0 +1,77 @@
+{
+  "core": {
+    "record_status": "ACT",
+    "item_id": "LJM-20260808-PST-002",
+    "object_type": "PST",
+    "title": "天鹅很肥",
+    "privacy_level": "G",
+    "rights_status": "OWN",
+    "research_status": "R0",
+    "evidence_level": "D",
+    "digitization_status": "DG2",
+    "transcription_status": "TX0",
+    "use_status": "U3",
+    "publication_file_path": [
+      "/archive/LJM-20260808-PST-002/front-public.jpg",
+      "/archive/LJM-20260808-PST-002/back-public.jpg"
+    ],
+    "collection_code": "PST_2013_VIEW_TRV_MEM+TRV_UNK_MAI",
+    "accession_date": "2026-08-08",
+    "batch_id": "FSA-20260808-CCQ",
+    "date_display": "2013",
+    "physical_location": "佛山",
+    "acquisition_method": "PR-PUR",
+    "source_place": "天光墟旧货市场",
+    "event_scene": [
+      "EV-TRV"
+    ],
+    "themes": [
+      "SU-MEM"
+    ],
+    "scan_date": "2026-08-21",
+    "scan_ppi": 600,
+    "created_date": "2026-09-01",
+    "updated_date": "2026-09-01",
+    "id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+    "required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+  },
+  "metadata": {
+    "schema": "postcard",
+    "dimensions": {
+      "PC01": {
+        "postcard_type": "PT-VIEW"
+      },
+      "PC02": {
+        "postcard_function": "PF-TRV"
+      },
+      "PC19": {
+        "postal_mark_types": [
+          "PM-UNK"
+        ]
+      },
+      "PC21": {
+        "postcard_use": "PU-MAI"
+      },
+      "PC07": {
+        "dispatch_place": [
+          "列支敦士登"
+        ]
+      },
+      "PC12": {
+        "image_subject": "旅行"
+      },
+      "PC04": {
+        "writing_date": "2013-12-09",
+        "writing_date_text": "20131209"
+      }
+    }
+  },
+  "public_view": {
+    "description": "",
+    "transcription": "",
+    "revision_note": "",
+    "tags": [],
+    "place_display": "",
+    "place_filters": []
+  }
+}

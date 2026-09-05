@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 import { createHash, randomUUID } from 'node:crypto';
 import { createAccessAuthenticator } from './access-auth.mjs';
 import { createReleaseDeployer, readLiveRelease } from './release-deployer.mjs';
+import { createSubmissionStore, createPublicSubmissionHandler, readSubmissionJson, privacyChecks, submissionStates } from './submissions.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
@@ -53,6 +54,7 @@ const siteArchiveDataFile = path.join(siteDirectory, 'src', 'data', 'archive.ts'
 const responsiveImageManifestFile = path.join(siteDirectory, 'src', 'data', 'generated', 'image-manifest.json');
 const archiveCategoryFile = path.join(siteDirectory, 'src', 'data', 'archive-categories.json');
 const siteDistDirectory = path.join(siteDirectory, 'dist');
+const submissionDirectory = readEnvironmentPath('LJM_SUBMISSION_DATA_DIR', path.join(adminDataRoot, 'submissions'));
 const publicReleasesDirectory = configuredPublicReleasesDirectory
 	? path.resolve(configuredPublicReleasesDirectory)
 	: path.join(projectRoot, 'site-releases');
@@ -122,6 +124,7 @@ const validateRuntimeConfiguration = () => {
 	if (!Number.isInteger(adminPort) || adminPort < 1024 || adminPort > 65535) {
 		throw new Error('LJM_ADMIN_PORT 必须是 1024 至 65535 之间的端口号。');
 	}
+	if (adminHost !== '127.0.0.1') throw new Error('档案管理与本地投稿体验必须只监听 127.0.0.1。');
 	if (!onlineMode) return;
 	if (adminHost !== '127.0.0.1') {
 		throw new Error('线上管理服务必须只监听 127.0.0.1，不能直接暴露服务器端口。');
@@ -168,6 +171,12 @@ const validateRuntimeConfiguration = () => {
 };
 
 validateRuntimeConfiguration();
+
+for (const publicRoot of [siteDirectory, publicDirectory, path.join(projectRoot, 'public-assets')]) {
+	if (pathIsInside(publicRoot, submissionDirectory)) throw new Error('私密投稿目录不能位于网站、管理页面或公开素材目录内。');
+}
+const submissionStore = createSubmissionStore({ root: submissionDirectory, siteDirectory });
+const publicSubmissions = createPublicSubmissionHandler({ store: submissionStore, origin: localAdminOrigin, local: true });
 
 const accessAuthenticator = onlineMode
 	? createAccessAuthenticator({
@@ -1195,7 +1204,7 @@ const nextImageName = async (itemId, reservedNames, position, extension) => {
 	throw new Error('这件藏品的细节图片编号已经用完。');
 };
 
-const saveDraft = async (payload) => {
+const saveDraftUnlocked = async (payload) => {
 	if (!payload.confirmedPublicationCopies && payload.images?.some((image) => image.kind === 'new')) {
 		throw new Error('上传前必须确认图片是经过筛选和必要脱敏的发布副本。');
 	}
@@ -1286,6 +1295,7 @@ const saveDraft = async (payload) => {
 		}));
 		const draft = {
 			version: 2,
+			...(payload.sourceSubmissionId ? { source_submission_id: payload.sourceSubmissionId } : existingDraft?.source_submission_id ? { source_submission_id: existingDraft.source_submission_id } : {}),
 			saved_at: new Date().toISOString(),
 			removed_images: cleanRemovedImages,
 			removed_image_descriptions: removedImageDescriptions,
@@ -1300,6 +1310,30 @@ const saveDraft = async (payload) => {
 		for (const filePath of newlyWrittenFiles) await fs.rm(filePath, { force: true });
 		throw error;
 	}
+};
+
+// 草稿编号分配与写入依次完成，防止同时操作占用同一永久编号。
+let draftSaveQueue = Promise.resolve();
+const saveDraft = (payload) => {
+	const task = draftSaveQueue.then(() => saveDraftUnlocked(payload));
+	draftSaveQueue = task.catch(() => {});
+	return task;
+};
+
+const submissionToDraft = async (input) => {
+	const previous = (await loadDrafts()).find((draft) => draft.source_submission_id === input.id);
+	if (previous) return previous.record.core.item_id;
+	if (!objectSchema[input.object_type]) throw new RequestError('请选择正式的藏品类型。');
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(input.accession_date ?? '') || new Date(input.accession_date).toISOString().slice(0, 10) !== input.accession_date) throw new RequestError('请填写有效的实际接收或获得日期。');
+	const draft = await saveDraft({
+		isNew: true, sourceSubmissionId: input.id, confirmedPublicationCopies: true, images: input.images,
+		record: {
+			core: { item_id: '', title: input.title, accession_date: input.accession_date, object_type: input.object_type, date_display: '年代未知', record_status: 'SUS', privacy_level: 'Y', rights_status: 'UNK', research_status: 'R0', evidence_level: 'D', digitization_status: 'DG0', transcription_status: 'TX0', use_status: 'U0', publication_file_path: [] },
+			metadata: { schema: objectSchema[input.object_type], dimensions: {} },
+			public_view: { description: input.description, transcription: '', tags: [] },
+		},
+	});
+	return draft.record.core.item_id;
 };
 
 const validateForPublication = async (record, confirmations) => {
@@ -1654,7 +1688,7 @@ const withdrawOfficialRecord = async (payload) => {
 	}
 };
 
-const publishDraft = async (payload) => {
+const publishDraftUnlocked = async (payload) => {
 	if (publishInProgress) throw new Error('已有一项发布检查正在进行，请稍候。');
 	publishInProgress = true;
 	const itemId = payload.itemId;
@@ -1664,6 +1698,10 @@ const publishDraft = async (payload) => {
 		if (!(await pathExists(draftPath))) throw new Error('请先保存草稿。');
 		const draft = await readJson(draftPath);
 		const record = structuredClone(draft.record);
+		if (draft.source_submission_id) {
+			const sourceSubmission = await submissionStore.detail(draft.source_submission_id);
+			if (sourceSubmission.linked_item_id !== itemId) throw new RequestError('投稿与草稿尚未完成关联，请在投稿审核页重试转入草稿。');
+		}
 		const [fieldRouting, commonFields] = await loadFieldRoutingStandards();
 		const routingConflicts = normalizeSharedCoreFields(record, fieldRouting, commonFields);
 		if (routingConflicts.length) {
@@ -1825,14 +1863,36 @@ const printConfigurationSummary = () => {
 	}
 };
 
+const publishDraft = (payload) => submissionStore.guardPublication(payload.itemId, () => publishDraftUnlocked(payload));
+
 const adminServer = http.createServer(async (request, response) => {
 	try {
 		const url = new URL(request.url ?? '/', configuredAdminOrigin);
+		if (!onlineMode && !new Set([`127.0.0.1:${adminPort}`, `localhost:${adminPort}`]).has(request.headers.host)) throw new RequestError('请从本机管理地址打开。', 403);
+		if (!onlineMode && await publicSubmissions(request, response, url.pathname)) return;
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/healthz') {
 			sendJson(response, 200, { ok: true });
 			return;
 		}
 		if (onlineMode) await accessAuthenticator.verifyRequest(request);
+		if (url.pathname === '/api/admin/submissions' && request.method === 'GET') {
+			sendJson(response, 200, { submissions: await submissionStore.list(), states: submissionStates, privacy_checks: privacyChecks }); return;
+		}
+		const submissionRoute = /^\/api\/admin\/submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer|copy-\d{2}\.jpg))?$/.exec(url.pathname);
+		if (submissionRoute) {
+			const [, id, action] = submissionRoute;
+			if (!action && request.method === 'GET') { sendJson(response, 200, await submissionStore.detail(id)); return; }
+			if (action?.startsWith('copy-') && request.method === 'GET') {
+				const image = await submissionStore.getImage(id, action);
+				response.writeHead(200, { ...securityHeaders(), 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store', 'Cross-Origin-Resource-Policy': 'same-origin', 'X-Robots-Tag': 'noindex, nofollow' }); response.end(image); return;
+			}
+			if (request.method === 'POST' && ['review', 'transfer'].includes(action)) {
+				requireSafeMutation(request);
+				const payload = await readSubmissionJson(request, 32 * 1024);
+				sendJson(response, 200, action === 'review' ? await submissionStore.review(id, payload) : await submissionStore.transfer(id, payload, submissionToDraft)); return;
+			}
+			sendJson(response, 405, { error: '不支持此操作。' }); return;
+		}
 		if (request.method === 'GET' && url.pathname === '/api/bootstrap') {
 			sendJson(response, 200, await loadBootstrap());
 			return;
@@ -1924,7 +1984,7 @@ const adminServer = http.createServer(async (request, response) => {
 			notFoundFile: path.join(siteDistDirectory, '404.html'),
 		});
 	} catch (error) {
-		if (!['AccessAuthenticationError', 'RequestError'].includes(error?.name)) console.error(error);
+		if (!['AccessAuthenticationError', 'RequestError', 'SubmissionError'].includes(error?.name)) console.error(error);
 		if (response.headersSent) {
 			response.end();
 			return;
