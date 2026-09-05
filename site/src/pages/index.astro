@@ -80,18 +80,19 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		<div class="hero">
 			<div class="hero-copy">
 				<header class="masthead">
-					<div class="masthead-mark" aria-hidden="true">
-						<svg viewBox="0 0 48 48" focusable="false">
-							<path d="M11.5 6.5h23.75l4.25 4.25V41.5h-28z" />
-							<path class="masthead-mark-fold" d="M35.25 6.5v4.25h4.25" />
-							<rect x="15.5" y="14" width="20" height="13.5" />
-							<circle cx="21.25" cy="19.25" r="2" />
-							<path class="masthead-mark-image" d="m17.75 25 5-4.65 3.5 3 3.45-3.1 3.55 3.55" />
-							<path class="masthead-mark-lines" d="M15.5 32.5h19M15.5 36.5h12" />
-						</svg>
-						<span><strong>生活档案</strong><small>ARCHIVE · 001</small></span>
+					<div class="masthead-title">
+						<div class="masthead-mark" aria-hidden="true">
+							<svg viewBox="0 0 48 48" focusable="false">
+								<path d="M11.5 6.5h23.75l4.25 4.25V41.5h-28z" />
+								<path class="masthead-mark-fold" d="M35.25 6.5v4.25h4.25" />
+								<rect x="15.5" y="14" width="20" height="13.5" />
+								<circle cx="21.25" cy="19.25" r="2" />
+								<path class="masthead-mark-image" d="m17.75 25 5-4.65 3.5 3 3.45-3.1 3.55 3.55" />
+								<path class="masthead-mark-lines" d="M15.5 32.5h19M15.5 36.5h12" />
+							</svg>
+						</div>
+						<h1>老旧默片</h1>
 					</div>
-					<h1>老旧默片</h1>
 					<p>普通人的生活档案</p>
 				</header>
 				<section class="introduction" aria-label="网站介绍">
@@ -281,7 +282,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	.hero {
 		display: grid;
 		grid-template-columns: minmax(17rem, 0.78fr) minmax(0, 1.22fr);
-		align-items: center;
+		align-items: stretch;
 		gap: clamp(38px, 5.5vw, 62px);
 		padding: clamp(30px, 4vw, 42px) clamp(0.8rem, 2vw, 1.25rem) clamp(32px, 4vw, 44px);
 		background: linear-gradient(110deg, rgba(248, 244, 234, 0.38), rgba(232, 224, 207, 0.13));
@@ -289,6 +290,9 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	}
 
 	.hero-copy {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
 		min-width: 0;
 	}
 
@@ -305,11 +309,16 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		letter-spacing: 0.14em;
 	}
 
-	.masthead-mark {
-		display: inline-flex;
+	.masthead-title {
+		display: flex;
 		align-items: center;
-		gap: 0.7rem;
-		margin-bottom: 1rem;
+		gap: clamp(0.75rem, 1.6vw, 1rem);
+	}
+
+	.masthead-mark {
+		display: flex;
+		align-items: center;
+		flex: 0 0 auto;
 		color: var(--site-accent);
 	}
 
@@ -335,28 +344,6 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		opacity: 0.72;
 	}
 
-	.masthead-mark span {
-		display: grid;
-		gap: 0.08rem;
-	}
-
-	.masthead-mark strong,
-	.masthead-mark small {
-		font-family: Georgia, 'Times New Roman', serif;
-		font-weight: 400;
-		line-height: 1.35;
-		letter-spacing: 0.16em;
-	}
-
-	.masthead-mark strong {
-		font-family: inherit;
-		font-size: 0.72rem;
-	}
-
-	.masthead-mark small {
-		font-size: var(--site-text-micro);
-	}
-
 	.masthead p {
 		margin-top: 9px;
 		color: #646057;
@@ -374,7 +361,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	}
 
 	.introduction {
-		margin-top: clamp(1.6rem, 3vw, 2.15rem);
+		margin-top: clamp(1.5rem, 2.5vw, 2rem);
 	}
 
 	.browse-link {
@@ -988,8 +975,9 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			line-height: 1.62;
 		}
 
-		.masthead-mark {
-			margin-bottom: 0.75rem;
+		.masthead-mark svg {
+			width: 2.35rem;
+			height: 2.35rem;
 		}
 
 		.hero-record figure {

@@ -55,7 +55,7 @@ const serializedStructuredData = structuredData
 	</head>
 	<body>
 		<a class="skip-link" href="#main-content">跳到主要内容</a>
-		<div class="site-shell">
+		<div class:list={['site-shell', { 'site-shell--archive': isArchive }]}>
 			<header class="site-header">
 				<nav aria-label="主要导航">
 					<a class="site-brand" href="/" aria-label="老旧默片首页" aria-current={isHome ? 'page' : undefined}>
@@ -357,6 +357,10 @@ const serializedStructuredData = structuredData
 		padding-top: 20px;
 		border-top: 1px solid var(--site-border);
 		color: #59564f;
+	}
+
+	.site-shell--archive .site-footer {
+		margin-top: clamp(28px, 3vw, 40px);
 	}
 
 	.footer-name,
