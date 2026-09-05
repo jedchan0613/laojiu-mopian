@@ -1346,13 +1346,16 @@ const renderObjectTypeControl = (options, value, { readonly = false, required = 
 // 发布后会直接显示在公开档案页上的通用字段（对应 site/src/pages/archive/[id].astro 的展示范围：
 // 基本信息、资料状态、档案信息（研究用元数据）、故事与原文）。
 // 不在这个清单里的通用字段只用于档案维护，不会显示在公开页面。
+// 注意：公开页只显示字段的中文标签，不显示代码值；item_id 仍通过页面地址和
+// “引用与分享”区块公开，collection_code 则完全不公开，只用于内部管理。
+// 获得方式、研究状态、证据等级、数字化状态、转录状态、隐私等级、权利状态、
+// 利用状态、档案状态属于内部工作记录，同样不在公开页展示。
 const publicCoreFieldCodes = new Set([
 	'object_type', 'title', 'date_display', 'people',
 	'country', 'province', 'city', 'district', 'street_town', 'specific_place',
-	'item_id', 'collection_code', 'acquisition_method', 'source_place',
-	'research_status', 'evidence_level', 'digitization_status', 'transcription_status',
-	'backup_status', 'condition_grade', 'privacy_level', 'rights_status', 'use_status',
-	'record_status', 'provenance_notes', 'updated_date', 'publication_file_path',
+	'item_id', 'source_place',
+	'backup_status', 'condition_grade',
+	'provenance_notes', 'updated_date', 'publication_file_path',
 ]);
 const fieldVisibilityBadge = (scope, fieldCode) => {
 	// 对象专属字段（metadata）会进入公开页面的“藏品细节 / 档案信息”；
