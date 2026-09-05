@@ -196,7 +196,6 @@ const categoryEntries = archiveCategories.map((category, index) => {
 					<SiteIcon name="collection" />
 					<p>按藏品类型浏览</p>
 				</div>
-				<span>ARCHIVE CATEGORIES · {String(categoryEntries.length).padStart(2, '0')}</span>
 			</div>
 			<ul>
 				{categoryEntries.map((category) => (
@@ -217,11 +216,10 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			<section class="home-discovery" aria-labelledby="discovery-heading">
 				<header class="discovery-heading">
 					<div class="discovery-title">
-						<SiteIcon name="archive" />
-						<div>
-							<p>MORE FROM THE ARCHIVE</p>
-							<h2 id="discovery-heading">继续浏览其他档案</h2>
-						</div>
+					<SiteIcon name="archive" />
+					<div>
+						<h2 id="discovery-heading">继续浏览其他档案</h2>
+					</div>
 					</div>
 					<a class="ui-text-link" href="/archive/">查看全部 {publishedItems.length} 件档案 →</a>
 				</header>
@@ -588,8 +586,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		margin: 1.35rem 0 0.75rem;
 	}
 
-	.archive-entrances-heading p,
-	.archive-entrances-heading span {
+	.archive-entrances-heading p {
 		margin: 0;
 	}
 
@@ -602,12 +599,6 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		letter-spacing: 0.12em;
 	}
 
-	.archive-entrances-heading span {
-		color: var(--site-accent);
-		font-family: Georgia, 'Times New Roman', serif;
-		font-size: var(--site-text-micro);
-		letter-spacing: 0.15em;
-	}
 
 	.archive-entrances ul {
 		display: grid;
@@ -755,20 +746,12 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		margin-bottom: 1.4rem;
 	}
 
-	.discovery-heading p,
 	.discovery-heading h2 {
 		margin: 0;
 	}
 
-	.discovery-heading p {
-		color: var(--site-accent);
-		font-family: Georgia, 'Times New Roman', serif;
-		font-size: var(--site-text-micro);
-		letter-spacing: 0.16em;
-	}
 
 	.discovery-heading h2 {
-		margin-top: 0.45rem;
 		font-size: clamp(1.45rem, 2.8vw, 2rem);
 		font-weight: 500;
 		letter-spacing: 0.08em;
@@ -776,14 +759,13 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 	.discovery-title {
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		gap: 0.7rem;
 	}
 
 	.discovery-title > .site-icon {
 		width: 1.25rem;
 		height: 1.25rem;
-		margin-top: 0.16rem;
 		color: var(--site-accent);
 	}
 

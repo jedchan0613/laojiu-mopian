@@ -9,7 +9,6 @@ import SiteIcon from '../components/SiteIcon.astro';
 >
   <article class="about-page">
     <header class="about-heading">
-      <p class="section-mark icon-heading"><SiteIcon name="story" /><span>ABOUT · WORKING PRINCIPLES</span></p>
       <h1>关于老旧默片</h1>
       <p class="about-lead">
         「老旧默片」是一个关于普通人生活痕迹的个人数字档案计划。这里不仅保存图片，也尽量说明资料从哪里来、哪些内容已经确认、哪些仍然未知。
@@ -27,7 +26,7 @@ import SiteIcon from '../components/SiteIcon.astro';
 
     <div class="about-content">
       <section class="about-section" id="scope">
-        <p class="about-section-index">01 / SCOPE</p>
+        <p class="about-section-index">01</p>
         <div>
           <h2 class="icon-heading"><SiteIcon name="collection" /><span>收录普通生活留下的痕迹</span></h2>
           <p>
@@ -40,20 +39,20 @@ import SiteIcon from '../components/SiteIcon.astro';
       </section>
 
       <section class="about-section" id="method">
-        <p class="about-section-index">02 / METHOD</p>
+        <p class="about-section-index">02</p>
         <div>
           <h2 class="icon-heading"><SiteIcon name="details" /><span>永久编号不随分类变化</span></h2>
           <p>
             每件档案都有独立永久编号。类型、年代或主题判断后来发生变化时，只更新对应的整理信息，不更换永久编号，以便持续追踪同一件实物。
           </p>
           <p>
-            通用管理资料与对象专属资料分开保存；正式代码与原始文字也分开记录。网站优先显示容易理解的中文标签，必要的技术代码收在详情页的折叠信息中。
+            通用管理资料与对象专属资料分开保存；正式代码与原始文字也分开记录。网站只显示容易理解的中文标签；内部使用的永久编号、收藏品编码和技术代码不在公开页展示，需要核对档案时可从详情页的引用区块获取永久编号。
           </p>
         </div>
       </section>
 
       <section class="about-section" id="research">
-        <p class="about-section-index">03 / RESEARCH</p>
+        <p class="about-section-index">03</p>
         <div>
           <h2 class="icon-heading"><SiteIcon name="search" /><span>不把推测写成事实</span></h2>
           <p>
@@ -66,7 +65,7 @@ import SiteIcon from '../components/SiteIcon.astro';
       </section>
 
       <section class="about-section" id="privacy">
-        <p class="about-section-index">04 / PRIVACY</p>
+        <p class="about-section-index">04</p>
         <div>
           <h2 class="icon-heading"><SiteIcon name="rights" /><span>公开副本与原始档案严格分开</span></h2>
           <p>
@@ -82,7 +81,7 @@ import SiteIcon from '../components/SiteIcon.astro';
       </section>
 
       <section class="about-section" id="revision">
-        <p class="about-section-index">05 / REVISION</p>
+        <p class="about-section-index">05</p>
         <div>
           <h2 class="icon-heading"><SiteIcon name="citation" /><span>资料可以修订，但修改需要留下依据</span></h2>
           <p>
@@ -95,7 +94,7 @@ import SiteIcon from '../components/SiteIcon.astro';
       </section>
 
 	  <section class="about-section" id="correction">
-		<p class="about-section-index">06 / CORRECTION</p>
+		<p class="about-section-index">06</p>
 		<div>
 		  <h2 class="icon-heading"><SiteIcon name="rights" /><span>为纠错、权利补充和撤下保留入口</span></h2>
 		  <p>
@@ -106,7 +105,6 @@ import SiteIcon from '../components/SiteIcon.astro';
 	  </section>
 
       <div class="belief">
-        <p class="belief-label">THE PROJECT BELIEVES</p>
         <blockquote>把那些原本会消失的人生，留下来。</blockquote>
       </div>
     </div>
@@ -122,14 +120,6 @@ import SiteIcon from '../components/SiteIcon.astro';
 
   .about-heading {
     max-width: 48rem;
-  }
-
-  .section-mark {
-    margin: 0 0 1.15rem;
-    color: #747064;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.2em;
   }
 
   h1 {
@@ -229,14 +219,6 @@ import SiteIcon from '../components/SiteIcon.astro';
     margin-top: clamp(2.5rem, 5vw, 4rem);
     padding: 2rem 0 0;
     border-top: 1px solid #aaa397;
-  }
-
-  .belief-label {
-    margin: 0 0 1.5rem;
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.14em;
   }
 
   blockquote {

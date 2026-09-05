@@ -135,7 +135,7 @@ const searchIndexJson = JSON.stringify(
       <header class="archive-index-heading">
         <div class="archive-index-title">
           <SiteIcon name="search" />
-          <div><p>SEARCH THE RECORDS</p><h2>查找档案</h2></div>
+          <div><h2>查找档案</h2></div>
         </div>
         <span>按关键词、类型和整理线索缩小范围</span>
       </header>
@@ -233,7 +233,6 @@ const searchIndexJson = JSON.stringify(
       </p>
 
       <div class="archive-empty-state" id="archive-empty-state" hidden>
-        <p>NO MATCHES</p>
         <h2 id="archive-empty-title">没有找到符合条件的档案</h2>
         <span id="archive-empty-description">可以减少筛选条件，或清除后浏览全部档案。</span>
         <button class="ui-action ui-action--secondary" id="archive-empty-clear" type="button">清除全部筛选</button>
@@ -852,7 +851,6 @@ const searchIndexJson = JSON.stringify(
   .archive-path-group h3 {
     margin: 0;
   }
-
   .archive-paths-heading p {
     margin-top: 0.22rem;
     color: var(--site-subtle);
@@ -951,24 +949,23 @@ const searchIndexJson = JSON.stringify(
     border-bottom: 1px solid #bcb5a4;
   }
 
-  .archive-index-heading p,
   .archive-index-heading h2,
   .archive-index-heading span {
     margin: 0;
   }
 
-  .archive-index-heading p {
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.15em;
-  }
-
   .archive-index-heading h2 {
-    margin-top: 0.2rem;
     font-size: 1.08rem;
     font-weight: 500;
     letter-spacing: 0.1em;
+  }
+
+  .archive-index-title {
+    align-items: center;
+  }
+
+  .archive-index-title > :global(.site-icon) {
+    margin-top: 0;
   }
 
   .archive-index-heading > span {
@@ -1219,14 +1216,6 @@ const searchIndexJson = JSON.stringify(
 
   .archive-empty-state[hidden] {
     display: none;
-  }
-
-  .archive-empty-state p {
-    margin: 0 0 0.65rem;
-    color: #7a756a;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.16em;
   }
 
   .archive-empty-state h2 {
