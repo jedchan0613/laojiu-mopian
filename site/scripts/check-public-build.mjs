@@ -143,6 +143,7 @@ if (home) {
 	check(likeIds.length === featuredIds.length + recentIds.length, '首页展示档案没有逐件提供点赞入口。');
 	check([...featuredIds, ...recentIds].every((itemId) => likeIds.includes(itemId)), '首页点赞入口与展示档案不一致。');
 	check(pageLoadsScriptMarker(home, '/api/likes?items='), '首页缺少点赞计数程序。');
+	check(!home.html.includes('ARCHIVE · 001'), '首页重新出现已移除的装饰性档案编号。');
 }
 
 if (archiveIndex) {
@@ -154,8 +155,11 @@ if (archiveIndex) {
 	check(archiveIds.every((itemId) => likeIds.includes(itemId)), '档案列表点赞入口与展示档案不一致。');
 	check(pageLoadsScriptMarker(archiveIndex, '/api/likes?items='), '档案列表缺少点赞计数程序。');
 	check(archiveIndex.html.includes('id="archive-sort"'), '档案列表缺少排序控件。');
-	check(archiveIndex.html.includes('class="archive-paths"'), '档案列表缺少专题、年代与地点浏览入口。');
-	check(archiveIndex.html.includes('data-topic-link="posted-postcards"'), '档案列表缺少人工策划专题。');
+	check(archiveIndex.html.includes('class="archive-paths"'), '档案列表缺少年代与地点浏览入口。');
+	check(archiveIndex.html.includes('id="archive-decade-path-heading"'), '档案列表缺少按年代浏览入口。');
+	check(archiveIndex.html.includes('id="archive-place-path-heading"'), '档案列表缺少按地点浏览入口。');
+	check(!archiveIndex.html.includes('ARCHIVE INDEX'), '档案列表重新出现已移除的英文装饰标题。');
+	check(!archiveIndex.html.includes('data-topic-link='), '档案列表在暂不设置专题时仍输出专题入口。');
 	check(archiveIndex.html.includes('id="archive-search-suggestions"'), '档案列表缺少相关标签提示区域。');
 	check(archiveIndex.html.includes('data-search-highlight'), '档案列表缺少关键词高亮目标。');
 	check(archiveIndex.html.includes('id="archive-pagination"'), '档案列表缺少条件式分页控件。');
