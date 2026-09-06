@@ -195,6 +195,11 @@ for (const page of htmlEntries) {
 	check(page.html.includes('<meta name="viewport"'), `${page.relativePath} 缺少手机端视口设置。`);
 	check(page.html.includes('data-contact-widget'), `${page.relativePath} 缺少联系挂件。`);
 	check(page.html.includes('data-contact-launcher'), `${page.relativePath} 缺少联系挂件入口。`);
+	const privacyCategoryPosition = page.html.indexOf('data-contact-category-button="privacy"');
+	const collaborationCategoryPosition = page.html.indexOf('data-contact-category-button="collab"');
+	check(privacyCategoryPosition !== -1 && privacyCategoryPosition < collaborationCategoryPosition, `${page.relativePath} 没有把隐私问题放在联系类型首位。`);
+	check(page.html.includes('name="category" value="privacy" data-contact-category'), `${page.relativePath} 没有默认选择隐私问题。`);
+	check(page.html.includes('data-contact-category-button="privacy" aria-pressed="true"'), `${page.relativePath} 的隐私问题按钮缺少默认选中状态。`);
 	check(pageLoadsScriptMarker(page, '/api/contact/config'), `${page.relativePath} 缺少联系通道可用性检查。`);
 	check(pageLoadsScriptMarker(page, '/api/contact/lookup'), `${page.relativePath} 缺少联系回执查询程序。`);
 	check(page.html.includes('data-background-music'), `${page.relativePath} 缺少背景音乐播放器。`);

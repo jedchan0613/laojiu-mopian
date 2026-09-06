@@ -50,17 +50,17 @@ const fallbackMailto = contactEmail
 				<fieldset data-contact-fields disabled>
 					<legend class="sr-only">填写联系内容</legend>
 					<input class="contact-honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
-					<input type="hidden" name="category" value="collab" data-contact-category />
+					<input type="hidden" name="category" value="privacy" data-contact-category />
 					<input type="hidden" name="page_path" data-contact-page-path />
 
 					<div class="contact-categories" aria-label="来信类型">
-						<button type="button" data-contact-category-button="collab" aria-pressed="true">
-							<SiteIcon name="collection" />
-							<span><strong>合作洽谈</strong><small>展览、研究、授权、媒体</small></span>
-						</button>
-						<button type="button" data-contact-category-button="privacy" aria-pressed="false">
+						<button type="button" data-contact-category-button="privacy" aria-pressed="true">
 							<SiteIcon name="rights" />
 							<span><strong>隐私问题</strong><small>纠错、限制公开、撤下</small></span>
+						</button>
+						<button type="button" data-contact-category-button="collab" aria-pressed="false">
+							<SiteIcon name="collection" />
+							<span><strong>合作洽谈</strong><small>展览、研究、授权、媒体</small></span>
 						</button>
 						<button type="button" data-contact-category-button="other" aria-pressed="false">
 							<SiteIcon name="story" />
@@ -69,11 +69,11 @@ const fallbackMailto = contactEmail
 					</div>
 
 					<div class="contact-context" role="status" aria-live="polite">
-						<strong data-contact-context-title>合作洽谈</strong>
-						<span data-contact-context-copy>请简要说明合作方向、时间安排和希望采用的联系方式。</span>
+						<strong data-contact-context-title>隐私问题</strong>
+						<span data-contact-context-copy>请指出相关档案或页面及风险；此类来信会优先进入人工核对。</span>
 					</div>
 
-					<label data-contact-reference-field hidden>
+					<label data-contact-reference-field>
 						<span>相关档案编号或页面地址 <small>选填</small></span>
 						<input name="reference" maxlength="500" placeholder="例如：LJM-… 或网页地址" />
 					</label>
@@ -116,7 +116,7 @@ const fallbackMailto = contactEmail
 					</label>
 
 					<div class="contact-actions">
-						<a class="contact-detail-link" href="/corrections/" data-contact-correction-link hidden>查看纠错与撤下说明</a>
+						<a class="contact-detail-link" href="/corrections/" data-contact-correction-link>查看纠错与撤下说明</a>
 						<button class="ui-action ui-action--primary" type="submit" data-contact-submit>提交留言</button>
 					</div>
 					<p class="contact-feedback" data-contact-feedback role="status" aria-live="polite"></p>
