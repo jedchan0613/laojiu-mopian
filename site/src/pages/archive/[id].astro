@@ -47,12 +47,6 @@ interface LinkedDisplayFact extends DisplayFact {
   href?: string;
 }
 
-interface RecordStatusFact {
-  label: string;
-  value: string;
-  description: string;
-}
-
 const hasText = (value: string | undefined) => Boolean(value?.trim());
 const isLetter = item.core.object_type === 'LET';
 const hasPublicTranscription = hasText(view.transcription);
@@ -104,16 +98,7 @@ const basicFacts = compactFacts<LinkedDisplayFact>([
   { label: '人物', value: joinText(item.core.people) },
 ]);
 
-// 研究状态与证据等级属于内部工作记录，不在公开页展示；公开摘要只保留最后更新日期。
-const recordStatusFacts = [
-  item.core.updated_date
-    ? {
-      label: '最后更新',
-      value: formatDisplayDate(item.core.updated_date),
-      description: '公开档案最近一次修改的日期。',
-    }
-    : undefined,
-].filter((fact): fact is RecordStatusFact => Boolean(fact));
+const updatedDate = formatDisplayDate(item.core.updated_date);
 
 const specificFacts = getSpecificMetadataFacts(item);
 
@@ -136,7 +121,6 @@ const galleryImages = view.images.map((source, index) => ({
   description: view.imageDescriptions[index],
   role: getImageRole(view.imageDescriptions[index], index),
 }));
-const revisionNote = item.public_view.revision_note?.trim() ?? '';
 const hasNarrativeContent = (!isLetter && hasText(view.transcription)) || hasText(item.core.provenance_notes);
 const hasTags = view.tags.length > 0;
 const usagePolicy = getPublicUsagePolicy(item.core.rights_status);
@@ -438,33 +422,28 @@ const breadcrumbStructuredData = {
             ))
           }
         </dl>
-      </section>
-    </div>
-
-    {(recordStatusFacts.length > 0 || hasText(revisionNote)) && (
-      <aside class="record-status" aria-labelledby="record-status-heading">
-        <div class="record-status-heading">
-          <div>
-            <h2 class="icon-heading" id="record-status-heading"><SiteIcon name="status" /><span>资料状态</span></h2>
-          </div>
-          <a href="/about/#research">了解整理与判断方式 →</a>
-        </div>
-        <dl>
-          {recordStatusFacts.map((fact) => (
-            <div>
-              <dt>{fact.label}</dt>
-              <dd>{fact.value}<small>{fact.description}</small></dd>
-            </div>
-          ))}
-        </dl>
-        {hasText(revisionNote) && (
-          <div class="record-revision-note">
-            <strong>最近修订</strong>
-            <p>{revisionNote}</p>
+        {(hasTags || hasText(updatedDate)) && (
+          <div class="record-sidebar-meta" aria-label="标签与更新时间">
+            {hasTags && (
+              <div class="record-sidebar-meta-group">
+                <h3 class="icon-heading"><SiteIcon name="tag" /><span>标签</span></h3>
+                <ul class="record-tags record-tags--sidebar">
+                  {view.tags.map((tag) => (
+                    <li><a href={archiveFilterHref('tag', tag)}>{tag}</a></li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {hasText(updatedDate) && (
+              <div class="record-sidebar-meta-group record-updated-date">
+                <h3 class="icon-heading"><SiteIcon name="status" /><span>最后更新</span></h3>
+                <p><time datetime={item.core.updated_date}>{updatedDate}</time></p>
+              </div>
+            )}
           </div>
         )}
-      </aside>
-    )}
+      </section>
+    </div>
 
     <div class="record-notes">
       {
@@ -484,21 +463,6 @@ const breadcrumbStructuredData = {
                   <p class="transcription">{view.transcription}</p>
                 </div>
               )}
-            </div>
-          </section>
-        )
-      }
-
-      {
-        hasTags && (
-          <section class="record-section" aria-labelledby="tags-heading">
-            <h2 class="icon-heading" id="tags-heading"><SiteIcon name="tag" /><span>标签</span></h2>
-            <div class="section-content">
-              <ul class="record-tags">
-                {view.tags.map((tag) => (
-                  <li><a href={archiveFilterHref('tag', tag)}>{tag}</a></li>
-                ))}
-              </ul>
             </div>
           </section>
         )
@@ -969,112 +933,6 @@ const breadcrumbStructuredData = {
     display: flex;
     align-items: center;
     margin-top: 1.15rem;
-  }
-
-  .record-status {
-    display: grid;
-    grid-template-columns: minmax(11rem, 0.28fr) minmax(0, 1fr);
-    gap: 1rem;
-    max-width: none;
-    margin-top: clamp(1.8rem, 3vw, 2.4rem);
-    padding: 0.85rem 1rem;
-    background: rgba(224, 215, 197, 0.34);
-    border-left: 3px solid var(--site-accent);
-  }
-
-  .record-status-heading {
-    padding-right: 1rem;
-    border-right: 1px solid #c9c0ae;
-  }
-
-  .record-status-heading h2 {
-    margin: 0;
-    font-size: 0.9rem;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-  }
-
-  .record-status-heading > a {
-    display: inline-flex;
-    margin-top: 0.55rem;
-    color: #696459;
-    font-size: 0.74rem;
-    letter-spacing: 0.06em;
-    text-decoration: none;
-  }
-
-  .record-status-heading > a:hover,
-  .record-status-heading > a:focus-visible {
-    color: var(--site-accent);
-    text-decoration: underline;
-    text-underline-offset: 0.3em;
-  }
-
-  .record-status dl {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin: 0;
-    border-top: 0;
-  }
-
-  .record-status dl > div {
-    min-width: 0;
-    padding: 0.18rem 0.75rem 0.18rem 0;
-  }
-
-  .record-status dl > div + div {
-    padding-left: 1rem;
-    border-left: 1px solid #c9c0ae;
-  }
-
-  .record-status dt {
-    color: #756f63;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.1em;
-  }
-
-  .record-status dd {
-    margin: 0.18rem 0 0;
-    font-size: 0.88rem;
-    line-height: 1.45;
-  }
-
-  .record-status dd small {
-    display: block;
-    margin-top: 0.12rem;
-    color: #777165;
-    font-family: inherit;
-    font-size: var(--site-text-micro);
-    letter-spacing: 0.02em;
-    line-height: 1.45;
-  }
-
-  .record-revision-note {
-    display: grid;
-    grid-template-columns: minmax(6.5rem, 0.25fr) minmax(0, 1fr);
-    gap: 1rem;
-    grid-column: 1 / -1;
-    margin-top: 0.15rem;
-    padding-top: 0.9rem;
-    border-top: 1px solid #c9c0ae;
-  }
-
-  .record-revision-note strong,
-  .record-revision-note p {
-    margin: 0;
-  }
-
-  .record-revision-note strong {
-    color: #756f63;
-    font-size: var(--site-text-micro);
-    font-weight: 400;
-    letter-spacing: 0.1em;
-  }
-
-  .record-revision-note p {
-    color: #5f5a50;
-    font-size: 0.8rem;
-    line-height: 1.75;
   }
 
   .record-sheet {
@@ -1624,6 +1482,49 @@ const breadcrumbStructuredData = {
     text-decoration-color: currentColor;
   }
 
+  .record-sidebar-meta {
+    display: grid;
+    gap: 0.9rem;
+    margin-top: 1.15rem;
+    padding-top: 1rem;
+    border-top: 1px solid #aaa294;
+  }
+
+  .record-sidebar-meta-group {
+    min-width: 0;
+  }
+
+  .record-sidebar-meta-group + .record-sidebar-meta-group {
+    padding-top: 0.85rem;
+    border-top: 1px solid #d0c8b8;
+  }
+
+  .record-sidebar-meta-group h3 {
+    margin: 0 0 0.45rem;
+    color: #716b60;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.11em;
+    line-height: 1.6;
+  }
+
+  .record-tags--sidebar {
+    gap: 0.25rem 1.25rem;
+    font-size: 0.78rem;
+    line-height: 1.7;
+  }
+
+  .record-tags--sidebar li:not(:last-child)::after {
+    right: -0.68rem;
+  }
+
+  .record-updated-date p {
+    margin: 0;
+    color: #5f5a50;
+    font-size: 0.82rem;
+    line-height: 1.65;
+  }
+
   dt small,
   dd small {
     display: block;
@@ -1636,7 +1537,7 @@ const breadcrumbStructuredData = {
 
   .record-notes {
     max-width: 58rem;
-    margin-top: clamp(3.5rem, 6vw, 5rem);
+    margin-top: clamp(1.25rem, 2.4vw, 2rem);
   }
 
   .record-section {
@@ -2090,38 +1991,6 @@ const breadcrumbStructuredData = {
       line-height: 1.8;
     }
 
-    .record-status-heading {
-      display: flex;
-      align-items: start;
-      flex-direction: column;
-      gap: 0.55rem;
-      padding: 0 0 0.65rem;
-      border-right: 0;
-      border-bottom: 1px solid #c9c0ae;
-    }
-
-    .record-status {
-      grid-template-columns: 1fr;
-      gap: 0.65rem;
-    }
-
-    .record-status dl {
-      grid-template-columns: 1fr;
-    }
-
-    .record-status dl > div {
-      display: grid;
-      grid-template-columns: 5.8rem minmax(0, 1fr);
-      gap: 0.7rem;
-      padding: 0.55rem 0;
-    }
-
-    .record-status dl > div + div {
-      padding-left: 0;
-      border-top: 1px solid #c9c0ae;
-      border-left: 0;
-    }
-
     .record-sheet {
       grid-template-columns: 1fr;
       gap: 2.1rem;
@@ -2196,7 +2065,7 @@ const breadcrumbStructuredData = {
     }
 
     .record-notes {
-      margin-top: 3.5rem;
+      margin-top: 1.25rem;
     }
 
     .record-section {

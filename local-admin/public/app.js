@@ -131,7 +131,7 @@ const state = {
 	query: {
 		loaded: false, loading: false, error: '', records: [], selectedId: '', status: 'normal',
 		search: '', category: '', objectType: '', decade: '', research: '', evidence: '', rights: '',
-		imageStatus: '', page: 1, pageSize: 50, sort: 'updated-desc',
+		imageStatus: '', page: 1, pageSize: 50, sort: 'updated-desc', advancedOpen: false,
 	},
 };
 
@@ -738,36 +738,34 @@ const renderQueryCenter = () => {
 		.filter((field) => queryState[field]).length;
 	const allStatusRecords = queryState.records.filter((record) =>
 		queryState.status === 'withdrawn' ? record.record_status === 'WDR' : record.record_status !== 'WDR');
-	const rows = pageRecords.map((record) => `<tr class="${record.item_id === queryState.selectedId ? 'is-selected' : ''}">
-		<td><button data-query-open="${escapeHtml(record.item_id)}" type="button"><strong>${escapeHtml(record.item_id)}</strong><small>${escapeHtml(queryStatusLabel(record))}</small></button></td>
-		<td><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(record.collection_code || '藏品编码待生成')}</small></td>
-		<td>${escapeHtml(record.category_label)}<small>${escapeHtml(record.object_type_label)} · ${escapeHtml(record.object_type)}</small></td>
-		<td>${escapeHtml(record.date_display || '年代未知')}<small>${escapeHtml(record.place_summary || '地点未填写')}</small></td>
-		<td>${escapeHtml(queryCodeLabel('research_status', record.research_status))}<small>${escapeHtml(queryCodeLabel('evidence_level', record.evidence_level))}</small></td>
-		<td><span class="query-status is-${record.publication_structure_status}">${escapeHtml(queryStructureLabel(record.publication_structure_status))}</span><small>${record.publication_image_count} 张 · 说明 ${record.description_complete_count}/${record.publication_image_count}</small></td>
-	</tr>`).join('');
-	const cards = pageRecords.map((record) => `<button class="query-card ${record.item_id === queryState.selectedId ? 'is-selected' : ''}" data-query-open="${escapeHtml(record.item_id)}" type="button">
-		<span><small>${escapeHtml(record.item_id)}</small><strong>${escapeHtml(record.title)}</strong></span>
-		<span>${escapeHtml(record.category_label)} · ${escapeHtml(record.date_display || '年代未知')}</span>
-		<span>${record.publication_image_count} 张 · ${escapeHtml(queryStructureLabel(record.publication_structure_status))}</span>
+	const advancedFilterCount = ['objectType', 'research', 'evidence', 'rights', 'imageStatus']
+		.filter((field) => queryState[field]).length;
+	const cards = pageRecords.map((record) => `<button class="query-card ${record.item_id === queryState.selectedId ? 'is-selected' : ''}" data-query-open="${escapeHtml(record.item_id)}" type="button" aria-label="查看${escapeHtml(record.title)}的资料">
+		<span class="query-card-heading"><span class="query-card-kicker"><small>${escapeHtml(record.item_id)}</small><em>${escapeHtml(queryStatusLabel(record))}</em></span><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(record.collection_code || '藏品编码待生成')}</small></span>
+		<span class="query-card-facts">
+			<span><small>类型</small><strong>${escapeHtml(record.category_label)}</strong><em>${escapeHtml(record.object_type_label)} · ${escapeHtml(record.object_type)}</em></span>
+			<span><small>年代与地点</small><strong>${escapeHtml(record.date_display || '年代未知')}</strong><em>${escapeHtml(record.place_summary || '地点未填写')}</em></span>
+			<span><small>图片结构</small><strong>${record.publication_image_count} 张 · ${escapeHtml(queryStructureLabel(record.publication_structure_status))}</strong><em>说明 ${record.description_complete_count}/${record.publication_image_count}</em></span>
+		</span>
 	</button>`).join('');
 	return `<div class="query-workspace">
-		<section class="query-controls" aria-labelledby="query-controls-title"><div class="query-controls-heading"><div><p class="eyebrow">STRUCTURED DATA ONLY</p><h3 id="query-controls-title">只查询结构化资料</h3><p>不显示、不加载图片；只读取文字字段和图片数量、说明、网页尺寸等结构状态。</p></div><button class="quiet-button" data-query-action="refresh" type="button">重新读取</button></div>
-		<div class="query-status-switch" role="group" aria-label="档案状态"><button class="${queryState.status === 'normal' ? 'is-active' : ''}" data-query-status="normal" type="button">正常档案</button><button class="${queryState.status === 'withdrawn' ? 'is-active' : ''}" data-query-status="withdrawn" type="button">已撤销</button></div>
-		<div class="query-filter-grid"><label class="query-search"><span>快速搜索</span><input type="search" data-query-search value="${escapeHtml(queryState.search)}" placeholder="编号、题名、人物、机构、地点或来源" /></label>
+		<section class="query-controls" aria-labelledby="query-controls-title"><div class="query-controls-heading"><div><p class="eyebrow">FIND A RECORD</p><h3 id="query-controls-title">查找与筛选</h3><p>集中查找档案，点击下方结果即可查看资料或进入编辑。</p></div><div class="query-controls-actions"><div class="query-status-switch" role="group" aria-label="档案状态"><button class="${queryState.status === 'normal' ? 'is-active' : ''}" data-query-status="normal" type="button">正常档案</button><button class="${queryState.status === 'withdrawn' ? 'is-active' : ''}" data-query-status="withdrawn" type="button">已撤销</button></div><button class="quiet-button" data-query-action="refresh" type="button">刷新</button></div></div>
+		<div class="query-filter-grid"><label class="query-search"><span>快速搜索</span><input type="search" data-query-search value="${escapeHtml(queryState.search)}" placeholder="编号、题名、人物、地点或来源" /></label>
 		<label><span>访客分类</span><select data-query-filter="category"><option value="">全部分类</option>${queryOptionMarkup(allStatusRecords, 'category', queryState.category, (value) => allStatusRecords.find((record) => record.category === value)?.category_label ?? value)}</select></label>
-		<label><span>精确类型</span><select data-query-filter="objectType"><option value="">全部类型</option>${queryOptionMarkup(allStatusRecords, 'object_type', queryState.objectType, (value) => `${allStatusRecords.find((record) => record.object_type === value)?.object_type_label ?? value}（${value}）`)}</select></label>
 		<label><span>年代</span><select data-query-filter="decade"><option value="">全部年代</option>${queryOptionMarkup(allStatusRecords, 'decade', queryState.decade, (value) => `${value}年代`)}</select></label>
-		<label><span>研究状态</span><select data-query-filter="research"><option value="">全部状态</option>${queryOptionMarkup(allStatusRecords, 'research_status', queryState.research, (value) => queryCodeLabel('research_status', value))}</select></label>
-		<label><span>证据等级</span><select data-query-filter="evidence"><option value="">全部等级</option>${queryOptionMarkup(allStatusRecords, 'evidence_level', queryState.evidence, (value) => queryCodeLabel('evidence_level', value))}</select></label>
-		<label><span>权利状态</span><select data-query-filter="rights"><option value="">全部状态</option>${queryOptionMarkup(allStatusRecords, 'rights_status', queryState.rights, (value) => queryCodeLabel('rights_status', value))}</select></label>
-		<label><span>图片结构</span><select data-query-filter="imageStatus"><option value="">全部状态</option><option value="complete" ${queryState.imageStatus === 'complete' ? 'selected' : ''}>结构完整</option><option value="warning" ${queryState.imageStatus === 'warning' ? 'selected' : ''}>需要检查</option><option value="missing" ${queryState.imageStatus === 'missing' ? 'selected' : ''}>没有发布图片</option></select></label>
 		<label><span>排序</span><select data-query-sort>${[
 		['updated-desc', '最后更新（新→旧）'], ['updated-asc', '最后更新（旧→新）'],
 		['id-asc', '按编号'], ['title-asc', '按题名'], ['decade-asc', '按年代（旧→新）'],
 	].map(([value, label]) => `<option value="${value}" ${queryState.sort === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label></div>
+		<details class="query-advanced" data-query-advanced ${queryState.advancedOpen ? 'open' : ''}><summary><span>更多筛选</span><small>${advancedFilterCount ? `已使用 ${advancedFilterCount} 项` : '精确类型、研究、证据、权利和图片结构'}</small></summary><div class="query-advanced-grid">
+		<label><span>精确类型</span><select data-query-filter="objectType"><option value="">全部类型</option>${queryOptionMarkup(allStatusRecords, 'object_type', queryState.objectType, (value) => `${allStatusRecords.find((record) => record.object_type === value)?.object_type_label ?? value}（${value}）`)}</select></label>
+		<label><span>研究状态</span><select data-query-filter="research"><option value="">全部状态</option>${queryOptionMarkup(allStatusRecords, 'research_status', queryState.research, (value) => queryCodeLabel('research_status', value))}</select></label>
+		<label><span>证据等级</span><select data-query-filter="evidence"><option value="">全部等级</option>${queryOptionMarkup(allStatusRecords, 'evidence_level', queryState.evidence, (value) => queryCodeLabel('evidence_level', value))}</select></label>
+		<label><span>权利状态</span><select data-query-filter="rights"><option value="">全部状态</option>${queryOptionMarkup(allStatusRecords, 'rights_status', queryState.rights, (value) => queryCodeLabel('rights_status', value))}</select></label>
+		<label><span>图片结构</span><select data-query-filter="imageStatus"><option value="">全部状态</option><option value="complete" ${queryState.imageStatus === 'complete' ? 'selected' : ''}>结构完整</option><option value="warning" ${queryState.imageStatus === 'warning' ? 'selected' : ''}>需要检查</option><option value="missing" ${queryState.imageStatus === 'missing' ? 'selected' : ''}>没有发布图片</option></select></label>
+		</div></details>
 		<div class="query-result-summary"><span>命中 <strong>${filtered.length}</strong> 条${activeFilterCount ? ` · 当前 ${activeFilterCount} 个条件` : ''}</span>${activeFilterCount ? '<button class="quiet-button" data-query-action="clear" type="button">清除条件</button>' : ''}</div></section>
-		<div class="query-results-layout"><section class="query-results" aria-label="查询结果">${pageRecords.length ? `<div class="query-table-wrap"><table><thead><tr><th>永久编号</th><th>题名</th><th>类型</th><th>年代与地点</th><th>研究判断</th><th>图片结构</th></tr></thead><tbody>${rows}</tbody></table></div><div class="query-cards">${cards}</div>` : '<div class="empty-state">当前条件没有匹配档案。可以清除部分条件后再试。</div>'}
+		<div class="query-results-layout"><section class="query-results" aria-label="查询结果"><div class="query-list-heading"><div><h3>档案列表</h3><p>点击一条档案查看详细资料。</p></div><span>本页 ${pageRecords.length} 条</span></div>${pageRecords.length ? `<div class="query-cards">${cards}</div>` : '<div class="empty-state">当前条件没有匹配档案。可以清除部分条件后再试。</div>'}
 		${pageCount > 1 ? `<nav class="query-pagination" aria-label="查询结果分页"><button class="quiet-button" data-query-page="${queryState.page - 1}" type="button" ${queryState.page === 1 ? 'disabled' : ''}>上一页</button><span>第 ${queryState.page} / ${pageCount} 页</span><button class="quiet-button" data-query-page="${queryState.page + 1}" type="button" ${queryState.page === pageCount ? 'disabled' : ''}>下一页</button></nav>` : ''}</section>${renderQueryDetails(selected)}</div>
 	</div>`;
 };
@@ -935,13 +933,14 @@ const renderWorkspaceNavigation = () => {
 	document.querySelectorAll('[data-workspace]').forEach((button) => {
 		button.classList.toggle('is-active', button.dataset.workspace === state.workspaceMode);
 	});
-	elements.recordStatusNav.hidden = state.workspaceMode !== 'records';
+	document.body.dataset.workspace = state.workspaceMode;
+	elements.recordStatusNav.hidden = true;
 	document.querySelectorAll('[data-record-status]').forEach((button) => {
 		button.classList.toggle('is-active', button.dataset.recordStatus === state.recordStatusFilter);
 	});
-	elements.mobileRecordBrowserToggle.hidden = state.workspaceMode !== 'records';
-	elements.recordBrowserContent.hidden = state.workspaceMode !== 'records';
-	if (state.workspaceMode !== 'records') setMobileRecordBrowserOpen(false);
+	elements.mobileRecordBrowserToggle.hidden = true;
+	elements.recordBrowserContent.hidden = true;
+	setMobileRecordBrowserOpen(false);
 };
 
 const renderDraftCenter = () => {
@@ -1103,7 +1102,7 @@ const showRecordActionDock = ({ status, disabled, showPublish }) => {
 
 const updateHeader = () => {
 	const centerTitles = {
-		query: ['STRUCTURED DATA QUERY', '资料查询', '只读查询文字字段和图片结构，不加载图片'],
+		query: ['ARCHIVE SEARCH', '资料查询', '在这里集中搜索、筛选并打开档案'],
 		maintenance: ['MAINTENANCE OVERVIEW', '维护概览', '质量待办与只读完整性巡检'],
 		drafts: ['DRAFT CENTER', '草稿中心', `${state.drafts.length} 份尚未正式发布的草稿`],
 		recycle: ['RECYCLE BIN', '图片回收区', `${state.recycleBin.length} 张可以恢复的发布副本`],
@@ -2985,6 +2984,11 @@ document.querySelector('.tabs').addEventListener('keydown', (event) => {
 	tabs[targetIndex].focus();
 	tabs[targetIndex].click();
 });
+
+elements.editorSurface.addEventListener('toggle', (event) => {
+	if (state.workspaceMode !== 'query' || !event.target.matches('[data-query-advanced]')) return;
+	state.query.advancedOpen = event.target.open;
+}, true);
 
 elements.editorSurface.addEventListener('input', (event) => {
 	if (state.workspaceMode === 'query' && event.target.matches('[data-query-search]')) {

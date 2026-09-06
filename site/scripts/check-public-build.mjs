@@ -166,7 +166,13 @@ if (archiveIndex) {
 for (const page of detailPages) {
 	const itemId = page.relativePath.split('/')[1];
 	const likeIds = [...page.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
-	check(page.html.includes('class="record-status"'), `${page.relativePath} 缺少资料状态摘要。`);
+	const basicInformation = page.html.match(/<section\s+class="record-basic-information"[\s\S]*?<\/section>/)?.[0] ?? '';
+	check(!page.html.includes('class="record-status"'), `${page.relativePath} 仍显示已取消的资料状态横栏。`);
+	check(basicInformation.includes('class="record-sidebar-meta"'), `${page.relativePath} 的基本信息栏缺少末尾辅助信息。`);
+	if (page.html.includes('class="record-tags')) {
+		check(basicInformation.includes('record-tags--sidebar'), `${page.relativePath} 的标签没有移入图片右侧信息栏。`);
+	}
+	check(basicInformation.includes('最后更新'), `${page.relativePath} 的更新时间没有移入图片右侧信息栏。`);
 	check(likeIds.length === 1 && likeIds[0] === itemId, `${page.relativePath} 缺少对应档案的唯一点赞入口。`);
 	check(pageLoadsScriptMarker(page, '/api/likes?items='), `${page.relativePath} 缺少点赞计数程序。`);
 	check(page.html.includes('data-record-citation'), `${page.relativePath} 缺少引用与复制入口。`);
