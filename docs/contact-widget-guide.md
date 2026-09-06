@@ -83,7 +83,7 @@
 项目提供一次性修复程序 `deployment/repair-contact-production.sh`。等待包含该文件的新版本完成自动发布后，在腾讯云服务器终端运行：
 
 ```bash
-sudo /srv/laojiumopian-admin/app/current/deployment/repair-contact-production.sh
+sudo bash /srv/laojiumopian-admin/app/current/deployment/repair-contact-production.sh
 ```
 
 程序只会把 `/api/contact` 和 `/api/contact/*` 加入现有投稿转发规则，更新自动发布命令，重启共用的私密接收服务并完成内外网检查。修改前会把 `/etc/caddy/Caddyfile` 保存为带日期的备份；任何检查失败时会恢复原 Caddy 配置。它不会删除或移动投稿、联系记录、档案数据和发布图片。
