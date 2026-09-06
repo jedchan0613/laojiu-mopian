@@ -6,7 +6,6 @@ const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
 const archiveIndexSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', 'index.astro'), 'utf8');
 const archiveDetailSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', '[id].astro'), 'utf8');
-const backgroundMusicSource = await readFile(join(siteRoot, 'src', 'components', 'BackgroundMusic.astro'), 'utf8');
 const issues = [];
 const check = (condition, message) => {
 	if (!condition) issues.push(message);
@@ -68,7 +67,7 @@ const archiveIndex = htmlEntries.find((entry) => entry.relativePath === 'archive
 const notFoundPage = htmlEntries.find((entry) => entry.relativePath === '404.html');
 const correctionsPage = htmlEntries.find((entry) => entry.relativePath === 'corrections/index.html');
 const detailPages = htmlEntries.filter((entry) => /^archive\/[^/]+\/index\.html$/.test(entry.relativePath));
-const backgroundMusicPublicPaths = [
+const retiredBackgroundMusicPublicPaths = [
 	'/audio/lullaby-summer-cicadas.ogg',
 	'/audio/last-reunion.mp3',
 ];
@@ -78,14 +77,6 @@ check(Boolean(archiveIndex), '缺少档案列表页。');
 check(Boolean(notFoundPage), '缺少友好的 404 页面。');
 check(Boolean(correctionsPage), '缺少纠错与撤下说明页。');
 check(detailPages.length > 0, '没有生成任何公开档案详情页。');
-for (const publicPath of backgroundMusicPublicPaths) {
-	check(await exists(join(distRoot, ...publicPath.slice(1).split('/'))), `公开构建缺少背景音乐发布副本：${publicPath}。`);
-}
-check(
-	backgroundMusicSource.indexOf(backgroundMusicPublicPaths[0]) < backgroundMusicSource.indexOf(backgroundMusicPublicPaths[1]),
-	'背景音乐播放顺序不正确，夏日蝉鸣应排在第一首。',
-);
-check(backgroundMusicSource.includes("audio.addEventListener('ended', playNextTrack)"), '背景音乐播放列表缺少整列循环逻辑。');
 check(archiveDetailSource.includes("item.core.object_type === 'LET'"), '详情页缺少信件类型专属判断。');
 for (const marker of ['data-letter-reader', '文字阅读', '原件对照', '只看原件', '原件图片是最终核对依据']) {
 	check(archiveDetailSource.includes(marker), `信件阅读模板缺少必要内容：${marker}。`);
@@ -202,13 +193,11 @@ for (const page of htmlEntries) {
 	check(page.html.includes('data-contact-category-button="privacy" aria-pressed="true"'), `${page.relativePath} 的隐私问题按钮缺少默认选中状态。`);
 	check(pageLoadsScriptMarker(page, '/api/contact/config'), `${page.relativePath} 缺少联系通道可用性检查。`);
 	check(pageLoadsScriptMarker(page, '/api/contact/lookup'), `${page.relativePath} 缺少联系回执查询程序。`);
-	check(page.html.includes('data-background-music'), `${page.relativePath} 缺少背景音乐播放器。`);
-	for (const publicPath of backgroundMusicPublicPaths) {
-		check(page.html.includes(publicPath), `${page.relativePath} 没有引用背景音乐发布副本：${publicPath}。`);
+	check(!page.html.includes('data-background-music'), `${page.relativePath} 仍包含已下线的背景音乐播放器。`);
+	for (const publicPath of retiredBackgroundMusicPublicPaths) {
+		check(!page.html.includes(publicPath), `${page.relativePath} 仍引用已下线的背景音乐：${publicPath}。`);
 	}
-	check(!/<audio\b[^>]*\bautoplay\b/.test(page.html), `${page.relativePath} 的背景音乐仍带有自动播放属性，应改为仅手动播放。`);
-	check(page.html.includes('data-background-music-playlist'), `${page.relativePath} 缺少背景音乐播放列表。`);
-	check(pageLoadsScriptMarker(page, 'ljm-background-music-preference'), `${page.relativePath} 缺少背景音乐播放控制程序。`);
+	check(!pageLoadsScriptMarker(page, 'ljm-background-music-preference'), `${page.relativePath} 仍加载已下线的背景音乐程序。`);
 	for (const imageTag of page.html.match(/<img\b[^>]*>/g) ?? []) {
 		check(/\bwidth="\d+"/.test(imageTag) && /\bheight="\d+"/.test(imageTag), `${page.relativePath} 存在未声明尺寸的图片，可能引起页面跳动或异常拉长。`);
 	}
