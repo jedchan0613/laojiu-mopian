@@ -165,6 +165,7 @@ const elements = {
 	recycleBadge: document.querySelector('#recycle-badge'), historyBadge: document.querySelector('#history-badge'),
 	normalRecordsBadge: document.querySelector('#normal-records-badge'),
 	withdrawnRecordsBadge: document.querySelector('#withdrawn-records-badge'),
+	brandPending: document.querySelector('#brand-pending'),
 	recordStatusNav: document.querySelector('#record-status-nav'), lifecycleButton: document.querySelector('#lifecycle-button'),
 	similarRecordButton: document.querySelector('#similar-record-button'),
 	recordMoreActions: document.querySelector('#record-more-actions'),
@@ -562,6 +563,27 @@ const apiPost = async (url, payload) => {
 };
 
 const isWithdrawn = () => state.current?.core?.record_status === 'WDR' && !state.current?._admin?.hasDraft;
+
+const refreshInboxPendingBadge = async () => {
+	try {
+		const [contactsResponse, submissionsResponse] = await Promise.all([
+			fetch('/api/admin/contacts', { cache: 'no-store' }),
+			fetch('/api/admin/submissions', { cache: 'no-store' }),
+		]);
+		if (!contactsResponse.ok || !submissionsResponse.ok) return;
+		const contactsData = await readApiJson(contactsResponse);
+		const submissionsData = await readApiJson(submissionsResponse);
+		const pendingContacts = (contactsData.contacts ?? []).filter((record) => record.status === 'received').length;
+		const pendingSubmissions = (submissionsData.submissions ?? []).filter((record) => record.status === 'pending').length;
+		const parts = [];
+		if (pendingContacts > 0) parts.push(`待处理来信 ${pendingContacts}`);
+		if (pendingSubmissions > 0) parts.push(`待审核投稿 ${pendingSubmissions}`);
+		elements.brandPending.textContent = parts.join(' · ');
+		elements.brandPending.hidden = parts.length === 0;
+	} catch {
+		// 计数读取失败时不影响档案管理主流程，标记保持隐藏。
+	}
+};
 const recordIsWithdrawn = (record) => record?.core?.record_status === 'WDR' && !record?._admin?.hasDraft;
 const statusLabel = (record) => {
 	if (record._admin?.restoredFromWithdrawal) return '恢复草稿';
@@ -712,7 +734,7 @@ const renderQueryDetails = (record) => {
 		<small class="query-status is-${image.responsive_status}">${image.responsive_status === 'complete' ? '网页尺寸齐全' : '网页尺寸待补'}</small>
 	</li>`).join('') : '<li class="is-empty">没有登记发布图片。</li>';
 	return `<aside class="query-detail" aria-labelledby="query-detail-title">
-		<div class="query-detail-heading"><div><p class="eyebrow">READ-ONLY DETAIL</p><h3 id="query-detail-title">${escapeHtml(record.title)}</h3><span>${escapeHtml(queryStatusLabel(record))} · 最近更新 ${escapeHtml(record.updated_date || '未知')}</span></div>
+		<div class="query-detail-heading"><div><h3 id="query-detail-title">${escapeHtml(record.title)}</h3><span>${escapeHtml(queryStatusLabel(record))} · 最近更新 ${escapeHtml(record.updated_date || '未知')}</span></div>
 		<div class="query-detail-actions"><button class="quiet-button" data-query-action="copy-id" data-query-id="${escapeHtml(record.item_id)}" type="button">复制永久编号</button><button class="quiet-button" data-query-action="edit" data-query-id="${escapeHtml(record.item_id)}" type="button">在档案管理中打开</button></div></div>
 		<dl class="query-detail-list">${detailRows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>
 		${specificRows ? `<details class="query-detail-section"><summary>对象专属摘要 · ${(record.specific_summary ?? []).length} 项</summary><dl class="query-detail-list">${specificRows}</dl></details>` : ''}
@@ -749,7 +771,7 @@ const renderQueryCenter = () => {
 		</span>
 	</button>`).join('');
 	return `<div class="query-workspace">
-		<section class="query-controls" aria-labelledby="query-controls-title"><div class="query-controls-heading"><div><p class="eyebrow">FIND A RECORD</p><h3 id="query-controls-title">查找与筛选</h3><p>集中查找档案，点击下方结果即可查看资料或进入编辑。</p></div><div class="query-controls-actions"><div class="query-status-switch" role="group" aria-label="档案状态"><button class="${queryState.status === 'normal' ? 'is-active' : ''}" data-query-status="normal" type="button">正常档案</button><button class="${queryState.status === 'withdrawn' ? 'is-active' : ''}" data-query-status="withdrawn" type="button">已撤销</button></div><button class="quiet-button" data-query-action="refresh" type="button">刷新</button></div></div>
+		<section class="query-controls" aria-labelledby="query-controls-title"><div class="query-controls-heading"><div><h3 id="query-controls-title">查找与筛选</h3><p>集中查找档案，点击下方结果即可查看资料或进入编辑。</p></div><div class="query-controls-actions"><div class="query-status-switch" role="group" aria-label="档案状态"><button class="${queryState.status === 'normal' ? 'is-active' : ''}" data-query-status="normal" type="button">正常档案</button><button class="${queryState.status === 'withdrawn' ? 'is-active' : ''}" data-query-status="withdrawn" type="button">已撤销</button></div><button class="quiet-button" data-query-action="refresh" type="button">刷新</button></div></div>
 		<div class="query-filter-grid"><label class="query-search"><span>快速搜索</span><input type="search" data-query-search value="${escapeHtml(queryState.search)}" placeholder="编号、题名、人物、地点或来源" /></label>
 		<label><span>访客分类</span><select data-query-filter="category"><option value="">全部分类</option>${queryOptionMarkup(allStatusRecords, 'category', queryState.category, (value) => allStatusRecords.find((record) => record.category === value)?.category_label ?? value)}</select></label>
 		<label><span>年代</span><select data-query-filter="decade"><option value="">全部年代</option>${queryOptionMarkup(allStatusRecords, 'decade', queryState.decade, (value) => `${value}年代`)}</select></label>
@@ -991,22 +1013,22 @@ const renderMaintenanceCenter = () => {
 	const integrityFailures = integrity?.summary?.failures ?? 0;
 	const tierDefinitions = [
 		{
-			tier: 'urgent', eyebrow: 'ACT NOW', title: '需要立即处理的问题',
+			tier: 'urgent', title: '需要立即处理的问题',
 			note: '图片缺失、发布检查失败等问题会阻止正式发布，请优先处理。',
 			empty: '没有需要立即处理的问题。',
 		},
 		{
-			tier: 'fill', eyebrow: 'CAN FINISH NOW', title: '现在可以补齐的内容',
+			tier: 'fill', title: '现在可以补齐的内容',
 			note: '公开简介、图片说明、备份与复核登记等；点击一条即可直接定位到对应字段。',
 			empty: '当前没有可以立即补齐的内容。',
 		},
 		{
-			tier: 'longterm', eyebrow: 'LONG-TERM RESEARCH', title: '长期研究事项',
+			tier: 'longterm', title: '长期研究事项',
 			note: '一张照片暂时无法考证，是档案工作的正常状态。这些事项用于持续跟踪，不需要立刻完成。',
 			empty: '当前没有长期研究事项。',
 		},
 	];
-	const renderTaskSection = ({ tier, eyebrow, title, note, empty }) => {
+	const renderTaskSection = ({ tier, title, note, empty }) => {
 		const cards = overview.records.map(({ record, tasks }) => {
 			const tierTasks = tasks.filter((task) => task.tier === tier);
 			if (!tierTasks.length) return '';
@@ -1017,7 +1039,7 @@ const renderMaintenanceCenter = () => {
 			</article>`;
 		}).join('');
 		return `<section class="maintenance-section is-${escapeHtml(tier)}" aria-labelledby="maintenance-${escapeHtml(tier)}-heading">
-			<div class="maintenance-section-heading"><div><p class="eyebrow">${escapeHtml(eyebrow)}</p><h3 id="maintenance-${escapeHtml(tier)}-heading">${escapeHtml(title)}</h3><p>${escapeHtml(note)}</p></div></div>
+			<div class="maintenance-section-heading"><div><h3 id="maintenance-${escapeHtml(tier)}-heading">${escapeHtml(title)}</h3><p>${escapeHtml(note)}</p></div></div>
 			${cards || `<div class="empty-state">${escapeHtml(empty)}</div>`}
 		</section>`;
 	};
@@ -1040,7 +1062,7 @@ const renderMaintenanceCenter = () => {
 		</section>
 		${tierDefinitions.map(renderTaskSection).join('')}
 		<section class="maintenance-section" aria-labelledby="integrity-heading">
-			<div class="maintenance-section-heading is-inline"><div><p class="eyebrow">READ-ONLY CHECK</p><h3 id="integrity-heading">本地完整性巡检</h3><p>${integrity ? `检查于 ${escapeHtml(formatDateTime(integrity.checked_at))}，覆盖 ${integrity.summary.records} 份正式 JSON、${integrity.summary.publication_images} 张发布图片和 ${integrity.summary.responsive_variants} 个网页尺寸副本。` : '尚未取得巡检结果。'}</p></div>
+			<div class="maintenance-section-heading is-inline"><div><h3 id="integrity-heading">本地完整性巡检</h3><p>${integrity ? `检查于 ${escapeHtml(formatDateTime(integrity.checked_at))}，覆盖 ${integrity.summary.records} 份正式 JSON、${integrity.summary.publication_images} 张发布图片和 ${integrity.summary.responsive_variants} 个网页尺寸副本。` : '尚未取得巡检结果。'}</p></div>
 			<button class="quiet-button" data-center-action="maintenance-refresh" type="button">重新检查</button></div>
 			${integrityIssues}
 		</section>
@@ -1102,15 +1124,16 @@ const showRecordActionDock = ({ status, disabled, showPublish }) => {
 
 const updateHeader = () => {
 	const centerTitles = {
-		query: ['ARCHIVE SEARCH', '资料查询', '在这里集中搜索、筛选并打开档案'],
-		maintenance: ['MAINTENANCE OVERVIEW', '维护概览', '质量待办与只读完整性巡检'],
-		drafts: ['DRAFT CENTER', '草稿中心', `${state.drafts.length} 份尚未正式发布的草稿`],
-		recycle: ['RECYCLE BIN', '图片回收区', `${state.recycleBin.length} 张可以恢复的发布副本`],
-		history: ['VERSION HISTORY', '历史版本', `${state.history.length} 份发布前版本备份`],
+		query: ['资料查询', '在这里集中搜索、筛选并打开档案'],
+		maintenance: ['维护概览', '质量待办与只读完整性巡检'],
+		drafts: ['草稿中心', `${state.drafts.length} 份尚未正式发布的草稿`],
+		recycle: ['图片回收区', `${state.recycleBin.length} 张可以恢复的发布副本`],
+		history: ['历史版本', `${state.history.length} 份发布前版本备份`],
 	};
 	if (state.workspaceMode !== 'records') {
-		const [kicker, title, detail] = centerTitles[state.workspaceMode];
-		elements.recordKicker.textContent = kicker;
+		const [title, detail] = centerTitles[state.workspaceMode];
+		elements.recordKicker.textContent = '';
+		elements.recordKicker.hidden = true;
 		elements.recordTitle.textContent = title;
 		elements.recordId.textContent = detail;
 		elements.saveState.textContent = '这些内容只保存在本机';
@@ -1130,7 +1153,8 @@ const updateHeader = () => {
 		return;
 	}
 	if (!state.current) {
-		elements.recordKicker.textContent = state.recordStatusFilter === 'withdrawn' ? 'WITHDRAWN RECORDS' : 'ARCHIVE RECORDS';
+		elements.recordKicker.textContent = '';
+		elements.recordKicker.hidden = true;
 		elements.recordTitle.textContent = state.recordStatusFilter === 'withdrawn' ? '暂无已撤销档案' : '暂无正常档案';
 		elements.recordId.textContent = '';
 		elements.saveState.textContent = '';
@@ -1149,7 +1173,8 @@ const updateHeader = () => {
 		return;
 	}
 	elements.tabs.classList.remove('is-hidden');
-	elements.recordKicker.textContent = state.isNew ? 'NEW RECORD' : statusLabel(state.current).toUpperCase();
+	elements.recordKicker.hidden = false;
+	elements.recordKicker.textContent = state.isNew ? '新建藏品' : statusLabel(state.current);
 	elements.recordTitle.textContent = state.current.core.title || '未命名藏品';
 	elements.recordId.textContent = state.current.core.item_id || '保存草稿时自动生成永久编号';
 	const waitingForExactType = Boolean(state.pendingObjectCategory);
@@ -2122,7 +2147,7 @@ const renderPreview = () => {
 
 	const letterHeader = isLetter ? `
 		<header class="letter-reading-header">
-			<div><p>LETTER READING</p><h2>信件阅读</h2></div>
+			<div><h2>信件阅读</h2></div>
 			${letterReadingModes.length > 1 ? `
 			<div class="letter-reading-modes" role="group" aria-label="选择信件查看方式">
 				${letterReadingModes.map((mode) => `<button type="button" data-letter-mode-select="${escapeHtml(mode.value)}" aria-pressed="${String(mode.value === initialLetterMode)}">${escapeHtml(mode.label)}</button>`).join('')}
@@ -2134,7 +2159,7 @@ const renderPreview = () => {
 	const letterTranscription = isLetter && hasPublicTranscription ? `
 		<article class="letter-transcription" aria-labelledby="letter-transcription-heading">
 			<header>
-				<div><p>PUBLIC TRANSCRIPTION</p><h2 id="letter-transcription-heading">电子文字</h2></div>
+				<div><h2 id="letter-transcription-heading">电子文字</h2></div>
 				<span>${record.core.transcription_status ? escapeHtml(pvCodeLabel(record.core.transcription_status)) : '公开转录'}</span>
 			</header>
 			<div class="letter-transcription-text">${escapeHtml(view.transcription)}</div>
@@ -2152,7 +2177,7 @@ const renderPreview = () => {
 		</nav>
 		<span class="back-link ui-text-link">← 返回档案</span>
 		<header class="record-heading">
-			<p class="section-mark">ARCHIVE RECORD · ${escapeHtml(view.typeLabel)}</p>
+			<p class="section-mark">${escapeHtml(view.typeLabel)}</p>
 			<h1>${escapeHtml(view.title || '未命名藏品')}</h1>
 			${pvHasText(view.description) ? `<p class="record-lead">${escapeHtml(view.description)}</p>` : ''}
 		</header>
@@ -2205,7 +2230,7 @@ const renderPreview = () => {
 		</div>
 		${relatedRecords.length ? `
 		<section class="record-related" aria-labelledby="preview-related-heading">
-			<div class="record-related-heading"><p>RELATED RECORDS</p><h2 id="preview-related-heading">沿着线索继续看</h2><span>根据共同标签、地点、年代或分类自动关联。</span></div>
+			<div class="record-related-heading"><h2 id="preview-related-heading">沿着线索继续看</h2><span>根据共同标签、地点、年代或分类自动关联。</span></div>
 			<div class="record-related-grid">${relatedRecords.map((entry) => `
 				<a href="${escapeHtml(publicPreviewUrl(`/archive/${encodeURIComponent(entry.view.id)}/`))}" target="_blank" rel="noopener">
 					<figure>${entry.cover ? `<img src="${escapeHtml(entry.cover)}" alt="${escapeHtml(entry.view.imageDescriptions[0] ?? '')}" loading="lazy" />` : ''}</figure>
@@ -2214,7 +2239,7 @@ const renderPreview = () => {
 			</div>
 		</section>` : ''}
 		<section class="record-usage" aria-labelledby="preview-usage-heading">
-			<div class="record-usage-heading"><p>RIGHTS AND USE</p><h2 id="preview-usage-heading">使用与下载</h2></div>
+			<div class="record-usage-heading"><h2 id="preview-usage-heading">使用与下载</h2></div>
 			<div class="record-usage-content">
 				<div class="record-usage-summary">
 					<span>权利状态 · ${escapeHtml(usagePolicy.statusLabel)}</span>
@@ -2231,7 +2256,7 @@ const renderPreview = () => {
 		</section>
 		<section class="record-citation" aria-labelledby="preview-citation-heading" data-record-citation
 			data-record-title="${escapeHtml(view.title || '未命名藏品')}" data-record-identifier="${escapeHtml(view.id || '尚未生成')}" data-record-url="${escapeHtml(recordUrl)}">
-			<div class="record-citation-heading"><p>CITE THIS RECORD</p><h2 id="preview-citation-heading">引用与分享</h2></div>
+			<div class="record-citation-heading"><h2 id="preview-citation-heading">引用与分享</h2></div>
 			<div class="record-citation-content">
 				<p class="citation-preview">《${escapeHtml(view.title || '未命名藏品')}》（${escapeHtml(view.id || '尚未生成')}），老旧默片。复制时会自动补充当前页面地址和访问日期。</p>
 				<div class="citation-actions">
@@ -2841,6 +2866,7 @@ const loadBootstrap = async (selectedId = state.activeId) => {
 	const response = await fetch('/api/bootstrap');
 	const data = await readApiJson(response);
 	if (!response.ok) throw new Error(data.error ?? '无法读取档案。');
+	refreshInboxPendingBadge();
 	state.records = data.records;
 	state.drafts = data.drafts ?? [];
 	state.history = data.history ?? [];

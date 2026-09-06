@@ -2579,3 +2579,41 @@
 - 构建期间曾与另一项响应式图片生成任务发生可再生成缓存写入冲突；等待该任务结束后重建成功，没有修改或损坏原始图片。
 
 当前状态：详情页信息位置和纵向间距优化已在本地完成，最新 `site/dist/` 构建正常，尚未上传正式网站。
+
+## 2026-09-05：清理维护入口无谓英文小标题
+
+用户指出本地档案维护入口里同样充斥装饰性英文小标题，要求一并删除。
+
+完成内容：
+
+- index.html：删除"PRIVATE ARCHIVE DESK"、"WITHDRAW RECORD"；顶部 record-kicker 默认文字改为空，避免加载瞬间闪现英文。
+- app.js：删除 7 处装饰性 eyebrow 英文标题——READ-ONLY DETAIL、FIND A RECORD、ACT NOW、CAN FINISH NOW、LONG-TERM RESEARCH、READ-ONLY CHECK、ARCHIVE SEARCH 等工作区 kicker。
+- 工作区标题改为 2 元组（中文标题+说明），不再附带英文 kicker；无当前档案时 kicker 隐藏；新建藏品改显示"新建藏品"，不再 toUpperCase 英文。
+- renderTaskSection 形参与模板同步去掉 eyebrow 参数。
+- 公开预览区同步网站改动：信件阅读、电子文字、沿着线索继续看、使用与下载、引用与分享区块的英文小标题删除；相关推荐改横向基线排列；标题上方留白收紧。
+- styles.css：letter-reading-header h2、letter-transcription h2、record-usage-heading h2、record-citation-heading h2 去掉 margin-top；record-related-heading 从 grid 两栏改为 flex 横向排列。
+
+检查结果：
+
+- 三个文件（index.html、app.js、styles.css）逐项核验：无残留装饰英文小标题，CSS 目标块均按预期更新。
+- app.js 语法检查通过。
+- local-admin 6 个测试文件（access-auth、card-schema、contacts、details-open-state、release-deployer、submissions）全部通过。
+- 注：toCollectionTextToken 工具函数中的 toUpperCase 是内部收藏品编码文本规范化用途，与界面展示无关，保留不动。
+
+## 2026-09-07：档案管理首页标题旁标注待处理数量
+
+用户要求在档案管理页首页标题右侧，标注目前待处理的联系收件信息和待审核投稿的个数。
+
+完成内容：
+
+- index.html：左侧品牌区"档案管理"标题旁新增 `#brand-pending` 标记，默认隐藏。
+- styles.css：新增 `.brand-pending` 样式，沿用管理端红色（#9a3f2e）圆角小胶囊。
+- app.js：新增 `refreshInboxPendingBadge()`，每次 `loadBootstrap` 时并行读取 `/api/admin/contacts` 与 `/api/admin/submissions`，统计状态为 `received`（尚未处理）的来信数和状态为 `pending`（待审核）的投稿数，拼成"待处理来信 X · 待审核投稿 Y"显示；两项都为 0 时保持隐藏；计数读取失败不影响档案管理主流程。
+
+检查结果：
+
+- 三处修改逐项 grep 核验均已落盘。
+- app.js 以 ES 模块模式做语法检查通过。
+- local-admin 6 个测试文件（access-auth、card-schema、contacts、details-open-state、release-deployer、submissions）全部通过。
+
+当前状态：功能仅在本地管理入口界面层改动，未涉及公开网站内容，无需重新构建发布。

@@ -122,6 +122,19 @@ a {
 	letter-spacing: 0.18em;
 }
 
+.brand-pending {
+	display: inline-block;
+	margin-left: 0.55rem;
+	padding: 0.14rem 0.5rem;
+	color: #fff3df;
+	background: #9a3f2e;
+	border-radius: 999px;
+	font-size: 0.66rem;
+	letter-spacing: 0.05em;
+	white-space: nowrap;
+	vertical-align: 0.08em;
+}
+
 .new-record-button {
 	display: flex;
 	align-items: center;
@@ -2581,7 +2594,6 @@ body[data-workspace="query"] .editor-surface {
 }
 
 .pv-site .letter-reading-header h2 {
-	margin-top: 0.25rem;
 	font-size: 0.96rem;
 	font-weight: 600;
 	letter-spacing: 0.12em;
@@ -2667,7 +2679,6 @@ body[data-workspace="query"] .editor-surface {
 }
 
 .pv-site .letter-transcription > header h2 {
-	margin-top: 0.22rem;
 	font-size: 1.08rem;
 	font-weight: 600;
 	letter-spacing: 0.1em;
@@ -3163,24 +3174,15 @@ body[data-workspace="query"] .editor-surface {
 }
 
 .pv-site .record-related-heading {
-	display: grid;
-	grid-template-columns: minmax(8.5rem, 0.3fr) minmax(0, 0.7fr);
-	gap: 0.15rem clamp(1.5rem, 5vw, 4rem);
+	display: flex;
+	flex-wrap: wrap;
 	align-items: baseline;
+	gap: 0.4rem 1rem;
 }
 
-.pv-site .record-related-heading p,
 .pv-site .record-related-heading h2,
 .pv-site .record-related-heading span {
 	margin: 0;
-}
-
-.pv-site .record-related-heading p {
-	grid-row: 1 / span 2;
-	color: var(--site-accent);
-	font-family: Georgia, "Times New Roman", serif;
-	font-size: var(--site-text-micro);
-	letter-spacing: 0.15em;
 }
 
 .pv-site .record-related-heading h2 {
@@ -3286,7 +3288,6 @@ body[data-workspace="query"] .editor-surface {
 }
 
 .pv-site .record-usage-heading h2 {
-	margin-top: 0.35rem;
 	color: #6b665b;
 	font-size: 0.78rem;
 	font-weight: 400;
@@ -3380,7 +3381,6 @@ body[data-workspace="query"] .editor-surface {
 }
 
 .pv-site .record-citation-heading h2 {
-	margin-top: 0.35rem;
 	color: #6b665b;
 	font-size: 0.78rem;
 	font-weight: 400;
