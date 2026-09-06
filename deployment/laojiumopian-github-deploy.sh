@@ -304,14 +304,15 @@ fi
 if [[ "$submission_service_installed" == true ]]; then
 	log '重启私密投稿与联系接收服务。'
 	systemctl restart "$SUBMISSION_SERVICE"
-	for attempt in {1..20}; do
-		if curl --fail --silent --show-error --max-time 2 \
+	for attempt in {1..60}; do
+		if systemctl is-active --quiet "$SUBMISSION_SERVICE" && \
+			curl --fail --silent --max-time 2 \
 			http://127.0.0.1:4176/api/submissions/config >/dev/null && \
-			curl --fail --silent --show-error --max-time 2 \
+			curl --fail --silent --max-time 2 \
 			http://127.0.0.1:4176/api/contact/config >/dev/null; then
 			break
 		fi
-		[[ "$attempt" -lt 20 ]] || fail '新私密投稿与联系接收服务健康检查没有通过。'
+		[[ "$attempt" -lt 60 ]] || fail '新私密投稿与联系接收服务健康检查没有通过。'
 		sleep 1
 	done
 fi
