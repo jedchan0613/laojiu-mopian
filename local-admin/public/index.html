@@ -13,9 +13,8 @@
 		<div class="app-shell">
 			<aside class="sidebar">
 				<div class="brand">
-					<p class="eyebrow">PRIVATE ARCHIVE DESK</p>
 					<h1>老旧默片</h1>
-					<p>档案管理</p>
+					<p>档案管理<span class="brand-pending" id="brand-pending" hidden></span></p>
 				</div>
 
 				<button class="new-record-button" id="new-record-button" type="button">
@@ -109,7 +108,7 @@
 			<main class="workspace" id="main-editor" tabindex="-1">
 				<header class="workspace-header">
 					<div>
-						<p class="eyebrow" id="record-kicker">ARCHIVE RECORD</p>
+						<p class="eyebrow" id="record-kicker"></p>
 						<h2 id="record-title">读取中…</h2>
 						<p class="record-id" id="record-id"></p>
 						<p class="save-state" id="save-state" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -181,8 +180,7 @@
 		<dialog class="action-dialog" id="withdraw-dialog" aria-labelledby="withdraw-dialog-title">
 			<form class="action-dialog-card" method="dialog">
 				<div class="action-dialog-heading">
-					<p class="eyebrow">WITHDRAW RECORD</p>
-					<h2 id="withdraw-dialog-title">撤销公开档案</h2>
+						<h2 id="withdraw-dialog-title">撤销公开档案</h2>
 					<p id="withdraw-record-label"></p>
 				</div>
 				<div class="action-dialog-notice">
