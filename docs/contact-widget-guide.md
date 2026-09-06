@@ -75,3 +75,15 @@
 6. 用虚构内容完成一次提交、回执查询和管理端处理检查；不要使用真实联系方式或敏感资料做测试。
 
 上线、备份或迁移时必须保留 `_contacts/` 私密目录，不得把它复制进公开版本。任何清理或删除联系记录的操作，都应先确认具体对象、保留要求和可恢复方式。
+
+## 七、生产页面显示“通道暂时不可用”
+
+先访问 `https://laojiumopian.com/api/contact/config`。如果返回 404，表示公开页面已经更新，但联系接收程序或 Caddy 转发规则尚未同步，输入框会按设计保持锁定，避免访客填写后无法提交。
+
+项目提供一次性修复程序 `deployment/repair-contact-production.sh`。等待包含该文件的新版本完成自动发布后，在腾讯云服务器终端运行：
+
+```bash
+sudo /srv/laojiumopian-admin/app/current/deployment/repair-contact-production.sh
+```
+
+程序只会把 `/api/contact` 和 `/api/contact/*` 加入现有投稿转发规则，更新自动发布命令，重启共用的私密接收服务并完成内外网检查。修改前会把 `/etc/caddy/Caddyfile` 保存为带日期的备份；任何检查失败时会恢复原 Caddy 配置。它不会删除或移动投稿、联系记录、档案数据和发布图片。
