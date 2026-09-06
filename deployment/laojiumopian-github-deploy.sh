@@ -24,6 +24,7 @@ readonly PUBLIC_LIVE="$PUBLIC_RELEASES/live"
 readonly ENVIRONMENT_FILE='/etc/laojiumopian-admin.env'
 readonly ADMIN_SERVICE='laojiumopian-admin.service'
 readonly LIKE_SERVICE='laojiumopian-likes.service'
+readonly SUBMISSION_SERVICE='laojiumopian-submissions.service'
 readonly NODE='/snap/node/current/bin/node'
 readonly NPM='/snap/node/current/bin/npm'
 readonly RUNUSER='/usr/sbin/runuser'
@@ -97,6 +98,7 @@ service_stopped=false
 app_switched=false
 public_switched=false
 like_service_installed=false
+submission_service_installed=false
 
 cleanup() {
 	local status=$?
@@ -115,6 +117,9 @@ cleanup() {
 		fi
 		if [[ "$like_service_installed" == true && "$app_switched" == true ]]; then
 			systemctl restart "$LIKE_SERVICE"
+		fi
+		if [[ "$submission_service_installed" == true && "$app_switched" == true ]]; then
+			systemctl restart "$SUBMISSION_SERVICE"
 		fi
 		if [[ -n "$staging_directory" && -e "$staging_directory" ]]; then
 			assert_staging_path
@@ -156,6 +161,9 @@ require_symlink "$PUBLIC_LIVE" '当前公开网站版本'
 
 if systemctl cat "$LIKE_SERVICE" >/dev/null 2>&1; then
 	like_service_installed=true
+fi
+if systemctl cat "$SUBMISSION_SERVICE" >/dev/null 2>&1; then
+	submission_service_installed=true
 fi
 
 exec 9>"$LOCK_FILE"
@@ -222,6 +230,7 @@ for forbidden_path in \
 done
 
 require_file "$staging_directory/local-admin/server.mjs" '新版本管理服务'
+require_file "$staging_directory/local-admin/submission-server.mjs" '新版本私密投稿与联系接收服务'
 require_file "$staging_directory/site/server/likes/server.mjs" '新版本公开点赞服务'
 require_file "$staging_directory/site/package-lock.json" '新版本依赖锁定清单'
 require_file "$staging_directory/deployment/publish-built-site.mjs" '新版本公开切换程序'
@@ -288,6 +297,21 @@ if [[ "$like_service_installed" == true ]]; then
 			break
 		fi
 		[[ "$attempt" -lt 20 ]] || fail '新点赞服务健康检查没有通过。'
+		sleep 1
+	done
+fi
+
+if [[ "$submission_service_installed" == true ]]; then
+	log '重启私密投稿与联系接收服务。'
+	systemctl restart "$SUBMISSION_SERVICE"
+	for attempt in {1..20}; do
+		if curl --fail --silent --show-error --max-time 2 \
+			http://127.0.0.1:4176/api/submissions/config >/dev/null && \
+			curl --fail --silent --show-error --max-time 2 \
+			http://127.0.0.1:4176/api/contact/config >/dev/null; then
+			break
+		fi
+		[[ "$attempt" -lt 20 ]] || fail '新私密投稿与联系接收服务健康检查没有通过。'
 		sleep 1
 	done
 fi
