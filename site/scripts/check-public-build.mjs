@@ -99,7 +99,7 @@ if (notFoundPage) {
 
 if (correctionsPage) {
 	check(correctionsPage.html.includes('id="correction-request-template"'), '纠错页缺少可复制的申请模板。');
-	check(!correctionsPage.html.includes('<form'), '纠错页不应在没有数据处理说明时增加在线表单。');
+	check(!correctionsPage.html.includes('id="correction-online-form"'), '纠错说明页不应增加独立在线表单；统一使用全站联系挂件。');
 	const configuredContactEmail = process.env.PUBLIC_CONTACT_EMAIL?.trim() ?? '';
 	const validContactEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(configuredContactEmail);
 	check(
@@ -193,6 +193,10 @@ for (const page of detailPages) {
 
 for (const page of htmlEntries) {
 	check(page.html.includes('<meta name="viewport"'), `${page.relativePath} 缺少手机端视口设置。`);
+	check(page.html.includes('data-contact-widget'), `${page.relativePath} 缺少联系挂件。`);
+	check(page.html.includes('data-contact-launcher'), `${page.relativePath} 缺少联系挂件入口。`);
+	check(pageLoadsScriptMarker(page, '/api/contact/config'), `${page.relativePath} 缺少联系通道可用性检查。`);
+	check(pageLoadsScriptMarker(page, '/api/contact/lookup'), `${page.relativePath} 缺少联系回执查询程序。`);
 	check(page.html.includes('data-background-music'), `${page.relativePath} 缺少背景音乐播放器。`);
 	for (const publicPath of backgroundMusicPublicPaths) {
 		check(page.html.includes(publicPath), `${page.relativePath} 没有引用背景音乐发布副本：${publicPath}。`);
@@ -209,7 +213,7 @@ for (const page of htmlEntries) {
 }
 
 const publicText = htmlEntries.map((entry) => entry.html).join('\n');
-for (const marker of ['LOCAL ARCHIVE DESK', '/api/bootstrap', 'data-admin-app', 'similar-record-button', 'STRUCTURED DATA ONLY']) {
+for (const marker of ['LOCAL ARCHIVE DESK', '/api/bootstrap', 'data-admin-app', 'similar-record-button', 'STRUCTURED DATA ONLY', '/api/admin/contacts']) {
 	check(!publicText.includes(marker), `公开构建混入管理端标记：${marker}。`);
 }
 for (const secretMarker of ['LJM_LIKE_HASH_SECRET', 'LJM_LIKE_DATA_FILE', 'X-LJM-Client-IP']) {
@@ -228,10 +232,10 @@ if (contributionPage) {
 	check(pageLoadsScriptMarker(contributionPage, '/api/submissions/lookup'), '投稿页缺少私密回执查询程序。');
 }
 const publicCode = publicText + scriptEntries.map((entry) => entry.contents).join('\n');
-for (const marker of ['/api/admin/submissions', 'LJM_SUBMISSION_DATA_DIR', 'key_hash', 'source_submission_id', 'PRIVATE-NOTE-ONLY', 'synthetic@example.invalid']) {
+for (const marker of ['/api/admin/submissions', '/api/admin/contacts', 'LJM_SUBMISSION_DATA_DIR', 'key_hash', 'source_submission_id', 'PRIVATE-NOTE-ONLY', 'synthetic@example.invalid', 'synthetic-contact@example.invalid']) {
 	check(!publicCode.includes(marker), `公开构建混入私密投稿信息或管理程序：${marker}。`);
 }
-for (const privateName of ['submissions', 'drafts', 'history', 'recycle-bin', 'local-admin']) {
+for (const privateName of ['submissions', '_contacts', 'drafts', 'history', 'recycle-bin', 'local-admin']) {
 	check(!distFiles.some((file) => relative(distRoot, file).split(sep).includes(privateName)), `公开构建混入私密目录：${privateName}。`);
 }
 

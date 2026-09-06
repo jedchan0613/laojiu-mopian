@@ -1,7 +1,7 @@
 # 放在 laojiumopian.com 的公开站点块内、静态文件服务之前。
-# 只代理公开接收端口；严禁将 /api/admin/* 代理到公开站点。
-@public_submissions path /api/submissions /api/submissions/*
-handle @public_submissions {
+# 只代理公开投稿与联系接收端口；严禁将 /api/admin/* 代理到公开站点。
+@public_inbox path /api/submissions /api/submissions/* /api/contact /api/contact/*
+handle @public_inbox {
  request_body {
   max_size 28MB
  }

@@ -1,0 +1,672 @@
+---
+import SiteIcon from './SiteIcon.astro';
+
+const configuredEmail = import.meta.env.PUBLIC_CONTACT_EMAIL?.trim() ?? '';
+const contactEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(configuredEmail) ? configuredEmail : '';
+const fallbackMailto = contactEmail
+	? `mailto:${contactEmail}?subject=${encodeURIComponent('老旧默片｜网站联系')}`
+	: '';
+---
+
+<aside class="contact-widget" data-contact-widget data-ready="false" aria-label="联系站主">
+	<button
+		class="contact-launcher"
+		type="button"
+		data-contact-launcher
+		aria-expanded="false"
+		aria-controls="contact-panel"
+	>
+		<SiteIcon name="letters" />
+		<span>联系我</span>
+	</button>
+
+	<section
+		class="contact-panel"
+		id="contact-panel"
+		data-contact-panel
+		role="dialog"
+		aria-modal="false"
+		aria-labelledby="contact-panel-title"
+		hidden
+	>
+		<header class="contact-heading">
+			<div>
+				<p>有重要的事想告诉我？</p>
+				<h2 id="contact-panel-title">联系我</h2>
+			</div>
+			<button class="contact-close" type="button" data-contact-close aria-label="收起联系挂件">×</button>
+		</header>
+
+		<div class="contact-view-tabs" role="tablist" aria-label="联系挂件功能">
+			<button type="button" role="tab" aria-selected="true" aria-controls="contact-compose-view" data-contact-view-button="compose">写留言</button>
+			<button type="button" role="tab" aria-selected="false" aria-controls="contact-lookup-view" data-contact-view-button="lookup">查进度</button>
+		</div>
+
+		<div id="contact-compose-view" role="tabpanel" data-contact-view="compose">
+			<p class="contact-intro">先选择来信类型，我会更快找到重点。</p>
+			<p class="contact-service" data-contact-service role="status">正在检查私密联系通道…</p>
+
+			<form id="contact-form" method="post" action="/api/contact" data-contact-form autocomplete="off">
+				<fieldset data-contact-fields disabled>
+					<legend class="sr-only">填写联系内容</legend>
+					<input class="contact-honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+					<input type="hidden" name="category" value="collab" data-contact-category />
+					<input type="hidden" name="page_path" data-contact-page-path />
+
+					<div class="contact-categories" aria-label="来信类型">
+						<button type="button" data-contact-category-button="collab" aria-pressed="true">
+							<SiteIcon name="collection" />
+							<span><strong>合作洽谈</strong><small>展览、研究、授权、媒体</small></span>
+						</button>
+						<button type="button" data-contact-category-button="privacy" aria-pressed="false">
+							<SiteIcon name="rights" />
+							<span><strong>隐私问题</strong><small>纠错、限制公开、撤下</small></span>
+						</button>
+						<button type="button" data-contact-category-button="other" aria-pressed="false">
+							<SiteIcon name="story" />
+							<span><strong>其他事宜</strong><small>建议、询问或留言</small></span>
+						</button>
+					</div>
+
+					<div class="contact-context" role="status" aria-live="polite">
+						<strong data-contact-context-title>合作洽谈</strong>
+						<span data-contact-context-copy>请简要说明合作方向、时间安排和希望采用的联系方式。</span>
+					</div>
+
+					<label data-contact-reference-field hidden>
+						<span>相关档案编号或页面地址 <small>选填</small></span>
+						<input name="reference" maxlength="500" placeholder="例如：LJM-… 或网页地址" />
+					</label>
+
+					<label>
+						<span>怎么称呼您 <small>选填</small></span>
+						<input name="name" maxlength="40" placeholder="昵称或机构简称即可" />
+					</label>
+
+					<div class="contact-row">
+						<label>
+							<span>回复方式</span>
+							<select name="contact_type" data-contact-channel>
+								<option value="email">电子邮箱</option>
+								<option value="wechat">微信</option>
+								<option value="phone">电话</option>
+								<option value="none">无需回复</option>
+							</select>
+						</label>
+						<label data-contact-value-field>
+							<span>联系方式</span>
+							<input name="contact" type="email" required minlength="3" maxlength="120" placeholder="您的邮箱" data-contact-value />
+						</label>
+					</div>
+
+					<label>
+						<span>简要说明</span>
+						<textarea name="message" required minlength="10" maxlength="2000" rows="4" placeholder="请写清楚事情、涉及的页面和希望如何处理" data-contact-message></textarea>
+						<small class="contact-count" data-contact-count>0 / 2000</small>
+					</label>
+
+					<div class="contact-privacy-note">
+						<SiteIcon name="rights" />
+						<p>首次留言请勿发送完整证件号、精确住址、清晰签名、医疗资料或未脱敏图片。需要补充材料时，请先确认安全的传递方式。</p>
+					</div>
+
+					<label class="contact-consent">
+						<input type="checkbox" name="processing" required />
+						<span>我已阅读隐私提示，同意为处理这次联系而私密保存以上内容。</span>
+					</label>
+
+					<div class="contact-actions">
+						<a class="contact-detail-link" href="/corrections/" data-contact-correction-link hidden>查看纠错与撤下说明</a>
+						<button class="ui-action ui-action--primary" type="submit" data-contact-submit>提交留言</button>
+					</div>
+					<p class="contact-feedback" data-contact-feedback role="status" aria-live="polite"></p>
+				</fieldset>
+			</form>
+
+			<section class="contact-receipt" data-contact-receipt hidden tabindex="-1" aria-labelledby="contact-receipt-title">
+				<p>请妥善保存这份回执</p>
+				<h3 id="contact-receipt-title">留言已收到。</h3>
+				<dl>
+					<dt>联系编号</dt><dd data-contact-receipt-id></dd>
+					<dt>查询密钥</dt><dd data-contact-receipt-key></dd>
+				</dl>
+				<p class="contact-receipt-note">查询密钥相当于这封留言的钥匙，请勿公开分享。回执不会显示您的联系方式或留言正文。</p>
+				<div class="contact-receipt-actions">
+					<button class="ui-action ui-action--secondary" type="button" data-contact-copy-receipt>复制回执</button>
+					<button class="ui-action ui-action--secondary" type="button" data-contact-save-receipt>保存回执</button>
+					<button class="contact-detail-link" type="button" data-contact-open-lookup>查询进度</button>
+				</div>
+			</section>
+
+			<noscript><p class="contact-unavailable">请在浏览器中开启 JavaScript 后使用联系挂件。页面不会在未提交时保存您填写的内容。</p></noscript>
+			<div class="contact-fallback" data-contact-fallback hidden>
+				<p>私密联系通道暂时不可用。隐私、纠错或撤下事项可以先查看处理说明。</p>
+				<div>
+					<a href="/corrections/">纠错与撤下说明</a>
+					{contactEmail && <a href={fallbackMailto}>发送备用邮件</a>}
+				</div>
+			</div>
+		</div>
+
+		<div id="contact-lookup-view" role="tabpanel" data-contact-view="lookup" hidden>
+			<div class="contact-lookup-heading">
+				<h3>查询联系进度</h3>
+				<p>输入回执上的联系编号和查询密钥。结果只显示处理状态和站主给您的说明。</p>
+			</div>
+			<form method="post" action="/api/contact/lookup" data-contact-lookup-form autocomplete="off">
+				<label>
+					<span>联系编号</span>
+					<input name="id" required pattern="LX-[A-Fa-f0-9]{24}" placeholder="LX-…" spellcheck="false" data-contact-lookup-id />
+				</label>
+				<label>
+					<span>查询密钥</span>
+					<input name="key" type="password" required pattern="[a-f0-9]{64}" autocomplete="off" data-contact-lookup-key />
+				</label>
+				<button class="ui-action ui-action--secondary" type="submit">查询进度</button>
+			</form>
+			<p class="contact-lookup-result" data-contact-lookup-result role="status" aria-live="polite"></p>
+		</div>
+	</section>
+</aside>
+
+<script>
+	import '../scripts/contact-widget';
+</script>
+
+<style>
+	.contact-widget {
+		position: fixed;
+		right: max(16px, env(safe-area-inset-right));
+		bottom: max(16px, env(safe-area-inset-bottom));
+		z-index: 70;
+		font-family: "Songti SC", "STSong", "SimSun", serif;
+	}
+
+	.contact-launcher {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		min-width: 7rem;
+		min-height: 2.75rem;
+		padding: 0.58rem 0.8rem;
+		color: #fff8ed;
+		background: var(--site-accent);
+		border: 1px solid var(--site-accent);
+		box-shadow: 0 7px 22px rgba(48, 45, 39, 0.2);
+		cursor: pointer;
+		font: inherit;
+		font-size: var(--site-text-small);
+		letter-spacing: 0.09em;
+	}
+
+	.contact-launcher:hover,
+	.contact-launcher:focus-visible {
+		background: #7f3427;
+		border-color: #7f3427;
+	}
+
+	.contact-launcher .site-icon {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.contact-panel {
+		position: absolute;
+		right: 0;
+		bottom: 3.45rem;
+		width: min(25rem, calc(100vw - 32px));
+		max-height: calc(100vh - 6.5rem);
+		max-height: calc(100svh - 6.5rem);
+		padding: 1.25rem;
+		overflow-y: auto;
+		color: #302f2b;
+		background: #f7f2e6;
+		border: 1px solid #9f978a;
+		box-shadow: 0 18px 48px rgba(59, 48, 34, 0.22);
+	}
+
+	.contact-heading {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+
+	.contact-heading p,
+	.contact-heading h2,
+	.contact-intro,
+	.contact-service,
+	.contact-feedback,
+	.contact-lookup-result {
+		margin: 0;
+	}
+
+	.contact-heading p {
+		color: var(--site-accent);
+		font-size: var(--site-text-micro);
+		letter-spacing: 0.12em;
+	}
+
+	.contact-heading h2 {
+		margin-top: 0.2rem;
+		font-size: 1.45rem;
+		font-weight: 500;
+		letter-spacing: 0.1em;
+	}
+
+	.contact-close {
+		display: grid;
+		place-items: center;
+		width: 2.5rem;
+		height: 2.5rem;
+		padding: 0;
+		color: #5f594f;
+		background: transparent;
+		border: 0;
+		cursor: pointer;
+		font: 1.35rem/1 system-ui, sans-serif;
+	}
+
+	.contact-view-tabs {
+		display: flex;
+		gap: 1.2rem;
+		margin-top: 0.8rem;
+		border-bottom: 1px solid #c5bcad;
+	}
+
+	.contact-view-tabs button {
+		min-height: 2.45rem;
+		padding: 0.35rem 0;
+		color: #70685c;
+		background: transparent;
+		border: 0;
+		border-bottom: 2px solid transparent;
+		cursor: pointer;
+		font: inherit;
+		font-size: var(--site-text-small);
+	}
+
+	.contact-view-tabs button[aria-selected='true'] {
+		color: var(--site-accent);
+		border-bottom-color: var(--site-accent);
+	}
+
+	.contact-intro,
+	.contact-service,
+	.contact-unavailable,
+	.contact-fallback p,
+	.contact-lookup-heading p {
+		color: #6c6458;
+		font-size: 0.75rem;
+		line-height: 1.75;
+	}
+
+	.contact-intro {
+		margin-top: 0.85rem;
+	}
+
+	.contact-service {
+		min-height: 1.3rem;
+		margin-top: 0.35rem;
+	}
+
+	.contact-service[data-unavailable] {
+		color: #8a3d2f;
+	}
+
+	#contact-form fieldset {
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.contact-honeypot {
+		position: absolute;
+		left: -10000px;
+		width: 1px !important;
+		height: 1px;
+		overflow: hidden;
+	}
+
+	.contact-categories {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.4rem;
+		margin-top: 0.65rem;
+	}
+
+	.contact-categories button {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.38rem;
+		min-width: 0;
+		min-height: 4.15rem;
+		padding: 0.55rem 0.45rem;
+		color: #514d45;
+		text-align: left;
+		background: rgba(255, 253, 247, 0.3);
+		border: 1px solid #b9b0a2;
+		cursor: pointer;
+		font: inherit;
+	}
+
+	.contact-categories button[aria-pressed='true'] {
+		color: #7f3427;
+		background: var(--site-accent-soft);
+		border-color: var(--site-accent);
+	}
+
+	.contact-categories .site-icon {
+		width: 0.95rem;
+		height: 0.95rem;
+		margin-top: 0.05rem;
+	}
+
+	.contact-categories span,
+	.contact-categories strong,
+	.contact-categories small {
+		display: block;
+		min-width: 0;
+	}
+
+	.contact-categories strong {
+		font-size: 0.75rem;
+		font-weight: 500;
+		line-height: 1.4;
+	}
+
+	.contact-categories small {
+		margin-top: 0.15rem;
+		color: #776f63;
+		font-size: 0.66rem;
+		line-height: 1.4;
+	}
+
+	.contact-context {
+		display: grid;
+		gap: 0.2rem;
+		margin-top: 0.65rem;
+		padding: 0.62rem 0.7rem;
+		background: rgba(154, 63, 46, 0.07);
+		border-left: 2px solid var(--site-accent);
+	}
+
+	.contact-context strong {
+		font-size: 0.76rem;
+		font-weight: 500;
+	}
+
+	.contact-context span {
+		color: #6a6154;
+		font-size: 0.7rem;
+		line-height: 1.55;
+	}
+
+	#contact-form label,
+	[data-contact-lookup-form] label {
+		display: grid;
+		gap: 0.3rem;
+		margin-top: 0.7rem;
+		font-size: 0.75rem;
+		line-height: 1.5;
+	}
+
+	#contact-form label > span small {
+		margin-left: 0.3rem;
+		color: #82796c;
+		font-size: 0.67rem;
+		font-weight: 400;
+	}
+
+	#contact-form input:not([type='checkbox']),
+	#contact-form select,
+	#contact-form textarea,
+	[data-contact-lookup-form] input {
+		width: 100%;
+		min-width: 0;
+		min-height: 2.45rem;
+		padding: 0.55rem 0.62rem;
+		color: #3b362f;
+		background: rgba(255, 253, 247, 0.56);
+		border: 1px solid #b8ae9d;
+		border-radius: 2px;
+		font: 0.76rem/1.65 system-ui, "Microsoft YaHei", sans-serif;
+	}
+
+	#contact-form textarea {
+		resize: vertical;
+	}
+
+	.contact-count {
+		justify-self: end;
+		color: #7b7265;
+		font: 0.67rem/1.4 system-ui, "Microsoft YaHei", sans-serif;
+	}
+
+	.contact-row {
+		display: grid;
+		grid-template-columns: 7.3rem minmax(0, 1fr);
+		gap: 0.5rem;
+	}
+
+	.contact-privacy-note {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.45rem;
+		margin-top: 0.75rem;
+		color: #655d51;
+	}
+
+	.contact-privacy-note .site-icon {
+		flex: 0 0 auto;
+		width: 0.95rem;
+		height: 0.95rem;
+		margin-top: 0.16rem;
+		color: var(--site-accent);
+	}
+
+	.contact-privacy-note p {
+		margin: 0;
+		font-size: 0.69rem;
+		line-height: 1.65;
+	}
+
+	#contact-form .contact-consent {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.45rem;
+		color: #625a4f;
+		font-size: 0.7rem;
+		line-height: 1.6;
+	}
+
+	.contact-consent input {
+		flex: 0 0 auto;
+		width: 1rem;
+		height: 1rem;
+		margin: 0.13rem 0 0;
+		accent-color: var(--site-accent);
+	}
+
+	.contact-actions,
+	.contact-receipt-actions,
+	.contact-fallback > div {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.55rem;
+		margin-top: 0.8rem;
+	}
+
+	.contact-actions .ui-action,
+	.contact-receipt-actions .ui-action {
+		min-height: 2.5rem;
+		border-radius: 2px;
+	}
+
+	.contact-detail-link,
+	.contact-fallback a {
+		color: var(--site-accent);
+		font: inherit;
+		font-size: 0.7rem;
+		text-underline-offset: 0.25em;
+	}
+
+	button.contact-detail-link {
+		padding: 0;
+		background: transparent;
+		border: 0;
+		cursor: pointer;
+		text-decoration: underline;
+	}
+
+	.contact-feedback,
+	.contact-lookup-result {
+		min-height: 1.2rem;
+		margin-top: 0.45rem;
+		color: #8a3d2f;
+		font-size: 0.72rem;
+		line-height: 1.65;
+		white-space: pre-wrap;
+	}
+
+	.contact-receipt {
+		margin-top: 0.8rem;
+		padding: 0.85rem;
+		background: #eceddf;
+		border: 1px solid #81917b;
+	}
+
+	.contact-receipt > p:first-child {
+		margin: 0;
+		color: #65715f;
+		font-size: 0.69rem;
+		letter-spacing: 0.08em;
+	}
+
+	.contact-receipt h3 {
+		margin: 0.25rem 0 0;
+		font-size: 1rem;
+		font-weight: 500;
+	}
+
+	.contact-receipt dl {
+		display: grid;
+		grid-template-columns: 4.5rem minmax(0, 1fr);
+		gap: 0.45rem;
+		margin: 0.75rem 0 0;
+		font-size: 0.7rem;
+		line-height: 1.6;
+	}
+
+	.contact-receipt dd {
+		margin: 0;
+		overflow-wrap: anywhere;
+		font-family: ui-monospace, Consolas, monospace;
+	}
+
+	.contact-receipt-note {
+		margin: 0.65rem 0 0;
+		color: #62695d;
+		font-size: 0.68rem;
+		line-height: 1.65;
+	}
+
+	.contact-fallback {
+		margin-top: 0.7rem;
+		padding: 0.7rem;
+		background: #eee0ce;
+		border-left: 2px solid var(--site-accent);
+	}
+
+	.contact-fallback p {
+		margin: 0;
+	}
+
+	.contact-fallback > div {
+		justify-content: flex-start;
+		margin-top: 0.35rem;
+	}
+
+	.contact-lookup-heading {
+		margin-top: 0.9rem;
+	}
+
+	.contact-lookup-heading h3 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 500;
+	}
+
+	.contact-lookup-heading p {
+		margin: 0.35rem 0 0;
+	}
+
+	[data-contact-lookup-form] button {
+		margin-top: 0.75rem;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	.contact-widget [hidden] {
+		display: none !important;
+	}
+
+	@media (max-width: 640px) {
+		.contact-widget {
+			right: max(10px, env(safe-area-inset-right));
+			bottom: max(10px, env(safe-area-inset-bottom));
+		}
+
+		.contact-panel {
+			bottom: 3.15rem;
+			width: calc(100vw - 20px);
+			max-height: calc(100svh - 4.75rem);
+			padding: 1rem;
+		}
+
+		.contact-launcher {
+			min-height: 2.5rem;
+		}
+
+		#contact-form input:not([type='checkbox']),
+		#contact-form select,
+		#contact-form textarea,
+		[data-contact-lookup-form] input {
+			font-size: 1rem;
+		}
+	}
+
+	@media (max-width: 370px) {
+		.contact-categories .site-icon {
+			display: none;
+		}
+
+		.contact-categories button {
+			padding-inline: 0.35rem;
+		}
+
+		.contact-row {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media print {
+		.contact-widget {
+			display: none;
+		}
+	}
+</style>
