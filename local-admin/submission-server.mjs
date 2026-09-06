@@ -1,8 +1,9 @@
-// 独立公开接收进程：只暴露投稿、回执查询、停止处理申请，不提供任何管理或静态文件路由。
+// 独立公开接收进程：只暴露投稿、联系、回执查询和停止处理申请，不提供任何管理或静态文件路由。
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createSubmissionStore, createPublicSubmissionHandler } from './submissions.mjs';
+import { createContactStore, createPublicContactHandler } from './contacts.mjs';
 
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const origin = process.env.PUBLIC_SITE_URL?.trim();
@@ -19,14 +20,17 @@ const port = Number(process.env.LJM_SUBMISSION_PORT || 4176);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('投稿端口设置无效。');
 const store = createSubmissionStore({ root, siteDirectory: path.join(project, 'site') });
 const handler = createPublicSubmissionHandler({ store, origin, trustProxy: true });
+const contactStore = createContactStore({ root: path.join(root, '_contacts') });
+const contactHandler = createPublicContactHandler({ store: contactStore, origin, trustProxy: true });
 const server = http.createServer(async (request, response) => {
  try {
-  if (!await handler(request, response, new URL(request.url, origin).pathname)) response.writeHead(404, { 'Cache-Control': 'no-store' }).end();
+  const pathname = new URL(request.url, origin).pathname;
+  if (!await handler(request, response, pathname) && !await contactHandler(request, response, pathname)) response.writeHead(404, { 'Cache-Control': 'no-store' }).end();
  } catch { if (!response.headersSent) response.writeHead(500, { 'Cache-Control': 'no-store' }); response.end(); }
 });
 server.requestTimeout = 120_000;
 server.headersTimeout = 15_000;
 server.timeout = 120_000;
 server.maxConnections = 40;
-server.listen(port, '127.0.0.1', () => console.log(`投稿接收服务已启动：127.0.0.1:${port}（仅接受公开反向代理转发）`));
+server.listen(port, '127.0.0.1', () => console.log(`私密收件服务已启动：127.0.0.1:${port}（仅接受公开反向代理转发）`));
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => server.close());

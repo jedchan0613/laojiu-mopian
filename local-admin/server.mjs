@@ -8,6 +8,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { createAccessAuthenticator } from './access-auth.mjs';
 import { createReleaseDeployer, readLiveRelease } from './release-deployer.mjs';
 import { createSubmissionStore, createPublicSubmissionHandler, readSubmissionJson, privacyChecks, submissionStates } from './submissions.mjs';
+import { createContactStore, createPublicContactHandler, contactCategories, contactStates } from './contacts.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
@@ -55,6 +56,7 @@ const responsiveImageManifestFile = path.join(siteDirectory, 'src', 'data', 'gen
 const archiveCategoryFile = path.join(siteDirectory, 'src', 'data', 'archive-categories.json');
 const siteDistDirectory = path.join(siteDirectory, 'dist');
 const submissionDirectory = readEnvironmentPath('LJM_SUBMISSION_DATA_DIR', path.join(adminDataRoot, 'submissions'));
+const contactDirectory = path.join(submissionDirectory, '_contacts');
 const publicReleasesDirectory = configuredPublicReleasesDirectory
 	? path.resolve(configuredPublicReleasesDirectory)
 	: path.join(projectRoot, 'site-releases');
@@ -178,6 +180,8 @@ for (const publicRoot of [siteDirectory, publicDirectory, path.join(projectRoot,
 }
 const submissionStore = createSubmissionStore({ root: submissionDirectory, siteDirectory });
 const publicSubmissions = createPublicSubmissionHandler({ store: submissionStore, origin: localAdminOrigin, local: true });
+const contactStore = createContactStore({ root: contactDirectory });
+const publicContacts = createPublicContactHandler({ store: contactStore, origin: localAdminOrigin, local: true });
 
 const accessAuthenticator = onlineMode
 	? createAccessAuthenticator({
@@ -1897,6 +1901,7 @@ const adminServer = http.createServer(async (request, response) => {
 		const url = new URL(request.url ?? '/', configuredAdminOrigin);
 		if (!onlineMode && !new Set([`127.0.0.1:${adminPort}`, `localhost:${adminPort}`]).has(request.headers.host)) throw new RequestError('请从本机管理地址打开。', 403);
 		if (!onlineMode && await publicSubmissions(request, response, url.pathname)) return;
+		if (!onlineMode && await publicContacts(request, response, url.pathname)) return;
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/healthz') {
 			sendJson(response, 200, { ok: true });
 			return;
@@ -1917,6 +1922,19 @@ const adminServer = http.createServer(async (request, response) => {
 				requireSafeMutation(request);
 				const payload = await readSubmissionJson(request, 32 * 1024);
 				sendJson(response, 200, action === 'review' ? await submissionStore.review(id, payload) : await submissionStore.transfer(id, payload, submissionToDraft)); return;
+			}
+			sendJson(response, 405, { error: '不支持此操作。' }); return;
+		}
+		if (url.pathname === '/api/admin/contacts' && request.method === 'GET') {
+			sendJson(response, 200, { contacts: await contactStore.list(), states: contactStates, categories: contactCategories }); return;
+		}
+		const contactRoute = /^\/api\/admin\/contacts\/(LX-[A-F0-9]{24})(?:\/(review))?$/.exec(url.pathname);
+		if (contactRoute) {
+			const [, id, action] = contactRoute;
+			if (!action && request.method === 'GET') { sendJson(response, 200, await contactStore.detail(id)); return; }
+			if (action === 'review' && request.method === 'POST') {
+				requireSafeMutation(request);
+				sendJson(response, 200, await contactStore.review(id, await readSubmissionJson(request, 16 * 1024))); return;
 			}
 			sendJson(response, 405, { error: '不支持此操作。' }); return;
 		}

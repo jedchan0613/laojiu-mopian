@@ -64,10 +64,10 @@
 
 线上沿用现有服务器与管理员身份验证，公开接收进程与管理进程分开运行，共同使用 `/srv/laojiumopian-admin/data/submissions` 私密目录：
 
-- 接收进程 `local-admin/submission-server.mjs` 只监听 `127.0.0.1:4176`，只提供 `/api/submissions`、`/api/submissions/config`、`/api/submissions/lookup` 和 `/api/submissions/withdraw`。
+- 接收进程 `local-admin/submission-server.mjs` 只监听 `127.0.0.1:4176`，只提供公开投稿与联系挂件约定的 `/api/submissions*`、`/api/contact`、`/api/contact/config` 和 `/api/contact/lookup`；不提供管理页面或私密记录读取。
 - 公开接收进程不提供私密图片、投稿列表、管理页面或静态文件；公开反向代理只接到这个进程。
 - 管理员仍经原管理域名与 Cloudflare Access 二次验证进入 `/admin/submissions.html`；`/api/admin/submissions/*` 与私密图片都在验证之后处理。
-- 设置 `LJM_SUBMISSION_DATA_DIR` 时必须使用私密绝对路径，不能放在网站、公开版本或素材目录中。管理员和接收进程必须指向同一目录。
+- 设置 `LJM_SUBMISSION_DATA_DIR` 时必须使用私密绝对路径，不能放在网站、公开版本或素材目录中。管理员和接收进程必须指向同一目录；联系记录保存在其中的 `_contacts/` 子目录，与 `TG-` 投稿记录分开。
 
 上线需按现有服务器操作规范完成：
 
