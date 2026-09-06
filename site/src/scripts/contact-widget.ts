@@ -81,7 +81,7 @@ if (root && root.dataset.ready !== 'true') {
 	};
 
 	const setCategory = (category: string) => {
-		const selected = categoryCopy[category] ? category : 'collab';
+		const selected = categoryCopy[category] ? category : 'privacy';
 		categoryInput.value = selected;
 		root.querySelectorAll<HTMLButtonElement>('[data-contact-category-button]').forEach((button) => {
 			button.setAttribute('aria-pressed', String(button.dataset.contactCategoryButton === selected));
@@ -144,7 +144,7 @@ if (root && root.dataset.ready !== 'true') {
 		button.addEventListener('click', () => setView(button.dataset.contactViewButton === 'lookup' ? 'lookup' : 'compose'));
 	});
 	root.querySelectorAll<HTMLButtonElement>('[data-contact-category-button]').forEach((button) => {
-		button.addEventListener('click', () => setCategory(button.dataset.contactCategoryButton ?? 'collab'));
+		button.addEventListener('click', () => setCategory(button.dataset.contactCategoryButton ?? 'privacy'));
 	});
 	channel.addEventListener('change', setChannel);
 	message.addEventListener('input', () => { count.textContent = `${message.value.length} / 2000`; });
@@ -229,6 +229,6 @@ if (root && root.dataset.ready !== 'true') {
 		if (saved && /^LX-[A-F0-9]{24}$/.test(saved.id) && /^[a-f0-9]{64}$/.test(saved.key)) receipt = saved;
 	} catch { /* 不长期保存留言正文或联系方式。 */ }
 	setChannel();
-	setCategory('collab');
+	setCategory('privacy');
 	void checkService();
 }
