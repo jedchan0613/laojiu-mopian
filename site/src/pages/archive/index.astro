@@ -62,10 +62,24 @@ for (const view of publishedViews) {
 const placeBrowseEntries = [...browsePlaceMap.values()]
   .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, 'zh-CN'))
   .slice(0, 6);
-const publishedEntries = publishedViews.map((view) => ({
-  view,
-  coverImage: view.images[0] ? getResponsiveImage(view.images[0]) : undefined,
-}));
+// “最近收录”以首次录入日期为准；实物获得日期只在缺少录入日期时兜底。
+// 同一天录入时继续比较更新时间、获得日期和永久编号，保证结果稳定。
+const publishedEntries = [...publishedViews]
+  .sort((left, right) => {
+    const leftCreated = left.item.core.created_date?.trim() || left.item.core.accession_date?.trim() || '';
+    const rightCreated = right.item.core.created_date?.trim() || right.item.core.accession_date?.trim() || '';
+    const createdOrder = rightCreated.localeCompare(leftCreated);
+    if (createdOrder !== 0) return createdOrder;
+    const updatedOrder = (right.item.core.updated_date ?? '').localeCompare(left.item.core.updated_date ?? '');
+    if (updatedOrder !== 0) return updatedOrder;
+    const accessionOrder = (right.item.core.accession_date ?? '').localeCompare(left.item.core.accession_date ?? '');
+    if (accessionOrder !== 0) return accessionOrder;
+    return right.id.localeCompare(left.id, 'zh-CN', { numeric: true, sensitivity: 'base' });
+  })
+  .map((view) => ({
+    view,
+    coverImage: view.images[0] ? getResponsiveImage(view.images[0]) : undefined,
+  }));
 // 构建时生成的搜索索引：只包含公开展示层已有的文字字段，按永久编号索引。
 // 转义所有“<”，避免档案文字中出现标签开头时截断脚本数据。
 const searchIndexJson = JSON.stringify(
@@ -439,6 +453,10 @@ const searchIndexJson = JSON.stringify(
   const compareText = (left: string, right: string) =>
     left.localeCompare(right, 'zh-CN', { numeric: true, sensitivity: 'base' });
 
+  // 页面在构建时已经按首次录入日期排好，浏览器只需恢复这份稳定次序。
+  const compareRecentEntries = (left: HTMLElement, right: HTMLElement) =>
+    Number(left.dataset.archiveOriginalIndex ?? 0) - Number(right.dataset.archiveOriginalIndex ?? 0);
+
   const sortArchiveEntries = (scoreMap: Map<HTMLElement, ArchiveSearchMatch>) => {
     if (!sortSelect || !archiveList) return;
     const sortMode = sortSelect.value;
@@ -452,8 +470,8 @@ const searchIndexJson = JSON.stringify(
         const leftScore = scoreMap.get(left)?.score ?? -1;
         const rightScore = scoreMap.get(right)?.score ?? -1;
         if (leftScore !== rightScore) return rightScore - leftScore;
-        const accessionOrder = (right.dataset.archiveAccession ?? '').localeCompare(left.dataset.archiveAccession ?? '');
-        if (accessionOrder !== 0) return accessionOrder;
+        const recentOrder = compareRecentEntries(left, right);
+        if (recentOrder !== 0) return recentOrder;
       } else if (sortMode === 'date-asc' || sortMode === 'date-desc') {
         if (leftHasYear !== rightHasYear) return leftHasYear ? -1 : 1;
         if (leftHasYear && rightHasYear && leftYear !== rightYear) {
@@ -463,8 +481,8 @@ const searchIndexJson = JSON.stringify(
         const typeOrder = compareText(left.dataset.archiveTypeLabel ?? '', right.dataset.archiveTypeLabel ?? '');
         if (typeOrder !== 0) return typeOrder;
       } else {
-        const accessionOrder = (right.dataset.archiveAccession ?? '').localeCompare(left.dataset.archiveAccession ?? '');
-        if (accessionOrder !== 0) return accessionOrder;
+        const recentOrder = compareRecentEntries(left, right);
+        if (recentOrder !== 0) return recentOrder;
       }
       const titleOrder = compareText(left.dataset.archiveTitle ?? '', right.dataset.archiveTitle ?? '');
       if (titleOrder !== 0) return titleOrder;
