@@ -2653,3 +2653,20 @@
 - local-admin 6 个测试文件（access-auth、card-schema、contacts、details-open-state、release-deployer、submissions）全部通过，fail 0。
 
 当前状态：改动仅涉及 local-admin/server.mjs，需随下次应用部署（GitHub 自动部署流程）上线后生效；本地模式与线上模式行为一致。
+
+## 2026-09-07：bootstrap JSON 加 ETag、静态 JS/CSS 加短缓存
+
+用户反馈部署前两轮优化后打开管理端仍有卡顿感。TAT 实测确认香港服务器部署成功（getBootstrap 与 304 协商缓存代码均已上线、服务 13:31 正常重启、负载健康），随后量化定位剩余传输大头：每次打开管理端需下载 /api/bootstrap JSON 268KB（no-store 每次重传）+ app.js 192KB + styles.css 89KB，合计约 550KB；且 304 协商缓存对跨境用户每个资源仍需一次验证往返。
+
+完成内容：
+
+- server.mjs `sendJson` 增加可选 `etag` 参数：输出 ETag 头并将 Cache-Control 改为 `private, no-cache`，请求携带匹配的 If-None-Match 时直接返回 304 不传输 JSON 内容。
+- `/api/bootstrap` 路由：调 getBootstrap 后用内存缓存的 mtime 签名生成 ETag（`"ljm-<签名>"`），数据未变时浏览器 304 免下载 268KB；保存/发布等写文件后 mtime 变化 → 签名变化 → ETag 变化 → 下次请求 200 返回新数据，不会出现旧数据。
+- `/admin/` 静态资源按扩展名分派：`.js`/`.css` 用 `private, max-age=300`（5 分钟内浏览器零请求，过期后仍走 Last-Modified 304 验证）；HTML 保持 `private, no-cache`（入口页始终验证，避免部署后 5 分钟内 JS 与页面版本错配）。图片与回收区图片保持 `private, no-cache` 不变。
+
+检查结果：
+
+- 三处改动 grep 核验均已落盘；语法检查通过；local-admin 6 个测试文件全部通过（fail 0）。
+- 本地实测：GET /api/bootstrap 首次 200 + ETag（268156 bytes），携带 If-None-Match 再次请求返回 304 Not Modified 且零内容传输；/admin/app.js 响应头为 private, max-age=300 + Last-Modified；/admin/（index.html）保持 private, no-cache。
+
+当前状态：改动仅涉及 local-admin/server.mjs，需随下次 GitHub 自动部署上线。部署后首次打开仍需完整加载一次（预期内），此后 5 分钟内重复打开静态资源零请求、bootstrap 未变时 304 免传输。

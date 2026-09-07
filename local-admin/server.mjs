@@ -233,12 +233,22 @@ const mimeTypes = new Map([
 	['.webp', 'image/webp'],
 ]);
 
-const sendJson = (response, status, value) => {
-	response.writeHead(status, {
+const sendJson = (response, status, value, options = {}) => {
+	const headers = {
 		'Content-Type': 'application/json; charset=utf-8',
 		'Cache-Control': 'no-store',
 		...securityHeaders(),
-	});
+	};
+	if (options.etag) {
+		headers['ETag'] = options.etag;
+		headers['Cache-Control'] = 'private, no-cache';
+		if (options.request?.headers?.['if-none-match'] === options.etag) {
+			response.writeHead(304, headers);
+			response.end();
+			return;
+		}
+	}
+	response.writeHead(status, headers);
 	response.end(JSON.stringify(value));
 };
 
@@ -2005,7 +2015,11 @@ const adminServer = http.createServer(async (request, response) => {
 			sendJson(response, 405, { error: '不支持此操作。' }); return;
 		}
 		if (request.method === 'GET' && url.pathname === '/api/bootstrap') {
-			sendJson(response, 200, await getBootstrap());
+			await getBootstrap();
+			sendJson(response, 200, bootstrapCache, {
+				etag: `"ljm-${bootstrapSignature}"`,
+				request,
+			});
 			return;
 		}
 		if (request.method === 'GET' && url.pathname === '/api/query-records') {
@@ -2083,8 +2097,11 @@ const adminServer = http.createServer(async (request, response) => {
 			return;
 		}
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname.startsWith('/admin/')) {
+			const resourceExtension = path.extname(url.pathname).toLowerCase();
 			await sendFile(response, publicDirectory, url.pathname.slice('/admin'.length), {
-				cacheControl: 'private, no-cache',
+				cacheControl: ['.js', '.css'].includes(resourceExtension)
+					? 'private, max-age=300'
+					: 'private, no-cache',
 				request,
 			});
 			return;
