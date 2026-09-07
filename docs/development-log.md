@@ -2670,3 +2670,26 @@
 - 本地实测：GET /api/bootstrap 首次 200 + ETag（268156 bytes），携带 If-None-Match 再次请求返回 304 Not Modified 且零内容传输；/admin/app.js 响应头为 private, max-age=300 + Last-Modified；/admin/（index.html）保持 private, no-cache。
 
 当前状态：改动仅涉及 local-admin/server.mjs，需随下次 GitHub 自动部署上线。部署后首次打开仍需完整加载一次（预期内），此后 5 分钟内重复打开静态资源零请求、bootstrap 未变时 304 免传输。
+
+## 2026-09-07：管理端日期字段改为自定义分段输入
+
+用户反馈管理端的"入藏日期"年度输入超过 4 位数字后不会自动跳转到月份段。
+
+问题原因：`local-admin/public/app.js` 的 `renderField` 把所有 `type === '日期'` 字段渲染为浏览器原生 `<input type="date">`，不同浏览器的"输满 4 位年份自动跳到月份"行为不一致，部分浏览器（如老 Edge、国内浏览器）只把它当成带日历图标的普通文本框，需要手动按 `/` 或 Tab 才能切换段位。
+
+完成内容（用户选择方案 A：自定义分段输入，放弃原生日历按钮以换取确定性行为）：
+
+- `app.js` `renderField`（约 1445 行附近）：日期字段渲染从 `<input type="date">` 改为 `<input type="text" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="YYYY-MM-DD" data-mask="date">`，其余样式与其它文本输入保持一致。
+- `app.js` `cleanValue` 之后新增 `formatDateMaskInput` 函数（约 2504 行）：在用户每次输入/删除/粘贴时，把 input.value 中所有非数字字符过滤，按 4/2/2 自动插入 `-`，光标位置根据"原光标前的数字数"重新映射（>4 位 +1、>6 位再 +1）。最多保留 8 位数字（年月日共 8 位），超出自动截断。
+- `app.js` `editorSurface` 的 `input` 事件监听（约 3051 行）在最前面识别 `data-mask="date"`，调用 `formatDateMaskInput`，后续 `handleFieldChange` 仍能拿到干净的 YYYY-MM-DD 字符串并写入 state（`cleanValue` 对 type="text" 已 trim 处理，不受影响）。
+- 数据格式没变：保存到 `core.*_date` 字段的仍是 YYYY-MM-DD，与原 `type="date"` 完全一致，不需要迁移任何草稿或正式数据。
+- 样式不需要调整：`.form-field input, .form-field textarea, .form-field select` 共享样式，新控件继承已有的高度、边框、圆角、焦点高亮等。
+
+检查结果：
+
+- 渲染处、事件监听处、`formatDateMaskInput` 定义处各 grep 一次均已落盘（行号 1450/1454、3053、2504）。
+- 用 Node 跑了 17 个边界 case 的函数单元测试，覆盖：空输入、连续输入 1/2/3/4/5/6/7/8/9/10 各种长度（含异常 "202600907" 超长场景被截断为 "2026-00-90"）、从完整日期回退到只剩年份、纯粘贴场景（含 "/"，"年/月/日"），全部按预期分段。
+- 提交值仍是 ISO 格式 YYYY-MM-DD，与现有正则校验 `^\d{4}-\d{2}-\d{2}$` 完全兼容，不需要改其他校验与展示代码。
+- 仅在用户当前已渲染的表单上需刷新一次页面才生效（新一次 render 才走新模板）；未安装新包，未引入新依赖，未改动数据库或文件结构。
+
+当前状态：仅修改 `local-admin/public/app.js`，不影响发布数据、隐私检查、构建命令；无需执行 `build`（公开站点未改），随管理端下次部署一起上线即可。

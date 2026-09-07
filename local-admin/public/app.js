@@ -1443,8 +1443,15 @@ const renderField = ({
 	} else if (administrativeRegionListIds[fieldCode]) {
 		control = `<input class="field-control administrative-region-control${regionState?.warning ? ' is-invalid' : ''}" type="text" list="${administrativeRegionListIds[fieldCode]}" autocomplete="off" placeholder="${escapeHtml(regionState?.placeholder ?? '')}" data-initial-value="${escapeHtml(value ?? '')}" ${attributes}${requiredControlAttribute}${regionState?.warning ? ' aria-invalid="true"' : ''} value="${escapeHtml(value ?? '')}" />`;
 	} else {
-		const inputType = type === '日期' ? 'date' : ['整数', '数值'].includes(type) ? 'number' : 'text';
-		control = `<input class="field-control" type="${inputType}"${type === '数值' ? ' step="any"' : ''} ${attributes}${requiredControlAttribute} value="${escapeHtml(value ?? '')}" />`;
+		// 日期字段改用文本输入 + JS 自定义分段，避免依赖浏览器原生 <input type="date">
+		// 的自动跳段行为（部分浏览器不会在年度输满 4 位后自动跳到月份）。
+		const isDateInput = type === '日期';
+		const inputType = isDateInput ? 'text' : ['整数', '数值'].includes(type) ? 'number' : 'text';
+		const dateAttributes = isDateInput
+			? ' inputmode="numeric" maxlength="10" autocomplete="off" placeholder="YYYY-MM-DD" data-mask="date"'
+			: '';
+		const stepAttribute = type === '数值' ? ' step="any"' : '';
+		control = `<input class="field-control" type="${inputType}"${stepAttribute}${dateAttributes} ${attributes}${requiredControlAttribute} value="${escapeHtml(value ?? '')}" />`;
 	}
 	const wrapperTag = fieldCode === 'object_type' ? 'div' : 'label';
 	const help = fieldCode === 'object_type'
@@ -2491,6 +2498,31 @@ const cleanValue = (control) => {
 	return control.value.trim() || undefined;
 };
 
+// 日期字段（data-mask="date"）的实时格式化：把任何非数字字符过滤掉，
+// 按 4/2/2 自动加 -，让用户输完 4 位年份自动跳到月份、输满月份 2 位自动跳到日。
+// 不依赖浏览器原生 <input type="date"> 的自动跳段行为（部分浏览器不支持）。
+const formatDateMaskInput = (input) => {
+	if (input?.dataset?.mask !== 'date') return;
+	const oldValue = input.value;
+	const oldCursorStart = input.selectionStart ?? oldValue.length;
+	const digits = oldValue.replace(/\D/g, '').slice(0, 8);
+	let formatted;
+	if (digits.length <= 4) formatted = digits;
+	else if (digits.length <= 6) formatted = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+	else formatted = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
+	if (oldValue === formatted) return;
+	const digitsBeforeCursor = oldValue.slice(0, oldCursorStart).replace(/\D/g, '').length;
+	let newCursor = digitsBeforeCursor;
+	if (digitsBeforeCursor > 4) newCursor += 1;
+	if (digitsBeforeCursor > 6) newCursor += 1;
+	input.value = formatted;
+	try {
+		input.setSelectionRange(newCursor, newCursor);
+	} catch (_error) {
+		// 某些浏览器/场景下 setSelectionRange 不可用，忽略即可
+	}
+};
+
 const setFieldValue = (scope, dimension, fieldCode, value) => {
 	let target;
 	if (scope === 'public') target = state.current.public_view;
@@ -3017,6 +3049,9 @@ elements.editorSurface.addEventListener('toggle', (event) => {
 }, true);
 
 elements.editorSurface.addEventListener('input', (event) => {
+	if (event.target?.dataset?.mask === 'date') {
+		formatDateMaskInput(event.target);
+	}
 	if (state.workspaceMode === 'query' && event.target.matches('[data-query-search]')) {
 		state.query.search = event.target.value;
 		state.query.page = 1;
