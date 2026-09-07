@@ -157,6 +157,8 @@ if (archiveIndex) {
 	check(archiveIndex.html.includes('data-match-reason'), '档案列表缺少关键词匹配位置提示。');
 	check(!archiveIndex.html.includes('data-search-text'), '档案列表重新使用扁平搜索文本而不是分字段搜索索引。');
 	check(archiveIndex.html.includes('id="archive-pagination"'), '档案列表缺少条件式分页控件。');
+	check(archiveIndexSource.includes('compareRecentEntries'), '档案列表缺少统一的最近收录排序规则。');
+	check(archiveIndexSource.includes('item.core.created_date?.trim()'), '最近收录排序没有使用首次录入日期。');
 	check(archiveIndexSource.includes('.archive-list > li[hidden]'), '档案列表缺少筛选结果卡片的明确隐藏样式。');
 	for (const sortValue of ['recent', 'date-asc', 'date-desc', 'type', 'relevance']) {
 		check(archiveIndex.html.includes(`value="${sortValue}"`), `档案列表缺少排序方式：${sortValue}。`);
