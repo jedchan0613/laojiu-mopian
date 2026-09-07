@@ -2635,3 +2635,21 @@
 - local-admin 6 个测试文件（access-auth、card-schema、contacts、details-open-state、release-deployer、submissions）全部通过，fail 0。
 
 当前状态：改动仅涉及 local-admin/server.mjs，需随下次应用部署（GitHub 自动部署流程）上线后生效；本地模式行为不受影响。
+
+## 2026-09-07：给 /api/bootstrap 加 mtime 签名内存缓存
+
+用户反馈每次进入档案管理或点开任一记录时，"读取中…"状态卡顿明显。定位到根因：前端每次 `loadBootstrap` 都 `await fetch('/api/bootstrap')`；后端 `/api/bootstrap` 路由直接调 `loadBootstrap()`，后者要并发读取 archive-data、drafts、history、recycle-bin 共 4 个目录下的全部 JSON + 9 份代码字典/维度标准 + 对每条记录做字段归一化、collection_code 重算、跑完整性报告。本地开发机实测首次响应约 600ms，在 2C/2G 香港服务器上预计 1.5-3 秒，对应截图里的"读取中"。
+
+完成内容：
+
+- server.mjs 在 `loadBootstrap` 下方新增 `computeBootstrapSignature`（递归 stat 4 个源目录取最大 mtime）与 `getBootstrap` 包装层（按签名匹配返回内存缓存结果，不匹配时调 `loadBootstrap` 重算并刷新签名）。
+- `/api/bootstrap` 路由（2008 行）与 `createQueryRecords`（1091 行）改用 `getBootstrap`。写操作（saveDraft / publishDraft / withdrawOfficialRecord / 三个 restore）仍直接 `loadOfficialRecords` + `loadDrafts` 单项读取，不走缓存，保证业务判断拿到最新数据。
+- 失效策略：写文件 mtime 自动失效，无需在写操作中主动清缓存。`inbox/` 目录不参与签名（待入站图片不影响 records 派生数据）。
+
+检查结果：
+
+- 三处改动逐项 grep 核验均已落盘；server.mjs 语法检查通过。
+- 本地实测（`archive-data/` 当前含 1 条记录的小数据集）：cache miss 首次 600ms，cache hit 5 次 17~20ms，约 30 倍提速；`touch` 一个 archive JSON 后下次请求 359ms 自动重算，再读 62ms 稳定。
+- local-admin 6 个测试文件（access-auth、card-schema、contacts、details-open-state、release-deployer、submissions）全部通过，fail 0。
+
+当前状态：改动仅涉及 local-admin/server.mjs，需随下次应用部署（GitHub 自动部署流程）上线后生效；本地模式与线上模式行为一致。

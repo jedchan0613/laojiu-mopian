@@ -1024,6 +1024,51 @@ const loadBootstrap = async () => {
 	};
 };
 
+const bootstrapSourceDirectories = [
+	archiveDataDirectory,
+	draftDirectory,
+	historyDirectory,
+	recycleDirectory,
+];
+
+const computeBootstrapSignature = async () => {
+	const walk = async (directory) => {
+		let latest = 0;
+		let entries;
+		try { entries = await fs.readdir(directory, { withFileTypes: true }); } catch { return 0; }
+		for (const entry of entries) {
+			const entryPath = path.join(directory, entry.name);
+			if (entry.isDirectory()) {
+				const sub = await walk(entryPath);
+				if (sub > latest) latest = sub;
+			} else if (entry.isFile()) {
+				try {
+					const entryStat = await fs.stat(entryPath);
+					if (entryStat.mtimeMs > latest) latest = entryStat.mtimeMs;
+				} catch {}
+			}
+		}
+		return latest;
+	};
+	let signature = 0;
+	for (const directory of bootstrapSourceDirectories) {
+		const sub = await walk(directory);
+		if (sub > signature) signature = sub;
+	}
+	return Math.floor(signature);
+};
+
+let bootstrapCache = null;
+let bootstrapSignature = 0;
+
+const getBootstrap = async () => {
+	const signature = await computeBootstrapSignature();
+	if (bootstrapCache && signature === bootstrapSignature) return bootstrapCache;
+	bootstrapCache = await loadBootstrap();
+	bootstrapSignature = signature;
+	return bootstrapCache;
+};
+
 const queryTextList = (value) => {
 	const values = Array.isArray(value) ? value : [value];
 	return [...new Set(values
@@ -1043,7 +1088,7 @@ const safeSpecificQueryFields = new Set([
 ]);
 
 const createQueryRecords = async () => {
-	const bootstrap = await loadBootstrap();
+	const bootstrap = await getBootstrap();
 	let imageManifest = {};
 	try { imageManifest = await readJson(responsiveImageManifestFile); } catch {}
 	const requiredVariantWidths = [320, 640, 1280, 1920];
@@ -1960,7 +2005,7 @@ const adminServer = http.createServer(async (request, response) => {
 			sendJson(response, 405, { error: '不支持此操作。' }); return;
 		}
 		if (request.method === 'GET' && url.pathname === '/api/bootstrap') {
-			sendJson(response, 200, await loadBootstrap());
+			sendJson(response, 200, await getBootstrap());
 			return;
 		}
 		if (request.method === 'GET' && url.pathname === '/api/query-records') {
