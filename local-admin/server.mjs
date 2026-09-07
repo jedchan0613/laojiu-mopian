@@ -296,16 +296,37 @@ const sendFile = async (response, rootDirectory, requestPath, options = {}) => {
 		return;
 	}
 
+	const cacheControl = options.cacheControl ?? 'no-store';
+	const negotiateCache = cacheControl !== 'no-store' && options.request;
+
 	try {
-		const stat = await fs.stat(filePath);
-		if (stat.isDirectory()) filePath = path.join(filePath, 'index.html');
+		let stat = await fs.stat(filePath);
+		if (stat.isDirectory()) {
+			filePath = path.join(filePath, 'index.html');
+			stat = await fs.stat(filePath);
+		}
+		const lastModified = negotiateCache ? stat.mtime.toUTCString() : null;
+		if (negotiateCache) {
+			const ifModifiedSince = options.request.headers['if-modified-since'];
+			const mtimeSeconds = Math.floor(stat.mtimeMs / 1000) * 1000;
+			if (ifModifiedSince && Date.parse(ifModifiedSince) >= mtimeSeconds) {
+				response.writeHead(304, {
+					'Cache-Control': cacheControl,
+					'Last-Modified': lastModified,
+					...securityHeaders(),
+				});
+				response.end();
+				return;
+			}
+		}
 		let content = await fs.readFile(filePath);
 		if (options.transformHtml && path.extname(filePath).toLowerCase() === '.html') {
 			content = Buffer.from(options.transformHtml(content.toString('utf8')), 'utf8');
 		}
 		response.writeHead(200, {
 			'Content-Type': mimeTypes.get(path.extname(filePath).toLowerCase()) ?? 'application/octet-stream',
-			'Cache-Control': 'no-store',
+			'Cache-Control': cacheControl,
+			...(lastModified ? { 'Last-Modified': lastModified } : {}),
 			...securityHeaders(),
 		});
 		response.end(content);
@@ -1957,6 +1978,7 @@ const adminServer = http.createServer(async (request, response) => {
 				response,
 				await pathExists(inboxFile) ? path.join(inboxDirectory, itemId) : path.join(siteArchiveDirectory, itemId),
 				`/${filename}`,
+				{ cacheControl: 'private, no-cache', request },
 			);
 			return;
 		}
@@ -1966,7 +1988,10 @@ const adminServer = http.createServer(async (request, response) => {
 			safeEntryId(entryId);
 			const entryDirectory = path.join(recycleDirectory, itemId, entryId);
 			const manifest = await readJson(path.join(entryDirectory, 'manifest.json'));
-			await sendFile(response, entryDirectory, `/${manifest.filename}`);
+			await sendFile(response, entryDirectory, `/${manifest.filename}`, {
+				cacheControl: 'private, no-cache',
+				request,
+			});
 			return;
 		}
 		if (request.method === 'POST' && url.pathname === '/api/save-draft') {
@@ -2013,7 +2038,10 @@ const adminServer = http.createServer(async (request, response) => {
 			return;
 		}
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname.startsWith('/admin/')) {
-			await sendFile(response, publicDirectory, url.pathname.slice('/admin'.length));
+			await sendFile(response, publicDirectory, url.pathname.slice('/admin'.length), {
+				cacheControl: 'private, no-cache',
+				request,
+			});
 			return;
 		}
 		if (request.method !== 'GET' && request.method !== 'HEAD') {
