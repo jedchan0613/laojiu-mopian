@@ -2617,3 +2617,21 @@
 - local-admin 6 个测试文件（access-auth、card-schema、contacts、details-open-state、release-deployer、submissions）全部通过。
 
 当前状态：功能仅在本地管理入口界面层改动，未涉及公开网站内容，无需重新构建发布。
+
+## 2026-09-07：线上管理端静态资源与图片改用协商缓存
+
+用户反馈线上管理端（Cloudflare Access + Tunnel 的 admin 域名）比公开首页卡很多。先通过 TAT 在香港服务器实测：服务器负载 0.54、内存充足、本机直连管理端 healthz 仅 0.9ms、服务器到 Cloudflare 边缘 ping 约 1ms，排除服务器算力与负载因素；确认体感卡顿主要来自跨境网络链路叠加线上模式所有响应一律 `Cache-Control: no-store`，导致约 280KB 的管理前端资源（app.js 191KB + styles.css 88KB）与档案图片每次刷新都完整重下。
+
+完成内容：
+
+- server.mjs `sendFile` 新增 `cacheControl` 与 `request` 两个可选参数：非 `no-store` 时输出 `Last-Modified`，并对带 `If-Modified-Since` 的请求做秒级时间比对，未修改时直接返回 304 不传内容；目录转 index.html 时重新 stat 以取得正确修改时间。
+- `/admin/` 管理页静态资源、`/api/image/` 档案图片、`/api/recycle-image/` 回收区图片三处改用 `Cache-Control: private, no-cache` 协商缓存：允许浏览器本地缓存但每次向服务器验证，文件更新后立即生效；`private` 保证内容只存用户浏览器，不进入 Cloudflare 或任何共享缓存，不降低档案图片隐私要求。
+- API 数据响应、投稿图片、公开站预览文件仍保持 `no-store` 不变；Cloudflare Access JWT 验签逻辑未做任何改动，每个请求仍先验证身份。
+
+检查结果：
+
+- 四处改动逐项 grep 核验均已落盘；server.mjs 语法检查通过。
+- 本地实测：`/admin/app.js` 首次请求返回 200 + `private, no-cache` + `Last-Modified`，携带 `If-Modified-Since` 再次请求返回 304 Not Modified 不传输内容；`styles.css` 行为一致。
+- local-admin 6 个测试文件（access-auth、card-schema、contacts、details-open-state、release-deployer、submissions）全部通过，fail 0。
+
+当前状态：改动仅涉及 local-admin/server.mjs，需随下次应用部署（GitHub 自动部署流程）上线后生效；本地模式行为不受影响。
