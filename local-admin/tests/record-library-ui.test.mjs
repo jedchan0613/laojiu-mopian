@@ -14,9 +14,13 @@ test('档案管理首页包含独立列表、速览和返回入口', async () =>
 	assert.match(html, /class="records-pane"/);
 	assert.match(html, /id="back-to-library-button"/);
 	assert.match(script, /recordViewMode: 'overview'/);
+	assert.match(script, /recordPage: 1, recordPageSize: 15/);
+	assert.match(script, /page: 1, pageSize: 15/);
 	assert.match(script, /renderRecordOverview/);
+	assert.match(script, /尚未选择档案/);
+	assert.match(script, /if \(previousMode !== 'records'\) \{/);
 	assert.match(script, /data-record-overview-action="edit"/);
-	assert.match(script, /else if \(visibleRecords\[0\]\) previewRecord/);
+	assert.doesNotMatch(script, /else if \(visibleRecords\[0\]\) previewRecord/);
 	assert.match(styles, /body\.admin-v2\[data-workspace="records"\] \.app-shell/);
 	assert.match(styles, /\.record-overview-hero/);
 });
