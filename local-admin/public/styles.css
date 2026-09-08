@@ -5918,6 +5918,97 @@ body.admin-v2 .query-card.is-selected {
 	border-color: #c7d7fe;
 }
 
+body.admin-v2 .query-filter-grid label,
+body.admin-v2 .query-advanced-grid label,
+body.admin-v2 .query-advanced summary {
+	color: var(--admin-muted);
+}
+
+body.admin-v2 .query-filter-grid input,
+body.admin-v2 .query-filter-grid select,
+body.admin-v2 .query-advanced-grid select {
+	min-height: 2.45rem;
+	color: var(--admin-ink);
+	background: #fff;
+	border: 1px solid var(--admin-line-strong);
+	border-radius: var(--admin-radius-sm);
+}
+
+body.admin-v2 .query-filter-grid input:focus,
+body.admin-v2 .query-filter-grid select:focus,
+body.admin-v2 .query-advanced-grid select:focus {
+	border-color: var(--admin-accent);
+	outline: 2px solid #c7d7fe;
+	outline-offset: 1px;
+}
+
+body.admin-v2 .query-status-switch {
+	padding: 0.2rem;
+	background: #f2f4f7;
+	border: 0;
+	border-radius: 0.65rem;
+}
+
+body.admin-v2 .query-status-switch button {
+	color: var(--admin-muted);
+	border-radius: 0.48rem;
+}
+
+body.admin-v2 .query-status-switch button.is-active {
+	color: var(--admin-ink);
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+}
+
+body.admin-v2 .busy-overlay {
+	z-index: 100;
+	background: rgba(16, 24, 40, 0.42);
+	backdrop-filter: blur(5px);
+}
+
+body.admin-v2 .busy-card {
+	min-width: min(25rem, 100%);
+	padding: 1.6rem;
+	color: var(--admin-ink);
+	background: #fff;
+	border: 1px solid var(--admin-line);
+	border-radius: var(--admin-radius-lg);
+	box-shadow: 0 1.5rem 4rem rgba(16, 24, 40, 0.22);
+}
+
+body.admin-v2 .busy-card span {
+	color: var(--admin-muted);
+	text-align: center;
+}
+
+body.admin-v2 .busy-spinner {
+	border-color: #d0d5dd;
+	border-top-color: var(--admin-accent);
+}
+
+body.admin-v2 .busy-cancel-button {
+	min-height: 2.25rem;
+	margin-top: 1rem;
+	padding: 0.48rem 0.9rem;
+	color: #344054;
+	background: #fff;
+	border: 1px solid var(--admin-line-strong);
+	border-radius: var(--admin-radius-sm);
+	cursor: pointer;
+	font-size: 0.72rem;
+	font-weight: 620;
+}
+
+body.admin-v2 .busy-cancel-button:hover:not(:disabled) {
+	background: var(--admin-surface-soft);
+	border-color: #98a2b3;
+}
+
+body.admin-v2 .busy-cancel-button:disabled {
+	cursor: wait;
+	opacity: 0.65;
+}
+
 body.admin-v2 .record-action-dock {
 	right: clamp(1.25rem, 2.4vw, 2.4rem);
 	left: calc(var(--admin-nav-width) + clamp(1.25rem, 2.4vw, 2.4rem));

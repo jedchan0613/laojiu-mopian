@@ -63,6 +63,27 @@ test('拒绝不安全的公开版本来源标签', async () => {
 	});
 });
 
+test('取消版本准备时保留当前 live，并清理未完成版本', async () => {
+	await withFixture(async ({ source, releases, previous, live }) => {
+		for (const [name, content] of [
+			['index.html', 'new'], ['404.html', 'not found'], ['robots.txt', 'robots'], ['sitemap.xml', 'map'],
+		]) await fs.writeFile(path.join(source, name), content);
+		const deployer = createReleaseDeployer({
+			sourceDirectory: source,
+			releasesDirectory: releases,
+			liveLink: live,
+			now: () => new Date('2026-09-03T12:00:00+08:00'),
+			randomId: () => '1234abcd',
+		});
+		const controller = new AbortController();
+		controller.abort();
+
+		await assert.rejects(deployer.deploy({ signal: controller.signal }), /操作已取消/);
+		assert.equal((await readLiveRelease(releases, live)).resolvedTarget, previous);
+		await assert.rejects(fs.stat(path.join(releases, '20260903-120000-admin-1234abcd')));
+	});
+});
+
 test('构建完整时复制独立版本并原子切换 live', { skip: process.platform === 'win32' }, async () => {
 	await withFixture(async ({ source, releases, previous, live }) => {
 		for (const [name, content] of [

@@ -29,15 +29,24 @@ const requireDirectory = async (directory, label) => {
 	if (!stat.isDirectory()) throw new Error(`${label}不是目录：${directory}`);
 };
 
-const copyPublishedTree = async (sourceDirectory, destinationDirectory) => {
+const throwIfAborted = (signal) => {
+	if (!signal?.aborted) return;
+	const error = new Error('操作已取消。');
+	error.name = 'AbortError';
+	throw error;
+};
+
+const copyPublishedTree = async (sourceDirectory, destinationDirectory, signal = null) => {
+	throwIfAborted(signal);
 	for (const entry of await fs.readdir(sourceDirectory, { withFileTypes: true })) {
+		throwIfAborted(signal);
 		const sourcePath = path.join(sourceDirectory, entry.name);
 		const destinationPath = path.join(destinationDirectory, entry.name);
 		if (entry.isSymbolicLink()) throw new Error(`公开构建中不允许出现软链接：${entry.name}`);
 		if (entry.isDirectory()) {
 			await fs.mkdir(destinationPath, { mode: 0o755 });
 			await fs.chmod(destinationPath, 0o755);
-			await copyPublishedTree(sourcePath, destinationPath);
+			await copyPublishedTree(sourcePath, destinationPath, signal);
 		} else if (entry.isFile()) {
 			await fs.copyFile(sourcePath, destinationPath, fsConstants.COPYFILE_EXCL);
 			await fs.chmod(destinationPath, 0o644);
@@ -66,7 +75,9 @@ export const createReleaseDeployer = ({
 	now = () => new Date(),
 	randomId = () => randomUUID().slice(0, 8),
 }) => ({
-	deploy: async () => {
+	deploy: async (options = {}) => {
+		const { signal = null } = options;
+		throwIfAborted(signal);
 		if (!safeReleaseLabelPattern.test(releaseLabel) || releaseLabel.length > 48) {
 			throw new Error('公开版本来源标签无效。');
 		}
@@ -85,13 +96,14 @@ export const createReleaseDeployer = ({
 			await fs.mkdir(releaseDirectory, { mode: 0o755 });
 			await fs.chmod(releaseDirectory, 0o755);
 			releaseCreated = true;
-			await copyPublishedTree(sourceDirectory, releaseDirectory);
+			await copyPublishedTree(sourceDirectory, releaseDirectory, signal);
 			for (const requiredFile of ['index.html', '404.html', 'robots.txt', 'sitemap.xml']) {
 				const stat = await fs.stat(path.join(releaseDirectory, requiredFile)).catch(() => null);
 				if (!stat?.isFile()) throw new Error(`新公开版本缺少 ${requiredFile}。`);
 			}
 			const linkTarget = process.platform === 'win32' ? releaseDirectory : releaseName;
 			await fs.symlink(linkTarget, temporaryLink, process.platform === 'win32' ? 'junction' : 'dir');
+			throwIfAborted(signal);
 		} catch (error) {
 			await fs.rm(temporaryLink, { force: true }).catch(() => {});
 			if (releaseCreated) await fs.rm(releaseDirectory, { recursive: true, force: true }).catch(() => {});
