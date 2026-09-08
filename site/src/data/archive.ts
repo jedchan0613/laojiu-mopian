@@ -369,7 +369,7 @@ export const archiveItems = [
 			"record_status": "ACT",
 			"item_id": "LJM-20260808-PST-002",
 			"object_type": "PST",
-			"title": "天鹅很肥",
+			"title": "天鹅好肥",
 			"privacy_level": "G",
 			"rights_status": "OWN",
 			"research_status": "R0",
@@ -397,7 +397,7 @@ export const archiveItems = [
 			"scan_date": "2026-08-21",
 			"scan_ppi": 600,
 			"created_date": "2026-09-01",
-			"updated_date": "2026-09-05",
+			"updated_date": "2026-09-08",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
 		},

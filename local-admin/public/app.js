@@ -126,12 +126,12 @@ const state = {
 	confirmedPublicationCopies: false, workspaceMode: 'records', recordViewMode: 'overview', drafts: [], history: [], recycleBin: [],
 	pendingRemovedImages: [], validationIssues: [], pendingObjectCategory: '', recordStatusFilter: 'normal',
 	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '',
-	recordPage: 1, recordPageSize: 30,
+	recordPage: 1, recordPageSize: 15,
 	integrityReport: null, imagePreflight: [], adminMode: 'local', publicSiteUrl: '',
 	query: {
 		loaded: false, loading: false, error: '', records: [], selectedId: '', status: 'normal',
 		search: '', category: '', objectType: '', decade: '', research: '', evidence: '', rights: '',
-		imageStatus: '', page: 1, pageSize: 50, sort: 'updated-desc', advancedOpen: false,
+		imageStatus: '', page: 1, pageSize: 15, sort: 'updated-desc', advancedOpen: false,
 	},
 };
 
@@ -887,12 +887,15 @@ const maintenanceTasksForRecord = (record) => {
 };
 
 const renderRecordOverview = (record) => {
-	if (!record) return `<section class="record-overview-empty">
+	if (!record) {
+		const hasVisibleRecords = sortedRecords(filteredRecords()).length > 0;
+		return `<section class="record-overview-empty">
 		<div class="record-overview-empty-icon" aria-hidden="true">⌁</div>
-		<h3>当前列表中没有档案</h3>
-		<p>可以调整左侧的搜索或筛选条件，也可以新建一条档案。</p>
-		<button class="publish-button" data-record-overview-action="new" type="button">新建档案</button>
+		<h3>${hasVisibleRecords ? '尚未选择档案' : '当前列表中没有档案'}</h3>
+		<p>${hasVisibleRecords ? '从左侧列表选择一条档案，这里才会加载图片和档案速览。' : '可以调整左侧的搜索或筛选条件，也可以新建一条档案。'}</p>
+		${hasVisibleRecords ? '' : '<button class="publish-button" data-record-overview-action="new" type="button">新建档案</button>'}
 	</section>`;
+	}
 	const images = recordImages(record);
 	const firstImage = images[0];
 	const tasks = maintenanceTasksForRecord(record);
@@ -1162,14 +1165,19 @@ const renderWorkspaceCenter = () => {
 
 const setWorkspaceMode = (mode) => {
 	if (!['records', 'query', 'maintenance', 'drafts', 'recycle', 'history'].includes(mode)) return;
+	const previousMode = state.workspaceMode;
 	state.workspaceMode = mode;
 	renderWorkspaceNavigation();
 	if (mode === 'records') {
 		state.recordViewMode = 'overview';
+		if (previousMode !== 'records') {
+			state.activeId = null;
+			state.current = null;
+		}
 		const visibleRecords = sortedRecords(filteredRecords());
-		const targetId = visibleRecords.some((record) => record.core.item_id === state.activeId)
+		const targetId = previousMode === 'records' && visibleRecords.some((record) => record.core.item_id === state.activeId)
 			? state.activeId
-			: visibleRecords[0]?.core.item_id;
+			: null;
 		if (targetId) {
 			previewRecord(targetId);
 			return;
@@ -1193,7 +1201,7 @@ const setRecordStatusFilter = (filter) => {
 	renderRecordList();
 	renderWorkspaceNavigation();
 	const visibleRecords = sortedRecords(filteredRecords());
-	const nextRecord = visibleRecords.find((record) => record.core.item_id === state.activeId) ?? visibleRecords[0];
+	const nextRecord = visibleRecords.find((record) => record.core.item_id === state.activeId);
 	if (nextRecord) previewRecord(nextRecord.core.item_id);
 	else {
 		state.activeId = null;
@@ -3077,13 +3085,12 @@ const loadBootstrap = async (selectedId = state.activeId) => {
 		? null
 		: visibleRecords.some((record) => record.core.item_id === selectedId)
 			? selectedId
-			: visibleRecords[0]?.core.item_id;
+			: null;
 	if (targetId) selectRecord(targetId);
-	else if (visibleRecords[0]) previewRecord(visibleRecords[0].core.item_id);
-	else if (state.recordStatusFilter === 'normal') startNewRecord();
 	else {
 		state.activeId = null;
 		state.current = null;
+		state.recordViewMode = 'overview';
 		updateHeader();
 		renderEditor();
 	}
