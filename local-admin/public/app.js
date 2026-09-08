@@ -2064,7 +2064,6 @@ const renderPreview = () => {
 		{ label: '转录状态', value: pvDisplayCode(record.core.transcription_status) },
 		{ label: '备份状态', value: pvDisplayCode(record.core.backup_status) },
 		{ label: '保存等级', value: pvDisplayCode(record.core.condition_grade) },
-		{ label: '发布副本', value: view.images.length ? `${view.images.length} 个文件` : '' },
 		{ label: '隐私等级', value: pvDisplayCode(record.core.privacy_level) },
 		{ label: '权利状态', value: pvDisplayCode(record.core.rights_status) },
 		{ label: '利用状态', value: pvDisplayCode(record.core.use_status) },
@@ -2231,7 +2230,7 @@ const renderPreview = () => {
 			</section>` : ''}
 			${researchManagementFacts.length ? `
 			<details class="management-information">
-				<summary><span>档案信息</span><small>研究用元数据 · ${researchManagementFacts.length} 项 · 包含编号与技术代码</small></summary>
+				<summary><span>更多信息</span><small>研究用元数据 · ${researchManagementFacts.length} 项 · 包含编号与技术代码</small></summary>
 				<dl class="section-facts">${researchManagementFacts.map((fact) => `<div><dt>${escapeHtml(fact.label)}${fact.code ? `<small>${escapeHtml(fact.code)}</small>` : ''}</dt><dd>${escapeHtml(fact.value)}</dd></div>`).join('')}</dl>
 			</details>` : ''}
 		</div>

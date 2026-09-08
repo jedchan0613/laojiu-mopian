@@ -179,6 +179,9 @@ for (const page of detailPages) {
 	check(pageLoadsScriptMarker(page, '/api/likes?items='), `${page.relativePath} 缺少点赞计数程序。`);
 	check(page.html.includes('data-record-citation'), `${page.relativePath} 缺少引用与复制入口。`);
 	check(page.html.includes('data-record-usage'), `${page.relativePath} 缺少权利与下载说明。`);
+	const managementInformation = page.html.match(/<details\s+class="management-information"[\s\S]*?<\/details>/)?.[0] ?? '';
+	check(managementInformation.includes('更多信息'), `${page.relativePath} 的补充信息区标题不是“更多信息”。`);
+	check(!managementInformation.includes('发布副本'), `${page.relativePath} 的补充信息区仍显示“发布副本”字段。`);
 	const usageSection = page.html.match(/<section\s+class="record-usage"[\s\S]*?<\/section>/)?.[0] ?? '';
 	const downloadAvailable = usageSection.includes('data-download-available="true"');
 	check(
