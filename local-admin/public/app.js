@@ -123,7 +123,7 @@ const privacyChecks = [
 const state = {
 	records: [], standards: null, dictionary: new Map(), commonFields: new Map(), activeId: null,
 	current: null, isNew: false, dirty: false, search: '', activeTab: 'basic', images: [],
-	confirmedPublicationCopies: false, workspaceMode: 'records', drafts: [], history: [], recycleBin: [],
+	confirmedPublicationCopies: false, workspaceMode: 'records', recordViewMode: 'overview', drafts: [], history: [], recycleBin: [],
 	pendingRemovedImages: [], validationIssues: [], pendingObjectCategory: '', recordStatusFilter: 'normal',
 	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '',
 	recordPage: 1, recordPageSize: 30,
@@ -172,6 +172,8 @@ const elements = {
 	recordMoreActionsLabel: document.querySelector('#record-more-actions-label'),
 	mobileRecordBrowserToggle: document.querySelector('#mobile-record-browser-toggle'),
 	recordBrowserContent: document.querySelector('#record-browser-content'),
+	recordsPane: document.querySelector('.records-pane'), recordsPaneClose: document.querySelector('#records-pane-close'),
+	backToLibraryButton: document.querySelector('#back-to-library-button'),
 	taskSummary: document.querySelector('#task-summary'), taskSummaryTitle: document.querySelector('#task-summary-title'),
 	taskSummaryDetail: document.querySelector('#task-summary-detail'), taskChips: document.querySelector('#task-chips'),
 	withdrawDialog: document.querySelector('#withdraw-dialog'), withdrawRecordLabel: document.querySelector('#withdraw-record-label'),
@@ -184,6 +186,8 @@ const setMobileRecordBrowserOpen = (open) => {
 	if (!elements.mobileRecordBrowserToggle || !elements.recordBrowserContent) return;
 	elements.recordBrowserContent.classList.toggle('is-open', open);
 	elements.mobileRecordBrowserToggle.setAttribute('aria-expanded', String(open));
+	const isCompactLayout = window.matchMedia('(max-width: 900px)').matches;
+	elements.recordBrowserContent.setAttribute('aria-hidden', String(isCompactLayout ? !open : false));
 	const stateLabel = elements.mobileRecordBrowserToggle.querySelector('small');
 	if (stateLabel) stateLabel.textContent = open ? '收起' : '展开';
 };
@@ -594,6 +598,14 @@ const statusLabel = (record) => {
 	return '未发布';
 };
 
+const recordStatusTone = (record) => {
+	if (recordIsWithdrawn(record)) return 'withdrawn';
+	if (record._admin?.hasDraft) return 'draft';
+	if (record._admin?.issues?.length) return 'attention';
+	if (record.core.use_status === 'U3') return 'published';
+	return 'neutral';
+};
+
 const recordDecade = (record) => {
 	const year = String(record?.core?.date_display ?? '').match(/(?:18|19|20)\d{2}/)?.[0];
 	return year ? `${year.slice(0, 3)}0` : '';
@@ -874,6 +886,65 @@ const maintenanceTasksForRecord = (record) => {
 	return tasks;
 };
 
+const renderRecordOverview = (record) => {
+	if (!record) return `<section class="record-overview-empty">
+		<div class="record-overview-empty-icon" aria-hidden="true">⌁</div>
+		<h3>当前列表中没有档案</h3>
+		<p>可以调整左侧的搜索或筛选条件，也可以新建一条档案。</p>
+		<button class="publish-button" data-record-overview-action="new" type="button">新建档案</button>
+	</section>`;
+	const images = recordImages(record);
+	const firstImage = images[0];
+	const tasks = maintenanceTasksForRecord(record);
+	const urgentCount = tasks.filter((task) => task.tier === 'urgent').length;
+	const fillCount = tasks.filter((task) => task.tier === 'fill').length;
+	const isReadonly = recordIsWithdrawn(record);
+	const typeLabel = queryCodeLabel('object_type', record.core.object_type);
+	const itemId = record.core.item_id;
+	const hasPublicPage = Boolean(itemId && record._admin?.hasOfficial && record._admin?.officialRecordStatus === 'ACT');
+	const detailRows = [
+		['永久编号', itemId],
+		['收藏编码', record.core.collection_code || '保存后自动生成'],
+		['藏品类型', `${typeLabel}（${record.core.object_type || '未定'}）`],
+		['显示年代', record.core.date_display || '年代未知'],
+		['来源', [record.core.source_name, record.core.source_place].filter(Boolean).join(' · ') || '尚未填写'],
+		['隐私等级', queryCodeLabel('privacy', record.core.privacy_level)],
+		['权利状态', queryCodeLabel('rights_status', record.core.rights_status)],
+		['最后更新', record.core.updated_date || record.core.created_date || '尚未记录'],
+	];
+	const taskMarkup = tasks.length ? tasks.slice(0, 4).map((task) => `<button class="record-overview-task is-${escapeHtml(task.tier)}" data-record-overview-action="task" data-target-tab="${escapeHtml(task.tab)}" data-target-field="${escapeHtml(task.field ?? '')}" type="button">
+		<span>${escapeHtml(task.label)}</span><small>前往处理 →</small>
+	</button>`).join('') : '<div class="record-overview-clear"><strong>当前没有待处理项目</strong><span>仍需在正式发布前完成人工隐私确认。</span></div>';
+	const imageMarkup = firstImage
+		? `<img src="${escapeHtml(firstImage.previewUrl)}" alt="${escapeHtml(displayedImageDescription(record, firstImage, 0, images.length))}" />`
+		: '<div class="record-overview-image-empty"><span>暂无发布图片</span><small>进入编辑后可以添加经过筛选的发布副本</small></div>';
+	return `<div class="record-overview">
+		<section class="record-overview-hero">
+			<div class="record-overview-media">${imageMarkup}${images.length > 1 ? `<span class="record-overview-image-count">共 ${images.length} 张</span>` : ''}</div>
+			<div class="record-overview-intro">
+				<div class="record-overview-heading"><span class="record-status-chip is-${recordStatusTone(record)}">${escapeHtml(statusLabel(record))}</span><small>${escapeHtml(itemId)}</small></div>
+				<h3>${escapeHtml(record.core.title || '未命名藏品')}</h3>
+				<p>${escapeHtml(record.public_view?.description || '这条档案还没有填写公开简介。进入编辑后可继续补充。')}</p>
+				<div class="record-overview-actions">
+					${isReadonly
+						? `<button class="publish-button" data-record-overview-action="restore" type="button" ${record._admin?.canRestoreWithdrawn ? '' : 'disabled'}>恢复为草稿</button>`
+						: '<button class="publish-button" data-record-overview-action="edit" type="button">继续编辑</button><button class="quiet-button" data-record-overview-action="preview" type="button">发布前预览</button>'}
+					${hasPublicPage ? `<a class="quiet-button" href="${escapeHtml(publicPreviewUrl(`/archive/${encodeURIComponent(itemId)}/`))}">查看公开档案</a>` : ''}
+				</div>
+				${isReadonly && !record._admin?.canRestoreWithdrawn ? `<p class="record-overview-readonly-note">${escapeHtml(record._admin?.restoreWithdrawnReason || '这条撤销记录继续作为只读追溯记录保留。')}</p>` : ''}
+			</div>
+		</section>
+		<div class="record-overview-grid">
+			<section class="record-overview-card"><div class="record-overview-card-heading"><div><span>基本资料</span><h4>档案摘要</h4></div><button class="text-button" data-record-overview-action="edit" type="button" ${isReadonly ? 'hidden' : ''}>编辑资料</button></div>
+				<dl class="record-overview-details">${detailRows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>
+			</section>
+			<section class="record-overview-card"><div class="record-overview-card-heading"><div><span>质量提醒</span><h4>${tasks.length ? `${tasks.length} 项需要留意` : '状态良好'}</h4></div>${tasks.length ? `<small>${urgentCount ? `${urgentCount} 项会阻止发布` : `${fillCount} 项可以补齐`}</small>` : ''}</div>
+				<div class="record-overview-tasks">${taskMarkup}${tasks.length > 4 ? `<button class="record-overview-more" data-record-overview-action="edit" type="button">查看另外 ${tasks.length - 4} 项</button>` : ''}</div>
+			</section>
+		</div>
+	</div>`;
+};
+
 const getMaintenanceOverview = () => {
 	const activeRecords = state.records.filter((record) => !recordIsWithdrawn(record));
 	const records = activeRecords.map((record) => ({ record, tasks: maintenanceTasksForRecord(record) }));
@@ -929,11 +1000,17 @@ const renderRecordList = () => {
 	state.recordPage = Math.min(Math.max(1, state.recordPage), pageCount);
 	const startIndex = (state.recordPage - 1) * state.recordPageSize;
 	const pageRecords = records.slice(startIndex, startIndex + state.recordPageSize);
-	elements.recordList.innerHTML = pageRecords.length ? pageRecords.map((record) => `
-		<button class="record-card ${record.core.item_id === state.activeId ? 'is-active' : ''}" data-id="${escapeHtml(record.core.item_id)}" type="button">
-			<strong>${escapeHtml(record.core.title)}</strong><span>${escapeHtml(record.core.item_id)}</span>
-			<small>${escapeHtml(statusLabel(record))}${record._admin?.issues?.length ? ` · 待处理 ${record._admin.issues.length} 项` : ''}</small>
-		</button>`).join('') : `<div class="record-list-empty">${activeConditions ? '当前搜索或筛选没有匹配记录，可以放宽部分条件' : `暂无${statusName}档案`}</div>`;
+	elements.recordList.innerHTML = pageRecords.length ? pageRecords.map((record) => {
+		const image = recordImages(record)[0];
+		const issueCount = maintenanceTasksForRecord(record).length;
+		const typeLabel = queryCodeLabel('object_type', record.core.object_type);
+		return `<button class="record-card ${record.core.item_id === state.activeId ? 'is-active' : ''}" data-id="${escapeHtml(record.core.item_id)}" type="button">
+			<span class="record-card-thumb">${image ? `<img src="${escapeHtml(image.previewUrl)}" alt="" />` : '<span aria-hidden="true">⌁</span>'}</span>
+			<span class="record-card-copy"><span class="record-card-title"><strong>${escapeHtml(record.core.title || '未命名藏品')}</strong><em class="record-status-chip is-${recordStatusTone(record)}">${escapeHtml(statusLabel(record))}</em></span>
+			<span class="record-card-meta">${escapeHtml(typeLabel)} · ${escapeHtml(record.core.date_display || '年代未知')}</span>
+			<small>${escapeHtml(record.core.item_id)}${issueCount ? ` · ${issueCount} 项待处理` : ''}</small></span>
+		</button>`;
+	}).join('') : `<div class="record-list-empty">${activeConditions ? '当前搜索或筛选没有匹配记录，可以放宽部分条件' : `暂无${statusName}档案`}</div>`;
 	elements.recordPagination.hidden = pageCount <= 1;
 	elements.recordPagination.innerHTML = pageCount > 1 ? `
 		<button class="record-page-button" data-record-page="${state.recordPage - 1}" type="button" ${state.recordPage === 1 ? 'disabled' : ''}>上一页</button>
@@ -956,13 +1033,19 @@ const renderWorkspaceNavigation = () => {
 		button.classList.toggle('is-active', button.dataset.workspace === state.workspaceMode);
 	});
 	document.body.dataset.workspace = state.workspaceMode;
-	elements.recordStatusNav.hidden = true;
+	document.body.dataset.recordView = state.recordViewMode;
+	const recordsWorkspaceActive = state.workspaceMode === 'records';
+	elements.recordsPane.hidden = !recordsWorkspaceActive;
+	elements.recordStatusNav.hidden = !recordsWorkspaceActive;
 	document.querySelectorAll('[data-record-status]').forEach((button) => {
 		button.classList.toggle('is-active', button.dataset.recordStatus === state.recordStatusFilter);
 	});
-	elements.mobileRecordBrowserToggle.hidden = true;
-	elements.recordBrowserContent.hidden = true;
-	setMobileRecordBrowserOpen(false);
+	elements.mobileRecordBrowserToggle.hidden = !recordsWorkspaceActive;
+	elements.recordBrowserContent.hidden = !recordsWorkspaceActive;
+	if (recordsWorkspaceActive) {
+		const isCompactLayout = window.matchMedia('(max-width: 900px)').matches;
+		elements.recordBrowserContent.setAttribute('aria-hidden', String(isCompactLayout && !elements.recordBrowserContent.classList.contains('is-open')));
+	} else setMobileRecordBrowserOpen(false);
 };
 
 const renderDraftCenter = () => {
@@ -1081,9 +1164,22 @@ const setWorkspaceMode = (mode) => {
 	if (!['records', 'query', 'maintenance', 'drafts', 'recycle', 'history'].includes(mode)) return;
 	state.workspaceMode = mode;
 	renderWorkspaceNavigation();
-	updateHeader();
-	if (mode === 'records') renderEditor();
-	else {
+	if (mode === 'records') {
+		state.recordViewMode = 'overview';
+		const visibleRecords = sortedRecords(filteredRecords());
+		const targetId = visibleRecords.some((record) => record.core.item_id === state.activeId)
+			? state.activeId
+			: visibleRecords[0]?.core.item_id;
+		if (targetId) {
+			previewRecord(targetId);
+			return;
+		}
+		state.activeId = null;
+		state.current = null;
+		updateHeader();
+		renderEditor();
+	} else {
+		updateHeader();
 		renderWorkspaceCenter();
 		if (mode === 'query' && !state.query.loaded && !state.query.loading) loadQueryRecords();
 	}
@@ -1097,11 +1193,12 @@ const setRecordStatusFilter = (filter) => {
 	renderRecordList();
 	renderWorkspaceNavigation();
 	const visibleRecords = sortedRecords(filteredRecords());
-	if (visibleRecords.some((record) => record.core.item_id === state.activeId)) return;
-	if (visibleRecords[0]) selectRecord(visibleRecords[0].core.item_id);
+	const nextRecord = visibleRecords.find((record) => record.core.item_id === state.activeId) ?? visibleRecords[0];
+	if (nextRecord) previewRecord(nextRecord.core.item_id);
 	else {
 		state.activeId = null;
 		state.current = null;
+		state.recordViewMode = 'overview';
 		updateHeader();
 		renderEditor();
 	}
@@ -1145,6 +1242,31 @@ const updateHeader = () => {
 		elements.lifecycleButton.hidden = true;
 		elements.similarRecordButton.hidden = true;
 		elements.recordMoreActions.hidden = true;
+		elements.backToLibraryButton.hidden = true;
+		hideRecordActionDock();
+		elements.taskSummary.hidden = true;
+		elements.previewLink.href = publicPreviewUrl('/');
+		elements.previewLink.textContent = '查看网站首页';
+		elements.tabs.classList.add('is-hidden');
+		return;
+	}
+	if (state.recordViewMode === 'overview') {
+		const normalCount = state.records.filter((record) => !recordIsWithdrawn(record)).length;
+		const withdrawnCount = state.records.length - normalCount;
+		elements.recordKicker.textContent = '本地档案库';
+		elements.recordKicker.hidden = false;
+		elements.recordTitle.textContent = '档案管理';
+		elements.recordId.textContent = `${normalCount} 条正常档案${withdrawnCount ? ` · ${withdrawnCount} 条已撤销` : ''}`;
+		elements.saveState.textContent = '从左侧选择档案查看速览，再进入正式编辑';
+		elements.saveState.classList.remove('is-dirty');
+		elements.saveDraftButton.disabled = true;
+		elements.publishButton.disabled = true;
+		elements.saveDraftButton.hidden = true;
+		elements.publishButton.hidden = true;
+		elements.lifecycleButton.hidden = true;
+		elements.similarRecordButton.hidden = true;
+		elements.recordMoreActions.hidden = true;
+		elements.backToLibraryButton.hidden = true;
 		hideRecordActionDock();
 		elements.taskSummary.hidden = true;
 		elements.previewLink.href = publicPreviewUrl('/');
@@ -1165,6 +1287,7 @@ const updateHeader = () => {
 		elements.lifecycleButton.hidden = true;
 		elements.similarRecordButton.hidden = true;
 		elements.recordMoreActions.hidden = true;
+		elements.backToLibraryButton.hidden = true;
 		hideRecordActionDock();
 		elements.taskSummary.hidden = true;
 		elements.previewLink.href = publicPreviewUrl('/');
@@ -1172,6 +1295,7 @@ const updateHeader = () => {
 		elements.tabs.classList.add('is-hidden');
 		return;
 	}
+	elements.backToLibraryButton.hidden = false;
 	elements.tabs.classList.remove('is-hidden');
 	elements.recordKicker.hidden = false;
 	elements.recordKicker.textContent = state.isNew ? '新建藏品' : statusLabel(state.current);
@@ -1235,11 +1359,12 @@ const updateHeader = () => {
 	updateTaskSummary();
 };
 
-const selectRecord = (itemId) => {
+const openRecord = (itemId, viewMode = 'editor') => {
 	const record = state.records.find((candidate) => candidate.core.item_id === itemId);
 	if (!record) return;
 	state.activeId = itemId;
 	state.workspaceMode = 'records';
+	state.recordViewMode = viewMode;
 	state.recordStatusFilter = recordIsWithdrawn(record) ? 'withdrawn' : 'normal';
 	state.current = deepClone(record);
 	setMobileRecordBrowserOpen(false);
@@ -1265,6 +1390,27 @@ const selectRecord = (itemId) => {
 	renderEditor();
 };
 
+const selectRecord = (itemId) => openRecord(itemId, 'editor');
+const previewRecord = (itemId) => openRecord(itemId, 'overview');
+
+const enterRecordEditor = (tab = 'basic', targetField = '') => {
+	if (!state.current) return;
+	state.recordViewMode = 'editor';
+	state.activeTab = isWithdrawn() && !['basic', 'images'].includes(tab) ? 'basic' : tab;
+	renderWorkspaceNavigation();
+	updateHeader();
+	renderTabs();
+	renderEditor();
+	if (!targetField) return;
+	requestAnimationFrame(() => {
+		const control = elements.editorSurface.querySelector(`[data-field="${CSS.escape(targetField)}"]`);
+		if (!control) return;
+		control.closest('details')?.setAttribute('open', '');
+		control.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		control.focus();
+	});
+};
+
 const similarCoreFieldCodes = [
 	'object_type', 'batch_id', 'acquisition_method', 'source_name', 'source_place',
 	'country', 'province', 'city', 'district',
@@ -1273,6 +1419,7 @@ const similarCoreFieldCodes = [
 const startNewRecord = (templateRecord = null) => {
 	state.activeId = null;
 	state.workspaceMode = 'records';
+	state.recordViewMode = 'editor';
 	state.isNew = true;
 	setMobileRecordBrowserOpen(false);
 	state.dirty = false;
@@ -2398,6 +2545,11 @@ function renderEditor() {
 		renderWorkspaceCenter();
 		return;
 	}
+	if (state.recordViewMode === 'overview') {
+		elements.editorSurface.innerHTML = renderRecordOverview(state.current);
+		elements.editorSurface.dataset.renderedTab = 'overview';
+		return;
+	}
 	if (!state.current) {
 		elements.editorSurface.innerHTML = '<div class="empty-state">点击“新建藏品”开始建立草稿。</div>';
 		refreshAdministrativeRegionOptions();
@@ -2927,6 +3079,7 @@ const loadBootstrap = async (selectedId = state.activeId) => {
 			? selectedId
 			: visibleRecords[0]?.core.item_id;
 	if (targetId) selectRecord(targetId);
+	else if (visibleRecords[0]) previewRecord(visibleRecords[0].core.item_id);
 	else if (state.recordStatusFilter === 'normal') startNewRecord();
 	else {
 		state.activeId = null;
@@ -2940,7 +3093,7 @@ elements.recordList.addEventListener('click', (event) => {
 	const button = event.target.closest('.record-card');
 	if (!button) return;
 	if (state.dirty && !window.confirm('当前有尚未保存的修改。确定先放弃这些修改并打开另一条记录吗？')) return;
-	selectRecord(button.dataset.id);
+	previewRecord(button.dataset.id);
 });
 
 elements.recordSearch.addEventListener('input', (event) => {
@@ -2989,6 +3142,22 @@ elements.newRecordButton.addEventListener('click', () => {
 
 elements.mobileRecordBrowserToggle.addEventListener('click', () => {
 	setMobileRecordBrowserOpen(elements.mobileRecordBrowserToggle.getAttribute('aria-expanded') !== 'true');
+});
+
+elements.recordsPaneClose.addEventListener('click', () => setMobileRecordBrowserOpen(false));
+
+elements.backToLibraryButton.addEventListener('click', () => {
+	if (state.dirty && !window.confirm('当前有尚未保存的修改。确定放弃这些修改并返回档案速览吗？')) return;
+	const targetId = state.activeId ?? sortedRecords(filteredRecords())[0]?.core.item_id;
+	if (targetId) previewRecord(targetId);
+	else {
+		state.recordViewMode = 'overview';
+		state.current = null;
+		renderWorkspaceNavigation();
+		updateHeader();
+		renderEditor();
+	}
+	if (window.matchMedia('(max-width: 900px)').matches) setMobileRecordBrowserOpen(true);
 });
 
 elements.similarRecordButton.addEventListener('click', startSimilarRecord);
@@ -3172,6 +3341,28 @@ elements.editorSurface.addEventListener('change', async (event) => {
 });
 
 elements.editorSurface.addEventListener('click', async (event) => {
+	const overviewActionButton = event.target.closest('[data-record-overview-action]');
+	if (overviewActionButton) {
+		const action = overviewActionButton.dataset.recordOverviewAction;
+		if (action === 'new') {
+			startNewRecord();
+			return;
+		}
+		if (action === 'restore') {
+			await restoreWithdrawnCurrent();
+			return;
+		}
+		if (action === 'preview') {
+			enterRecordEditor('preview');
+			return;
+		}
+		if (action === 'task') {
+			enterRecordEditor(overviewActionButton.dataset.targetTab || 'basic', overviewActionButton.dataset.targetField || '');
+			return;
+		}
+		enterRecordEditor('basic');
+		return;
+	}
 	const queryOpenButton = event.target.closest('[data-query-open]');
 	if (queryOpenButton) {
 		state.query.selectedId = queryOpenButton.dataset.queryOpen;
