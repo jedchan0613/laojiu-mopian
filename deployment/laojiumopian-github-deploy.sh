@@ -142,7 +142,7 @@ cleanup() {
 trap cleanup EXIT
 
 [[ "${EUID:-$(id -u)}" -eq 0 ]] || fail '必须由 root 或 sudo 运行自动部署程序。'
-for command_name in git tar flock systemctl curl; do
+for command_name in git tar flock systemctl curl cmp diff; do
 	require_command "$command_name"
 done
 require_file "$NODE" 'Node.js'
@@ -244,16 +244,6 @@ log "安装并检查新程序版本：$short_commit"
 run_as_admin "$NODE" --test "$staging_directory"/local-admin/tests/*.test.mjs
 run_as_admin "$NODE" --test "$staging_directory"/site/server/likes/tests/*.test.mjs
 
-log '暂停管理服务，接入服务器现有公开资料并执行正式构建。'
-systemctl stop "$ADMIN_SERVICE"
-service_stopped=true
-
-install -d -o "$ADMIN_USER" -g "$ADMIN_GROUP" -m 0750 "$staging_directory/site/public/archive"
-cp -a -- "$previous_app_directory/site/public/archive/." "$staging_directory/site/public/archive/"
-chown -R "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/public/archive"
-cp -a -- "$previous_app_directory/site/src/data/archive.ts" "$staging_directory/site/src/data/archive.ts"
-chown "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/src/data/archive.ts"
-
 set -a
 # shellcheck disable=SC1091
 source "$ENVIRONMENT_FILE"
@@ -264,12 +254,43 @@ export PATH="/snap/node/current/bin:/usr/local/bin:/usr/bin:/bin"
 export HOME="$NPM_HOME"
 export NPM_CONFIG_CACHE="$NPM_CACHE"
 
-"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
-	"$NODE" "$staging_directory/local-admin/server.mjs" --sync-site-data
-"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
-	"$NPM" run build --prefix "$staging_directory/site"
-"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
-	"$NODE" "$staging_directory/local-admin/server.mjs" --check-config
+sync_runtime_site_data() {
+	assert_staging_path
+	rm -rf -- "$staging_directory/site/public/archive"
+	install -d -o "$ADMIN_USER" -g "$ADMIN_GROUP" -m 0750 "$staging_directory/site/public/archive"
+	cp -a -- "$previous_app_directory/site/public/archive/." "$staging_directory/site/public/archive/"
+	chown -R "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/public/archive"
+	cp -a -- "$previous_app_directory/site/src/data/archive.ts" "$staging_directory/site/src/data/archive.ts"
+	chown "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/src/data/archive.ts"
+	"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
+		"$NODE" "$staging_directory/local-admin/server.mjs" --sync-site-data
+}
+
+build_staged_application() {
+	"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
+		"$NPM" run build --prefix "$staging_directory/site"
+	"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
+		"$NODE" "$staging_directory/local-admin/server.mjs" --check-config
+}
+
+log '接入服务器现有公开资料并执行正式构建；旧管理服务继续在线。'
+sync_runtime_site_data
+build_staged_application
+
+log '新版本构建通过，短暂停止管理服务并核对档案快照。'
+systemctl stop "$ADMIN_SERVICE"
+service_stopped=true
+
+if ! cmp -s -- \
+	"$previous_app_directory/site/src/data/archive.ts" \
+	"$staging_directory/site/src/data/archive.ts" || \
+	! diff -qr -- \
+	"$previous_app_directory/site/public/archive" \
+	"$staging_directory/site/public/archive" >/dev/null; then
+	log '构建期间档案发布层发生变化，重新同步并构建，避免遗漏最新内容。'
+	sync_runtime_site_data
+	build_staged_application
+fi
 
 mv -- "$staging_directory" "$release_directory"
 staging_directory=''

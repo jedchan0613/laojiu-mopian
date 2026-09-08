@@ -21,7 +21,9 @@
 - 新版本测试、构建、配置检查或健康检查失败时，不切换公开网站，并恢复原管理程序。
 - 旧应用版本和旧公开版本不会自动删除，可以用于人工回退。
 - 自动任务使用部署锁；同一时间只能运行一次，避免与另一项代码部署重叠。
-- 代码切换前会停止接收新的管理请求；正在进行的保存或发布可以在限定时间内完成，之后才停止旧管理服务。
+- 安装依赖、运行测试、生成响应式图片和正式构建期间，旧管理服务继续在线；这些步骤失败不会造成管理入口中断。
+- 只有新版本全部构建通过后，程序才会短暂停止接收新的管理请求并原子切换应用版本；正在进行的保存或发布可以在限定时间内完成。
+- 停止旧服务后会再次核对档案数据和公开图片。如果构建期间刚好发生了正式发布，程序会接入最新资料重新构建，避免遗漏新内容。
 
 ## 首次启用顺序
 
@@ -61,6 +63,28 @@ readlink -f /srv/laojiumopian-admin/app/current
 readlink -f /srv/laojiumopian/releases/live
 ```
 
+如果某个错误提交导致定时任务反复失败，可以先暂停自动检查，避免每两分钟重复尝试：
+
+```bash
+sudo systemctl stop laojiumopian-github-deploy.timer
+```
+
+这条命令只暂停 GitHub 自动更新，不会停止当前管理服务、公开网站或 Cloudflare Tunnel。问题修复并人工验证一次发布后，再恢复定时器：
+
+```bash
+sudo systemctl enable --now laojiumopian-github-deploy.timer
+```
+
 ## 部署基础设施更新
 
 普通网页或管理程序修改不需要登录服务器。如果以后修改了 `deployment/laojiumopian-github-deploy.sh` 或对应的 systemd 模板，应先人工检查变更，再从服务器 GitHub 裸仓库导出该提交并重新运行安装程序；部署基础设施本身不自动覆盖，避免普通代码提交扩大服务器权限。
+
+当包含新部署脚本的应用版本已经成功切换后，在服务器运行：
+
+```bash
+sudo bash /srv/laojiumopian-admin/app/current/deployment/install-github-auto-deploy.sh
+sudo systemctl start laojiumopian-github-deploy.service
+sudo systemctl enable --now laojiumopian-github-deploy.timer
+```
+
+第一条把经过 Git 提交和人工检查的新脚本安装到 systemd 实际使用的位置；第二条立即验证一次；第三条在验证成功后恢复定时检查。
