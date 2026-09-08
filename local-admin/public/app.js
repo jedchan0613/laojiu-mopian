@@ -127,7 +127,7 @@ const state = {
 	pendingRemovedImages: [], validationIssues: [], pendingObjectCategory: '', recordStatusFilter: 'normal',
 	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '',
 	recordPage: 1, recordPageSize: 15,
-	integrityReport: null, imagePreflight: [], adminMode: 'local', publicSiteUrl: '',
+	integrityReport: null, integrityLoading: false, imagePreflight: [], adminMode: 'local', publicSiteUrl: '',
 	query: {
 		loaded: false, loading: false, error: '', records: [], selectedId: '', status: 'normal',
 		search: '', category: '', objectType: '', decade: '', research: '', evidence: '', rights: '',
@@ -158,7 +158,8 @@ const elements = {
 	dockSaveDraftButton: document.querySelector('#dock-save-draft-button'),
 	dockPublishButton: document.querySelector('#dock-publish-button'),
 	busyOverlay: document.querySelector('#busy-overlay'), busyTitle: document.querySelector('#busy-title'),
-	busyDetail: document.querySelector('#busy-detail'), saveState: document.querySelector('#save-state'),
+	busyDetail: document.querySelector('#busy-detail'), busyCancelButton: document.querySelector('#busy-cancel-button'),
+	saveState: document.querySelector('#save-state'),
 	recordsBadge: document.querySelector('#records-badge'), draftsBadge: document.querySelector('#drafts-badge'),
 	queryBadge: document.querySelector('#query-badge'),
 	maintenanceBadge: document.querySelector('#maintenance-badge'),
@@ -534,10 +535,46 @@ const showToast = (message, isError = false) => {
 	}, 4200);
 };
 
-const setBusy = (busy, title = '正在处理…', detail = '请保持这个窗口打开') => {
+const setBusy = (busy, title = '正在处理…', detail = '请保持这个窗口打开', options = {}) => {
 	elements.busyOverlay.hidden = !busy;
 	elements.busyTitle.textContent = title;
 	elements.busyDetail.textContent = detail;
+	elements.busyCancelButton.hidden = !busy || !options.cancellable;
+	elements.busyCancelButton.disabled = Boolean(options.cancelPending);
+	elements.busyCancelButton.textContent = options.cancelPending ? '正在取消…' : '取消操作';
+};
+
+let activeOperation = null;
+
+const operationCancelledError = () => {
+	const error = new Error('操作已取消，页面中填写的内容仍然保留。');
+	error.name = 'OperationCancelledError';
+	error.cancelled = true;
+	return error;
+};
+
+const throwIfOperationCancelled = (operation) => {
+	if (operation?.controller.signal.aborted || operation?.cancelRequested) throw operationCancelledError();
+};
+
+const beginCancellableOperation = (kind, title, detail) => {
+	if (activeOperation) throw new Error('已有一项操作正在进行，请稍候。');
+	activeOperation = {
+		id: crypto.randomUUID(), kind, controller: new AbortController(), cancelRequested: false,
+	};
+	setBusy(true, title, detail, { cancellable: true });
+	return activeOperation;
+};
+
+const updateCancellableOperation = (operation, title, detail) => {
+	if (activeOperation !== operation) return;
+	setBusy(true, title, detail, { cancellable: true, cancelPending: operation.cancelRequested });
+};
+
+const finishCancellableOperation = (operation) => {
+	if (activeOperation !== operation) return;
+	activeOperation = null;
+	setBusy(false);
 };
 
 const readApiJson = async (response) => {
@@ -551,20 +588,42 @@ const readApiJson = async (response) => {
 	return response.json();
 };
 
-const apiPost = async (url, payload) => {
+const apiPost = async (url, payload, options = {}) => {
 	const response = await fetch(url, {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json', 'X-LJM-Admin-Request': '1' },
+		headers: {
+			'Content-Type': 'application/json',
+			'X-LJM-Admin-Request': '1',
+			...(options.operation?.id ? { 'X-LJM-Operation-Id': options.operation.id } : {}),
+		},
 		body: JSON.stringify(payload),
+		...(options.operation ? { signal: options.operation.controller.signal } : {}),
 	});
 	const data = await readApiJson(response);
 	if (!response.ok) {
 		const error = new Error(data.error ?? '管理操作没有完成。');
 		error.issues = data.issues ?? [];
+		error.cancelled = Boolean(data.cancelled);
 		throw error;
 	}
 	return data;
 };
+
+const cancelActiveOperation = async () => {
+	const operation = activeOperation;
+	if (!operation || operation.cancelRequested) return;
+	operation.cancelRequested = true;
+	updateCancellableOperation(operation, '正在安全取消…', '正在停止上传或恢复到操作前状态，请稍候');
+	try {
+		const result = await apiPost('/api/cancel-operation', { operationId: operation.id });
+		if (!result.cancelled) operation.controller.abort();
+	} catch {
+		operation.controller.abort();
+	}
+};
+
+const isOperationCancellation = (error, operation = null) =>
+	Boolean(error?.cancelled || error?.name === 'AbortError' || error?.name === 'OperationCancelledError' || operation?.cancelRequested);
 
 const isWithdrawn = () => state.current?.core?.record_status === 'WDR' && !state.current?._admin?.hasDraft;
 
@@ -830,7 +889,8 @@ const recordImages = (record) => (record.core.publication_file_path ?? []).map((
 	const filename = parts.at(-1);
 	return {
 		id: `existing-${index}-${filename}`, kind: 'existing', filename,
-		previewUrl: `/api/image/${encodeURIComponent(imageItemId)}/${encodeURIComponent(filename)}`,
+		previewUrl: `/api/image/${encodeURIComponent(imageItemId)}/${encodeURIComponent(filename)}?variant=preview`,
+		thumbnailUrl: `/api/image/${encodeURIComponent(imageItemId)}/${encodeURIComponent(filename)}?variant=thumb`,
 		description: record.public_view?.image_descriptions?.[index] ?? '',
 	};
 });
@@ -1008,7 +1068,7 @@ const renderRecordList = () => {
 		const issueCount = maintenanceTasksForRecord(record).length;
 		const typeLabel = queryCodeLabel('object_type', record.core.object_type);
 		return `<button class="record-card ${record.core.item_id === state.activeId ? 'is-active' : ''}" data-id="${escapeHtml(record.core.item_id)}" type="button">
-			<span class="record-card-thumb">${image ? `<img src="${escapeHtml(image.previewUrl)}" alt="" />` : '<span aria-hidden="true">⌁</span>'}</span>
+			<span class="record-card-thumb">${image ? `<img src="${escapeHtml(image.thumbnailUrl || image.previewUrl)}" alt="" loading="lazy" decoding="async" />` : '<span aria-hidden="true">⌁</span>'}</span>
 			<span class="record-card-copy"><span class="record-card-title"><strong>${escapeHtml(record.core.title || '未命名藏品')}</strong><em class="record-status-chip is-${recordStatusTone(record)}">${escapeHtml(statusLabel(record))}</em></span>
 			<span class="record-card-meta">${escapeHtml(typeLabel)} · ${escapeHtml(record.core.date_display || '年代未知')}</span>
 			<small>${escapeHtml(record.core.item_id)}${issueCount ? ` · ${issueCount} 项待处理` : ''}</small></span>
@@ -1095,6 +1155,7 @@ const renderHistoryCenter = () => {
 const renderMaintenanceCenter = () => {
 	const overview = getMaintenanceOverview();
 	const integrity = state.integrityReport;
+	const integrityLoading = state.integrityLoading;
 	const integrityPassed = integrity?.status === 'pass';
 	const integrityFailures = integrity?.summary?.failures ?? 0;
 	const tierDefinitions = [
@@ -1129,9 +1190,13 @@ const renderMaintenanceCenter = () => {
 			${cards || `<div class="empty-state">${escapeHtml(empty)}</div>`}
 		</section>`;
 	};
-	const integrityIssues = integrity?.issues?.length
+	const integrityIssues = integrityLoading
+		? '<div class="loading-state"><div class="loading-line"></div><div class="loading-line short"></div></div>'
+		: integrity?.issues?.length
 		? `<ul class="integrity-issue-list">${integrity.issues.map((issue) => `<li><div><strong>${escapeHtml(issue.area)}</strong><span>${issue.item_id ? `${escapeHtml(issue.title || issue.item_id)} · ` : ''}${escapeHtml(issue.message)}</span></div>${issue.item_id ? `<button class="quiet-button" data-center-action="maintenance-open" data-item-id="${escapeHtml(issue.item_id)}" data-target-tab="images" type="button">查看档案</button>` : ''}</li>`).join('')}</ul>`
-		: '<div class="integrity-complete"><strong>发布层结构完整</strong><span>正式 JSON、发布图片、响应式副本、构建页面和管理端隔离检查均通过。</span></div>';
+		: integrity
+			? '<div class="integrity-complete"><strong>发布层结构完整</strong><span>正式 JSON、发布图片、响应式副本、构建页面和管理端隔离检查均通过。</span></div>'
+			: '<div class="empty-state">完整性巡检已改为按需执行，因此打开管理页面时不会再扫描全部图片。</div>';
 	return `<div class="maintenance-overview">
 		<section class="maintenance-summary" aria-labelledby="maintenance-summary-heading">
 			<div class="section-heading"><div><h3 id="maintenance-summary-heading">维护概览</h3><p>按轻重缓急分成三组任务；每条事项都可以直接定位到对应字段，这里不会自动修改资料。</p></div></div>
@@ -1148,8 +1213,8 @@ const renderMaintenanceCenter = () => {
 		</section>
 		${tierDefinitions.map(renderTaskSection).join('')}
 		<section class="maintenance-section" aria-labelledby="integrity-heading">
-			<div class="maintenance-section-heading is-inline"><div><h3 id="integrity-heading">本地完整性巡检</h3><p>${integrity ? `检查于 ${escapeHtml(formatDateTime(integrity.checked_at))}，覆盖 ${integrity.summary.records} 份正式 JSON、${integrity.summary.publication_images} 张发布图片和 ${integrity.summary.responsive_variants} 个网页尺寸副本。` : '尚未取得巡检结果。'}</p></div>
-			<button class="quiet-button" data-center-action="maintenance-refresh" type="button">重新检查</button></div>
+			<div class="maintenance-section-heading is-inline"><div><h3 id="integrity-heading">本地完整性巡检</h3><p>${integrityLoading ? '正在读取正式 JSON、发布副本和公开构建…' : integrity ? `检查于 ${escapeHtml(formatDateTime(integrity.checked_at))}，覆盖 ${integrity.summary.records} 份正式 JSON、${integrity.summary.publication_images} 张发布图片和 ${integrity.summary.responsive_variants} 个网页尺寸副本。` : '进入维护概览后按需检查，不影响档案列表打开速度。'}</p></div>
+			<button class="quiet-button" data-center-action="maintenance-refresh" type="button" ${integrityLoading ? 'disabled' : ''}>${integrity ? '重新检查' : '开始检查'}</button></div>
 			${integrityIssues}
 		</section>
 	</div>`;
@@ -1161,6 +1226,27 @@ const renderWorkspaceCenter = () => {
 	else if (state.workspaceMode === 'drafts') elements.editorSurface.innerHTML = renderDraftCenter();
 	else if (state.workspaceMode === 'recycle') elements.editorSurface.innerHTML = renderRecycleCenter();
 	else elements.editorSurface.innerHTML = renderHistoryCenter();
+};
+
+const loadIntegrityReport = async ({ notify = false } = {}) => {
+	if (state.integrityLoading) return;
+	state.integrityLoading = true;
+	if (state.workspaceMode === 'maintenance') renderWorkspaceCenter();
+	try {
+		const response = await fetch('/api/integrity-report', { cache: 'no-store' });
+		const data = await readApiJson(response);
+		if (!response.ok) throw new Error(data.error ?? '完整性巡检没有完成。');
+		state.integrityReport = data.integrity ?? null;
+		if (notify) showToast(state.integrityReport?.status === 'pass'
+			? '完整性巡检已完成，发布层结构正常。'
+			: '巡检已完成，请查看异常项目。', state.integrityReport?.status !== 'pass');
+	} catch (error) {
+		if (notify) showToast(error.message, true);
+		else console.error(error);
+	} finally {
+		state.integrityLoading = false;
+		if (state.workspaceMode === 'maintenance') renderWorkspaceCenter();
+	}
 };
 
 const setWorkspaceMode = (mode) => {
@@ -1190,6 +1276,7 @@ const setWorkspaceMode = (mode) => {
 		updateHeader();
 		renderWorkspaceCenter();
 		if (mode === 'query' && !state.query.loaded && !state.query.loading) loadQueryRecords();
+		if (mode === 'maintenance' && !state.integrityReport && !state.integrityLoading) loadIntegrityReport();
 	}
 };
 
@@ -2821,12 +2908,35 @@ const handleFieldChange = (control) => {
 	setFieldValue(scope, dimension, fieldCode, value);
 };
 
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-	const reader = new FileReader();
-	reader.onload = () => resolve(reader.result);
-	reader.onerror = () => reject(new Error(`无法读取图片：${file.name}`));
-	reader.readAsDataURL(file);
-});
+const stageImageUpload = async (image, operation, position, total) => {
+	throwIfOperationCancelled(operation);
+	updateCancellableOperation(
+		operation,
+		`正在上传图片 ${position} / ${total}…`,
+		`${image.file.name} · 图片按原始二进制传输，不再转成超大文本`,
+	);
+	const response = await fetch('/api/stage-image', {
+		method: 'POST',
+		headers: {
+			'Content-Type': image.file.type,
+			'X-LJM-Admin-Request': '1',
+			'X-LJM-Operation-Id': operation.id,
+			'X-LJM-File-Name': encodeURIComponent(image.file.name),
+			'X-LJM-File-Sha256': image.sha256,
+		},
+		body: image.file,
+		signal: operation.controller.signal,
+	});
+	const data = await readApiJson(response);
+	if (!response.ok) {
+		const error = new Error(data.error ?? `图片上传失败：${image.file.name}`);
+		error.cancelled = Boolean(data.cancelled);
+		throw error;
+	}
+	return {
+		kind: 'staged', uploadToken: data.upload.token, originalName: image.file.name,
+	};
+};
 
 const validateSelectedImage = (file) => {
 	if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return `不支持图片格式：${file.name}`;
@@ -2891,7 +3001,7 @@ const preflightSelectedImages = async (files) => {
 	return { results, accepted };
 };
 
-const saveDraft = async ({ reload = true, silent = false } = {}) => {
+const saveDraft = async ({ reload = true, silent = false, operation = null } = {}) => {
 	if (!state.current) throw new Error('请先选择或新建一条记录。');
 	const prerequisiteIssues = draftSavePrerequisiteIssues();
 	if (prerequisiteIssues.length) {
@@ -2907,16 +3017,28 @@ const saveDraft = async ({ reload = true, silent = false } = {}) => {
 		throw new Error(prerequisiteIssues[0].message);
 	}
 	const wasNewRecord = state.isNew;
-	setBusy(true, '正在保存草稿…', '图片只会进入本地待入站区');
+	const ownsOperation = !operation;
+	const currentOperation = operation ?? beginCancellableOperation(
+		'save-draft', '正在保存草稿…', '图片只会进入私有待入站区；可以随时取消',
+	);
 	try {
+		throwIfOperationCancelled(currentOperation);
 		const imageDescriptions = state.images.map((image) => image.description?.trim() ?? '');
 		if (imageDescriptions.some(Boolean)) state.current.public_view.image_descriptions = imageDescriptions;
 		else delete state.current.public_view.image_descriptions;
 		const images = [];
+		const newImages = state.images.filter((image) => image.kind !== 'existing');
+		let uploadIndex = 0;
 		for (const image of state.images) {
 			if (image.kind === 'existing') images.push({ kind: 'existing', filename: image.filename });
-			else images.push({ kind: 'new', originalName: image.file.name, data: await fileToDataUrl(image.file) });
+			else {
+				uploadIndex += 1;
+				if (!image.sha256) image.sha256 = await fileSha256(image.file);
+				images.push(await stageImageUpload(image, currentOperation, uploadIndex, newImages.length));
+			}
 		}
+		throwIfOperationCancelled(currentOperation);
+		updateCancellableOperation(currentOperation, '正在写入草稿…', '正在核对编号和隐私规则，原表单内容会一直保留');
 		const data = await apiPost('/api/save-draft', {
 			record: state.current, images, isNew: state.isNew,
 			confirmedPublicationCopies: state.confirmedPublicationCopies,
@@ -2924,7 +3046,7 @@ const saveDraft = async ({ reload = true, silent = false } = {}) => {
 			removedImageDescriptions: Object.fromEntries(state.pendingRemovedImages
 				.filter((image) => image.description?.trim())
 				.map((image) => [image.filename, image.description.trim()])),
-		});
+		}, { operation: currentOperation });
 		const assignedItemId = data.draft?.record?.core?.item_id ?? '';
 		if (!itemIdPattern.test(assignedItemId)) {
 			throw new Error('草稿没有返回有效的永久编号，已停止继续处理。');
@@ -2936,18 +3058,21 @@ const saveDraft = async ({ reload = true, silent = false } = {}) => {
 		state.images = recordImages(data.draft.record);
 		state.pendingRemovedImages = (data.draft.removed_images ?? []).map((filename) => ({
 			filename,
-			previewUrl: `/api/image/${encodeURIComponent(data.draft.record.core.item_id)}/${encodeURIComponent(filename)}`,
+			previewUrl: `/api/image/${encodeURIComponent(data.draft.record.core.item_id)}/${encodeURIComponent(filename)}?variant=preview`,
 			description: data.draft.removed_image_descriptions?.[filename] ?? '',
 		}));
 		state.imagePreflight = [];
-		if (reload) await loadBootstrap(state.activeId);
+		if (reload) {
+			updateCancellableOperation(currentOperation, '草稿已保存，正在刷新…', '正在重新读取轻量档案列表');
+			await loadBootstrap(state.activeId, { operation: currentOperation });
+		}
 		else updateHeader();
 		if (!silent) showToast(wasNewRecord
 			? `草稿已保存，永久编号 ${assignedItemId} 已生成。`
 			: `草稿已保存，永久编号 ${assignedItemId} 保持不变。`);
 		return data.draft;
 	} finally {
-		setBusy(false);
+		if (ownsOperation) finishCancellableOperation(currentOperation);
 	}
 };
 
@@ -2965,10 +3090,14 @@ const publishCurrent = async () => {
 		showToast('还有隐私检查项目未确认，当前不会发布。', true);
 		return;
 	}
+	let operation;
 	try {
-		await saveDraft({ reload: false, silent: true });
-		setBusy(true, '正在检查并构建网站…', '通过后才会进入公开目录，请稍候');
-		const result = await apiPost('/api/publish', { itemId: state.current.core.item_id, confirmations });
+		operation = beginCancellableOperation('publish', '正在保存并提交档案…', '先保存草稿，再执行发布检查；可以安全取消');
+		await saveDraft({ reload: false, silent: true, operation });
+		throwIfOperationCancelled(operation);
+		updateCancellableOperation(operation, '正在检查并构建网站…', '取消时会停止构建，并恢复到提交前的公开状态');
+		const result = await apiPost('/api/publish', { itemId: state.current.core.item_id, confirmations }, { operation });
+		setBusy(true, '发布已完成，正在刷新…', '公开版本已经安全切换，请稍候');
 		await loadBootstrap(state.current.core.item_id);
 		showToast(result.warnings?.length
 			? `发布已完成，但有提示：${result.warnings.join('；')}`
@@ -2982,9 +3111,10 @@ const publishCurrent = async () => {
 			renderTabs();
 			renderEditor();
 		}
-		showToast(error.message, true);
+		showToast(isOperationCancellation(error, operation) ? '操作已取消，填写内容仍保留在当前页面。' : error.message,
+			!isOperationCancellation(error, operation));
 	} finally {
-		setBusy(false);
+		if (operation) finishCancellableOperation(operation);
 	}
 };
 
@@ -3053,8 +3183,10 @@ const restoreWithdrawnCurrent = async () => {
 	}
 };
 
-const loadBootstrap = async (selectedId = state.activeId) => {
-	const response = await fetch('/api/bootstrap');
+const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
+	const response = await fetch('/api/bootstrap', {
+		...(options.operation ? { signal: options.operation.controller.signal } : {}),
+	});
 	const data = await readApiJson(response);
 	if (!response.ok) throw new Error(data.error ?? '无法读取档案。');
 	refreshInboxPendingBadge();
@@ -3447,16 +3579,7 @@ elements.editorSurface.addEventListener('click', async (event) => {
 			return;
 		}
 		if (action === 'maintenance-refresh') {
-			setBusy(true, '正在重新检查…', '只读取正式 JSON、发布副本和公开构建，不会修改文件');
-			try {
-				await loadBootstrap(state.activeId);
-				setWorkspaceMode('maintenance');
-				showToast(state.integrityReport?.status === 'pass' ? '完整性巡检已完成，发布层结构正常。' : '巡检已完成，请查看异常项目。', state.integrityReport?.status !== 'pass');
-			} catch (error) {
-				showToast(error.message, true);
-			} finally {
-				setBusy(false);
-			}
+			await loadIntegrityReport({ notify: true });
 			return;
 		}
 		setBusy(true, action === 'restore-recycle' ? '正在恢复图片…' : '正在恢复历史版本…', '恢复内容只会进入本地草稿');
@@ -3526,13 +3649,18 @@ elements.editorSurface.addEventListener('click', async (event) => {
 
 const saveDraftWithFeedback = async () => {
 	try { await saveDraft(); }
-	catch (error) { showToast(error.message, true); setBusy(false); }
+	catch (error) {
+		showToast(isOperationCancellation(error) ? '操作已取消，填写内容仍保留在当前页面。' : error.message,
+			!isOperationCancellation(error));
+		setBusy(false);
+	}
 };
 
 elements.saveDraftButton.addEventListener('click', saveDraftWithFeedback);
 elements.dockSaveDraftButton.addEventListener('click', saveDraftWithFeedback);
 elements.publishButton.addEventListener('click', publishCurrent);
 elements.dockPublishButton.addEventListener('click', publishCurrent);
+elements.busyCancelButton.addEventListener('click', cancelActiveOperation);
 elements.lifecycleButton.addEventListener('click', () => {
 	if (isWithdrawn()) restoreWithdrawnCurrent();
 	else openWithdrawalDialog();

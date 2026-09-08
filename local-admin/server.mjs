@@ -1,5 +1,6 @@
 import http from 'node:http';
 import fs from 'node:fs/promises';
+import { constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
@@ -43,6 +44,7 @@ const archiveDataDirectory = readEnvironmentPath(
 const draftDirectory = readEnvironmentPath('LJM_DRAFT_DIR', path.join(adminDataRoot, 'drafts'));
 const historyDirectory = readEnvironmentPath('LJM_HISTORY_DIR', path.join(adminDataRoot, 'history'));
 const recycleDirectory = readEnvironmentPath('LJM_RECYCLE_DIR', path.join(adminDataRoot, 'recycle-bin'));
+const uploadStagingDirectory = readEnvironmentPath('LJM_UPLOAD_STAGING_DIR', path.join(adminDataRoot, 'upload-staging'));
 const inboxDirectory = readEnvironmentPath(
 	'LJM_INBOX_DIR',
 	onlineMode ? path.join(adminDataRoot, 'inbox') : path.join(projectRoot, 'public-assets', 'inbox'),
@@ -91,6 +93,7 @@ const objectSchema = {
 };
 const itemIdPattern = /^LJM-\d{8}-[A-Z]{3}-\d{3}$/;
 const safeEntryIdPattern = /^\d{8}-\d{6}-\d{3}-[a-f0-9]{8}$/;
+const operationIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 let publishInProgress = false;
 
 class RequestError extends Error {
@@ -98,6 +101,14 @@ class RequestError extends Error {
 		super(message);
 		this.name = 'RequestError';
 		this.statusCode = statusCode;
+	}
+}
+
+class OperationCancelledError extends Error {
+	constructor(message = '操作已取消，页面中填写的内容仍然保留。') {
+		super(message);
+		this.name = 'OperationCancelledError';
+		this.statusCode = 409;
 	}
 }
 
@@ -157,6 +168,7 @@ const validateRuntimeConfiguration = () => {
 		['历史版本目录', historyDirectory],
 		['图片回收目录', recycleDirectory],
 		['待入站图片目录', inboxDirectory],
+		['临时上传目录', uploadStagingDirectory],
 	]) {
 		if (pathIsInside(siteDirectory, privateDirectory) || pathIsInside(publicDirectory, privateDirectory)) {
 			throw new Error(`${label}不能放在网站或管理页面的公开文件目录中。`);
@@ -177,6 +189,7 @@ validateRuntimeConfiguration();
 
 for (const publicRoot of [siteDirectory, publicDirectory, path.join(projectRoot, 'public-assets')]) {
 	if (pathIsInside(publicRoot, submissionDirectory)) throw new Error('私密投稿目录不能位于网站、管理页面或公开素材目录内。');
+	if (pathIsInside(publicRoot, uploadStagingDirectory)) throw new Error('临时上传目录不能位于网站、管理页面或公开素材目录内。');
 }
 const submissionStore = createSubmissionStore({ root: submissionDirectory, siteDirectory });
 const publicSubmissions = createPublicSubmissionHandler({ store: submissionStore, origin: localAdminOrigin, local: true });
@@ -255,12 +268,54 @@ const sendJson = (response, status, value, options = {}) => {
 const safeMessage = (error) =>
 	error instanceof Error && error.message ? error.message : '发生了未知错误。';
 
+const managedOperations = new Map();
+const stagedUploads = new Map();
+
+const throwIfOperationCancelled = (signal) => {
+	if (signal?.aborted) throw new OperationCancelledError();
+};
+
+const requestOperationId = (request) => {
+	const value = String(request.headers['x-ljm-operation-id'] ?? '').trim();
+	if (!value) return randomUUID();
+	if (!operationIdPattern.test(value)) throw new RequestError('操作编号无效。');
+	return value;
+};
+
+const cleanupStagedUploads = async (operationId) => {
+	const matches = [...stagedUploads.entries()].filter(([, upload]) => upload.operationId === operationId);
+	for (const [token, upload] of matches) {
+		stagedUploads.delete(token);
+		await fs.rm(upload.filePath, { force: true }).catch(() => {});
+	}
+};
+
+const runManagedOperation = async (request, kind, callback) => {
+	const operationId = requestOperationId(request);
+	if (managedOperations.has(operationId)) throw new RequestError('同一项操作仍在进行，请稍候。', 409);
+	const controller = new AbortController();
+	managedOperations.set(operationId, { controller, kind, startedAt: Date.now() });
+	try {
+		return await callback({ operationId, signal: controller.signal });
+	} finally {
+		managedOperations.delete(operationId);
+	}
+};
+
+const cancelManagedOperation = async (operationId) => {
+	if (!operationIdPattern.test(operationId ?? '')) throw new RequestError('操作编号无效。');
+	const operation = managedOperations.get(operationId);
+	if (operation) operation.controller.abort();
+	await cleanupStagedUploads(operationId);
+	return Boolean(operation);
+};
+
 const safeEntryId = (value) => {
 	if (!safeEntryIdPattern.test(value ?? '')) throw new Error('历史或回收记录编号无效。');
 	return value;
 };
 
-const requireSafeMutation = (request) => {
+const requireTrustedMutation = (request) => {
 	const expectedOrigins = onlineMode
 		? new Set([configuredAdminOrigin])
 		: new Set([localAdminOrigin, `http://localhost:${adminPort}`]);
@@ -271,12 +326,24 @@ const requireSafeMutation = (request) => {
 	if (request.headers['x-ljm-admin-request'] !== '1') {
 		throw new RequestError('管理操作标记无效。', 403);
 	}
+};
+
+const requireSafeMutation = (request) => {
+	requireTrustedMutation(request);
 	if (!(request.headers['content-type'] ?? '').startsWith('application/json')) {
 		throw new RequestError('提交格式无效。', 415);
 	}
 };
 
-const readRequestJson = async (request) => {
+const requireSafeImageMutation = (request) => {
+	requireTrustedMutation(request);
+	if (!allowedImageTypes.has((request.headers['content-type'] ?? '').split(';')[0].trim())) {
+		throw new RequestError('图片提交格式无效。', 415);
+	}
+};
+
+const readRequestJson = async (request, signal = null) => {
+	throwIfOperationCancelled(signal);
 	const declaredLength = Number.parseInt(request.headers['content-length'] ?? '0', 10);
 	if (Number.isFinite(declaredLength) && declaredLength > maximumRequestBytes) {
 		throw new RequestError('本次图片总量过大，请先保存已选图片，再分次继续上传。', 413);
@@ -284,12 +351,14 @@ const readRequestJson = async (request) => {
 	let total = 0;
 	const chunks = [];
 	for await (const chunk of request) {
+		throwIfOperationCancelled(signal);
 		total += chunk.length;
 		if (total > maximumRequestBytes) {
 			throw new RequestError('本次图片总量过大，请先保存已选图片，再分次继续上传。', 413);
 		}
 		chunks.push(chunk);
 	}
+	throwIfOperationCancelled(signal);
 	try {
 		return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 	} catch {
@@ -466,16 +535,29 @@ const walkFiles = async (rootDirectory) => {
 	return files;
 };
 
-const preflightImageFiles = async (payload) => {
-	const files = Array.isArray(payload?.files) ? payload.files : [];
-	if (!files.length || files.length > 50) throw new Error('请一次选择 1 至 50 张图片进行预检。');
+let inboxHashCache = new Map();
+
+const knownInboxImagesByHash = async () => {
 	const knownByHash = new Map();
+	const nextCache = new Map();
 	for (const filePath of await walkFiles(inboxDirectory)) {
 		if (!['.jpg', '.jpeg', '.png', '.webp'].includes(path.extname(filePath).toLowerCase())) continue;
-		const hash = await fileSha256(filePath);
+		const stat = await fs.stat(filePath);
+		const cacheKey = `${stat.size}:${Math.floor(stat.mtimeMs)}`;
+		const previous = inboxHashCache.get(filePath);
+		const hash = previous?.cacheKey === cacheKey ? previous.hash : await fileSha256(filePath);
+		nextCache.set(filePath, { cacheKey, hash });
 		if (!knownByHash.has(hash)) knownByHash.set(hash, []);
 		knownByHash.get(hash).push(path.relative(inboxDirectory, filePath).replaceAll('\\', '/'));
 	}
+	inboxHashCache = nextCache;
+	return knownByHash;
+};
+
+const preflightImageFiles = async (payload) => {
+	const files = Array.isArray(payload?.files) ? payload.files : [];
+	if (!files.length || files.length > 50) throw new Error('请一次选择 1 至 50 张图片进行预检。');
+	const knownByHash = await knownInboxImagesByHash();
 	const batchHashes = new Set();
 	return {
 		files: files.map((file) => {
@@ -642,6 +724,8 @@ const createIntegrityReport = async (officialRecords) => {
 		issues,
 	};
 };
+
+const loadIntegrityReport = async () => createIntegrityReport(await loadOfficialRecords());
 
 const loadDrafts = async () => {
 	await fs.mkdir(draftDirectory, { recursive: true });
@@ -995,8 +1079,6 @@ const loadBootstrap = async () => {
 			left.core.updated_date ?? left.core.created_date ?? '',
 		),
 	);
-	const integrityReport = await createIntegrityReport(officialRecords);
-
 	return {
 		records,
 		drafts: records
@@ -1014,9 +1096,7 @@ const loadBootstrap = async () => {
 			...entry,
 			preview_url: `/api/recycle-image/${entry.item_id}/${entry.entry_id}`,
 		})),
-		maintenance: {
-			integrity: integrityReport,
-		},
+		maintenance: { integrity: null },
 		standards: {
 			commonFields,
 			codeDictionary,
@@ -1034,42 +1114,37 @@ const loadBootstrap = async () => {
 	};
 };
 
-const bootstrapSourceDirectories = [
-	archiveDataDirectory,
-	draftDirectory,
-	historyDirectory,
-	recycleDirectory,
-];
-
 const computeBootstrapSignature = async () => {
-	const walk = async (directory) => {
-		let latest = 0;
-		let entries;
-		try { entries = await fs.readdir(directory, { withFileTypes: true }); } catch { return 0; }
+	const signatures = [];
+	const addFile = async (filePath, label) => {
+		const stat = await fs.stat(filePath).catch(() => null);
+		if (stat?.isFile()) signatures.push(`${label}:${stat.size}:${Math.floor(stat.mtimeMs)}`);
+	};
+	for (const [label, directory] of [['archive', archiveDataDirectory], ['draft', draftDirectory]]) {
+		const entries = await fs.readdir(directory, { withFileTypes: true }).catch(() => []);
 		for (const entry of entries) {
-			const entryPath = path.join(directory, entry.name);
-			if (entry.isDirectory()) {
-				const sub = await walk(entryPath);
-				if (sub > latest) latest = sub;
-			} else if (entry.isFile()) {
-				try {
-					const entryStat = await fs.stat(entryPath);
-					if (entryStat.mtimeMs > latest) latest = entryStat.mtimeMs;
-				} catch {}
+			if (entry.isFile() && entry.name.toLowerCase().endsWith('.json')) {
+				await addFile(path.join(directory, entry.name), `${label}/${entry.name}`);
 			}
 		}
-		return latest;
-	};
-	let signature = 0;
-	for (const directory of bootstrapSourceDirectories) {
-		const sub = await walk(directory);
-		if (sub > signature) signature = sub;
 	}
-	return Math.floor(signature);
+	for (const [label, directory] of [['history', historyDirectory], ['recycle', recycleDirectory]]) {
+		const itemEntries = await fs.readdir(directory, { withFileTypes: true }).catch(() => []);
+		for (const itemEntry of itemEntries) {
+			if (!itemEntry.isDirectory() || !itemIdPattern.test(itemEntry.name)) continue;
+			const itemDirectory = path.join(directory, itemEntry.name);
+			const versionEntries = await fs.readdir(itemDirectory, { withFileTypes: true }).catch(() => []);
+			for (const versionEntry of versionEntries) {
+				if (!versionEntry.isDirectory() || !safeEntryIdPattern.test(versionEntry.name)) continue;
+				await addFile(path.join(itemDirectory, versionEntry.name, 'manifest.json'), `${label}/${itemEntry.name}/${versionEntry.name}`);
+			}
+		}
+	}
+	return createHash('sha256').update(signatures.sort().join('|')).digest('hex').slice(0, 20);
 };
 
 let bootstrapCache = null;
-let bootstrapSignature = 0;
+let bootstrapSignature = '';
 
 const getBootstrap = async () => {
 	const signature = await computeBootstrapSignature();
@@ -1077,6 +1152,35 @@ const getBootstrap = async () => {
 	bootstrapCache = await loadBootstrap();
 	bootstrapSignature = signature;
 	return bootstrapCache;
+};
+
+let responsiveManifestCache = null;
+let responsiveManifestCheckedAt = 0;
+
+const getResponsiveImageManifest = async () => {
+	if (responsiveManifestCache && Date.now() - responsiveManifestCheckedAt < 5000) return responsiveManifestCache;
+	try {
+		responsiveManifestCache = await readJson(responsiveImageManifestFile);
+	} catch {
+		responsiveManifestCache = {};
+	}
+	responsiveManifestCheckedAt = Date.now();
+	return responsiveManifestCache;
+};
+
+const responsiveImageVariant = async (itemId, filename, size) => {
+	const targetWidth = size === 'thumb' ? 320 : size === 'preview' ? 1280 : 0;
+	if (!targetWidth) return null;
+	const manifest = await getResponsiveImageManifest();
+	const entry = manifest[`/archive/${itemId}/${filename}`];
+	const variants = Array.isArray(entry?.variants) ? [...entry.variants] : [];
+	variants.sort((left, right) => Number(left.width) - Number(right.width));
+	const variant = variants.find((candidate) => Number(candidate.width) >= targetWidth) ?? variants.at(-1);
+	const relativePath = String(variant?.src ?? '').replace(/^\/+archive-responsive\//, '');
+	if (!relativePath) return null;
+	const filePath = path.resolve(siteResponsiveArchiveDirectory, relativePath);
+	if (!pathIsInside(siteResponsiveArchiveDirectory, filePath) || !(await pathExists(filePath))) return null;
+	return relativePath;
 };
 
 const queryTextList = (value) => {
@@ -1099,8 +1203,7 @@ const safeSpecificQueryFields = new Set([
 
 const createQueryRecords = async () => {
 	const bootstrap = await getBootstrap();
-	let imageManifest = {};
-	try { imageManifest = await readJson(responsiveImageManifestFile); } catch {}
+	const imageManifest = await getResponsiveImageManifest();
 	const requiredVariantWidths = [320, 640, 1280, 1920];
 	const categoryByType = new Map((bootstrap.standards.archiveCategories?.categories ?? [])
 		.flatMap((category) => (category.object_types ?? []).map((objectType) => [objectType, category])));
@@ -1254,11 +1357,8 @@ const allocateItemId = async (accessionDate, objectType) => {
 	return `${prefix}${String(nextSequence).padStart(3, '0')}`;
 };
 
-const validateImageBuffer = (buffer, mimeType, originalName) => {
+const validateImageSignature = (buffer, mimeType, originalName) => {
 	if (!allowedImageTypes.has(mimeType)) throw new Error(`不支持图片格式：${originalName}`);
-	if (buffer.length === 0 || buffer.length > maximumImageBytes) {
-		throw new Error(`图片大小不合适：${originalName}`);
-	}
 	const lowerName = originalName.toLocaleLowerCase('en-US');
 	if (/(master|original|raw|主档|原始)/i.test(lowerName)) {
 		throw new Error(`文件名疑似主档或原始文件，已停止接收：${originalName}`);
@@ -1277,12 +1377,82 @@ const validateImageBuffer = (buffer, mimeType, originalName) => {
 	}
 };
 
+const validateImageBuffer = (buffer, mimeType, originalName) => {
+	if (buffer.length === 0 || buffer.length > maximumImageBytes) {
+		throw new Error(`图片大小不合适：${originalName}`);
+	}
+	validateImageSignature(buffer, mimeType, originalName);
+};
+
 const decodeUploadedImage = (image) => {
 	const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(image.data ?? '');
 	if (!match) throw new Error(`无法读取图片：${image.originalName ?? '未命名图片'}`);
 	const buffer = Buffer.from(match[2], 'base64');
 	validateImageBuffer(buffer, match[1], image.originalName ?? '未命名图片');
 	return { buffer, extension: allowedImageTypes.get(match[1]) };
+};
+
+const cleanupExpiredStagingFiles = async () => {
+	await fs.mkdir(uploadStagingDirectory, { recursive: true });
+	const cutoff = Date.now() - 6 * 60 * 60 * 1000;
+	for (const entry of await fs.readdir(uploadStagingDirectory, { withFileTypes: true })) {
+		if (!entry.isFile() || !/^[a-f0-9-]+\.upload$/i.test(entry.name)) continue;
+		const filePath = path.join(uploadStagingDirectory, entry.name);
+		const stat = await fs.stat(filePath).catch(() => null);
+		if (stat && stat.mtimeMs < cutoff) await fs.rm(filePath, { force: true }).catch(() => {});
+	}
+};
+
+const stageUploadedImage = async (request, operationId, signal) => {
+	throwIfOperationCancelled(signal);
+	const mimeType = (request.headers['content-type'] ?? '').split(';')[0].trim();
+	let originalName = '';
+	try {
+		originalName = decodeURIComponent(String(request.headers['x-ljm-file-name'] ?? ''));
+	} catch {
+		throw new RequestError('图片文件名无法读取。');
+	}
+	originalName = path.basename(originalName);
+	if (!originalName || originalName.length > 180 || !allowedOriginalExtensions.get(mimeType)?.has(path.extname(originalName).toLowerCase())) {
+		throw new RequestError('图片文件名或扩展名无效。');
+	}
+	const declaredLength = Number.parseInt(request.headers['content-length'] ?? '0', 10);
+	if (!Number.isInteger(declaredLength) || declaredLength <= 0 || declaredLength > maximumImageBytes) {
+		throw new RequestError('图片为空或超过 30 MB。', 413);
+	}
+	const expectedHash = String(request.headers['x-ljm-file-sha256'] ?? '').toLowerCase();
+	if (!/^[a-f0-9]{64}$/.test(expectedHash)) throw new RequestError('图片校验信息无效。');
+	await cleanupExpiredStagingFiles();
+	const token = randomUUID();
+	const filePath = path.join(uploadStagingDirectory, `${token}.upload`);
+	const fileHandle = await fs.open(filePath, 'wx');
+	const hash = createHash('sha256');
+	let total = 0;
+	let signatureBytes = Buffer.alloc(0);
+	let keepFile = false;
+	try {
+		for await (const chunk of request) {
+			throwIfOperationCancelled(signal);
+			total += chunk.length;
+			if (total > maximumImageBytes) throw new RequestError('图片超过 30 MB。', 413);
+			hash.update(chunk);
+			if (signatureBytes.length < 16) {
+				signatureBytes = Buffer.concat([signatureBytes, chunk.subarray(0, 16 - signatureBytes.length)]);
+			}
+			await fileHandle.write(chunk);
+		}
+		throwIfOperationCancelled(signal);
+		if (total !== declaredLength) throw new RequestError('图片上传不完整，请重新尝试。');
+		validateImageSignature(signatureBytes, mimeType, originalName);
+		const sha256 = hash.digest('hex');
+		if (sha256 !== expectedHash) throw new RequestError('图片上传后的内容校验失败，请重新尝试。');
+		stagedUploads.set(token, { token, operationId, filePath, originalName, mimeType, sha256, size: total });
+		keepFile = true;
+		return { token, originalName, mimeType, sha256, size: total };
+	} finally {
+		await fileHandle.close().catch(() => {});
+		if (!keepFile) await fs.rm(filePath, { force: true }).catch(() => {});
+	}
 };
 
 const nextImageName = async (itemId, reservedNames, position, extension) => {
@@ -1311,8 +1481,10 @@ const nextImageName = async (itemId, reservedNames, position, extension) => {
 	throw new Error('这件藏品的细节图片编号已经用完。');
 };
 
-const saveDraftUnlocked = async (payload) => {
-	if (!payload.confirmedPublicationCopies && payload.images?.some((image) => image.kind === 'new')) {
+const saveDraftUnlocked = async (payload, options = {}) => {
+	const { signal = null, operationId = '' } = options;
+	throwIfOperationCancelled(signal);
+	if (!payload.confirmedPublicationCopies && payload.images?.some((image) => ['new', 'staged'].includes(image.kind))) {
 		throw new Error('上传前必须确认图片是经过筛选和必要脱敏的发布副本。');
 	}
 	const record = structuredClone(payload.record ?? {});
@@ -1322,6 +1494,7 @@ const saveDraftUnlocked = async (payload) => {
 	}
 	let itemId = record.core.item_id;
 	if (!itemId) itemId = await allocateItemId(record.core.accession_date, record.core.object_type);
+	throwIfOperationCancelled(signal);
 	if (!itemIdPattern.test(itemId)) throw new Error('永久编号格式不正确。');
 	const official = (await loadOfficialRecords()).find((candidate) => candidate.core.item_id === itemId);
 	const existingDraft = (await loadDrafts()).find((draft) => draft.record.core.item_id === itemId);
@@ -1348,6 +1521,7 @@ const saveDraftUnlocked = async (payload) => {
 	}
 	applyCollectionCode(record, collectionCodeRules, codeDictionary);
 	assertSafeRecord(record);
+	throwIfOperationCancelled(signal);
 
 	const inboxItemDirectory = path.join(inboxDirectory, itemId);
 	await fs.mkdir(inboxItemDirectory, { recursive: true });
@@ -1361,8 +1535,12 @@ const saveDraftUnlocked = async (payload) => {
 	const reservedNames = new Set();
 	const publicationPaths = [];
 	const newlyWrittenFiles = [];
+	const stagedTokens = new Set((payload.images ?? [])
+		.filter((image) => image.kind === 'staged' && typeof image.uploadToken === 'string')
+		.map((image) => image.uploadToken));
 	try {
 		for (const [position, image] of (payload.images ?? []).entries()) {
+			throwIfOperationCancelled(signal);
 			if (image.kind === 'existing') {
 				const filename = path.basename(image.filename ?? '');
 				if (!filename || filename !== image.filename || !/^[-A-Za-z0-9_.]+$/.test(filename)) {
@@ -1374,15 +1552,27 @@ const saveDraftUnlocked = async (payload) => {
 				publicationPaths.push(`/archive/${itemId}/${filename}`);
 				continue;
 			}
+			if (image.kind === 'staged') {
+				const staged = stagedUploads.get(image.uploadToken);
+				if (!staged || staged.operationId !== operationId) throw new Error('临时图片已经失效，请重新保存。');
+				const filename = await nextImageName(itemId, reservedNames, position, allowedImageTypes.get(staged.mimeType));
+				const targetPath = path.join(inboxItemDirectory, filename);
+				await fs.copyFile(staged.filePath, targetPath, fsConstants.COPYFILE_EXCL);
+				newlyWrittenFiles.push(targetPath);
+				reservedNames.add(filename);
+				publicationPaths.push(`/archive/${itemId}/${filename}`);
+				continue;
+			}
 			if (image.kind !== 'new') throw new Error('图片列表包含无法识别的项目。');
 			const decoded = decodeUploadedImage(image);
 			const filename = await nextImageName(itemId, reservedNames, position, decoded.extension);
 			const targetPath = path.join(inboxItemDirectory, filename);
-			await fs.writeFile(targetPath, decoded.buffer, { flag: 'wx' });
+			await fs.writeFile(targetPath, decoded.buffer, { flag: 'wx', signal });
 			newlyWrittenFiles.push(targetPath);
 			reservedNames.add(filename);
 			publicationPaths.push(`/archive/${itemId}/${filename}`);
 		}
+		throwIfOperationCancelled(signal);
 		record.core.publication_file_path = publicationPaths;
 		const activeNames = new Set(publicationPaths.map((publicPath) => path.basename(publicPath)));
 		const cleanRemovedImages = removedImages.filter((filename) => !activeNames.has(filename));
@@ -1411,18 +1601,28 @@ const saveDraftUnlocked = async (payload) => {
 			record,
 		};
 		await fs.mkdir(draftDirectory, { recursive: true });
+		throwIfOperationCancelled(signal);
 		await fs.writeFile(path.join(draftDirectory, `${itemId}.json`), `${JSON.stringify(draft, null, 2)}\n`, 'utf8');
+		bootstrapCache = null;
+		inboxHashCache = new Map();
 		return draft;
 	} catch (error) {
 		for (const filePath of newlyWrittenFiles) await fs.rm(filePath, { force: true });
 		throw error;
+	} finally {
+		for (const token of stagedTokens) {
+			const staged = stagedUploads.get(token);
+			if (!staged) continue;
+			stagedUploads.delete(token);
+			await fs.rm(staged.filePath, { force: true }).catch(() => {});
+		}
 	}
 };
 
 // 草稿编号分配与写入依次完成，防止同时操作占用同一永久编号。
 let draftSaveQueue = Promise.resolve();
-const saveDraft = (payload) => {
-	const task = draftSaveQueue.then(() => saveDraftUnlocked(payload));
+const saveDraft = (payload, options = {}) => {
+	const task = draftSaveQueue.then(() => saveDraftUnlocked(payload, options));
 	draftSaveQueue = task.catch(() => {});
 	return task;
 };
@@ -1692,7 +1892,9 @@ const restoreWithdrawnRecord = async (payload) => {
 	});
 };
 
-const runSiteBuild = async () => {
+const runSiteBuild = async (options = {}) => {
+	const { signal = null } = options;
+	throwIfOperationCancelled(signal);
 	const buildCommand = process.platform === 'win32'
 		? { file: process.env.ComSpec ?? 'C:\\Windows\\System32\\cmd.exe', arguments: ['/d', '/s', '/c', 'npm run build'] }
 		: { file: npmCommand, arguments: ['run', 'build'] };
@@ -1703,7 +1905,9 @@ const runSiteBuild = async () => {
 			: process.env,
 		windowsHide: true,
 		maxBuffer: 10 * 1024 * 1024,
+		...(signal ? { signal } : {}),
 	});
+	throwIfOperationCancelled(signal);
 	return `${stdout}\n${stderr}`.trim();
 };
 
@@ -1795,7 +1999,9 @@ const withdrawOfficialRecord = async (payload) => {
 	}
 };
 
-const publishDraftUnlocked = async (payload) => {
+const publishDraftUnlocked = async (payload, options = {}) => {
+	const { signal = null } = options;
+	throwIfOperationCancelled(signal);
 	if (publishInProgress) throw new Error('已有一项发布检查正在进行，请稍候。');
 	publishInProgress = true;
 	const itemId = payload.itemId;
@@ -1824,6 +2030,7 @@ const publishDraftUnlocked = async (payload) => {
 			throw new Error('恢复草稿与撤销记录不匹配，已停止发布。');
 		}
 		await validateForPublication(record, payload.confirmations);
+		throwIfOperationCancelled(signal);
 
 		record.core.record_status = 'ACT';
 		record.core.privacy_level = 'G';
@@ -1849,9 +2056,11 @@ const publishDraftUnlocked = async (payload) => {
 		let buildOutput = '';
 		let deployment = null;
 		try {
+			throwIfOperationCancelled(signal);
 			const siteItemDirectory = path.join(siteArchiveDirectory, itemId);
 			await fs.mkdir(siteItemDirectory, { recursive: true });
 			for (const publicPath of record.core.publication_file_path) {
+				throwIfOperationCancelled(signal);
 				const filename = path.basename(publicPath);
 				const destination = path.join(siteItemDirectory, filename);
 				if (!(await pathExists(destination))) copiedNewFiles.push(destination);
@@ -1864,11 +2073,14 @@ const publishDraftUnlocked = async (payload) => {
 					await fs.rm(siteFile, { force: true });
 				}
 			}
+			throwIfOperationCancelled(signal);
 			await fs.writeFile(officialPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 			await fs.writeFile(siteArchiveDataFile, await generateSiteArchiveSource(), 'utf8');
-			buildOutput = await runSiteBuild();
-			if (onlineMode) deployment = await releaseDeployer.deploy();
+			buildOutput = await runSiteBuild({ signal });
+			throwIfOperationCancelled(signal);
+			if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
 		} catch (error) {
+			const operationWasCancelled = signal?.aborted || error?.name === 'AbortError' || error?.name === 'OperationCancelledError';
 			if (previousOfficial) await fs.writeFile(officialPath, previousOfficial);
 			else await fs.rm(officialPath, { force: true });
 			await fs.writeFile(siteArchiveDataFile, previousArchiveSource);
@@ -1889,6 +2101,9 @@ const publishDraftUnlocked = async (payload) => {
 				await runSiteBuild();
 			} catch (rollbackError) {
 				rollbackBuildMessage = `；恢复后的构建也未完成：${safeMessage(rollbackError)}`;
+			}
+			if (operationWasCancelled) {
+				throw new OperationCancelledError(`发布已取消，公开网站已恢复到操作前状态${rollbackBuildMessage}。`);
 			}
 			throw new Error(`网站构建或安全切换没有完成，已恢复发布前状态：${safeMessage(error)}${rollbackBuildMessage}`);
 		}
@@ -1970,7 +2185,8 @@ const printConfigurationSummary = () => {
 	}
 };
 
-const publishDraft = (payload) => submissionStore.guardPublication(payload.itemId, () => publishDraftUnlocked(payload));
+const publishDraft = (payload, options = {}) =>
+	submissionStore.guardPublication(payload.itemId, () => publishDraftUnlocked(payload, options));
 
 const adminServer = http.createServer(async (request, response) => {
 	try {
@@ -2026,10 +2242,21 @@ const adminServer = http.createServer(async (request, response) => {
 			sendJson(response, 200, { records: await createQueryRecords() });
 			return;
 		}
+		if (request.method === 'GET' && url.pathname === '/api/integrity-report') {
+			sendJson(response, 200, { integrity: await loadIntegrityReport() });
+			return;
+		}
 		if (request.method === 'GET' && url.pathname.startsWith('/api/image/')) {
 			const [, , , itemId, filename] = url.pathname.split('/');
 			if (!itemIdPattern.test(itemId ?? '') || path.basename(filename ?? '') !== filename) {
 				response.writeHead(400).end('Invalid image path');
+				return;
+			}
+			const responsivePath = await responsiveImageVariant(itemId, filename, url.searchParams.get('variant'));
+			if (responsivePath) {
+				await sendFile(response, siteResponsiveArchiveDirectory, `/${responsivePath}`, {
+					cacheControl: 'private, max-age=300', request,
+				});
 				return;
 			}
 			const inboxFile = path.join(inboxDirectory, itemId, filename);
@@ -2055,7 +2282,22 @@ const adminServer = http.createServer(async (request, response) => {
 		}
 		if (request.method === 'POST' && url.pathname === '/api/save-draft') {
 			requireSafeMutation(request);
-			sendJson(response, 200, { draft: await saveDraft(await readRequestJson(request)) });
+			const draft = await runManagedOperation(request, 'save-draft', async ({ operationId, signal }) =>
+				saveDraft(await readRequestJson(request, signal), { operationId, signal }));
+			sendJson(response, 200, { draft });
+			return;
+		}
+		if (request.method === 'POST' && url.pathname === '/api/stage-image') {
+			requireSafeImageMutation(request);
+			const upload = await runManagedOperation(request, 'stage-image', ({ operationId, signal }) =>
+				stageUploadedImage(request, operationId, signal));
+			sendJson(response, 200, { upload });
+			return;
+		}
+		if (request.method === 'POST' && url.pathname === '/api/cancel-operation') {
+			requireSafeMutation(request);
+			const payload = await readRequestJson(request);
+			sendJson(response, 200, { cancelled: await cancelManagedOperation(payload.operationId) });
 			return;
 		}
 		if (request.method === 'POST' && url.pathname === '/api/preflight-images') {
@@ -2065,7 +2307,9 @@ const adminServer = http.createServer(async (request, response) => {
 		}
 		if (request.method === 'POST' && url.pathname === '/api/publish') {
 			requireSafeMutation(request);
-			sendJson(response, 200, await publishDraft(await readRequestJson(request)));
+			const result = await runManagedOperation(request, 'publish', async ({ operationId, signal }) =>
+				publishDraft(await readRequestJson(request, signal), { operationId, signal }));
+			sendJson(response, 200, result);
 			return;
 		}
 		if (request.method === 'POST' && url.pathname === '/api/withdraw-record') {
@@ -2119,13 +2363,14 @@ const adminServer = http.createServer(async (request, response) => {
 			notFoundFile: path.join(siteDistDirectory, '404.html'),
 		});
 	} catch (error) {
-		if (!['AccessAuthenticationError', 'RequestError', 'SubmissionError'].includes(error?.name)) console.error(error);
+		if (!['AccessAuthenticationError', 'RequestError', 'SubmissionError', 'OperationCancelledError'].includes(error?.name)) console.error(error);
 		if (response.headersSent) {
 			response.end();
 			return;
 		}
 		sendJson(response, Number.isInteger(error?.statusCode) ? error.statusCode : 400, {
 			error: safeMessage(error),
+			...(error?.name === 'OperationCancelledError' ? { cancelled: true } : {}),
 			...(Array.isArray(error?.issues) ? { issues: error.issues } : {}),
 		});
 	}
