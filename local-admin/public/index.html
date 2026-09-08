@@ -8,47 +8,86 @@
 		<title>档案管理｜老旧默片</title>
 		<link rel="stylesheet" href="./styles.css" />
 	</head>
-	<body>
+	<body class="admin-v2">
 		<a class="skip-link" href="#main-editor">跳到档案编辑区</a>
 		<div class="app-shell">
 			<aside class="sidebar">
 				<div class="brand">
-					<h1>老旧默片</h1>
-					<p>档案管理<span class="brand-pending" id="brand-pending" hidden></span></p>
+					<span class="brand-mark" aria-hidden="true">
+						<svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM2.5 3.5h19v4h-19zM9 11h6" /></svg>
+					</span>
+					<div>
+						<h1>档案工作台</h1>
+						<p>老旧默片 · 内部管理<span class="brand-pending" id="brand-pending" hidden></span></p>
+					</div>
 				</div>
 
 				<button class="new-record-button" id="new-record-button" type="button">
-					<span aria-hidden="true">＋</span>
-					新建藏品
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+					新建档案
 				</button>
 
 				<nav class="desk-nav" aria-label="管理工作区">
-					<a class="desk-nav-button" href="/admin/contacts.html"><span>联系收件箱</span><small>来信</small></a>
-					<a class="desk-nav-button" href="/admin/submissions.html"><span>投稿审核</span><small>投稿</small></a>
-					<button class="desk-nav-button is-active" data-workspace="records" type="button">
-						<span>档案管理</span><small id="records-badge">0</small>
-					</button>
-					<button class="desk-nav-button" data-workspace="query" type="button">
-						<span>资料查询</span><small id="query-badge">0</small>
-					</button>
-					<button class="desk-nav-button" data-workspace="maintenance" type="button">
-						<span>维护概览</span><small id="maintenance-badge">0</small>
-					</button>
-					<button class="desk-nav-button" data-workspace="drafts" type="button">
-						<span>草稿中心</span><small id="drafts-badge">0</small>
-					</button>
-					<button class="desk-nav-button" data-workspace="recycle" type="button">
-						<span>图片回收区</span><small id="recycle-badge">0</small>
-					</button>
-					<button class="desk-nav-button" data-workspace="history" type="button">
-						<span>历史版本</span><small id="history-badge">0</small>
-					</button>
+					<div class="desk-nav-group">
+						<p class="desk-nav-label">工作区</p>
+						<button class="desk-nav-button" data-workspace="maintenance" type="button">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" /></svg>
+							<span>维护概览</span><small id="maintenance-badge">0</small>
+						</button>
+						<button class="desk-nav-button is-active" data-workspace="records" type="button">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4zM8 5v15M8 9h12M8 14h12" /></svg>
+							<span>档案管理</span><small id="records-badge">0</small>
+						</button>
+						<button class="desk-nav-button" data-workspace="query" type="button">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg>
+							<span>资料查询</span><small id="query-badge">0</small>
+						</button>
+					</div>
+
+					<div class="desk-nav-group">
+						<p class="desk-nav-label">待处理</p>
+						<a class="desk-nav-button" href="/admin/submissions.html">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5" /></svg>
+							<span>投稿审核</span><small>投稿</small>
+						</a>
+						<a class="desk-nav-button" href="/admin/contacts.html">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM3 6l9 7 9-7" /></svg>
+							<span>联系收件箱</span><small>来信</small>
+						</a>
+						<button class="desk-nav-button" data-workspace="drafts" type="button">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5zM14 3v5h5M8 13h8M8 17h6" /></svg>
+							<span>草稿中心</span><small id="drafts-badge">0</small>
+						</button>
+					</div>
+
+					<div class="desk-nav-group">
+						<p class="desk-nav-label">记录与恢复</p>
+						<button class="desk-nav-button" data-workspace="history" type="button">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2" /></svg>
+							<span>历史版本</span><small id="history-badge">0</small>
+						</button>
+						<button class="desk-nav-button" data-workspace="recycle" type="button">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16M9 4h6l1 4H8zM6 8l1 12h10l1-12M10 12v4M14 12v4" /></svg>
+							<span>图片回收区</span><small id="recycle-badge">0</small>
+						</button>
+					</div>
 				</nav>
 
 				<button class="mobile-record-browser-toggle" id="mobile-record-browser-toggle" type="button" aria-controls="record-browser-content" aria-expanded="false" hidden>
-					<span>选择已有档案</span><small>展开</small>
+					<span>查看档案列表</span><small>展开</small>
 				</button>
 
+				<div class="sidebar-footer">
+					<span class="local-dot" aria-hidden="true"></span>
+					仅本机可访问 · 未公开
+				</div>
+			</aside>
+
+			<aside class="records-pane" aria-label="档案列表" hidden>
+				<div class="records-pane-heading">
+					<div><strong>档案列表</strong><span>选择一条查看速览</span></div>
+					<button class="records-pane-close" id="records-pane-close" type="button" aria-label="收起档案列表">×</button>
+				</div>
 				<div class="record-browser-content" id="record-browser-content" hidden aria-hidden="true">
 					<nav class="record-status-nav" id="record-status-nav" aria-label="档案状态">
 						<button class="record-status-button is-active" data-record-status="normal" type="button">
@@ -98,20 +137,20 @@
 				<nav class="record-list" id="record-list" aria-label="藏品列表"></nav>
 				<nav class="record-pagination" id="record-pagination" aria-label="档案列表分页" hidden></nav>
 				</div>
-
-				<div class="sidebar-footer">
-					<span class="local-dot" aria-hidden="true"></span>
-					非公开管理入口
-				</div>
 			</aside>
 
 			<main class="workspace" id="main-editor" tabindex="-1">
 				<header class="workspace-header">
-					<div>
-						<p class="eyebrow" id="record-kicker"></p>
-						<h2 id="record-title">读取中…</h2>
-						<p class="record-id" id="record-id"></p>
-						<p class="save-state" id="save-state" role="status" aria-live="polite" aria-atomic="true"></p>
+					<div class="workspace-title">
+						<button class="back-to-library-button" id="back-to-library-button" type="button" aria-label="返回档案列表" hidden>
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+						</button>
+						<div>
+							<p class="eyebrow" id="record-kicker"></p>
+							<h2 id="record-title">读取中…</h2>
+							<p class="record-id" id="record-id"></p>
+							<p class="save-state" id="save-state" role="status" aria-live="polite" aria-atomic="true"></p>
+						</div>
 					</div>
 					<div class="header-actions" id="header-actions">
 						<a class="quiet-button" id="preview-link" href="/">查看网站首页</a>
