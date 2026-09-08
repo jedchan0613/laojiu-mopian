@@ -102,14 +102,13 @@ const updatedDate = formatDisplayDate(item.core.updated_date);
 
 const specificFacts = getSpecificMetadataFacts(item);
 
-// 面向访客的“档案信息”只显示中文标签：永久编号、收藏品编码、类型代码、
+// 面向访客的“更多信息”只显示中文标签：永久编号、收藏品编码、类型代码、
 // 维度代码等内部编码不在公开页展示；永久编号仍保留在“引用与分享”区块供核对使用。
 const displayLabel = (code: string | undefined) => hasText(code) ? getCodeLabel(code) : '';
 const researchManagementFacts = compactFacts([
   { label: '来源地点', value: item.core.source_place ?? '' },
   { label: '备份状态', value: displayLabel(item.core.backup_status) },
   { label: '保存等级', value: displayLabel(item.core.condition_grade) },
-  { label: '发布副本', value: view.images.length > 0 ? `${view.images.length} 个文件` : '' },
 ]);
 const getImageRole = (description: string, index: number) => {
   const matchedRole = ['正面', '背面', '封面', '内页', '全景', '细节'].find((role) =>
@@ -488,7 +487,7 @@ const breadcrumbStructuredData = {
         researchManagementFacts.length > 0 && (
           <details class="management-information">
             <summary>
-              <span class="icon-heading"><SiteIcon name="archive" /><span>档案信息</span></span>
+              <span class="icon-heading"><SiteIcon name="archive" /><span>更多信息</span></span>
               <small>{researchManagementFacts.length} 项</small>
             </summary>
             <dl class="section-facts">

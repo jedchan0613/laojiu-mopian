@@ -1,5 +1,6 @@
 ---
 import ContactWidget from '../components/ContactWidget.astro';
+import SocialLinks from '../components/SocialLinks.astro';
 
 interface Props {
 	title?: string;
@@ -94,6 +95,7 @@ const serializedStructuredData = structuredData
 				<div class="footer-identity">
 					<p class="footer-name">老旧默片</p>
 					<p class="footer-subtitle">普通人的生活档案</p>
+					<SocialLinks />
 				</div>
 				<div class="footer-end">
 					<a href="/corrections/">纠错与撤下</a>
@@ -410,6 +412,7 @@ const serializedStructuredData = structuredData
 		.site-shell {
 			width: calc(100% - 32px);
 			padding-top: 20px;
+			padding-bottom: calc(68px + env(safe-area-inset-bottom));
 		}
 
 		.site-header nav {

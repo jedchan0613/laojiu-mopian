@@ -1,0 +1,252 @@
+---
+import SiteIcon from './SiteIcon.astro';
+import { socialProfiles } from '../data/social-profiles';
+
+const normalizePublicHref = (value: string) => {
+	const href = value.trim();
+	if (!href) return '';
+	if (href.startsWith('/') && !href.startsWith('//')) return href;
+
+	try {
+		const parsed = new URL(href);
+		return parsed.protocol === 'https:' ? parsed.href : '';
+	} catch {
+		return '';
+	}
+};
+
+const normalizePublicAssetPath = (value: string) => {
+	const path = value.trim();
+	return path.startsWith('/social/') && !path.startsWith('//') ? path : '';
+};
+
+const profiles = socialProfiles.map((profile) => ({
+	...profile,
+	account: profile.account.trim(),
+	accountLabel: profile.platform === 'douyin' ? '抖音号' : profile.platform === 'xiaohongshu' ? '小红书号' : '微信号',
+	href: normalizePublicHref(profile.url),
+	qrImage: normalizePublicAssetPath(profile.qrImage ?? ''),
+}));
+
+const visibleProfiles = import.meta.env.DEV
+	? profiles
+	: profiles.filter((profile) => profile.href || profile.account || profile.qrImage);
+---
+
+{visibleProfiles.length > 0 && (
+	<section class="social-follow" aria-labelledby="social-follow-title">
+		<p class="social-follow-title" id="social-follow-title">关注老旧默片</p>
+		<ul>
+			{visibleProfiles.map((profile) => (
+				<li>
+					{profile.href ? (
+						<a
+							class="social-profile-link"
+							href={profile.href}
+							target={profile.href.startsWith('https://') ? '_blank' : undefined}
+							rel={profile.href.startsWith('https://') ? 'me noopener noreferrer' : undefined}
+							aria-label={`在${profile.label}查看老旧默片${profile.account ? `（${profile.account}）` : ''}${profile.href.startsWith('https://') ? '，新窗口打开' : ''}`}
+						>
+							<SiteIcon name={profile.platform} class="social-profile-icon" />
+							<strong>{profile.label}</strong>
+							<small>{profile.href.startsWith('https://') ? '打开主页 ↗' : '查看主页'}</small>
+						</a>
+					) : profile.account || profile.qrImage ? (
+						<details class="social-profile-details" name="social-profile">
+							<summary class="social-profile-link" aria-label={`查看老旧默片${profile.label}账号和二维码`}>
+								<SiteIcon name={profile.platform} class="social-profile-icon" />
+								<strong>{profile.label}</strong>
+								<small>查看账号</small>
+							</summary>
+							<div class="social-profile-panel">
+								<p>老旧默片 · {profile.label}</p>
+								{profile.qrImage && (
+									<a href={profile.qrImage} target="_blank" rel="noopener noreferrer" aria-label={`打开老旧默片${profile.label}二维码大图`}>
+										<img
+											src={profile.qrImage}
+											alt={`老旧默片${profile.label}二维码`}
+											width={profile.qrImageWidth}
+											height={profile.qrImageHeight}
+											loading="lazy"
+										/>
+									</a>
+								)}
+								{profile.account && <strong>{profile.accountLabel}：{profile.account}</strong>}
+								<small>
+									{profile.qrImage && profile.account
+										? `点击查看二维码大图，或在${profile.label}中搜索上方账号。`
+										: profile.qrImage
+											? `点击查看二维码大图，在${profile.label}中找到老旧默片。`
+											: `在${profile.label}中搜索上方账号即可找到老旧默片。`}
+								</small>
+							</div>
+						</details>
+					) : (
+						<span
+							class="social-profile-link social-profile-link--pending"
+							aria-label={`${profile.label}账号待补充`}
+							aria-disabled="true"
+						>
+							<SiteIcon name={profile.platform} class="social-profile-icon" />
+							<strong>{profile.label}</strong>
+							<small>待补充</small>
+						</span>
+					)}
+				</li>
+			))}
+		</ul>
+	</section>
+)}
+
+<style>
+	.social-follow {
+		position: relative;
+		display: grid;
+		justify-items: start;
+		gap: 0.55rem;
+		margin-top: 1rem;
+	}
+
+	.social-follow-title {
+		margin: 0;
+		color: #4f4b43;
+		font-size: var(--site-text-small);
+		line-height: 1.5;
+		letter-spacing: 0.12em;
+	}
+
+	.social-follow ul {
+		display: flex;
+		gap: 0.45rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.social-profile-link {
+		display: grid;
+		place-items: center;
+		gap: 0.16rem;
+		width: 4rem;
+		min-height: 4rem;
+		padding: 0.42rem 0.25rem 0.38rem;
+		color: #4f4b43;
+		background: rgba(248, 244, 234, 0.28);
+		border: 1px solid #aaa397;
+		cursor: pointer;
+		font: inherit;
+		line-height: 1.2;
+		text-align: center;
+		text-decoration: none;
+		transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+	}
+
+	.social-profile-link:hover,
+	.social-profile-link:focus-visible,
+	.social-profile-details[open] > .social-profile-link {
+		color: var(--site-accent);
+		background: var(--site-accent-soft);
+		border-color: var(--site-accent);
+	}
+
+	.social-profile-link strong {
+		font-size: 0.72rem;
+		font-weight: 500;
+		letter-spacing: 0.06em;
+	}
+
+	.social-profile-link small {
+		color: #777165;
+		font-size: 0.67rem;
+		letter-spacing: 0.04em;
+	}
+
+	.social-profile-link--pending {
+		cursor: default;
+		border-style: dashed;
+		opacity: 0.68;
+	}
+
+	.social-profile-link--pending:hover {
+		color: #4f4b43;
+		background: rgba(248, 244, 234, 0.28);
+		border-color: #aaa397;
+	}
+
+	:global(.social-profile-icon) {
+		width: 1.18rem;
+		height: 1.18rem;
+		color: var(--site-accent);
+		stroke-width: 1.5;
+	}
+
+	.social-profile-details > summary {
+		list-style: none;
+	}
+
+	.social-profile-details > summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.social-profile-panel {
+		position: absolute;
+		bottom: calc(4rem + 0.7rem);
+		left: 0;
+		z-index: 10;
+		display: grid;
+		justify-items: center;
+		width: min(18rem, 100%);
+		max-height: calc(100vh - 7rem);
+		max-height: calc(100svh - 7rem);
+		padding: 0.85rem;
+		overflow-y: auto;
+		color: #403c35;
+		background: #f7f2e6;
+		border: 1px solid #9f978a;
+		box-shadow: 0 12px 34px rgba(59, 48, 34, 0.18);
+	}
+
+	.social-profile-panel p,
+	.social-profile-panel strong,
+	.social-profile-panel small {
+		margin: 0;
+	}
+
+	.social-profile-panel p {
+		font-size: 0.72rem;
+		letter-spacing: 0.08em;
+	}
+
+	.social-profile-panel > a {
+		display: block;
+		width: 100%;
+		margin-top: 0.65rem;
+	}
+
+	.social-profile-panel img {
+		display: block;
+		width: 100%;
+		height: auto;
+		background: #fff;
+	}
+
+	.social-profile-panel strong {
+		margin-top: 0.55rem;
+		font: 500 0.82rem/1.5 system-ui, "Microsoft YaHei", sans-serif;
+		letter-spacing: 0.04em;
+		overflow-wrap: anywhere;
+	}
+
+	.social-profile-panel small {
+		margin-top: 0.4rem;
+		color: #71695d;
+		font-size: 0.66rem;
+		line-height: 1.6;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.social-profile-link {
+			transition: none;
+		}
+	}
+</style>
