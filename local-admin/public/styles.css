@@ -2973,6 +2973,16 @@ body[data-workspace="query"] .editor-surface {
 	font-size: 1.15rem;
 }
 
+.pv-site .lightbox-previous {
+	grid-column: 1;
+	grid-row: 1;
+}
+
+.pv-site .lightbox-next {
+	grid-column: 3;
+	grid-row: 1;
+}
+
 .pv-site .lightbox-previous small,
 .pv-site .lightbox-next small {
 	color: inherit;
@@ -2983,6 +2993,8 @@ body[data-workspace="query"] .editor-surface {
 
 .pv-site .lightbox-figure {
 	display: grid;
+	grid-column: 2;
+	grid-row: 1;
 	grid-template-rows: minmax(0, 1fr) auto;
 	align-self: stretch;
 	min-width: 0;

@@ -98,3 +98,16 @@ test('管理端启动数据拆分并使用私密压缩传输', async () => {
 	);
 	assert.doesNotMatch(bootstrapResponse, /\n\s*standards:\s*\{/);
 });
+
+test('公开详情页和管理端预览的大图固定在中央栏', async () => {
+	const [detailPage, previewStyles] = await Promise.all([
+		readFile(new URL('site/src/pages/archive/[id].astro', projectRoot), 'utf8'),
+		readFile(new URL('local-admin/public/styles.css', projectRoot), 'utf8'),
+	]);
+
+	for (const styles of [detailPage, previewStyles]) {
+		assert.match(styles, /\.lightbox-previous\s*\{\s*grid-column:\s*1;/s);
+		assert.match(styles, /\.lightbox-figure\s*\{[^}]*grid-column:\s*2;/s);
+		assert.match(styles, /\.lightbox-next\s*\{\s*grid-column:\s*3;/s);
+	}
+});

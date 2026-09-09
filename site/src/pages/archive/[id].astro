@@ -1368,6 +1368,16 @@ const breadcrumbStructuredData = {
     font-size: 1.15rem;
   }
 
+  .lightbox-previous {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .lightbox-next {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
   .lightbox-previous small,
   .lightbox-next small {
     color: inherit;
@@ -1378,6 +1388,8 @@ const breadcrumbStructuredData = {
 
   .lightbox-figure {
     display: grid;
+    grid-column: 2;
+    grid-row: 1;
     grid-template-rows: minmax(0, 1fr) auto;
     align-self: stretch;
     min-width: 0;
