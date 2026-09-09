@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
+const homeSource = await readFile(join(siteRoot, 'src', 'pages', 'index.astro'), 'utf8');
 const archiveIndexSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', 'index.astro'), 'utf8');
 const archiveDetailSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', '[id].astro'), 'utf8');
 const issues = [];
@@ -77,6 +78,10 @@ check(Boolean(archiveIndex), '缺少档案列表页。');
 check(Boolean(notFoundPage), '缺少友好的 404 页面。');
 check(Boolean(correctionsPage), '缺少纠错与撤下说明页。');
 check(detailPages.length > 0, '没有生成任何公开档案详情页。');
+check(
+	homeSource.includes('.slice(0, siteCuration.homeCarouselMaximumSlides)'),
+	'首页精选轮播必须在生成页面数据前执行数量上限。',
+);
 check(archiveDetailSource.includes("item.core.object_type === 'LET'"), '详情页缺少信件类型专属判断。');
 for (const marker of ['data-letter-reader', '文字阅读', '原件对照', '只看原件', '原件图片是最终核对依据']) {
 	check(archiveDetailSource.includes(marker), `信件阅读模板缺少必要内容：${marker}。`);
@@ -106,7 +111,10 @@ if (home) {
 	const recentCategories = [...home.html.matchAll(/data-home-recent-category="([^"]+)"/g)].map((match) => match[1]);
 	const likeIds = [...home.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
 	const carouselCategories = home.html.match(/data-carousel-category-order="([^"]*)"/)?.[1].split(',').filter(Boolean) ?? [];
+	const carouselLimit = Number(home.html.match(/data-carousel-limit="(\d+)"/)?.[1]);
 	check(featuredIds.length === 1, '首页精选档案应当且只能出现一次。');
+	check(Number.isInteger(carouselLimit) && carouselLimit > 0, '首页精选轮播缺少有效的数量上限。');
+	check(carouselCategories.length <= carouselLimit, '首页精选轮播超过人工策展配置的数量上限。');
 	check(new Set(recentIds).size === recentIds.length, '首页每种藏品类型只能展示一件最新档案。');
 	check(recentCategories.length === recentIds.length, '首页其他档案缺少藏品类型顺序标识。');
 	check(new Set(recentCategories).size === recentCategories.length, '首页其他档案重复展示了同一种藏品类型。');

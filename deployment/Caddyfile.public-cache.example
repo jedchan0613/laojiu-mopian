@@ -1,0 +1,26 @@
+# 将本文件通过 import 放在 laojiumopian.com 的站点块内。
+# 只缓存公开静态资源；/api/* 和 admin.laojiumopian.com 不匹配这些规则。
+
+@ljmHashedAssets path /_astro/*
+header @ljmHashedAssets Cache-Control "public, max-age=31536000, immutable"
+
+@ljmResponsiveImages {
+	path_regexp ljm_responsive ^/archive-responsive/.+\.webp$
+}
+header @ljmResponsiveImages Cache-Control "public, max-age=3600, must-revalidate"
+
+@ljmPublicationImages {
+	path_regexp ljm_publication ^/archive/[^/]+/[^/]+\.(jpg|jpeg|png|webp)$
+}
+header @ljmPublicationImages Cache-Control "public, max-age=3600, must-revalidate"
+
+@ljmSupportAssets path /favicon.svg /social/*
+header @ljmSupportAssets Cache-Control "public, max-age=86400, must-revalidate"
+
+@ljmDiscoveryFiles path /robots.txt /sitemap.xml
+header @ljmDiscoveryFiles Cache-Control "public, max-age=3600, must-revalidate"
+
+@ljmPublicHtml {
+	path_regexp ljm_html ^/(|404\.html|about/?|archive/?|archive/[^/]+/?|contribute/?|corrections/?)$
+}
+header @ljmPublicHtml Cache-Control "public, max-age=0, must-revalidate"
