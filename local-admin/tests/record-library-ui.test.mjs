@@ -75,3 +75,26 @@ test('投稿与联系页面使用新版管理界面视觉', async () => {
 	assert.match(contactsStyles, /\.contact-message/);
 	assert.doesNotMatch(`${submissionsStyles}\n${contactsStyles}`, /#8e432e|#eeece4/i);
 });
+
+test('管理端启动数据拆分并使用私密压缩传输', async () => {
+	const [script, server] = await Promise.all([
+		readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8'),
+		readFile(new URL('local-admin/server.mjs', projectRoot), 'utf8'),
+	]);
+
+	assert.match(script, /fetch\('\/api\/admin-standards'/);
+	assert.match(script, /Promise\.all\(\[\s*fetch\('\/api\/bootstrap\?format=split-v1'/);
+	assert.match(script, /if \(state\.standards\) return state\.standards/);
+	assert.match(script, /separatelyLoadedStandards \?\? data\.standards/);
+	assert.match(server, /brotliCompressSync/);
+	assert.match(server, /gzipSync/);
+	assert.match(server, /'Content-Encoding': encoding/);
+	assert.match(server, /url\.pathname === '\/api\/admin-standards'/);
+	assert.match(server, /splitResponse \? 'split' : 'full'/);
+	assert.match(server, /W\/"ljm-standards-/);
+	const bootstrapResponse = server.slice(
+		server.indexOf('const loadBootstrap ='),
+		server.indexOf('const computeBootstrapSignature ='),
+	);
+	assert.doesNotMatch(bootstrapResponse, /\n\s*standards:\s*\{/);
+});

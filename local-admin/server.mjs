@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash, randomUUID } from 'node:crypto';
+import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
 import { createAccessAuthenticator } from './access-auth.mjs';
 import { createReleaseDeployer, readLiveRelease } from './release-deployer.mjs';
 import { createSubmissionStore, createPublicSubmissionHandler, readSubmissionJson, privacyChecks, submissionStates } from './submissions.mjs';
@@ -246,9 +247,66 @@ const mimeTypes = new Map([
 	['.webp', 'image/webp'],
 ]);
 
+const minimumCompressionBytes = 1024;
+const compressibleContentTypePattern = /^(?:text\/|application\/(?:json|javascript)|image\/svg\+xml)/i;
+const acceptedEncodingQuality = (request, encoding) => {
+	const header = String(request?.headers?.['accept-encoding'] ?? '').toLowerCase();
+	let wildcardQuality = 0;
+	for (const part of header.split(',')) {
+		const [name, ...parameters] = part.trim().split(';').map((value) => value.trim());
+		if (!name) continue;
+		const qualityParameter = parameters.find((parameter) => parameter.startsWith('q='));
+		const parsedQuality = qualityParameter ? Number.parseFloat(qualityParameter.slice(2)) : 1;
+		const quality = Number.isFinite(parsedQuality) ? Math.max(0, Math.min(1, parsedQuality)) : 0;
+		if (name === encoding) return quality;
+		if (name === '*') wildcardQuality = quality;
+	}
+	return wildcardQuality;
+};
+const compressionVariationHeaders = (contentType, request) => (
+	request && compressibleContentTypePattern.test(contentType) ? { Vary: 'Accept-Encoding' } : {}
+);
+const encodeResponseBody = (content, contentType, request) => {
+	const body = Buffer.isBuffer(content) ? content : Buffer.from(content);
+	const baseHeaders = {
+		'Content-Length': String(body.length),
+		...compressionVariationHeaders(contentType, request),
+	};
+	if (!request || body.length < minimumCompressionBytes || !compressibleContentTypePattern.test(contentType)) {
+		return { body, headers: baseHeaders };
+	}
+
+	let encoding = '';
+	let compressed = body;
+	try {
+		if (acceptedEncodingQuality(request, 'br') > 0) {
+			encoding = 'br';
+			compressed = brotliCompressSync(body, {
+				params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 4 },
+			});
+		} else if (acceptedEncodingQuality(request, 'gzip') > 0) {
+			encoding = 'gzip';
+			compressed = gzipSync(body, { level: 6 });
+		}
+	} catch {
+		encoding = '';
+		compressed = body;
+	}
+	if (!encoding || compressed.length >= body.length) return { body, headers: baseHeaders };
+	return {
+		body: compressed,
+		headers: {
+			...baseHeaders,
+			'Content-Encoding': encoding,
+			'Content-Length': String(compressed.length),
+		},
+	};
+};
+
 const sendJson = (response, status, value, options = {}) => {
+	const contentType = 'application/json; charset=utf-8';
 	const headers = {
-		'Content-Type': 'application/json; charset=utf-8',
+		'Content-Type': contentType,
 		'Cache-Control': 'no-store',
 		...securityHeaders(),
 	};
@@ -256,13 +314,17 @@ const sendJson = (response, status, value, options = {}) => {
 		headers['ETag'] = options.etag;
 		headers['Cache-Control'] = 'private, no-cache';
 		if (options.request?.headers?.['if-none-match'] === options.etag) {
-			response.writeHead(304, headers);
+			response.writeHead(304, {
+				...headers,
+				...compressionVariationHeaders(contentType, options.request),
+			});
 			response.end();
 			return;
 		}
 	}
-	response.writeHead(status, headers);
-	response.end(JSON.stringify(value));
+	const encoded = encodeResponseBody(JSON.stringify(value), contentType, options.request);
+	response.writeHead(status, { ...headers, ...encoded.headers });
+	response.end(options.request?.method === 'HEAD' ? undefined : encoded.body);
 };
 
 const safeMessage = (error) =>
@@ -384,6 +446,7 @@ const sendFile = async (response, rootDirectory, requestPath, options = {}) => {
 			filePath = path.join(filePath, 'index.html');
 			stat = await fs.stat(filePath);
 		}
+		const contentType = mimeTypes.get(path.extname(filePath).toLowerCase()) ?? 'application/octet-stream';
 		const lastModified = negotiateCache ? stat.mtime.toUTCString() : null;
 		if (negotiateCache) {
 			const ifModifiedSince = options.request.headers['if-modified-since'];
@@ -392,6 +455,7 @@ const sendFile = async (response, rootDirectory, requestPath, options = {}) => {
 				response.writeHead(304, {
 					'Cache-Control': cacheControl,
 					'Last-Modified': lastModified,
+					...compressionVariationHeaders(contentType, options.request),
 					...securityHeaders(),
 				});
 				response.end();
@@ -402,24 +466,29 @@ const sendFile = async (response, rootDirectory, requestPath, options = {}) => {
 		if (options.transformHtml && path.extname(filePath).toLowerCase() === '.html') {
 			content = Buffer.from(options.transformHtml(content.toString('utf8')), 'utf8');
 		}
+		const encoded = encodeResponseBody(content, contentType, options.request);
 		response.writeHead(200, {
-			'Content-Type': mimeTypes.get(path.extname(filePath).toLowerCase()) ?? 'application/octet-stream',
+			'Content-Type': contentType,
 			'Cache-Control': cacheControl,
 			...(lastModified ? { 'Last-Modified': lastModified } : {}),
+			...encoded.headers,
 			...securityHeaders(),
 		});
-		response.end(content);
+		response.end(options.request?.method === 'HEAD' ? undefined : encoded.body);
 	} catch (error) {
 		if (error?.code === 'ENOENT') {
 			if (options.notFoundFile && await pathExists(options.notFoundFile)) {
 				let content = await fs.readFile(options.notFoundFile);
 				if (options.transformHtml) content = Buffer.from(options.transformHtml(content.toString('utf8')), 'utf8');
+				const contentType = 'text/html; charset=utf-8';
+				const encoded = encodeResponseBody(content, contentType, options.request);
 				response.writeHead(404, {
-					'Content-Type': 'text/html; charset=utf-8',
+					'Content-Type': contentType,
 					'Cache-Control': 'no-store',
+					...encoded.headers,
 					...securityHeaders(),
 				});
-				response.end(content);
+				response.end(options.request?.method === 'HEAD' ? undefined : encoded.body);
 				return;
 			}
 			response.writeHead(404, securityHeaders()).end('Not found');
@@ -1015,25 +1084,65 @@ const getPublicationIssues = async (
 	return issues;
 };
 
-const loadBootstrap = async () => {
-	const [officialRecords, drafts, commonFields, codeDictionary, collectionCodeRules, fieldRouting, archiveCategories, administrativeRegions, photo, postcard, diaryNotebook, credential, card, history, recycleBin] =
-		await Promise.all([
-			loadOfficialRecords(),
-			loadDrafts(),
-			readJson(path.join(standardsDirectory, 'common-fields.json')),
-			readJson(path.join(standardsDirectory, 'code-dictionary.json')),
-			readJson(path.join(standardsDirectory, 'collection-code-rules.json')),
-			readJson(path.join(standardsDirectory, 'admin-field-routing.json')),
-			readJson(archiveCategoryFile),
-			readJson(path.join(standardsDirectory, 'administrative-regions.json')),
-			readJson(path.join(standardsDirectory, 'photo-dimensions.json')),
-			readJson(path.join(standardsDirectory, 'postcard-dimensions.json')),
-			readJson(path.join(standardsDirectory, 'diary-notebook-dimensions.json')),
-			readJson(path.join(standardsDirectory, 'credential-dimensions.json')),
-			readJson(path.join(standardsDirectory, 'card-dimensions.json')),
-			loadHistoryEntries(),
-			loadRecycleEntries(),
-		]);
+const adminStandardsFileEntries = [
+	['commonFields', path.join(standardsDirectory, 'common-fields.json')],
+	['codeDictionary', path.join(standardsDirectory, 'code-dictionary.json')],
+	['collectionCodeRules', path.join(standardsDirectory, 'collection-code-rules.json')],
+	['fieldRouting', path.join(standardsDirectory, 'admin-field-routing.json')],
+	['archiveCategories', archiveCategoryFile],
+	['administrativeRegions', path.join(standardsDirectory, 'administrative-regions.json')],
+	['photo', path.join(standardsDirectory, 'photo-dimensions.json')],
+	['postcard', path.join(standardsDirectory, 'postcard-dimensions.json')],
+	['diaryNotebook', path.join(standardsDirectory, 'diary-notebook-dimensions.json')],
+	['credential', path.join(standardsDirectory, 'credential-dimensions.json')],
+	['card', path.join(standardsDirectory, 'card-dimensions.json')],
+];
+let adminStandardsCache = null;
+let adminStandardsSignature = '';
+
+const getAdminStandards = async () => {
+	const signatures = await Promise.all(adminStandardsFileEntries.map(async ([label, filePath]) => {
+		const stat = await fs.stat(filePath);
+		return `${label}:${stat.size}:${Math.floor(stat.mtimeMs)}`;
+	}));
+	const signature = createHash('sha256').update(signatures.join('|')).digest('hex').slice(0, 20);
+	if (adminStandardsCache && signature === adminStandardsSignature) {
+		return { standards: adminStandardsCache, signature };
+	}
+	const values = await Promise.all(adminStandardsFileEntries.map(([, filePath]) => readJson(filePath)));
+	const byLabel = Object.fromEntries(adminStandardsFileEntries.map(([label], index) => [label, values[index]]));
+	adminStandardsCache = {
+		commonFields: byLabel.commonFields,
+		codeDictionary: byLabel.codeDictionary,
+		collectionCodeRules: byLabel.collectionCodeRules,
+		fieldRouting: byLabel.fieldRouting,
+		archiveCategories: byLabel.archiveCategories,
+		administrativeRegions: byLabel.administrativeRegions,
+		dimensions: {
+			photo: byLabel.photo,
+			postcard: byLabel.postcard,
+			diary_notebook: byLabel.diaryNotebook,
+			credential: byLabel.credential,
+			card: byLabel.card,
+		},
+	};
+	adminStandardsSignature = signature;
+	return { standards: adminStandardsCache, signature };
+};
+
+const loadBootstrap = async (standards) => {
+	const [officialRecords, drafts, history, recycleBin] = await Promise.all([
+		loadOfficialRecords(),
+		loadDrafts(),
+		loadHistoryEntries(),
+		loadRecycleEntries(),
+	]);
+	const {
+		commonFields,
+		codeDictionary,
+		collectionCodeRules,
+		fieldRouting,
+	} = standards;
 	const officialById = new Map(officialRecords.map((record) => [record.core.item_id, record]));
 	const draftById = new Map(drafts.map((draft) => [draft.record.core.item_id, draft]));
 	const allIds = new Set([...officialById.keys(), ...draftById.keys()]);
@@ -1097,15 +1206,6 @@ const loadBootstrap = async () => {
 			preview_url: `/api/recycle-image/${entry.item_id}/${entry.entry_id}`,
 		})),
 		maintenance: { integrity: null },
-		standards: {
-			commonFields,
-			codeDictionary,
-			collectionCodeRules,
-			fieldRouting,
-			archiveCategories,
-			administrativeRegions,
-			dimensions: { photo, postcard, diary_notebook: diaryNotebook, credential, card },
-		},
 		paths: {
 			projectName: '老旧默片',
 			previewUrl: onlineMode ? `${publicSiteUrl}/` : `${localAdminOrigin}/`,
@@ -1147,9 +1247,16 @@ let bootstrapCache = null;
 let bootstrapSignature = '';
 
 const getBootstrap = async () => {
-	const signature = await computeBootstrapSignature();
+	const [dataSignature, standardsResult] = await Promise.all([
+		computeBootstrapSignature(),
+		getAdminStandards(),
+	]);
+	const signature = createHash('sha256')
+		.update(`${dataSignature}|${standardsResult.signature}`)
+		.digest('hex')
+		.slice(0, 20);
 	if (bootstrapCache && signature === bootstrapSignature) return bootstrapCache;
-	bootstrapCache = await loadBootstrap();
+	bootstrapCache = await loadBootstrap(standardsResult.standards);
 	bootstrapSignature = signature;
 	return bootstrapCache;
 };
@@ -1202,12 +1309,13 @@ const safeSpecificQueryFields = new Set([
 ]);
 
 const createQueryRecords = async () => {
-	const bootstrap = await getBootstrap();
+	const [bootstrap, standardsResult] = await Promise.all([getBootstrap(), getAdminStandards()]);
+	const standards = standardsResult.standards;
 	const imageManifest = await getResponsiveImageManifest();
 	const requiredVariantWidths = [320, 640, 1280, 1920];
-	const categoryByType = new Map((bootstrap.standards.archiveCategories?.categories ?? [])
+	const categoryByType = new Map((standards.archiveCategories?.categories ?? [])
 		.flatMap((category) => (category.object_types ?? []).map((objectType) => [objectType, category])));
-	const objectTypeLabels = new Map((bootstrap.standards.codeDictionary?.entries ?? [])
+	const objectTypeLabels = new Map((standards.codeDictionary?.entries ?? [])
 		.filter((entry) => entry.enabled && entry.dictionary_key === 'object_type')
 		.map((entry) => [entry.code, entry.label]));
 
@@ -2200,12 +2308,12 @@ const adminServer = http.createServer(async (request, response) => {
 		}
 		if (onlineMode) await accessAuthenticator.verifyRequest(request);
 		if (url.pathname === '/api/admin/submissions' && request.method === 'GET') {
-			sendJson(response, 200, { submissions: await submissionStore.list(), states: submissionStates, privacy_checks: privacyChecks }); return;
+			sendJson(response, 200, { submissions: await submissionStore.list(), states: submissionStates, privacy_checks: privacyChecks }, { request }); return;
 		}
 		const submissionRoute = /^\/api\/admin\/submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer|copy-\d{2}\.jpg))?$/.exec(url.pathname);
 		if (submissionRoute) {
 			const [, id, action] = submissionRoute;
-			if (!action && request.method === 'GET') { sendJson(response, 200, await submissionStore.detail(id)); return; }
+			if (!action && request.method === 'GET') { sendJson(response, 200, await submissionStore.detail(id), { request }); return; }
 			if (action?.startsWith('copy-') && request.method === 'GET') {
 				const image = await submissionStore.getImage(id, action);
 				response.writeHead(200, { ...securityHeaders(), 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store', 'Cross-Origin-Resource-Policy': 'same-origin', 'X-Robots-Tag': 'noindex, nofollow' }); response.end(image); return;
@@ -2218,12 +2326,12 @@ const adminServer = http.createServer(async (request, response) => {
 			sendJson(response, 405, { error: '不支持此操作。' }); return;
 		}
 		if (url.pathname === '/api/admin/contacts' && request.method === 'GET') {
-			sendJson(response, 200, { contacts: await contactStore.list(), states: contactStates, categories: contactCategories }); return;
+			sendJson(response, 200, { contacts: await contactStore.list(), states: contactStates, categories: contactCategories }, { request }); return;
 		}
 		const contactRoute = /^\/api\/admin\/contacts\/(LX-[A-F0-9]{24})(?:\/(review))?$/.exec(url.pathname);
 		if (contactRoute) {
 			const [, id, action] = contactRoute;
-			if (!action && request.method === 'GET') { sendJson(response, 200, await contactStore.detail(id)); return; }
+			if (!action && request.method === 'GET') { sendJson(response, 200, await contactStore.detail(id), { request }); return; }
 			if (action === 'review' && request.method === 'POST') {
 				requireSafeMutation(request);
 				sendJson(response, 200, await contactStore.review(id, await readSubmissionJson(request, 16 * 1024))); return;
@@ -2232,18 +2340,30 @@ const adminServer = http.createServer(async (request, response) => {
 		}
 		if (request.method === 'GET' && url.pathname === '/api/bootstrap') {
 			await getBootstrap();
-			sendJson(response, 200, bootstrapCache, {
-				etag: `"ljm-${bootstrapSignature}"`,
+			const splitResponse = url.searchParams.get('format') === 'split-v1';
+			const standardsResult = splitResponse ? null : await getAdminStandards();
+			sendJson(response, 200, splitResponse
+				? bootstrapCache
+				: { ...bootstrapCache, standards: standardsResult.standards }, {
+				etag: `W/"ljm-bootstrap-${splitResponse ? 'split' : 'full'}-${bootstrapSignature}"`,
+				request,
+			});
+			return;
+		}
+		if (request.method === 'GET' && url.pathname === '/api/admin-standards') {
+			const { standards, signature } = await getAdminStandards();
+			sendJson(response, 200, standards, {
+				etag: `W/"ljm-standards-${signature}"`,
 				request,
 			});
 			return;
 		}
 		if (request.method === 'GET' && url.pathname === '/api/query-records') {
-			sendJson(response, 200, { records: await createQueryRecords() });
+			sendJson(response, 200, { records: await createQueryRecords() }, { request });
 			return;
 		}
 		if (request.method === 'GET' && url.pathname === '/api/integrity-report') {
-			sendJson(response, 200, { integrity: await loadIntegrityReport() });
+			sendJson(response, 200, { integrity: await loadIntegrityReport() }, { request });
 			return;
 		}
 		if (request.method === 'GET' && url.pathname.startsWith('/api/image/')) {
@@ -2361,6 +2481,7 @@ const adminServer = http.createServer(async (request, response) => {
 		await sendFile(response, siteDistDirectory, url.pathname, {
 			transformHtml: injectLocalPreviewToolbar,
 			notFoundFile: path.join(siteDistDirectory, '404.html'),
+			request,
 		});
 	} catch (error) {
 		if (!['AccessAuthenticationError', 'RequestError', 'SubmissionError', 'OperationCancelledError'].includes(error?.name)) console.error(error);

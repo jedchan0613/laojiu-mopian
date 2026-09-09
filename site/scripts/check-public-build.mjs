@@ -7,6 +7,7 @@ const distRoot = join(siteRoot, 'dist');
 const homeSource = await readFile(join(siteRoot, 'src', 'pages', 'index.astro'), 'utf8');
 const archiveIndexSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', 'index.astro'), 'utf8');
 const archiveDetailSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', '[id].astro'), 'utf8');
+const archiveLikesSource = await readFile(join(siteRoot, 'src', 'scripts', 'archive-likes.ts'), 'utf8');
 const issues = [];
 const check = (condition, message) => {
 	if (!condition) issues.push(message);
@@ -54,14 +55,22 @@ const scriptTreeIncludes = (scriptPath, marker, visited = new Set()) => {
 	if (!contents) return false;
 	if (contents.includes(marker)) return true;
 	const basePath = normalizedPath.slice(0, normalizedPath.lastIndexOf('/') + 1);
-	const imports = [...contents.matchAll(/\bimport\s*(?:[^"'()]*?\sfrom\s*)?["']([^"']+)["']/g)];
-	return imports.some((match) => scriptTreeIncludes(normalizePublicPath(match[1], basePath), marker, visited));
+	const importPaths = [
+		...[...contents.matchAll(/\bimport\s*(?:[^"'()]*?\sfrom\s*)?["']([^"']+)["']/g)].map((match) => match[1]),
+		...[...contents.matchAll(/\bimport\s*\(\s*[`"']([^`"']+)[`"']/g)].map((match) => match[1]),
+	];
+	return importPaths.some((importPath) => scriptTreeIncludes(normalizePublicPath(importPath, basePath), marker, visited));
 };
 const pageLoadsScriptMarker = (page, marker) => {
 	if (page.html.includes(marker)) return true;
 	const scriptSources = [...page.html.matchAll(/<script\b[^>]*\btype="module"[^>]*\bsrc="([^"]+)"[^>]*>/g)]
 		.map((match) => match[1]);
 	return scriptSources.some((source) => scriptTreeIncludes(source, marker));
+};
+const pageDirectlyLoadsScriptMarker = (page, marker) => {
+	const scriptSources = [...page.html.matchAll(/<script\b[^>]*\btype="module"[^>]*\bsrc="([^"]+)"[^>]*>/g)]
+		.map((match) => normalizePublicPath(match[1]));
+	return scriptSources.some((source) => scriptsByPublicPath.get(source)?.includes(marker));
 };
 const home = htmlEntries.find((entry) => entry.relativePath === 'index.html');
 const archiveIndex = htmlEntries.find((entry) => entry.relativePath === 'archive/index.html');
@@ -82,6 +91,12 @@ check(
 	homeSource.includes('.slice(0, siteCuration.homeCarouselMaximumSlides)'),
 	'首页精选轮播必须在生成页面数据前执行数量上限。',
 );
+check(
+	archiveIndexSource.includes("fetchpriority={originalIndex === 0 ? 'high' : undefined}"),
+	'档案列表首张封面缺少高优先级加载设置。',
+);
+check(archiveLikesSource.includes("window.addEventListener('load'"), '点赞计数应在页面主要资源完成后再读取。');
+check(!archiveLikesSource.includes('likePreloadItems'), '首页不应提前读取尚未显示的轮播档案点赞计数。');
 check(archiveDetailSource.includes("item.core.object_type === 'LET'"), '详情页缺少信件类型专属判断。');
 for (const marker of ['data-letter-reader', '文字阅读', '原件对照', '只看原件', '原件图片是最终核对依据']) {
 	check(archiveDetailSource.includes(marker), `信件阅读模板缺少必要内容：${marker}。`);
@@ -214,6 +229,7 @@ for (const page of htmlEntries) {
 	check(page.html.includes('data-contact-category-button="privacy" aria-pressed="true"'), `${page.relativePath} 的隐私问题按钮缺少默认选中状态。`);
 	check(pageLoadsScriptMarker(page, '/api/contact/config'), `${page.relativePath} 缺少联系通道可用性检查。`);
 	check(pageLoadsScriptMarker(page, '/api/contact/lookup'), `${page.relativePath} 缺少联系回执查询程序。`);
+	check(!pageDirectlyLoadsScriptMarker(page, '/api/contact/config'), `${page.relativePath} 在访客打开联系挂件前就加载了完整联系程序。`);
 	check(!page.html.includes('data-background-music'), `${page.relativePath} 仍包含已下线的背景音乐播放器。`);
 	for (const publicPath of retiredBackgroundMusicPublicPaths) {
 		check(!page.html.includes(publicPath), `${page.relativePath} 仍引用已下线的背景音乐：${publicPath}。`);
@@ -225,6 +241,10 @@ for (const page of htmlEntries) {
 	check(!/(?:localhost|127\.0\.0\.1)[^<"]*/i.test(
 		(page.html.match(/<link rel="canonical"[^>]*>|<meta property="og:url"[^>]*>/g) ?? []).join(' '),
 	), `${page.relativePath} 的公开规范地址包含本机网址。`);
+}
+
+for (const publicPath of retiredBackgroundMusicPublicPaths) {
+	check(!(await exists(join(distRoot, publicPath.replace(/^\/+/, '')))), `公开构建仍携带已下线的音频副本：${publicPath}。`);
 }
 
 const publicText = htmlEntries.map((entry) => entry.html).join('\n');

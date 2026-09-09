@@ -7,7 +7,7 @@
   },
 	"scripts": {
 		"dev": "astro dev",
-		"build": "node scripts/generate-responsive-images.mjs && astro build && node scripts/generate-sitemap.mjs && node scripts/check-public-build.mjs",
+		"build": "node scripts/generate-responsive-images.mjs && astro build && node scripts/remove-retired-public-assets.mjs && node scripts/generate-sitemap.mjs && node scripts/check-public-build.mjs",
 		"check:public": "node scripts/check-public-build.mjs",
 		"preview": "astro preview",
 		"astro": "astro"

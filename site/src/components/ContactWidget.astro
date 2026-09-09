@@ -170,7 +170,30 @@ const fallbackMailto = contactEmail
 </aside>
 
 <script>
-	import '../scripts/contact-widget';
+	const contactRoot = document.querySelector<HTMLElement>('[data-contact-widget]');
+	const contactLauncher = contactRoot?.querySelector<HTMLButtonElement>('[data-contact-launcher]');
+	let contactModulePromise: Promise<unknown> | undefined;
+	const loadContactModule = () => contactModulePromise ??= import('../scripts/contact-widget');
+
+	contactLauncher?.addEventListener('pointerenter', () => { void loadContactModule(); }, { once: true });
+	contactLauncher?.addEventListener('focus', () => { void loadContactModule(); }, { once: true });
+	contactLauncher?.addEventListener('click', async (event) => {
+		if (contactRoot?.dataset.ready === 'true') return;
+		event.preventDefault();
+		try {
+			await loadContactModule();
+			contactLauncher.click();
+		} catch {
+			contactModulePromise = undefined;
+			const panel = contactRoot?.querySelector<HTMLElement>('[data-contact-panel]');
+			const service = contactRoot?.querySelector<HTMLElement>('[data-contact-service]');
+			const fallback = contactRoot?.querySelector<HTMLElement>('[data-contact-fallback]');
+			if (panel) panel.hidden = false;
+			if (service) service.textContent = '联系功能没有加载完成，请稍后重试。';
+			if (fallback) fallback.hidden = false;
+			contactLauncher.setAttribute('aria-expanded', 'true');
+		}
+	});
 </script>
 
 <style>
