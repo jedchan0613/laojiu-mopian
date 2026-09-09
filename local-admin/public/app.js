@@ -3183,12 +3183,37 @@ const restoreWithdrawnCurrent = async () => {
 	}
 };
 
+let standardsRequestPromise = null;
+const loadAdminStandards = async (signal) => {
+	if (state.standards) return state.standards;
+	if (!standardsRequestPromise) {
+		standardsRequestPromise = (async () => {
+			const response = await fetch('/api/admin-standards', { signal });
+			const data = await readApiJson(response);
+			if (!response.ok) throw new Error(data.error ?? '无法读取档案填写标准。');
+			return data;
+		})();
+	}
+	try {
+		return await standardsRequestPromise;
+	} catch (error) {
+		standardsRequestPromise = null;
+		throw error;
+	}
+};
+
 const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
-	const response = await fetch('/api/bootstrap', {
-		...(options.operation ? { signal: options.operation.controller.signal } : {}),
-	});
+	const signal = options.operation?.controller.signal;
+	const [response, separatelyLoadedStandards] = await Promise.all([
+		fetch('/api/bootstrap?format=split-v1', { ...(signal ? { signal } : {}) }),
+		loadAdminStandards(signal).catch(() => null),
+	]);
 	const data = await readApiJson(response);
 	if (!response.ok) throw new Error(data.error ?? '无法读取档案。');
+	const standards = separatelyLoadedStandards ?? data.standards;
+	if (!standards?.commonFields?.fields || !standards?.codeDictionary?.entries) {
+		throw new Error('档案填写标准没有完整加载，请刷新页面后重试。');
+	}
 	refreshInboxPendingBadge();
 	state.records = data.records;
 	state.drafts = data.drafts ?? [];
@@ -3200,10 +3225,10 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	state.query.loaded = false;
 	state.query.records = [];
 	state.query.selectedId = '';
-	state.standards = data.standards;
-	state.commonFields = new Map(data.standards.commonFields.fields.map((field) => [field.field_code, field]));
+	state.standards = standards;
+	state.commonFields = new Map(standards.commonFields.fields.map((field) => [field.field_code, field]));
 	state.dictionary = new Map();
-	for (const entry of data.standards.codeDictionary.entries) {
+	for (const entry of standards.codeDictionary.entries) {
 		if (!state.dictionary.has(entry.dictionary_key)) state.dictionary.set(entry.dictionary_key, []);
 		state.dictionary.get(entry.dictionary_key).push(entry);
 	}

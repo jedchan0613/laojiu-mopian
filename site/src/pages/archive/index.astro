@@ -283,7 +283,8 @@ const searchIndexJson = JSON.stringify(
                       alt={view.imageDescriptions[0]}
                       width={coverImage.width}
                       height={coverImage.height}
-                      loading="lazy"
+                      loading={originalIndex === 0 ? 'eager' : 'lazy'}
+                      fetchpriority={originalIndex === 0 ? 'high' : undefined}
                       decoding="async"
                     />
                   )}

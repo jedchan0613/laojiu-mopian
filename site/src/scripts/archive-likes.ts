@@ -4,13 +4,14 @@ type LikeState = {
 };
 
 type LikeButton = HTMLButtonElement & {
-	dataset: DOMStringMap & { itemId?: string; likePreloadItems?: string };
+	dataset: DOMStringMap & { itemId?: string };
 };
 
 const buttons = [...document.querySelectorAll<LikeButton>('[data-archive-like]')];
 const numberFormatter = new Intl.NumberFormat('zh-CN');
 const maxItemsPerRequest = 20;
 const states = new Map<string, LikeState>();
+const loadingItems = new Set<string>();
 
 function buttonsFor(itemId: string) {
 	return buttons.filter((button) => button.dataset.itemId === itemId);
@@ -53,15 +54,14 @@ async function requestJson(url: string, init?: RequestInit) {
 	return response.json();
 }
 
-async function initializeLikes() {
-	if (buttons.length === 0) return;
-	const itemIds = [...new Set(buttons.flatMap((button) => [
-		button.dataset.itemId,
-		...(button.dataset.likePreloadItems?.split(',') ?? []),
-	]).filter(Boolean))] as string[];
+async function loadItemStates(itemIds: string[]) {
+	const pendingItemIds = [...new Set(itemIds)]
+		.filter((itemId) => itemId && !states.has(itemId) && !loadingItems.has(itemId));
+	if (pendingItemIds.length === 0) return;
+	for (const itemId of pendingItemIds) loadingItems.add(itemId);
 	try {
-		for (let index = 0; index < itemIds.length; index += maxItemsPerRequest) {
-			const batch = itemIds.slice(index, index + maxItemsPerRequest);
+		for (let index = 0; index < pendingItemIds.length; index += maxItemsPerRequest) {
+			const batch = pendingItemIds.slice(index, index + maxItemsPerRequest);
 			const payload = await requestJson(`/api/likes?items=${encodeURIComponent(batch.join(','))}`) as {
 				items?: Record<string, LikeState>;
 			};
@@ -75,14 +75,25 @@ async function initializeLikes() {
 		}
 	} catch {
 		setUnavailable();
-		return;
+	} finally {
+		for (const itemId of pendingItemIds) loadingItems.delete(itemId);
 	}
+}
+
+function initializeLikes() {
+	if (buttons.length === 0) return;
 
 	for (const button of buttons) {
 		button.addEventListener('archive-like-target-change', () => {
 			const itemId = button.dataset.itemId;
 			const state = itemId ? states.get(itemId) : undefined;
-			if (state) renderButton(button, state);
+			if (state) {
+				renderButton(button, state);
+				return;
+			}
+			button.hidden = true;
+			button.disabled = true;
+			if (itemId) void loadItemStates([itemId]);
 		});
 		button.addEventListener('click', async () => {
 			const itemId = button.dataset.itemId;
@@ -108,6 +119,11 @@ async function initializeLikes() {
 			}
 		});
 	}
+
+	const initialItemIds = [...new Set(buttons.map((button) => button.dataset.itemId).filter(Boolean))] as string[];
+	const loadInitialStates = () => { void loadItemStates(initialItemIds); };
+	if (document.readyState === 'complete') window.setTimeout(loadInitialStates, 0);
+	else window.addEventListener('load', loadInitialStates, { once: true });
 }
 
-void initializeLikes();
+initializeLikes();

@@ -50,7 +50,6 @@ const featuredSlides = Array.from({ length: carouselRoundCount }, (_, roundIndex
 ).flat().slice(0, siteCuration.homeCarouselMaximumSlides);
 const featuredImage = featuredSlides[0]?.image;
 const firstFeaturedSlide = featuredSlides[0];
-const carouselItemIds = [...new Set(featuredSlides.map((slide) => slide.itemId))];
 const recentEntries = recentViews.map((view) => ({
 	view,
 	image: view.images[0] ? getResponsiveImage(view.images[0]) : undefined,
@@ -183,7 +182,6 @@ const categoryEntries = archiveCategories.map((category, index) => {
 							<ArchiveLikeButton
 								itemId={firstFeaturedSlide.itemId}
 								title={firstFeaturedSlide.title}
-								preloadItemIds={carouselItemIds}
 							/>
 						</div>
 					</div>

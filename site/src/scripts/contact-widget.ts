@@ -37,6 +37,7 @@ if (root && root.dataset.ready !== 'true') {
 	let consentVersion = '';
 	let receipt: ContactReceipt | null = null;
 	let requestKey = '';
+	let serviceCheckStarted = false;
 
 	const categoryCopy: Record<string, [string, string]> = {
 		collab: ['合作洽谈', '请简要说明合作方向、时间安排和希望采用的联系方式。'],
@@ -63,7 +64,13 @@ if (root && root.dataset.ready !== 'true') {
 	const setOpen = (open: boolean) => {
 		panel.hidden = !open;
 		launcher.setAttribute('aria-expanded', String(open));
-		if (open) requestAnimationFrame(() => closeButton.focus());
+		if (open) {
+			if (!serviceCheckStarted) {
+				serviceCheckStarted = true;
+				void checkService();
+			}
+			requestAnimationFrame(() => closeButton.focus());
+		}
 		else launcher.focus();
 	};
 
@@ -230,5 +237,4 @@ if (root && root.dataset.ready !== 'true') {
 	} catch { /* 不长期保存留言正文或联系方式。 */ }
 	setChannel();
 	setCategory('privacy');
-	void checkService();
 }

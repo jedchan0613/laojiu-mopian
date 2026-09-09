@@ -5,11 +5,9 @@ interface Props {
 	itemId: string;
 	title: string;
 	compact?: boolean;
-	preloadItemIds?: string[];
 }
 
-const { itemId, title, compact = false, preloadItemIds = [] } = Astro.props;
-const additionalItemIds = [...new Set(preloadItemIds.filter((candidate) => candidate !== itemId))];
+const { itemId, title, compact = false } = Astro.props;
 ---
 
 <button
@@ -17,7 +15,6 @@ const additionalItemIds = [...new Set(preloadItemIds.filter((candidate) => candi
 	class:list={['archive-like-button', { 'archive-like-button--compact': compact }]}
 	data-archive-like
 	data-item-id={itemId}
-	data-like-preload-items={additionalItemIds.length > 0 ? additionalItemIds.join(',') : undefined}
 	aria-label={`为“${title}”点赞`}
 	aria-pressed="false"
 	hidden
