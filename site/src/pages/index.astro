@@ -47,7 +47,7 @@ const carouselSlideGroups = categoryViewGroups.map(({ category, views }) => view
 const carouselRoundCount = Math.max(0, ...carouselSlideGroups.map((slides) => slides.length));
 const featuredSlides = Array.from({ length: carouselRoundCount }, (_, roundIndex) =>
 	carouselSlideGroups.flatMap((slides) => slides[roundIndex] ? [slides[roundIndex]] : []),
-).flat();
+).flat().slice(0, siteCuration.homeCarouselMaximumSlides);
 const featuredImage = featuredSlides[0]?.image;
 const firstFeaturedSlide = featuredSlides[0];
 const carouselItemIds = [...new Set(featuredSlides.map((slide) => slide.itemId))];
@@ -106,6 +106,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 					class="hero-record-shell"
 					data-home-featured-record={firstFeaturedSlide.itemId}
 					data-home-featured-carousel={featuredSlides.length > 1 ? '' : undefined}
+					data-carousel-limit={siteCuration.homeCarouselMaximumSlides}
 					data-carousel-category-order={featuredSlides.map((slide) => slide.categorySlug).join(',')}
 					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description, itemId, title, dateDisplay, href }) => ({
 						src: image.src,
@@ -120,7 +121,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 					}))) : undefined}
 					role={featuredSlides.length > 1 ? 'region' : undefined}
 					aria-roledescription={featuredSlides.length > 1 ? '轮播图' : undefined}
-					aria-label={featuredSlides.length > 1 ? '全部公开藏品的精选图片' : undefined}
+					aria-label={featuredSlides.length > 1 ? '精选公开藏品图片' : undefined}
 				>
 					<a
 						class="hero-record"

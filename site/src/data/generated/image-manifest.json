@@ -2,6 +2,8 @@
   "/archive/LJM-20260808-PCD-001/back-public.jpg": {
     "width": 3981,
     "height": 2683,
+    "source_sha256": "91d793db61b8e5d664d84b3afa191a76a0a39a6a6f4d05adbdc15f770b2bec83",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PCD-001/back-public-320.webp",
@@ -28,6 +30,8 @@
   "/archive/LJM-20260808-PCD-001/front-public.jpg": {
     "width": 6992,
     "height": 2664,
+    "source_sha256": "ff098e181dba438be5c615f27a96e861ef4395de1700c69499abe801215e654e",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PCD-001/front-public-320.webp",
@@ -54,6 +58,8 @@
   "/archive/LJM-20260808-PHO-001/front-public.jpg": {
     "width": 2568,
     "height": 1928,
+    "source_sha256": "f6b16ac9e65702fd6720fe95945f777ce5ccd81447a263dd19fbcfccca75b2c1",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PHO-001/front-public-320.webp",
@@ -80,6 +86,8 @@
   "/archive/LJM-20260808-PHO-002/back-public.jpg": {
     "width": 3040,
     "height": 1896,
+    "source_sha256": "2e9ec376f49d80b496c47bb989e2058ab20e224c87ec56153a9cf4893a5c293b",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PHO-002/back-public-320.webp",
@@ -106,6 +114,8 @@
   "/archive/LJM-20260808-PHO-002/detail-01-public.jpg": {
     "width": 2880,
     "height": 1920,
+    "source_sha256": "615657729d163eaf3952f4694266feac5665d20e5ffffdb5e56b15def99973d7",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PHO-002/detail-01-public-320.webp",
@@ -132,6 +142,8 @@
   "/archive/LJM-20260808-PHO-002/detail-02-public.jpg": {
     "width": 2808,
     "height": 2032,
+    "source_sha256": "437b7c08945efcfdda4eb1a038ce82c57184591f5f0814567c35beb4a5caaf2d",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PHO-002/detail-02-public-320.webp",
@@ -158,6 +170,8 @@
   "/archive/LJM-20260808-PHO-002/detail-03-public.jpg": {
     "width": 3024,
     "height": 2048,
+    "source_sha256": "8787331c410a16a04084bb2b414211ac9d15faaaca4870616f0cdb71c90fb71d",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PHO-002/detail-03-public-320.webp",
@@ -184,6 +198,8 @@
   "/archive/LJM-20260808-PHO-002/front-public.jpg": {
     "width": 3000,
     "height": 1920,
+    "source_sha256": "8de46324088650765a1d6dc337aecc2e6c6f73ed385fa1c6d551e2e3d991ee84",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PHO-002/front-public-320.webp",
@@ -210,6 +226,8 @@
   "/archive/LJM-20260808-PST-001/back-public.jpg": {
     "width": 3864,
     "height": 2720,
+    "source_sha256": "85ece4bc10ca63130de4c058cafef34be2ca98b36e518b3aa849ed61fc2207f2",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PST-001/back-public-320.webp",
@@ -236,6 +254,8 @@
   "/archive/LJM-20260808-PST-001/front-public.jpg": {
     "width": 3872,
     "height": 2712,
+    "source_sha256": "aa442312f1243e8d9428616eee33291ae9dacc253b582af5fcf2cb6507c1e6da",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PST-001/front-public-320.webp",
@@ -262,6 +282,8 @@
   "/archive/LJM-20260808-PST-002/back-public.jpg": {
     "width": 3445,
     "height": 2443,
+    "source_sha256": "54f5bf390b10c0c30b4e382fe7189ad2d5a37f61765b514de58871e22eeeece0",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PST-002/back-public-320.webp",
@@ -288,6 +310,8 @@
   "/archive/LJM-20260808-PST-002/front-public.jpg": {
     "width": 3448,
     "height": 2440,
+    "source_sha256": "21ed28e6fa4452c4f17d03df9ae37657519f7ca07fd61224dae35ddf3a2107ed",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260808-PST-002/front-public-320.webp",
@@ -314,6 +338,8 @@
   "/archive/LJM-20260828-PHO-001/front-public.jpg": {
     "width": 3504,
     "height": 2416,
+    "source_sha256": "1153fde4458024f75f06b5ff4e430fe6d342e338ccc4d6147e63b433be0aad94",
+    "generator": "webp-q80-e4-320-640-1280-1920-v1",
     "variants": [
       {
         "src": "/archive-responsive/LJM-20260828-PHO-001/front-public-320.webp",

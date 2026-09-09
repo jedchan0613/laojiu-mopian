@@ -195,7 +195,9 @@ previous_public_target="$(readlink "$PUBLIC_LIVE")"
 previous_app_directory="$(readlink -f "$APP_CURRENT")"
 require_directory "$previous_app_directory" '当前管理程序实际目录'
 require_directory "$previous_app_directory/site/public/archive" '当前公开图片源目录'
+require_directory "$previous_app_directory/site/public/archive-responsive" '当前响应式图片目录'
 require_file "$previous_app_directory/site/src/data/archive.ts" '当前网站档案数据源'
+require_file "$previous_app_directory/site/src/data/generated/image-manifest.json" '当前响应式图片清单'
 
 timestamp="$(TZ=Asia/Shanghai date '+%Y%m%d-%H%M%S')"
 short_commit="${candidate_commit:0:12}"
@@ -260,8 +262,15 @@ sync_runtime_site_data() {
 	install -d -o "$ADMIN_USER" -g "$ADMIN_GROUP" -m 0750 "$staging_directory/site/public/archive"
 	cp -a -- "$previous_app_directory/site/public/archive/." "$staging_directory/site/public/archive/"
 	chown -R "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/public/archive"
+	rm -rf -- "$staging_directory/site/public/archive-responsive"
+	install -d -o "$ADMIN_USER" -g "$ADMIN_GROUP" -m 0750 "$staging_directory/site/public/archive-responsive"
+	cp -a -- "$previous_app_directory/site/public/archive-responsive/." "$staging_directory/site/public/archive-responsive/"
+	chown -R "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/public/archive-responsive"
 	cp -a -- "$previous_app_directory/site/src/data/archive.ts" "$staging_directory/site/src/data/archive.ts"
 	chown "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/src/data/archive.ts"
+	cp -a -- "$previous_app_directory/site/src/data/generated/image-manifest.json" \
+		"$staging_directory/site/src/data/generated/image-manifest.json"
+	chown "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/src/data/generated/image-manifest.json"
 	"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
 		"$NODE" "$staging_directory/local-admin/server.mjs" --sync-site-data
 }
