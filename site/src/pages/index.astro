@@ -10,7 +10,6 @@ import {
 } from '../data/archive-categories';
 import { createArchiveRecordView, isPublishedArchiveItem } from '../data/archive-view';
 import { getResponsiveImage } from '../data/responsive-images';
-import { siteCuration } from '../data/site-curation';
 
 const publishedItems = archiveItems.filter(isPublishedArchiveItem);
 const publishedViews = publishedItems.map(createArchiveRecordView);
@@ -20,36 +19,58 @@ for (const item of publishedItems) {
 	categoryCounts.set(slug, (categoryCounts.get(slug) ?? 0) + 1);
 }
 
-const compareViewsByRecency = (left: (typeof publishedViews)[number], right: (typeof publishedViews)[number]) => {
-	const leftDate = left.item.core.accession_date ?? left.item.core.created_date ?? '';
-	const rightDate = right.item.core.accession_date ?? right.item.core.created_date ?? '';
-	return rightDate.localeCompare(leftDate) || right.id.localeCompare(left.id);
+// 首页的“上传时间”沿用项目现有的“最近收录”定义：优先按首次录入日期，
+// 缺失时才使用获得日期；同一天再用更新时间、获得日期和永久编号稳定排序。
+const compareViewsByCreatedDate = (left: (typeof publishedViews)[number], right: (typeof publishedViews)[number]) => {
+	const leftCreated = left.item.core.created_date?.trim() || left.item.core.accession_date?.trim() || '';
+	const rightCreated = right.item.core.created_date?.trim() || right.item.core.accession_date?.trim() || '';
+	const createdOrder = rightCreated.localeCompare(leftCreated);
+	if (createdOrder !== 0) return createdOrder;
+	const updatedOrder = (right.item.core.updated_date ?? '').localeCompare(left.item.core.updated_date ?? '');
+	if (updatedOrder !== 0) return updatedOrder;
+	const accessionOrder = (right.item.core.accession_date ?? '').localeCompare(left.item.core.accession_date ?? '');
+	if (accessionOrder !== 0) return accessionOrder;
+	return right.id.localeCompare(left.id, 'zh-CN', { numeric: true, sensitivity: 'base' });
 };
 const categoryViewGroups = archiveCategories.map((category) => ({
 	category,
 	views: publishedViews
-		.filter((view) => getArchiveCategorySlug(view.objectType) === category.slug)
-		.sort(compareViewsByRecency),
+		.filter((view) => getArchiveCategorySlug(view.objectType) === category.slug && Boolean(view.images[0]))
+		.sort(compareViewsByCreatedDate),
 }));
-const recentViews = categoryViewGroups.flatMap(({ views }) => views[0] ? [views[0]] : []);
-const excludedCarouselImages = new Set<string>(siteCuration.homeCarouselExcludedImagePaths);
-const carouselSlideGroups = categoryViewGroups.map(({ category, views }) => views.flatMap((view) =>
-	view.images.flatMap((source, index) => excludedCarouselImages.has(source) ? [] : [{
+
+// 上方精选：每种访客分类至少有两件藏品时，取创建时间最新的两件，
+// 每件只展示首张图片；按分类交替排列，总数由实际符合条件的分类决定。
+const featuredViewsPerCategory = 2;
+const featuredViewGroups = categoryViewGroups.map(({ category, views }) => ({
+	category,
+	views: views.length >= featuredViewsPerCategory ? views.slice(0, featuredViewsPerCategory) : [],
+}));
+const featuredSlides = Array.from({ length: featuredViewsPerCategory }, (_, roundIndex) =>
+	featuredViewGroups.flatMap(({ category, views }) => {
+		const view = views[roundIndex];
+		const source = view?.images[0];
+		return view && source ? [{
 		image: getResponsiveImage(source),
-		description: view.imageDescriptions[index],
+		description: view.imageDescriptions[0],
 		itemId: view.id,
 		title: view.title,
 		dateDisplay: view.dateDisplay,
 		href: `/archive/${view.id}/`,
 		categorySlug: category.slug,
-	}]),
-));
-const carouselRoundCount = Math.max(0, ...carouselSlideGroups.map((slides) => slides.length));
-const featuredSlides = Array.from({ length: carouselRoundCount }, (_, roundIndex) =>
-	carouselSlideGroups.flatMap((slides) => slides[roundIndex] ? [slides[roundIndex]] : []),
-).flat().slice(0, siteCuration.homeCarouselMaximumSlides);
+		}] : [];
+	}),
+).flat();
 const featuredImage = featuredSlides[0]?.image;
 const firstFeaturedSlide = featuredSlides[0];
+
+// 下方继续浏览：整件排除上方已经使用的藏品，避免其第二张、第三张图片
+// 以任何形式重复出现；再按分类取剩余藏品中创建时间最新的一件及其首图。
+const featuredRecordIds = new Set(featuredSlides.map((slide) => slide.itemId));
+const recentViews = categoryViewGroups.flatMap(({ views }) => {
+	const newestRemainingView = views.find((view) => !featuredRecordIds.has(view.id));
+	return newestRemainingView ? [newestRemainingView] : [];
+});
 const recentEntries = recentViews.map((view) => ({
 	view,
 	image: view.images[0] ? getResponsiveImage(view.images[0]) : undefined,
@@ -105,8 +126,8 @@ const categoryEntries = archiveCategories.map((category, index) => {
 					class="hero-record-shell"
 					data-home-featured-record={firstFeaturedSlide.itemId}
 					data-home-featured-carousel={featuredSlides.length > 1 ? '' : undefined}
-					data-carousel-limit={siteCuration.homeCarouselMaximumSlides}
 					data-carousel-category-order={featuredSlides.map((slide) => slide.categorySlug).join(',')}
+					data-carousel-record-order={featuredSlides.map((slide) => slide.itemId).join(',')}
 					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description, itemId, title, dateDisplay, href }) => ({
 						src: image.src,
 						srcset: image.srcset ?? '',
