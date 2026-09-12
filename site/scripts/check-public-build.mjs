@@ -87,10 +87,15 @@ check(Boolean(archiveIndex), '缺少档案列表页。');
 check(Boolean(notFoundPage), '缺少友好的 404 页面。');
 check(Boolean(correctionsPage), '缺少纠错与撤下说明页。');
 check(detailPages.length > 0, '没有生成任何公开档案详情页。');
+check(homeSource.includes('const featuredViewsPerCategory = 2;'), '首页精选没有固定为每种分类取两件藏品。');
 check(
-	homeSource.includes('.slice(0, siteCuration.homeCarouselMaximumSlides)'),
-	'首页精选轮播必须在生成页面数据前执行数量上限。',
+	homeSource.includes('views.length >= featuredViewsPerCategory ? views.slice(0, featuredViewsPerCategory) : []'),
+	'首页精选没有忽略不足两件藏品的分类。',
 );
+check(homeSource.includes('const source = view?.images[0];'), '首页精选没有固定使用每件藏品的首张图片。');
+check(homeSource.includes('item.core.created_date?.trim()'), '首页排序没有优先使用首次录入日期。');
+check(!homeSource.includes('homeCarouselMaximumSlides'), '首页精选仍受旧的轮播总数上限限制。');
+check(!homeSource.includes('homeCarouselExcludedImagePaths'), '首页精选仍使用旧的单张图片排除清单。');
 check(
 	archiveIndexSource.includes("fetchpriority={originalIndex === 0 ? 'high' : undefined}"),
 	'档案列表首张封面缺少高优先级加载设置。',
@@ -126,13 +131,23 @@ if (home) {
 	const recentCategories = [...home.html.matchAll(/data-home-recent-category="([^"]+)"/g)].map((match) => match[1]);
 	const likeIds = [...home.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
 	const carouselCategories = home.html.match(/data-carousel-category-order="([^"]*)"/)?.[1].split(',').filter(Boolean) ?? [];
-	const carouselLimit = Number(home.html.match(/data-carousel-limit="(\d+)"/)?.[1]);
+	const carouselRecordIds = home.html.match(/data-carousel-record-order="([^"]*)"/)?.[1].split(',').filter(Boolean) ?? [];
 	check(featuredIds.length === 1, '首页精选档案应当且只能出现一次。');
-	check(Number.isInteger(carouselLimit) && carouselLimit > 0, '首页精选轮播缺少有效的数量上限。');
-	check(carouselCategories.length <= carouselLimit, '首页精选轮播超过人工策展配置的数量上限。');
+	check(carouselRecordIds.length === carouselCategories.length, '首页精选藏品与分类顺序数量不一致。');
+	check(new Set(carouselRecordIds).size === carouselRecordIds.length, '首页精选重复使用了同一件藏品。');
+	check(carouselRecordIds.length <= categoryOrder.length * 2, '首页精选每种分类展示超过两件藏品。');
+	const carouselCategoryCounts = new Map();
+	for (const category of carouselCategories) {
+		carouselCategoryCounts.set(category, (carouselCategoryCounts.get(category) ?? 0) + 1);
+	}
+	check(
+		[...carouselCategoryCounts.values()].every((count) => count === 2),
+		'首页精选没有为每个入选分类恰好展示两件藏品。',
+	);
 	check(new Set(recentIds).size === recentIds.length, '首页每种藏品类型只能展示一件最新档案。');
 	check(recentCategories.length === recentIds.length, '首页其他档案缺少藏品类型顺序标识。');
 	check(new Set(recentCategories).size === recentCategories.length, '首页其他档案重复展示了同一种藏品类型。');
+	check(recentIds.every((itemId) => !carouselRecordIds.includes(itemId)), '首页其他档案重复展示了精选藏品。');
 	check(recentCategories.every((category, index) =>
 		categoryOrder.indexOf(category) > categoryOrder.indexOf(recentCategories[index - 1] ?? '')),
 	'首页其他档案没有按规定的藏品类型顺序排列。');
@@ -145,14 +160,6 @@ if (home) {
 		check(!carouselRoundCategories.has(category), `首页精选轮播同一轮重复出现藏品类型：${category}。`);
 		carouselRoundCategories.add(category);
 		lastCarouselCategoryIndex = categoryIndex;
-	}
-	for (const excludedImageMarker of [
-		'/archive/LJM-20260808-PST-001/back-public.jpg',
-		'/archive-responsive/LJM-20260808-PST-001/back-public-',
-		'/archive/LJM-20260808-PCD-001/back-public.jpg',
-		'/archive-responsive/LJM-20260808-PCD-001/back-public-',
-	]) {
-		check(!home.html.includes(excludedImageMarker), `首页精选轮播重新包含固定排除图片：${excludedImageMarker}。`);
 	}
 	check(likeIds.length === featuredIds.length + recentIds.length, '首页展示档案没有逐件提供点赞入口。');
 	check([...featuredIds, ...recentIds].every((itemId) => likeIds.includes(itemId)), '首页点赞入口与展示档案不一致。');
@@ -289,4 +296,4 @@ if (issues.length) {
 	process.exit(1);
 }
 
-process.stdout.write(`公开页面回归检查通过：${htmlEntries.length} 个页面、${detailPages.length} 个档案详情，首页分类顺序、固定排除图片、空区块、图片尺寸和管理端隔离均正常。\n`);
+process.stdout.write(`公开页面回归检查通过：${htmlEntries.length} 个页面、${detailPages.length} 个档案详情，首页精选与去重、分类顺序、空区块、图片尺寸和管理端隔离均正常。\n`);
