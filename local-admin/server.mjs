@@ -245,6 +245,7 @@ const mimeTypes = new Map([
 	['.png', 'image/png'],
 	['.svg', 'image/svg+xml; charset=utf-8'],
 	['.webp', 'image/webp'],
+	['.woff2', 'font/woff2'],
 ]);
 
 const minimumCompressionBytes = 1024;
