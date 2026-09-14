@@ -1,0 +1,33 @@
+---
+import mark from '../../public/brand-mark.svg?raw';
+
+interface Props {
+	variant?: 'ink' | 'seal';
+}
+
+const { variant = 'ink' } = Astro.props;
+---
+
+<span class:list={['brand-mark', { 'brand-mark--seal': variant === 'seal' }]} aria-hidden="true" set:html={mark} />
+
+<style>
+	.brand-mark {
+		display: block;
+		width: 100%;
+		height: 100%;
+		color: #302f2b;
+	}
+
+	.brand-mark--seal {
+		padding: 12.5%;
+		border-radius: 5%;
+		color: #f6f0e3;
+		background: #9a3f2e;
+	}
+
+	.brand-mark :global(svg) {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+</style>

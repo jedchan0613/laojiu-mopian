@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ArchiveLikeButton from '../components/ArchiveLikeButton.astro';
 import SiteIcon, { type SiteIconName } from '../components/SiteIcon.astro';
+import BrandMark from '../components/BrandMark.astro';
 import { archiveItems } from '../data/archive';
 import {
 	archiveCategories,
@@ -101,22 +102,16 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			<div class="hero-copy">
 				<header class="masthead">
 					<div class="masthead-title">
-						<div class="masthead-mark" aria-hidden="true">
-							<svg viewBox="0 0 48 48" focusable="false">
-								<path d="M11.5 6.5h23.75l4.25 4.25V41.5h-28z" />
-								<path class="masthead-mark-fold" d="M35.25 6.5v4.25h4.25" />
-								<rect x="15.5" y="14" width="20" height="13.5" />
-								<circle cx="21.25" cy="19.25" r="2" />
-								<path class="masthead-mark-image" d="m17.75 25 5-4.65 3.5 3 3.45-3.1 3.55 3.55" />
-								<path class="masthead-mark-lines" d="M15.5 32.5h19M15.5 36.5h12" />
-							</svg>
-						</div>
+						<div class="masthead-mark"><BrandMark variant="seal" /></div>
 						<h1>老旧默片</h1>
 					</div>
 					<p>普通人的生活档案</p>
 				</header>
 				<section class="introduction" aria-label="网站介绍">
-					<p>收藏、整理和讲述那些被时间留下来的普通生活痕迹。</p>
+					<p>
+						<span class="introduction-line">收藏、整理和讲述那些被时间</span>
+						<span class="introduction-line">留下来的普通生活痕迹。</span>
+					</p>
 					<a class="browse-link ui-action ui-action--primary" href="/archive/">浏览全部 {publishedItems.length} 件档案 →</a>
 				</section>
 			</div>
@@ -299,11 +294,11 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 	.hero {
 		display: grid;
-		grid-template-columns: minmax(17rem, 0.78fr) minmax(0, 1.22fr);
+		grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
 		align-items: stretch;
-		gap: clamp(38px, 5.5vw, 62px);
-		padding: clamp(30px, 4vw, 42px) clamp(0.8rem, 2vw, 1.25rem) clamp(32px, 4vw, 44px);
-		background: linear-gradient(110deg, rgba(248, 244, 234, 0.38), rgba(232, 224, 207, 0.13));
+		gap: clamp(28px, 4vw, 48px);
+		padding: clamp(36px, 4vw, 48px) clamp(0.8rem, 2vw, 1.25rem) clamp(36px, 4vw, 48px);
+		background: #f1ecdf;
 		border-bottom: 1px solid rgba(188, 181, 164, 0.68);
 	}
 
@@ -314,6 +309,11 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		min-width: 0;
 	}
 
+	.masthead {
+		--masthead-mark-size: clamp(44px, 4vw, 48px);
+		--masthead-gap: clamp(12px, 1.4vw, 16px);
+	}
+
 	.masthead h1,
 	.masthead p,
 	.introduction p {
@@ -321,69 +321,60 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	}
 
 	.masthead h1 {
-		font-size: clamp(2.6rem, 4.5vw, 3.75rem);
-		font-weight: 500;
-		line-height: 1.12;
-		letter-spacing: 0.14em;
+		font-family: var(--site-brand-font);
+		font-size: clamp(2.25rem, 4.1vw, 3rem);
+		font-weight: 700;
+		line-height: 1.35;
+		letter-spacing: 0.06em;
+		white-space: nowrap;
 	}
 
 	.masthead-title {
 		display: flex;
 		align-items: center;
-		gap: clamp(0.75rem, 1.6vw, 1rem);
+		gap: var(--masthead-gap);
 	}
 
 	.masthead-mark {
-		display: flex;
-		align-items: center;
+		width: var(--masthead-mark-size);
+		height: var(--masthead-mark-size);
 		flex: 0 0 auto;
-		color: var(--site-accent);
-	}
-
-	.masthead-mark svg {
-		display: block;
-		width: 2.65rem;
-		height: 2.65rem;
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 1.5;
-		stroke-linecap: square;
-		stroke-linejoin: miter;
-	}
-
-	.masthead-mark circle {
-		fill: currentColor;
-		stroke: none;
-	}
-
-	.masthead-mark-fold,
-	.masthead-mark-image,
-	.masthead-mark-lines {
-		opacity: 0.72;
 	}
 
 	.masthead p {
-		margin-top: 9px;
-		color: #646057;
-		font-size: clamp(0.78rem, 1.3vw, 0.9rem);
-		line-height: 1.7;
-		letter-spacing: 0.26em;
+		margin-top: 8px;
+		margin-left: calc(var(--masthead-mark-size) + var(--masthead-gap));
+		color: #514c43;
+		font-family: var(--site-brand-font);
+		font-size: clamp(0.875rem, 1.4vw, 1.125rem);
+		font-weight: 500;
+		line-height: 1.8;
+		letter-spacing: 0.22em;
 	}
 
 	.introduction p {
-		max-width: 17em;
+		max-width: 19em;
+		text-wrap: balance;
 		font-size: clamp(1.03rem, 1.55vw, 1.22rem);
 		font-weight: 400;
-		line-height: 1.68;
+		line-height: 1.9;
 		letter-spacing: 0.055em;
 	}
 
+	.introduction-line {
+		display: block;
+		white-space: nowrap;
+	}
+
 	.introduction {
-		margin-top: clamp(1.5rem, 2.5vw, 2rem);
+		margin-top: clamp(1.75rem, 3vw, 2.5rem);
 	}
 
 	.browse-link {
-		margin-top: 15px;
+		min-height: 44px;
+		margin-top: 22px;
+		padding: 0.7rem 1.2rem;
+		font-size: 0.9375rem;
 		letter-spacing: 0.1em;
 	}
 
@@ -926,7 +917,11 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		}
 
 		.masthead {
+			--masthead-mark-size: 36px;
+			--masthead-gap: 12px;
 			order: 1;
+			align-self: center;
+			max-width: 100%;
 		}
 
 		.hero-record-shell {
@@ -964,22 +959,25 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 		.introduction {
 			order: 3;
+			width: 100%;
 			margin-top: 1.25rem;
 		}
 
 		.masthead h1 {
-			font-size: clamp(2.2rem, 12vw, 2.85rem);
-			letter-spacing: 0.13em;
+			font-size: clamp(2rem, 8.5vw, 2.375rem);
+			letter-spacing: 0.05em;
+		}
+
+		.masthead p {
+			margin-top: 5px;
+			font-size: 0.75rem;
+			letter-spacing: 0.15em;
 		}
 
 		.introduction p {
-			font-size: clamp(1rem, 4.8vw, 1.2rem);
-			line-height: 1.62;
-		}
-
-		.masthead-mark svg {
-			width: 2.35rem;
-			height: 2.35rem;
+			max-width: none;
+			font-size: 1rem;
+			line-height: 1.85;
 		}
 
 		.hero-record figure {
@@ -991,7 +989,8 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		}
 
 		.browse-link {
-			margin-top: 12px;
+			width: 100%;
+			margin-top: 16px;
 		}
 
 		.archive-entrances ul {

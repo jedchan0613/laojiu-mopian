@@ -1,6 +1,8 @@
 ---
 import ContactWidget from '../components/ContactWidget.astro';
 import SocialLinks from '../components/SocialLinks.astro';
+import BrandMark from '../components/BrandMark.astro';
+import brandFont from '../assets/fonts/noto-serif-sc-brand.woff2?url';
 
 interface Props {
 	title?: string;
@@ -33,7 +35,8 @@ const serializedStructuredData = structuredData
 <html lang="zh-CN">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3" />
+		<link rel="preload" href={brandFont} as="font" type="font/woff2" crossorigin />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
@@ -61,22 +64,7 @@ const serializedStructuredData = structuredData
 			<header class="site-header">
 				<nav aria-label="主要导航">
 					<a class="site-brand" href="/" aria-label="老旧默片首页" aria-current={isHome ? 'page' : undefined}>
-						<svg class="site-logo" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-							<path
-								class="site-logo-back"
-								d="M15 8.5h24v24"
-								stroke="currentColor"
-								stroke-width="1.6"
-							/>
-							<rect x="9" y="13.5" width="29" height="25" rx="0.75" stroke="currentColor" stroke-width="1.6" />
-							<circle cx="17.25" cy="21.25" r="2.4" fill="currentColor" />
-							<path
-								class="site-logo-landscape"
-								d="m12.5 34 7.4-7.3 5.2 4.35 4.55-4.15 4.85 4.9"
-								stroke="currentColor"
-								stroke-width="1.6"
-							/>
-						</svg>
+						<span class="site-logo"><BrandMark /></span>
 						<span class="site-name">老旧默片</span>
 					</a>
 					<div class="site-links">
@@ -108,6 +96,15 @@ const serializedStructuredData = structuredData
 </html>
 
 <style is:global>
+	@font-face {
+		font-family: 'LJM Brand Serif';
+		src: url('../assets/fonts/noto-serif-sc-brand.woff2') format('woff2');
+		font-style: normal;
+		font-weight: 500 700;
+		font-display: swap;
+		unicode-range: U+4EBA, U+65E7, U+666E, U+6848, U+6863, U+6D3B, U+7247, U+751F, U+7684, U+8001, U+901A, U+9ED8;
+	}
+
 	:root {
 		color-scheme: light;
 		font-family: "Songti SC", "STSong", "SimSun", serif;
@@ -115,6 +112,7 @@ const serializedStructuredData = structuredData
 		color: #302f2b;
 		font-synthesis: none;
 		--site-content-width: 1120px;
+		--site-brand-font: 'LJM Brand Serif', 'Songti SC', 'STSong', 'SimSun', serif;
 		--site-border: #aaa397;
 		--site-accent: #9a3f2e;
 		--site-accent-soft: rgba(154, 63, 46, 0.075);
@@ -299,8 +297,7 @@ const serializedStructuredData = structuredData
 	.site-links a:focus-visible,
 	.site-links a[aria-current='page'],
 	.site-brand:hover .site-name,
-	.site-brand:focus-visible .site-name,
-	.site-brand[aria-current='page'] .site-name {
+	.site-brand:focus-visible .site-name {
 		text-decoration: underline;
 		text-decoration-thickness: 1px;
 		text-underline-offset: 0.35em;
@@ -316,37 +313,41 @@ const serializedStructuredData = structuredData
 		align-items: center;
 		gap: 10px;
 		min-width: 0;
+		flex-shrink: 0;
 	}
 
 	.site-logo {
 		display: block;
 		flex: 0 0 auto;
-		width: 31px;
-		height: 31px;
-		fill: none;
-	}
-
-	.site-logo-back {
-		opacity: 0.45;
-	}
-
-	.site-logo-landscape {
-		opacity: 0.78;
+		width: 30px;
+		height: 30px;
 	}
 
 	.site-name {
-		font-size: 0.98rem;
-		line-height: 1.5;
-		letter-spacing: 0.14em;
+		font-family: var(--site-brand-font);
+		font-size: 1.125rem;
+		font-weight: 700;
+		line-height: 1.4;
+		letter-spacing: 0.04em;
+		white-space: nowrap;
 	}
 
 	.site-links {
 		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
 		gap: clamp(20px, 3vw, 32px);
 		color: #56534c;
 		font-size: 0.86rem;
 		line-height: 1.5;
 		letter-spacing: 0.12em;
+	}
+
+	.site-links a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 30px;
+		white-space: nowrap;
 	}
 
 	.site-main {
@@ -375,6 +376,8 @@ const serializedStructuredData = structuredData
 
 	.footer-name {
 		color: #302f2b;
+		font-family: var(--site-brand-font);
+		font-weight: 700;
 		font-size: 0.96rem;
 		line-height: 1.6;
 		letter-spacing: 0.14em;
@@ -416,11 +419,11 @@ const serializedStructuredData = structuredData
 		}
 
 		.site-header nav {
-			gap: 16px;
+			gap: 12px;
 		}
 
 		.site-brand {
-			gap: 10px;
+			gap: 8px;
 		}
 
 		.site-logo {
@@ -429,8 +432,19 @@ const serializedStructuredData = structuredData
 		}
 
 		.site-links {
-			gap: 16px;
+			gap: 12px;
 			font-size: 0.8rem;
+			letter-spacing: 0.04em;
+		}
+
+		.site-links a {
+			min-height: 44px;
+			min-width: 44px;
+			justify-content: center;
+		}
+
+		.site-name {
+			font-size: 1rem;
 		}
 
 		.site-footer {
@@ -444,6 +458,21 @@ const serializedStructuredData = structuredData
 
 		.footer-end {
 			justify-items: start;
+		}
+	}
+
+	@media (max-width: 359px) {
+		.site-header nav {
+			gap: 8px;
+		}
+
+		.site-brand {
+			gap: 6px;
+		}
+
+		.site-links {
+			gap: 9px;
+			letter-spacing: 0;
 		}
 	}
 
