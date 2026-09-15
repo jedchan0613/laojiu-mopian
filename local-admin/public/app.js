@@ -128,6 +128,7 @@ const state = {
 	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '',
 	recordPage: 1, recordPageSize: 15,
 	integrityReport: null, integrityLoading: false, imagePreflight: [], adminMode: 'local', publicSiteUrl: '',
+	autoSaveNotice: '',
 	query: {
 		loaded: false, loading: false, error: '', records: [], selectedId: '', status: 'normal',
 		search: '', category: '', objectType: '', decade: '', research: '', evidence: '', rights: '',
@@ -180,6 +181,18 @@ const elements = {
 	withdrawDialog: document.querySelector('#withdraw-dialog'), withdrawRecordLabel: document.querySelector('#withdraw-record-label'),
 	withdrawReason: document.querySelector('#withdraw-reason'), withdrawConfirmation: document.querySelector('#withdraw-confirmation'),
 	confirmWithdrawButton: document.querySelector('#confirm-withdraw-button'), tabs: document.querySelector('.tabs'),
+	confirmDialog: document.querySelector('#confirm-dialog'), confirmDialogTitle: document.querySelector('#confirm-dialog-title'),
+	confirmDialogMessage: document.querySelector('#confirm-dialog-message'),
+	confirmDialogNotice: document.querySelector('#confirm-dialog-notice'),
+	confirmDialogNoticeTitle: document.querySelector('#confirm-dialog-notice-title'),
+	confirmDialogNoticeText: document.querySelector('#confirm-dialog-notice-text'),
+	confirmDialogAccept: document.querySelector('#confirm-dialog-accept'),
+	imageLightbox: document.querySelector('#image-lightbox'), imageLightboxMain: document.querySelector('#image-lightbox-main'),
+	imageLightboxCaption: document.querySelector('#image-lightbox-caption'),
+	imageLightboxCounter: document.querySelector('#image-lightbox-counter'),
+	imageLightboxClose: document.querySelector('#image-lightbox-close'),
+	imageLightboxPrevious: document.querySelector('#image-lightbox-previous'),
+	imageLightboxNext: document.querySelector('#image-lightbox-next'),
 };
 
 const deepClone = (value) => JSON.parse(JSON.stringify(value));
@@ -543,6 +556,51 @@ const setBusy = (busy, title = '正在处理…', detail = '请保持这个窗�
 	elements.busyCancelButton.disabled = Boolean(options.cancelPending);
 	elements.busyCancelButton.textContent = options.cancelPending ? '正在取消…' : '取消操作';
 };
+
+// 统一的自定义确认弹窗：替代 window.confirm 的系统原生小弹窗，与撤销档案弹窗同一套视觉。
+// 返回 Promise<boolean>，确定时 true；取消或按 Esc 关闭时 false。
+let confirmDialogResolve = null;
+const confirmAction = ({ title = '确认操作', message = '', noticeTitle = '', notice = '', acceptLabel = '确定', danger = false }) =>
+	new Promise((resolve) => {
+		if (elements.confirmDialog.open) {
+			resolve(false);
+			return;
+		}
+		elements.confirmDialogTitle.textContent = title;
+		elements.confirmDialogMessage.textContent = message;
+		if (notice) {
+			elements.confirmDialogNoticeTitle.textContent = noticeTitle || '请注意';
+			elements.confirmDialogNoticeText.textContent = notice;
+			elements.confirmDialogNotice.hidden = false;
+		} else elements.confirmDialogNotice.hidden = true;
+		elements.confirmDialogAccept.textContent = acceptLabel;
+		elements.confirmDialogAccept.classList.toggle('danger-button', danger);
+		elements.confirmDialogAccept.classList.toggle('publish-button', !danger);
+		elements.confirmDialog.dataset.accepted = 'false';
+		confirmDialogResolve = resolve;
+		elements.confirmDialog.showModal();
+		requestAnimationFrame(() => elements.confirmDialogAccept.focus());
+	});
+
+elements.confirmDialogAccept.addEventListener('click', () => {
+	elements.confirmDialog.dataset.accepted = 'true';
+	elements.confirmDialog.close();
+});
+
+elements.confirmDialog.addEventListener('close', () => {
+	const resolve = confirmDialogResolve;
+	confirmDialogResolve = null;
+	resolve?.(elements.confirmDialog.dataset.accepted === 'true');
+});
+
+// 各处“有尚未保存的修改”共用的确认文案。
+const confirmUnsavedChanges = (question) => confirmAction({
+	title: '当前有尚未保存的修改',
+	message: question,
+	notice: '确定继续后，这些修改不会被保存；也可以先取消，回到编辑页保存草稿。',
+	acceptLabel: '放弃修改并继续',
+	danger: true,
+});
 
 let activeOperation = null;
 
@@ -1426,10 +1484,12 @@ const updateHeader = () => {
 	const saveStateText = waitingForExactType
 		? '请先选择精确类型'
 		: state.dirty
-		? '有尚未保存的修改'
-		: state.current._admin?.hasDraft
-			? `草稿已保存${state.current._admin.savedAt ? ` · ${formatDateTime(state.current._admin.savedAt)}` : ''}`
-			: state.current.core.use_status === 'U3' ? '当前为已发布版本' : '当前没有未保存修改';
+			? '有尚未保存的修改'
+			: state.autoSaveNotice
+				? state.autoSaveNotice
+				: state.current._admin?.hasDraft
+					? `草稿已保存${state.current._admin.savedAt ? ` · ${formatDateTime(state.current._admin.savedAt)}` : ''}`
+					: state.current.core.use_status === 'U3' ? '当前为已发布版本' : '当前没有未保存修改';
 	elements.saveState.textContent = saveStateText;
 	elements.saveState.classList.toggle('is-dirty', state.dirty || waitingForExactType);
 	const readonly = isWithdrawn();
@@ -1574,9 +1634,14 @@ const startNewRecord = (templateRecord = null) => {
 	if (templateRecord) showToast(`已复用“${templateRecord.core.title || templateRecord.core.item_id}”的类型、批次、来源和行政区域；编号、题名、年代、图片、专属信息与隐私确认均未复制。`);
 };
 
-const startSimilarRecord = () => {
+const startSimilarRecord = async () => {
 	if (!state.current || state.isNew || isWithdrawn() || state.dirty) return;
-	const confirmed = window.confirm('将复用当前藏品的类型、批次、获得方式、来源和省市区。永久编号、题名、年代、图片、专属信息、公开文字和隐私确认不会复制。是否继续？');
+	const confirmed = await confirmAction({
+		title: '以此为模板新建',
+		message: '将复用当前藏品的类型、批次、获得方式、来源和省市区。',
+		notice: '永久编号、题名、年代、图片、专属信息、公开文字和隐私确认不会复制。',
+		acceptLabel: '继续新建',
+	});
 	if (!confirmed) return;
 	const templateRecord = deepClone(state.current);
 	elements.recordMoreActions.open = false;
@@ -1668,6 +1733,22 @@ const fieldVisibilityBadge = (scope, fieldCode) => {
 		: '<span class="field-visibility is-internal" title="只用于档案维护，不会显示在公开页面">仅用于维护</span>';
 };
 
+// 当前编辑页每个字段对应的未解决问题（按 field_code 汇总）。
+// renderBasic / renderSpecific 渲染前重建，renderField 直接在字段旁标出对应问题，
+// 不再需要发布失败后到“发布前预览”清单里反查字段位置。
+let activeFieldIssueMap = new Map();
+const buildFieldIssueMap = (tab) => {
+	const map = new Map();
+	if (!state.current || isWithdrawn()) return map;
+	for (const issue of currentPreviewIssues()) {
+		if (!issue.field || issue.tab !== tab) continue;
+		const messages = map.get(issue.field) ?? [];
+		messages.push(issue.message);
+		map.set(issue.field, messages);
+	}
+	return map;
+};
+
 const renderField = ({
 	scope = 'core', dimension = '', fieldCode, definition, value, required = false, readonly = false,
 	context = '', dictionaryKey = null,
@@ -1678,7 +1759,8 @@ const renderField = ({
 	const multi = Array.isArray(value) || arrayFields.has(fieldCode) ||
 		(definition?.dictionary_or_multi_value_rule ?? '').includes('是');
 	const wide = type === '长文本' || multi;
-	const attributes = `data-scope="${scope}" data-dimension="${escapeHtml(dimension)}" data-field="${escapeHtml(fieldCode)}"${required ? ' aria-required="true"' : ''}`;
+	const fieldIssues = readonly ? [] : activeFieldIssueMap.get(fieldCode) ?? [];
+	const attributes = `data-scope="${scope}" data-dimension="${escapeHtml(dimension)}" data-field="${escapeHtml(fieldCode)}"${required ? ' aria-required="true"' : ''}${fieldIssues.length ? ' aria-invalid="true"' : ''}`;
 	const requiredControlAttribute = required && !readonly ? ' required' : '';
 	const regionState = administrativeRegionListIds[fieldCode]
 		? administrativeRegionFieldState(fieldCode, value)
@@ -1725,14 +1807,16 @@ const renderField = ({
 	const help = fieldCode === 'object_type'
 		? '首页和管理端共用同一套七类；一个分类对应多个正式类型时，再选择精确类型。'
 		: definition?.rule || (multi && !options.length ? '多项内容请每行填写一项。' : '');
-	const notes = `${context ? `<span class="field-context">${escapeHtml(context)}</span>` : ''}${regionState?.message ? `<span class="field-context${regionState.warning ? ' is-warning' : ''}">${escapeHtml(regionState.message)}</span>` : ''}${help ? `<span class="field-help">${escapeHtml(help)}</span>` : ''}`;
-	return `<${wrapperTag} class="form-field ${wide ? 'is-wide' : ''} ${fieldCode === 'object_type' ? 'is-object-type' : ''}">
+	const errorNote = fieldIssues.length ? `<span class="field-error" role="alert">${escapeHtml(fieldIssues.join('；'))}</span>` : '';
+	const notes = `${errorNote}${context ? `<span class="field-context">${escapeHtml(context)}</span>` : ''}${regionState?.message ? `<span class="field-context${regionState.warning ? ' is-warning' : ''}">${escapeHtml(regionState.message)}</span>` : ''}${help ? `<span class="field-help">${escapeHtml(help)}</span>` : ''}`;
+	return `<${wrapperTag} class="form-field ${wide ? 'is-wide' : ''} ${fieldCode === 'object_type' ? 'is-object-type' : ''}${fieldIssues.length ? ' is-invalid' : ''}">
 		<span class="field-label">${escapeHtml(label)}${required ? '<span class="required-mark">必填</span>' : ''}${fieldVisibilityBadge(scope, fieldCode)}<small>${escapeHtml(fieldCode)}</small></span>
 		${control}${notes ? `<span class="field-notes">${notes}</span>` : ''}
 	</${wrapperTag}>`;
 };
 
 const renderBasic = () => {
+	activeFieldIssueMap = buildFieldIssueMap('basic');
 	const primaryDefinitions = primaryCoreFields.map((fieldCode) => commonDefinition(fieldCode)).filter(Boolean)
 		.filter((definition) => definition.field_code !== 'object_type')
 		.sort((left, right) => Number(Boolean(right.required)) - Number(Boolean(left.required)));
@@ -1832,19 +1916,22 @@ const renderBasic = () => {
 const renderImages = () => {
 	const hasUnsavedImages = state.images.some((image) => image.kind === 'new');
 	const needsPublicationCopyConfirmation = hasUnsavedImages && !state.confirmedPublicationCopies;
-	const imageCards = state.images.map((image, index) => `
-		<article class="image-card"><div class="image-preview"><img src="${escapeHtml(image.previewUrl)}" alt="发布图片 ${index + 1}" /></div>
+	const imageCards = state.images.map((image, index) => {
+		const altText = displayedImageDescription(state.current, image, index, state.images.length);
+		return `
+		<article class="image-card"><div class="image-preview"><button class="image-preview-open" type="button" data-image-lightbox="${escapeHtml(image.id)}" aria-label="放大查看第 ${index + 1} 张图片：${escapeHtml(altText)}"><img src="${escapeHtml(image.previewUrl)}" alt="${escapeHtml(altText)}" />
+		<span class="image-preview-hint">放大查看</span></button></div>
 		<div class="image-meta"><strong>${escapeHtml(image.filename ?? image.file?.name ?? '新图片')}</strong>
 		<span>页面显示顺序：${index + 1}${image.kind === 'new' ? ' · 尚未保存' : ''}</span>
 		<label class="image-description-field"><span>图片说明 <small>访客和屏幕阅读器可见</small></span>
 		<textarea data-image-description data-image-id="${escapeHtml(image.id)}" maxlength="180" rows="3" placeholder="例如：明信片正面，富士山风景图">${escapeHtml(image.description ?? '')}</textarea>
-		<small>只描述画面中能够确认的内容，不推断人物身份；不填时使用题名加正面、背面或细节图。</small></label>
+		<small class="image-description-counter"><output data-image-counter="${escapeHtml(image.id)}">${(image.description ?? '').length}/180</output> · 只描述画面中能够确认的内容，不推断人物身份；不填时使用题名加正面、背面或细节图。</small></label>
 		<div class="image-actions">
 		<button class="small-button" data-image-action="up" data-image-id="${escapeHtml(image.id)}" type="button" ${index === 0 ? 'disabled' : ''}>向前</button>
 		<button class="small-button" data-image-action="down" data-image-id="${escapeHtml(image.id)}" type="button" ${index === state.images.length - 1 ? 'disabled' : ''}>向后</button>
 		${image.kind === 'existing' ? `<label class="replacement-label">替换<input class="replacement-input" data-image-id="${escapeHtml(image.id)}" type="file" accept="image/jpeg,image/png,image/webp" /></label>` : ''}
 		<button class="small-button is-danger" data-image-action="remove" data-image-id="${escapeHtml(image.id)}" type="button">移除</button>
-		</div></div></article>`).join('');
+		</div></div></article>`;}).join('');
 	const pendingRemoval = state.pendingRemovedImages.length ? `<div class="pending-removal-list">
 		${state.pendingRemovedImages.map((image) => `<div class="pending-removal"><span>${escapeHtml(image.filename)} · 正式发布后进入本地回收区</span>
 		<button class="small-button" data-image-action="undo-remove" data-image-filename="${escapeHtml(image.filename)}" type="button">撤销移除</button></div>`).join('')}
@@ -1877,6 +1964,7 @@ const renderWithdrawnImages = () => {
 };
 
 const renderSpecific = () => {
+	activeFieldIssueMap = buildFieldIssueMap('specific');
 	const schema = state.current.metadata.schema;
 	if (schema === 'common') {
 		const typeCode = state.current.core.object_type;
@@ -2655,6 +2743,15 @@ elements.editorSurface.addEventListener('click', async (event) => {
 // 记录编辑器内所有折叠区（<details>）当前的展开状态。
 // 仅在同标签页内重新渲染时使用，避免切到其他标签页后把旧展开状态误恢复。
 const captureEditorDetailsOpenState = () => [...elements.editorSurface.querySelectorAll('details')].map((details) => details.open);
+// 图片排序、移除等只影响局部内容的操作：重画编辑区后恢复页面滚动位置，
+// 并可通过 focusTarget 取回新的焦点元素，避免长列表里每次操作都要重新找回位置。
+const renderEditorPreservingViewport = (focusTarget) => {
+	const scrollY = window.scrollY;
+	renderEditor();
+	window.scrollTo({ top: scrollY });
+	const target = typeof focusTarget === 'function' ? focusTarget() : focusTarget;
+	target?.focus();
+};
 const restoreEditorDetailsOpenState = (previousOpen) => {
 	elements.editorSurface.querySelectorAll('details').forEach((details, index) => {
 		if (previousOpen[index]) details.setAttribute('open', '');
@@ -2811,6 +2908,7 @@ const setFieldValue = (scope, dimension, fieldCode, value) => {
 	state.validationIssues = [];
 	updateTabCompletionBadges();
 	updateHeader();
+	scheduleAutoSaveDraft();
 };
 
 const handleAdministrativeRegionCommit = (control) => {
@@ -2868,11 +2966,17 @@ const handleAdministrativeRegionCommit = (control) => {
 	return true;
 };
 
-const applyObjectTypeChange = (value) => {
+const applyObjectTypeChange = async (value) => {
 	const previousObjectType = state.current.core.object_type;
 	if (value === previousObjectType) return true;
 	if (Object.keys(state.current.metadata.dimensions).length &&
-		!window.confirm('更换藏品类型后，原来的对象专属字段会从这份草稿中清空。确定继续吗？')) {
+		!await confirmAction({
+			title: '更换藏品类型',
+			message: '更换藏品类型后，原来的对象专属字段会从这份草稿中清空。',
+			notice: '通用字段和图片不会受影响；如需保留专属信息，请先保存草稿再从历史版本恢复。',
+			acceptLabel: '确定继续',
+			danger: true,
+		})) {
 		return false;
 	}
 	state.current.metadata = { schema: schemaForType(value), dimensions: {} };
@@ -2880,7 +2984,7 @@ const applyObjectTypeChange = (value) => {
 	return true;
 };
 
-const handleObjectCategoryChange = (control) => {
+const handleObjectCategoryChange = async (control) => {
 	const category = objectTypeCategories().find((candidate) => candidate.slug === control.value);
 	const dictionaryOptions = state.dictionary.get('object_type') ?? [];
 	const exactOptions = objectTypeOptionsForCategory(category, dictionaryOptions);
@@ -2892,7 +2996,7 @@ const handleObjectCategoryChange = (control) => {
 		return;
 	}
 	if (exactOptions.length === 1) {
-		if (!applyObjectTypeChange(exactOptions[0].code)) {
+		if (!await applyObjectTypeChange(exactOptions[0].code)) {
 			state.pendingObjectCategory = '';
 			renderEditor();
 			updateHeader();
@@ -2909,7 +3013,7 @@ const handleObjectCategoryChange = (control) => {
 	requestAnimationFrame(() => elements.editorSurface.querySelector('.object-type-control')?.focus());
 };
 
-const handleFieldChange = (control) => {
+const handleFieldChange = async (control) => {
 	const { scope, dimension, field: fieldCode } = control.dataset;
 	if (!fieldCode) return;
 	if (control.type === 'checkbox') {
@@ -2920,7 +3024,7 @@ const handleFieldChange = (control) => {
 	}
 	const value = cleanValue(control);
 	if (scope === 'core' && fieldCode === 'object_type') {
-		if (!value || !applyObjectTypeChange(value)) {
+		if (!value || !await applyObjectTypeChange(value)) {
 			state.pendingObjectCategory = '';
 			renderEditor();
 			updateHeader();
@@ -3027,7 +3131,38 @@ const preflightSelectedImages = async (files) => {
 	return { results, accepted };
 };
 
-const saveDraft = async ({ reload = true, silent = false, operation = null } = {}) => {
+// —— 自动保存草稿 ——
+// 停止编辑约半分钟后自动保存一次草稿；结果写在状态栏（“已自动保存 14:32”），
+// 不弹提示、不打断当前操作。保存失败时状态栏保持“有尚未保存的修改”，不会误报。
+const AUTO_SAVE_DELAY_MS = 30000;
+let autoSaveTimer = null;
+const autoSaveTimeLabel = () => new Intl.DateTimeFormat('zh-CN', {
+	timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit',
+}).format(new Date());
+const scheduleAutoSaveDraft = () => {
+	if (!state.dirty || !state.current || isWithdrawn() || state.pendingObjectCategory) return;
+	clearTimeout(autoSaveTimer);
+	autoSaveTimer = setTimeout(() => {
+		autoSaveTimer = null;
+		void autoSaveDraft();
+	}, AUTO_SAVE_DELAY_MS);
+};
+const autoSaveDraft = async () => {
+	if (!state.dirty || !state.current || isWithdrawn() || state.pendingObjectCategory) return;
+	// 正在执行其他操作或确认弹窗打开时先等一等，避免与“放弃修改”确认、撤销等流程相互穿插。
+	if (activeOperation || elements.confirmDialog.open || elements.withdrawDialog.open) {
+		scheduleAutoSaveDraft();
+		return;
+	}
+	try {
+		await saveDraft({ reload: false, silent: true, autoSave: true });
+	} catch (error) {
+		// 自动保存失败不打断用户：状态栏仍显示“有尚未保存的修改”，下一次编辑会重新安排。
+		console.error('[auto-save] 草稿自动保存失败', error);
+	}
+};
+
+const saveDraft = async ({ reload = true, silent = false, operation = null, autoSave = false } = {}) => {
 	if (!state.current) throw new Error('请先选择或新建一条记录。');
 	const prerequisiteIssues = draftSavePrerequisiteIssues();
 	if (prerequisiteIssues.length) {
@@ -3081,6 +3216,7 @@ const saveDraft = async ({ reload = true, silent = false, operation = null } = {
 		state.activeId = assignedItemId;
 		state.isNew = false;
 		state.dirty = false;
+		state.autoSaveNotice = autoSave ? `已自动保存 ${autoSaveTimeLabel()}` : '';
 		state.images = recordImages(data.draft.record);
 		state.pendingRemovedImages = (data.draft.removed_images ?? []).map((filename) => ({
 			filename,
@@ -3133,9 +3269,19 @@ const publishCurrent = async () => {
 	} catch (error) {
 		if (error.issues?.length) {
 			state.validationIssues = error.issues;
-			state.activeTab = 'preview';
+			// 发布失败时直接切到第一个出错的分区，并滚动定位到第一个出错的字段；
+			// 字段旁也会直接标红说明，不必再去“发布前预览”清单里反查。
+			const firstFieldIssue = error.issues.find((issue) => issue.field && issue.tab !== 'privacy');
+			const targetIssue = firstFieldIssue ?? error.issues[0];
+			state.activeTab = targetIssue?.tab ?? 'preview';
 			renderTabs();
 			renderEditor();
+			if (targetIssue?.field) requestAnimationFrame(() => {
+				const control = elements.editorSurface.querySelector(`[data-field="${CSS.escape(targetIssue.field)}"]`);
+				control?.closest('details')?.setAttribute('open', '');
+				control?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				control?.focus();
+			});
 		}
 		showToast(isOperationCancellation(error, operation) ? '操作已取消，填写内容仍保留在当前页面。' : error.message,
 			!isOperationCancellation(error, operation));
@@ -3193,7 +3339,12 @@ const restoreWithdrawnCurrent = async () => {
 		showToast(state.current?._admin?.restoreWithdrawnReason || '这条撤销记录不能恢复为独立草稿。', true);
 		return;
 	}
-	if (!window.confirm('确定恢复为草稿吗？这不会直接重新公开，仍需重新检查并正式发布。')) return;
+	if (!await confirmAction({
+		title: '恢复为草稿',
+		message: '确定把这条撤销记录恢复为草稿吗？',
+		notice: '这不会直接重新公开，仍需重新检查并正式发布。',
+		acceptLabel: '恢复为草稿',
+	})) return;
 	const itemId = state.current.core.item_id;
 	setBusy(true, '正在恢复为草稿…', '撤销记录仍保持只读，恢复内容不会直接公开');
 	try {
@@ -3279,10 +3430,10 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	}
 };
 
-elements.recordList.addEventListener('click', (event) => {
+elements.recordList.addEventListener('click', async (event) => {
 	const button = event.target.closest('.record-card');
 	if (!button) return;
-	if (state.dirty && !window.confirm('当前有尚未保存的修改。确定先放弃这些修改并打开另一条记录吗？')) return;
+	if (state.dirty && !await confirmUnsavedChanges('确定先放弃这些修改并打开另一条记录吗？')) return;
 	previewRecord(button.dataset.id);
 });
 
@@ -3325,8 +3476,8 @@ elements.recordPagination.addEventListener('click', (event) => {
 	renderRecordList();
 });
 
-elements.newRecordButton.addEventListener('click', () => {
-	if (state.dirty && !window.confirm('当前有尚未保存的修改。确定先放弃这些修改并新建藏品吗？')) return;
+elements.newRecordButton.addEventListener('click', async () => {
+	if (state.dirty && !await confirmUnsavedChanges('确定先放弃这些修改并新建藏品吗？')) return;
 	startNewRecord();
 });
 
@@ -3336,8 +3487,8 @@ elements.mobileRecordBrowserToggle.addEventListener('click', () => {
 
 elements.recordsPaneClose.addEventListener('click', () => setMobileRecordBrowserOpen(false));
 
-elements.backToLibraryButton.addEventListener('click', () => {
-	if (state.dirty && !window.confirm('当前有尚未保存的修改。确定放弃这些修改并返回档案速览吗？')) return;
+elements.backToLibraryButton.addEventListener('click', async () => {
+	if (state.dirty && !await confirmUnsavedChanges('确定放弃这些修改并返回档案速览吗？')) return;
 	const targetId = state.activeId ?? sortedRecords(filteredRecords())[0]?.core.item_id;
 	if (targetId) previewRecord(targetId);
 	else {
@@ -3350,20 +3501,33 @@ elements.backToLibraryButton.addEventListener('click', () => {
 	if (window.matchMedia('(max-width: 900px)').matches) setMobileRecordBrowserOpen(true);
 });
 
-elements.similarRecordButton.addEventListener('click', startSimilarRecord);
+elements.similarRecordButton.addEventListener('click', () => { void startSimilarRecord(); });
 
-document.querySelector('.desk-nav').addEventListener('click', (event) => {
-	const button = event.target.closest('[data-workspace]');
+// “投稿审核”“联系收件箱”是站内其他管理页：有未保存修改时先确认再跳转，
+// 与切记录、刷新等入口的提醒保持一致。
+document.querySelectorAll('.desk-nav a[href$="/admin/submissions.html"], .desk-nav a[href$="/admin/contacts.html"]').forEach((link) => {
+	link.addEventListener('click', async (event) => {
+		if (!state.dirty) return;
+		event.preventDefault();
+		if (await confirmUnsavedChanges('确定先离开编辑页面前往这里吗？')) window.location.assign(link.href);
+	});
+});
+
+document.querySelector('.desk-nav').addEventListener('click', async (event) => {
+	// 只匹配真正的侧栏工作区按钮：body 上也带有 data-workspace（用于布局状态），
+	// 若用 [data-workspace] 委托匹配，点击侧栏空白处或“投稿审核”链接会被误判为
+	// 点击“档案管理”按钮，绕过未保存提醒并静默重置编辑器。
+	const button = event.target.closest('.desk-nav-button[data-workspace]');
 	if (!button) return;
 	if (state.dirty && button.dataset.workspace !== 'records' &&
-		!window.confirm('当前有尚未保存的修改。确定先离开编辑页面吗？')) return;
+		!await confirmUnsavedChanges('确定先离开编辑页面吗？')) return;
 	setWorkspaceMode(button.dataset.workspace);
 });
 
-elements.recordStatusNav.addEventListener('click', (event) => {
+elements.recordStatusNav.addEventListener('click', async (event) => {
 	const button = event.target.closest('[data-record-status]');
 	if (!button) return;
-	if (state.dirty && !window.confirm('当前有尚未保存的修改。确定放弃这些修改并切换档案状态吗？')) return;
+	if (state.dirty && !await confirmUnsavedChanges('确定放弃这些修改并切换档案状态吗？')) return;
 	setRecordStatusFilter(button.dataset.recordStatus);
 });
 
@@ -3406,6 +3570,44 @@ elements.editorSurface.addEventListener('toggle', (event) => {
 	state.query.advancedOpen = event.target.open;
 }, true);
 
+// 资料查询的搜索框：拼音等输入法“组合输入”期间不刷新列表（避免候选词被打断），
+// 停止输入约 300ms 后再刷新一次；刷新时仅在焦点仍在搜索框时恢复焦点和光标位置。
+let querySearchComposing = false;
+let querySearchRefreshTimer = null;
+const runQuerySearchRefresh = () => {
+	querySearchRefreshTimer = null;
+	if (state.workspaceMode !== 'query') return;
+	const activeSearch = document.activeElement?.matches?.('[data-query-search]') ? document.activeElement : null;
+	const caret = activeSearch?.selectionStart;
+	renderWorkspaceCenter();
+	if (!activeSearch) return;
+	const search = elements.editorSurface.querySelector('[data-query-search]');
+	if (!search) return;
+	search.focus();
+	const position = typeof caret === 'number' ? Math.min(caret, search.value.length) : search.value.length;
+	search.setSelectionRange(position, position);
+};
+const scheduleQuerySearchRefresh = () => {
+	clearTimeout(querySearchRefreshTimer);
+	querySearchRefreshTimer = setTimeout(() => {
+		if (querySearchComposing) {
+			scheduleQuerySearchRefresh();
+			return;
+		}
+		runQuerySearchRefresh();
+	}, 300);
+};
+
+elements.editorSurface.addEventListener('compositionstart', (event) => {
+	if (event.target?.matches?.('[data-query-search]')) querySearchComposing = true;
+});
+
+elements.editorSurface.addEventListener('compositionend', (event) => {
+	if (!event.target?.matches?.('[data-query-search]')) return;
+	querySearchComposing = false;
+	scheduleQuerySearchRefresh();
+});
+
 elements.editorSurface.addEventListener('input', (event) => {
 	if (event.target?.dataset?.mask === 'date') {
 		formatDateMaskInput(event.target);
@@ -3413,12 +3615,8 @@ elements.editorSurface.addEventListener('input', (event) => {
 	if (state.workspaceMode === 'query' && event.target.matches('[data-query-search]')) {
 		state.query.search = event.target.value;
 		state.query.page = 1;
-		renderWorkspaceCenter();
-		requestAnimationFrame(() => {
-			const search = elements.editorSurface.querySelector('[data-query-search]');
-			search?.focus();
-			search?.setSelectionRange(state.query.search.length, state.query.search.length);
-		});
+		if (querySearchComposing || event.isComposing) return;
+		scheduleQuerySearchRefresh();
 		return;
 	}
 	if (event.target.matches('[data-image-description]')) {
@@ -3428,6 +3626,9 @@ elements.editorSurface.addEventListener('input', (event) => {
 		state.dirty = true;
 		state.validationIssues = [];
 		updateHeader();
+		const counter = elements.editorSurface.querySelector(`[data-image-counter="${CSS.escape(image.id)}"]`);
+		if (counter) counter.textContent = `${event.target.value.length}/180`;
+		scheduleAutoSaveDraft();
 		return;
 	}
 	if (event.target.matches('.field-control:not([type="checkbox"])')) handleFieldChange(event.target);
@@ -3461,6 +3662,7 @@ elements.editorSurface.addEventListener('change', async (event) => {
 		state.validationIssues = state.validationIssues.filter((issue) => issue.code !== 'publication_copy_confirmation');
 		renderEditor();
 		updateHeader();
+		if (control.checked) scheduleAutoSaveDraft();
 		return;
 	}
 	if (control.id === 'privacy-select-all') {
@@ -3503,6 +3705,7 @@ elements.editorSurface.addEventListener('change', async (event) => {
 		state.dirty = true;
 		updateHeader();
 		renderEditor();
+		scheduleAutoSaveDraft();
 		showToast('替换已记录在草稿中。请确认新图片是发布副本后再保存。');
 		return;
 	}
@@ -3523,6 +3726,7 @@ elements.editorSurface.addEventListener('change', async (event) => {
 		state.validationIssues = [];
 		updateHeader();
 		renderEditor();
+		scheduleAutoSaveDraft();
 		const blockedCount = preflight.results.length - preflight.accepted.length;
 		showToast(blockedCount
 			? `${preflight.accepted.length} 张通过检查，${blockedCount} 张已拦截，请查看检查结果。`
@@ -3662,6 +3866,12 @@ elements.editorSurface.addEventListener('click', async (event) => {
 		});
 		return;
 	}
+	const lightboxButton = event.target.closest('[data-image-lightbox]');
+	if (lightboxButton) {
+		const index = state.images.findIndex((image) => image.id === lightboxButton.dataset.imageLightbox);
+		if (index >= 0) showImageLightbox(index);
+		return;
+	}
 	const button = event.target.closest('[data-image-action]');
 	if (!button) return;
 	if (button.dataset.imageAction === 'undo-remove') {
@@ -3675,27 +3885,74 @@ elements.editorSurface.addEventListener('click', async (event) => {
 		state.dirty = true;
 		state.validationIssues = [];
 		updateHeader();
-		renderEditor();
+		renderEditorPreservingViewport(null);
 		return;
 	}
 	const index = state.images.findIndex((image) => image.id === button.dataset.imageId);
 	if (index < 0) return;
-	if (button.dataset.imageAction === 'remove') {
+	const action = button.dataset.imageAction;
+	let focusIndex = null;
+	if (action === 'remove') {
 		const [image] = state.images.splice(index, 1);
 		if (image.kind === 'new') URL.revokeObjectURL(image.previewUrl);
 		else if (!state.pendingRemovedImages.some((candidate) => candidate.filename === image.filename)) {
 			state.pendingRemovedImages.push({ filename: image.filename, previewUrl: image.previewUrl,
 				description: image.description ?? '' });
 		}
+		// 移除后把焦点送回同一位置的那张图片，键盘操作不用从头再找。
+		if (state.images.length) focusIndex = Math.min(index, state.images.length - 1);
 	} else {
-		const targetIndex = button.dataset.imageAction === 'up' ? index - 1 : index + 1;
+		const targetIndex = action === 'up' ? index - 1 : index + 1;
 		if (targetIndex < 0 || targetIndex >= state.images.length) return;
 		[state.images[index], state.images[targetIndex]] = [state.images[targetIndex], state.images[index]];
+		// 排序后焦点跟随刚移动的那张图片。
+		focusIndex = targetIndex;
 	}
 	state.dirty = true;
 	state.validationIssues = [];
 	updateHeader();
-	renderEditor();
+	renderEditorPreservingViewport(() => {
+		if (focusIndex === null) return null;
+		const image = state.images[focusIndex];
+		if (!image) return null;
+		const preferred = elements.editorSurface
+			.querySelector(`[data-image-action="${action}"][data-image-id="${CSS.escape(image.id)}"]`);
+		if (preferred && !preferred.disabled) return preferred;
+		// 图片移到列表边界后原方向按钮会禁用：改为聚焦同一张图片另一方向的按钮，键盘操作不丢位置。
+		const fallbackAction = action === 'up' ? 'down' : 'up';
+		return elements.editorSurface
+			.querySelector(`[data-image-action="${fallbackAction}"][data-image-id="${CSS.escape(image.id)}"]`);
+	});
+});
+
+// 编辑区图片灯箱：复用速览“放大查看”的交互，发布前可以直接放大核对脱敏情况。
+const showImageLightbox = (index) => {
+	if (!state.images.length) return;
+	const active = ((index % state.images.length) + state.images.length) % state.images.length;
+	const image = state.images[active];
+	if (!image) return;
+	const description = displayedImageDescription(state.current, image, active, state.images.length);
+	elements.imageLightboxMain.src = image.previewUrl;
+	elements.imageLightboxMain.alt = description;
+	elements.imageLightboxCaption.textContent = image.filename ?? image.file?.name ?? `图片 ${active + 1}`;
+	elements.imageLightboxCounter.textContent = `第 ${active + 1} 张，共 ${state.images.length} 张`;
+	elements.imageLightboxPrevious.hidden = state.images.length < 2;
+	elements.imageLightboxNext.hidden = state.images.length < 2;
+	elements.imageLightbox.dataset.index = String(active);
+	elements.imageLightbox.showModal();
+};
+
+const stepImageLightbox = (offset) => {
+	const current = Number(elements.imageLightbox.dataset.index ?? '0');
+	showImageLightbox(current + offset);
+};
+
+elements.imageLightboxClose.addEventListener('click', () => elements.imageLightbox.close());
+elements.imageLightboxPrevious.addEventListener('click', () => stepImageLightbox(-1));
+elements.imageLightboxNext.addEventListener('click', () => stepImageLightbox(1));
+elements.imageLightbox.addEventListener('keydown', (event) => {
+	if (event.key === 'ArrowLeft') stepImageLightbox(-1);
+	else if (event.key === 'ArrowRight') stepImageLightbox(1);
 });
 
 const saveDraftWithFeedback = async () => {
@@ -3711,6 +3968,14 @@ elements.saveDraftButton.addEventListener('click', saveDraftWithFeedback);
 elements.dockSaveDraftButton.addEventListener('click', saveDraftWithFeedback);
 elements.publishButton.addEventListener('click', publishCurrent);
 elements.dockPublishButton.addEventListener('click', publishCurrent);
+
+// Ctrl+S / Cmd+S 保存草稿：与自动保存互为补充，长表单里随手就能存一次。
+window.addEventListener('keydown', (event) => {
+	if (!(event.ctrlKey || event.metaKey) || event.key !== 's' || event.shiftKey || event.altKey) return;
+	if (state.workspaceMode !== 'records' || state.recordViewMode !== 'editor' || !state.current || isWithdrawn()) return;
+	event.preventDefault();
+	if (!elements.saveDraftButton.hidden && !elements.saveDraftButton.disabled) saveDraftWithFeedback();
+});
 elements.busyCancelButton.addEventListener('click', cancelActiveOperation);
 elements.lifecycleButton.addEventListener('click', () => {
 	if (isWithdrawn()) restoreWithdrawnCurrent();
