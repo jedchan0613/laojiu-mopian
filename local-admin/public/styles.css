@@ -1022,6 +1022,27 @@ body[data-workspace="query"] .editor-surface {
 	background: #fff8f4;
 }
 
+/* 字段级错误提示：发布前缺失项会直接标在对应字段旁，不再只集中在预览清单里。 */
+.field-error {
+	display: block;
+	color: #8d3427;
+	font-size: 0.67rem;
+	font-weight: 600;
+	line-height: 1.5;
+}
+
+.form-field.is-invalid > .field-label {
+	color: #8d3427;
+}
+
+.form-field.is-invalid input:not([readonly]),
+.form-field.is-invalid textarea,
+.form-field.is-invalid select,
+.form-field.is-invalid .choice-grid {
+	border-color: #a75340;
+	background: #fff8f4;
+}
+
 .form-field input[readonly] {
 	color: #746e64;
 	background: #e5ded2;
@@ -1523,6 +1544,181 @@ body[data-workspace="query"] .editor-surface {
 	width: 100%;
 	height: 100%;
 	object-fit: contain;
+}
+
+/* 编辑区图片缩略图：整块可点击放大，发布前直接核对脱敏情况。 */
+.image-preview-open {
+	position: relative;
+	display: block;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	background: transparent;
+	border: 0;
+	cursor: zoom-in;
+}
+
+.image-preview-open img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.image-preview-hint {
+	position: absolute;
+	right: 0.45rem;
+	bottom: 0.45rem;
+	padding: 0.22rem 0.5rem;
+	color: #f4eee3;
+	background: rgba(25, 25, 23, 0.72);
+	border-radius: 0.18rem;
+	font-size: 0.62rem;
+	opacity: 0;
+	transition: opacity 160ms ease;
+}
+
+.image-preview-open:hover .image-preview-hint,
+.image-preview-open:focus-visible .image-preview-hint {
+	opacity: 1;
+}
+
+.image-preview-open:focus-visible {
+	outline: 2px solid #6f786c;
+	outline-offset: -2px;
+}
+
+/* 编辑区图片灯箱：与公开页速览灯箱同一套交互，供脱敏核对使用。 */
+.image-lightbox {
+	width: 100vw;
+	max-width: none;
+	height: 100dvh;
+	max-height: none;
+	margin: 0;
+	padding: 0;
+	color: #f4eee3;
+	background: rgba(25, 25, 23, 0.97);
+	border: 0;
+}
+
+.image-lightbox::backdrop {
+	background: rgba(16, 16, 14, 0.92);
+}
+
+.image-lightbox-shell {
+	position: relative;
+	display: grid;
+	grid-template-columns: 5rem minmax(0, 1fr) 5rem;
+	align-items: center;
+	width: 100%;
+	height: 100%;
+	padding: 3.8rem clamp(1rem, 3vw, 2.5rem) 1rem;
+}
+
+.image-lightbox-close,
+.image-lightbox-previous,
+.image-lightbox-next {
+	display: grid;
+	min-width: 2.75rem;
+	min-height: 2.75rem;
+	place-items: center;
+	color: #f4eee3;
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.28);
+	cursor: pointer;
+}
+
+.image-lightbox-close:hover,
+.image-lightbox-close:focus-visible,
+.image-lightbox-previous:hover,
+.image-lightbox-previous:focus-visible,
+.image-lightbox-next:hover,
+.image-lightbox-next:focus-visible {
+	background: rgba(255, 255, 255, 0.17);
+	outline: 2px solid #f4eee3;
+	outline-offset: 2px;
+}
+
+.image-lightbox-close {
+	position: absolute;
+	top: 0.8rem;
+	right: clamp(1rem, 3vw, 2.5rem);
+	z-index: 1;
+	min-width: auto;
+	padding: 0.4rem 0.75rem;
+	font-size: 0.72rem;
+}
+
+.image-lightbox-previous,
+.image-lightbox-next {
+	gap: 0.2rem;
+	font-size: 0.66rem;
+}
+
+.image-lightbox-previous span,
+.image-lightbox-next span {
+	font-size: 1.1rem;
+	line-height: 1;
+}
+
+.image-lightbox-figure {
+	display: grid;
+	justify-items: center;
+	gap: 0.8rem;
+	max-height: 100%;
+	margin: 0;
+	overflow: hidden;
+}
+
+.image-lightbox-figure img {
+	max-width: 100%;
+	max-height: calc(100dvh - 9rem);
+	object-fit: contain;
+}
+
+.image-lightbox-caption {
+	display: grid;
+	gap: 0.25rem;
+	justify-items: center;
+	max-width: min(46rem, 90%);
+	font-size: 0.72rem;
+	text-align: center;
+}
+
+.image-lightbox-caption small {
+	color: #b9b2a4;
+	font-size: 0.64rem;
+}
+
+@media (max-width: 720px) {
+	.image-lightbox-shell {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr) auto;
+		padding: 3.4rem 0.8rem 4.2rem;
+	}
+
+	.image-lightbox-previous,
+	.image-lightbox-next {
+		position: absolute;
+		bottom: 0.8rem;
+		min-width: 3.4rem;
+	}
+
+	.image-lightbox-previous {
+		left: 0.8rem;
+	}
+
+	.image-lightbox-next {
+		right: 0.8rem;
+	}
+}
+
+/* 图片说明字数计数器（32/180）。 */
+.image-description-counter output {
+	color: #6f7d86;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: 0.62rem;
+	font-variant-numeric: tabular-nums;
 }
 
 .image-preflight {
