@@ -120,6 +120,20 @@ const galleryImages = view.images.map((source, index) => ({
   description: view.imageDescriptions[index],
   role: getImageRole(view.imageDescriptions[index], index),
 }));
+
+// 浏览足迹：当前档案的概要信息，由页面脚本写入访客自己的浏览器，
+// 供首页「您最近看过」继续浏览使用；没有公开图片时图片字段留空。
+const firstGalleryImage = galleryImages[0];
+const recordViewData = {
+  id: view.id,
+  title: view.title,
+  typeLabel: view.typeLabel,
+  dateDisplay: view.dateDisplay,
+  imageSrc: firstGalleryImage?.src ?? '',
+  imageAlt: firstGalleryImage?.description ?? '',
+  imageWidth: firstGalleryImage?.width ?? 0,
+  imageHeight: firstGalleryImage?.height ?? 0,
+};
 const hasNarrativeContent = (!isLetter && hasText(view.transcription)) || hasText(item.core.provenance_notes);
 const hasTags = view.tags.length > 0;
 const usagePolicy = getPublicUsagePolicy(item.core.rights_status);
@@ -241,19 +255,29 @@ const breadcrumbStructuredData = {
           <div>
             <h2 class="icon-heading"><SiteIcon name="story" /><span>信件阅读</span></h2>
           </div>
-          {letterReadingModes.length > 1 && (
-            <div class="letter-reading-modes" role="group" aria-label="选择信件查看方式">
-              {letterReadingModes.map((mode) => (
-                <button
-                  type="button"
-                  data-letter-mode-select={mode.value}
-                  aria-pressed={String(mode.value === initialLetterMode)}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-          )}
+          <div class="letter-reading-controls">
+            {letterReadingModes.length > 1 && (
+              <div class="letter-reading-modes" role="group" aria-label="选择信件查看方式">
+                {letterReadingModes.map((mode) => (
+                  <button
+                    type="button"
+                    data-letter-mode-select={mode.value}
+                    aria-pressed={String(mode.value === initialLetterMode)}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {hasPublicTranscription && (
+              <div class="letter-text-size" role="group" aria-label="调整文字字号">
+                <span>字号</span>
+                <button type="button" data-letter-size-select="small" aria-pressed="false">小</button>
+                <button type="button" data-letter-size-select="medium" aria-pressed="true">中</button>
+                <button type="button" data-letter-size-select="large" aria-pressed="false">大</button>
+              </div>
+            )}
+          </div>
           <p class="letter-reading-introduction">
             {hasPublicTranscription
               ? '默认先看原件：原件图片是最终核对依据；电子转录保留原有段落与换行，可随时切换查看方式。'
@@ -611,11 +635,42 @@ const breadcrumbStructuredData = {
         </div>
       </nav>
     )}
+    <script type="application/json" id="record-view-data" set:html={JSON.stringify(recordViewData)} />
   </article>
 </BaseLayout>
 
 <script>
   import '../../scripts/archive-likes';
+  import { recordView } from '../../scripts/view-history';
+
+  // 浏览足迹：把当前档案记入访客本地足迹，供首页「您最近看过」使用。
+  try {
+    const viewDataElement = document.querySelector<HTMLElement>('#record-view-data');
+    const viewData = JSON.parse(viewDataElement?.textContent ?? 'null') as {
+      id?: string;
+      title?: string;
+      typeLabel?: string;
+      dateDisplay?: string;
+      imageSrc?: string;
+      imageAlt?: string;
+      imageWidth?: number;
+      imageHeight?: number;
+    };
+    if (viewData?.id && viewData.title) {
+      recordView({
+        id: viewData.id,
+        title: viewData.title,
+        typeLabel: viewData.typeLabel ?? '',
+        dateDisplay: viewData.dateDisplay ?? '',
+        imageSrc: viewData.imageSrc ?? '',
+        imageAlt: viewData.imageAlt ?? '',
+        imageWidth: viewData.imageWidth ?? 0,
+        imageHeight: viewData.imageHeight ?? 0,
+      });
+    }
+  } catch {
+    // 足迹记录失败不影响档案页面本身。
+  }
 
   document.querySelectorAll<HTMLElement>('[data-letter-reader]').forEach((reader) => {
     const modeButtons = Array.from(
@@ -630,6 +685,34 @@ const breadcrumbStructuredData = {
     };
     for (const button of modeButtons) {
       button.addEventListener('click', () => setMode(button.dataset.letterModeSelect ?? ''));
+    }
+
+    // 字号调节：三档字号保存在访客自己的浏览器里，下次打开自动沿用。
+    const sizeButtons = Array.from(
+      reader.querySelectorAll<HTMLButtonElement>('[data-letter-size-select]'),
+    );
+    const setSize = (size: string, persist: boolean) => {
+      if (!sizeButtons.some((button) => button.dataset.letterSizeSelect === size)) return;
+      reader.dataset.letterSize = size;
+      for (const button of sizeButtons) {
+        button.setAttribute('aria-pressed', String(button.dataset.letterSizeSelect === size));
+      }
+      if (persist) {
+        try {
+          window.localStorage.setItem('ljm-letter-size', size);
+        } catch {
+          // 本地存储不可用时，字号仍可临时调整，只是不会记住。
+        }
+      }
+    };
+    for (const button of sizeButtons) {
+      button.addEventListener('click', () => setSize(button.dataset.letterSizeSelect ?? 'medium', true));
+    }
+    try {
+      const storedSize = window.localStorage.getItem('ljm-letter-size');
+      if (storedSize) setSize(storedSize, false);
+    } catch {
+      // 无法读取已保存的字号时保持默认。
     }
   });
 
@@ -994,6 +1077,14 @@ const breadcrumbStructuredData = {
     line-height: 1.75;
   }
 
+  .letter-reading-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem;
+  }
+
   .letter-reading-modes {
     display: inline-flex;
     align-items: center;
@@ -1003,8 +1094,25 @@ const breadcrumbStructuredData = {
     border: 1px solid #c3baa9;
   }
 
-  .letter-reading-modes button {
-    min-height: 2.2rem;
+  .letter-text-size {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    padding: 0.2rem;
+    background: rgba(248, 244, 234, 0.72);
+    border: 1px solid #c3baa9;
+  }
+
+  .letter-text-size > span {
+    padding: 0 0.3rem 0 0.5rem;
+    color: #6a645a;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+  }
+
+  .letter-reading-modes button,
+  .letter-text-size button {
+    min-height: 44px;
     padding: 0.38rem 0.72rem;
     color: #6a645a;
     background: transparent;
@@ -1016,16 +1124,20 @@ const breadcrumbStructuredData = {
   }
 
   .letter-reading-modes button:hover,
-  .letter-reading-modes button:focus-visible {
+  .letter-reading-modes button:focus-visible,
+  .letter-text-size button:hover,
+  .letter-text-size button:focus-visible {
     color: var(--site-accent);
   }
 
-  .letter-reading-modes button:focus-visible {
+  .letter-reading-modes button:focus-visible,
+  .letter-text-size button:focus-visible {
     outline: 2px solid #575349;
     outline-offset: -2px;
   }
 
-  .letter-reading-modes button[aria-pressed='true'] {
+  .letter-reading-modes button[aria-pressed='true'],
+  .letter-text-size button[aria-pressed='true'] {
     color: #f8f2e7;
     background: var(--site-accent);
   }
@@ -1085,6 +1197,15 @@ const breadcrumbStructuredData = {
     letter-spacing: 0.035em;
     line-height: 2.15;
     white-space: pre-wrap;
+  }
+
+  /* 信件字号三档：默认为中档，访客的选择会保存在其浏览器里。 */
+  .record-sheet--letter[data-letter-size='small'] .letter-transcription-text {
+    font-size: clamp(0.9rem, 1.3vw, 1rem);
+  }
+
+  .record-sheet--letter[data-letter-size='large'] .letter-transcription-text {
+    font-size: clamp(1.16rem, 1.85vw, 1.34rem);
   }
 
   .letter-transcription > footer {
@@ -2024,6 +2145,11 @@ const breadcrumbStructuredData = {
       padding: 0.8rem;
     }
 
+    .letter-reading-controls {
+      width: 100%;
+      justify-content: space-between;
+    }
+
     .letter-reading-modes {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2034,6 +2160,10 @@ const breadcrumbStructuredData = {
       padding-inline: 0.4rem;
     }
 
+    .letter-text-size {
+      margin-left: auto;
+    }
+
     .letter-transcription {
       padding: 1rem 0.9rem 1.2rem;
     }
@@ -2042,6 +2172,14 @@ const breadcrumbStructuredData = {
       margin: 1.25rem auto 1.5rem;
       font-size: 1rem;
       line-height: 2;
+    }
+
+    .record-sheet--letter[data-letter-size='small'] .letter-transcription-text {
+      font-size: 0.92rem;
+    }
+
+    .record-sheet--letter[data-letter-size='large'] .letter-transcription-text {
+      font-size: 1.18rem;
     }
 
     .record-image-hint {

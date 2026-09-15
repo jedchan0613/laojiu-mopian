@@ -69,6 +69,9 @@ const recentEntries = recentViews.map((view) => ({
 	view,
 	image: view.images[0] ? getResponsiveImage(view.images[0]) : undefined,
 }));
+
+// 随手翻一件：把全部已公开档案编号写入页面，供浏览器端随机挑选跳转。
+const randomRecordIds = publishedViews.map((view) => view.id);
 const categoryIconBySlug: Record<ArchiveCategorySlug, SiteIconName> = {
 	photos: 'photos',
 	postcards: 'postcards',
@@ -105,7 +108,10 @@ const categoryEntries = archiveCategories.map((category, index) => {
 						<span class="introduction-line">收藏、整理和讲述那些被时间</span>
 						<span class="introduction-line">留下来的普通生活痕迹。</span>
 					</p>
-					<a class="browse-link ui-action ui-action--primary" href="/archive/">浏览全部 {publishedItems.length} 件档案 →</a>
+					<div class="introduction-actions">
+						<a class="browse-link ui-action ui-action--primary" href="/archive/">浏览全部 {publishedItems.length} 件档案 →</a>
+						<button class="browse-link ui-action ui-action--secondary" type="button" data-random-record-button hidden>随手翻一件</button>
+					</div>
 				</section>
 			</div>
 
@@ -198,6 +204,20 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			)}
 		</div>
 
+		<section class="view-history" data-view-history hidden aria-labelledby="view-history-heading">
+			<header class="view-history-header">
+				<div class="view-history-title">
+					<SiteIcon name="compass" />
+					<div>
+						<h2 id="view-history-heading">您最近看过</h2>
+						<p>继续上次的浏览 · 足迹只保存在这台设备的浏览器里</p>
+					</div>
+				</div>
+				<button class="view-history-clear" type="button" data-view-history-clear>清空足迹</button>
+			</header>
+			<ul class="view-history-list" data-view-history-list></ul>
+		</section>
+
 		<nav class="archive-entrances" aria-label="档案分类入口">
 			<div class="archive-entrances-heading">
 				<div class="archive-entrances-title icon-heading">
@@ -273,9 +293,60 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			</section>
 		)}
 	</div>
+	<script type="application/json" id="random-record-index" set:html={JSON.stringify(randomRecordIds)} />
 	<script>
 		import '../scripts/archive-likes';
 		import '../scripts/home-featured-carousel';
+		import '../scripts/random-record';
+		import { clearViewHistory, readViewHistory } from '../scripts/view-history';
+
+		// 浏览足迹：完全在访客浏览器本地渲染，没有足迹时区块保持隐藏。
+		const historySection = document.querySelector<HTMLElement>('[data-view-history]');
+		const historyList = historySection?.querySelector<HTMLElement>('[data-view-history-list]');
+		const historyClearButton = historySection?.querySelector<HTMLButtonElement>('[data-view-history-clear]');
+
+		const renderViewHistory = () => {
+			if (!historySection || !historyList) return;
+			const entries = readViewHistory().slice(0, 4);
+			historySection.hidden = entries.length === 0;
+			historyList.replaceChildren(...entries.map((entry) => {
+				const item = document.createElement('li');
+				const link = document.createElement('a');
+				link.href = `/archive/${entry.id}/`;
+				link.setAttribute('aria-label', `继续查看档案：${entry.title}`);
+				const image = document.createElement('span');
+				image.className = 'view-history-image';
+				if (entry.imageSrc) {
+					const img = document.createElement('img');
+					img.src = entry.imageSrc;
+					img.alt = '';
+					img.width = entry.imageWidth;
+					img.height = entry.imageHeight;
+					img.loading = 'lazy';
+					img.decoding = 'async';
+					image.append(img);
+				}
+				const copy = document.createElement('span');
+				copy.className = 'view-history-copy';
+				const meta = document.createElement('small');
+				meta.textContent = `${entry.typeLabel} · ${entry.dateDisplay || '年代未知'}`;
+				const title = document.createElement('strong');
+				title.textContent = entry.title;
+				const open = document.createElement('em');
+				open.textContent = '继续查看 →';
+				copy.append(meta, title, open);
+				link.append(image, copy);
+				item.append(link);
+				return item;
+			}));
+		};
+
+		historyClearButton?.addEventListener('click', () => {
+			clearViewHistory();
+			renderViewHistory();
+		});
+
+		renderViewHistory();
 	</script>
 </BaseLayout>
 
@@ -368,9 +439,15 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		margin-top: clamp(1.75rem, 3vw, 2.5rem);
 	}
 
+	.introduction-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.7rem;
+		margin-top: 22px;
+	}
+
 	.browse-link {
 		min-height: 44px;
-		margin-top: 22px;
 		padding: 0.7rem 1.2rem;
 		font-size: 0.9375rem;
 		letter-spacing: var(--ls-wide);
@@ -378,6 +455,154 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 	.hero-record-shell {
 		min-width: 0;
+	}
+
+	.view-history {
+		margin: clamp(1.9rem, 3.8vw, 2.75rem) 0 0;
+		padding: 1.05rem clamp(1rem, 2.2vw, 1.25rem) 1.2rem;
+		background: rgba(224, 215, 197, 0.3);
+		border-left: 3px solid var(--site-accent);
+	}
+
+	.view-history-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.view-history-title {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		min-width: 0;
+	}
+
+	.view-history-title > :global(.site-icon) {
+		flex: 0 0 auto;
+		width: 1.2rem;
+		height: 1.2rem;
+		color: var(--site-accent);
+	}
+
+	.view-history-title h2 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 500;
+		letter-spacing: var(--ls-wide);
+	}
+
+	.view-history-title p {
+		margin: 0.22rem 0 0;
+		color: #655f52;
+		font-size: 0.74rem;
+		line-height: 1.55;
+		letter-spacing: var(--ls-text);
+	}
+
+	.view-history-clear {
+		flex: 0 0 auto;
+		min-height: 44px;
+		padding: 0.45rem 0.85rem;
+		color: #6d675c;
+		background: transparent;
+		border: 1px solid #b9b1a0;
+		font: inherit;
+		font-size: 0.78rem;
+		letter-spacing: var(--ls-text);
+		cursor: pointer;
+	}
+
+	.view-history-clear:hover {
+		color: var(--site-accent);
+		border-color: var(--site-accent);
+	}
+
+	.view-history-clear:focus-visible {
+		outline: 2px solid #575349;
+		outline-offset: 2px;
+	}
+
+	.view-history-clear:active {
+		transform: translateY(1px);
+	}
+
+	.view-history-list {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 0.9rem;
+		margin: 0.95rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.view-history-list a {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0.7rem;
+		align-items: center;
+		min-height: 44px;
+		padding: 0.35rem;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.view-history-list a:hover strong,
+	.view-history-list a:focus-visible strong {
+		text-decoration: underline;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.32em;
+	}
+
+	.view-history-list a:active {
+		transform: translateY(1px);
+	}
+
+	.view-history-image {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 3.4rem;
+		height: 3.4rem;
+		overflow: hidden;
+		background: #e7dfcd;
+		border: 1px solid #c4baa7;
+	}
+
+	.view-history-image img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
+	.view-history-copy {
+		display: grid;
+		gap: 0.12rem;
+		min-width: 0;
+	}
+
+	.view-history-copy small {
+		color: #655f52;
+		font-size: 0.7rem;
+		letter-spacing: var(--ls-text);
+		line-height: 1.5;
+	}
+
+	.view-history-copy strong {
+		overflow: hidden;
+		font-size: 0.88rem;
+		font-weight: 500;
+		line-height: 1.5;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.view-history-copy em {
+		color: var(--site-accent);
+		font-size: 0.72rem;
+		font-style: normal;
+		letter-spacing: var(--ls-text);
+		line-height: 1.5;
 	}
 
 	.hero-record-toolbar {
@@ -1001,9 +1226,33 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			aspect-ratio: 16 / 9;
 		}
 
+		.introduction-actions {
+			margin-top: 16px;
+		}
+
 		.browse-link {
 			width: 100%;
-			margin-top: 16px;
+		}
+
+		.view-history {
+			margin: 1.5rem 0 0;
+			padding: 0.95rem 0.9rem 1.05rem;
+		}
+
+		.view-history-header {
+			align-items: flex-start;
+			flex-direction: column;
+			gap: 0.55rem;
+		}
+
+		.view-history-clear {
+			align-self: flex-end;
+			margin-top: -0.35rem;
+		}
+
+		.view-history-list {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 0.55rem;
 		}
 
 		.archive-entrances ul {
