@@ -1174,6 +1174,8 @@ const loadBootstrap = async (standards) => {
 				official?.core.record_status === 'ACT' &&
 				official?.core.privacy_level === 'G' &&
 				official?.core.use_status === 'U3',
+			// 有草稿修改时附带当前正式版本快照，供管理端在发布前展示“本次修改对照”。
+			officialSnapshot: draft && official ? official : null,
 			savedAt: draft?.saved_at ?? null,
 			pendingRemovedImages: draft?.removed_images ?? [],
 			pendingRemovedImageDescriptions: draft?.removed_image_descriptions ?? {},
