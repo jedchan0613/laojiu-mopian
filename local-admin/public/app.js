@@ -696,12 +696,38 @@ const filteredRecords = () => {
 
 const chineseCollator = new Intl.Collator('zh-CN');
 
+const normalizeRecordItemDate = (value) => {
+	const match = String(value ?? '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+	return match ? match[0] : '';
+};
+
+const recordItemDateSortKey = (record) => {
+	const core = record?.core ?? {};
+	const dateStart = normalizeRecordItemDate(core.date_start);
+	if (dateStart) return dateStart;
+	const displayYear = String(core.date_display ?? '').match(/(?:18|19|20)\d{2}/)?.[0];
+	if (displayYear) return `${displayYear}-01-01`;
+	return normalizeRecordItemDate(core.date_end);
+};
+
+const compareRecordsByItemDate = (left, right) => {
+	const leftDate = recordItemDateSortKey(left);
+	const rightDate = recordItemDateSortKey(right);
+	if (leftDate && rightDate && leftDate !== rightDate) return rightDate.localeCompare(leftDate);
+	if (leftDate && !rightDate) return -1;
+	if (!leftDate && rightDate) return 1;
+	return chineseCollator.compare(String(left.core.item_id ?? ''), String(right.core.item_id ?? ''));
+};
+
 const sortedRecords = (records) => {
 	const sorted = [...records];
 	switch (state.recordSort) {
 		case 'accession-desc':
 			sorted.sort((left, right) => String(right.core.accession_date ?? right.core.created_date ?? '')
 				.localeCompare(String(left.core.accession_date ?? left.core.created_date ?? '')));
+			break;
+		case 'item-date-desc':
+			sorted.sort(compareRecordsByItemDate);
 			break;
 		case 'id-asc':
 			sorted.sort((left, right) => chineseCollator.compare(String(left.core.item_id ?? ''), String(right.core.item_id ?? '')));
