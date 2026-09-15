@@ -243,6 +243,35 @@
 				</div>
 			</form>
 		</dialog>
+		<dialog class="action-dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title">
+			<form class="action-dialog-card" method="dialog">
+				<div class="action-dialog-heading">
+					<h2 id="confirm-dialog-title">确认操作</h2>
+					<p id="confirm-dialog-message"></p>
+				</div>
+				<div class="action-dialog-notice" id="confirm-dialog-notice" hidden>
+					<strong id="confirm-dialog-notice-title"></strong>
+					<span id="confirm-dialog-notice-text"></span>
+				</div>
+				<div class="action-dialog-actions">
+					<button class="quiet-button" id="confirm-dialog-cancel" value="cancel" type="submit">取消</button>
+					<button class="danger-button" id="confirm-dialog-accept" type="button">确定</button>
+				</div>
+			</form>
+		</dialog>
+		<dialog class="image-lightbox" id="image-lightbox" aria-label="放大查看发布图片">
+			<div class="image-lightbox-shell">
+				<button class="image-lightbox-close" id="image-lightbox-close" type="button" aria-label="关闭放大图片">关闭 ×</button>
+				<button class="image-lightbox-previous" id="image-lightbox-previous" type="button" aria-label="查看上一张图片"><span aria-hidden="true">←</span><small>上一张</small></button>
+				<figure class="image-lightbox-figure">
+					<img id="image-lightbox-main" src="" alt="" />
+					<figcaption>
+						<span class="image-lightbox-caption"><strong id="image-lightbox-caption"></strong><small id="image-lightbox-counter"></small></span>
+					</figcaption>
+				</figure>
+				<button class="image-lightbox-next" id="image-lightbox-next" type="button" aria-label="查看下一张图片"><span aria-hidden="true">→</span><small>下一张</small></button>
+			</div>
+		</dialog>
 		<datalist id="administrative-province-options"></datalist>
 		<datalist id="administrative-city-options"></datalist>
 		<datalist id="administrative-district-options"></datalist>
