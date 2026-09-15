@@ -10,7 +10,7 @@ interface FeaturedCarouselItem {
 	href: string;
 }
 
-const AUTOPLAY_DELAY = 4000;
+const AUTOPLAY_DELAY = 6000;
 
 document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach((carousel) => {
 	const image = carousel.querySelector<HTMLImageElement>('[data-home-carousel-image]');

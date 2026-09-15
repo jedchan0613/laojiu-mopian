@@ -58,7 +58,7 @@ const { itemId, title, compact = false } = Astro.props;
 
 	.archive-like-count {
 		min-width: 1ch;
-		color: #777166;
+		color: #655f52;
 		font-family: Georgia, 'Times New Roman', serif;
 		font-variant-numeric: tabular-nums;
 		letter-spacing: 0.02em;
@@ -100,6 +100,15 @@ const { itemId, title, compact = false } = Astro.props;
 		min-height: 2rem;
 		padding: 0.32rem 0.62rem;
 		font-size: 0.72rem;
+	}
+
+	/* 手机端保证触控区域不小于 44×44px */
+	@media (max-width: 760px) {
+		.archive-like-button,
+		.archive-like-button--compact {
+			min-height: 44px;
+			min-width: 44px;
+		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
