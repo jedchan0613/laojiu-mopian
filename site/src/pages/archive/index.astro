@@ -190,6 +190,7 @@ const searchIndexJson = JSON.stringify(
           <select id="archive-sort" aria-controls="archive-list">
             <option value="relevance" disabled>按相关度</option>
             <option value="recent">最近收录</option>
+            <option value="likes">最多点赞</option>
             <option value="date-asc">年代从早到晚</option>
             <option value="date-desc">年代从晚到早</option>
             <option value="type">按藏品类型</option>
@@ -383,6 +384,33 @@ const searchIndexJson = JSON.stringify(
   let currentPage = 1;
   // 访客手动选择过排序方式后，不再自动切换到“按相关度”。
   let userChosenSort = false;
+  // 「最多点赞」排序使用的计数：由点赞脚本在拿到计数后逐件通知本页。
+  const likeCounts = new Map<string, number>();
+  let likesAvailable = true;
+
+  document.addEventListener('archive-likes-updated', (event) => {
+    const detail = (event as CustomEvent<{ itemId?: string; count?: number }>).detail;
+    if (!detail?.itemId || !Number.isInteger(detail.count) || (detail.count ?? -1) < 0) return;
+    likeCounts.set(detail.itemId, detail.count ?? 0);
+    // 计数到达后如果正按点赞排序，立即按最新计数重排（包括刚点赞的那件）。
+    if (sortSelect?.value === 'likes') updateArchiveResults();
+  });
+
+  document.addEventListener('archive-likes-unavailable', () => {
+    likesAvailable = false;
+    syncLikesSortOption();
+    if (sortSelect?.value === 'likes') {
+      sortSelect.value = 'recent';
+      userChosenSort = false;
+      updateArchiveResults();
+      updateFiltersInAddress();
+    }
+  });
+
+  const syncLikesSortOption = () => {
+    const likesOption = sortSelect?.querySelector<HTMLOptionElement>('option[value="likes"]');
+    if (likesOption) likesOption.disabled = !likesAvailable;
+  };
 
   // 构建时写入页面的搜索索引：永久编号 → 分字段搜索文字。
   const searchFieldsByItemId = new Map<string, ArchiveSearchFields>();
@@ -471,6 +499,13 @@ const searchIndexJson = JSON.stringify(
         const leftScore = scoreMap.get(left)?.score ?? -1;
         const rightScore = scoreMap.get(right)?.score ?? -1;
         if (leftScore !== rightScore) return rightScore - leftScore;
+        const recentOrder = compareRecentEntries(left, right);
+        if (recentOrder !== 0) return recentOrder;
+      } else if (sortMode === 'likes') {
+        // 点赞多的在前；计数一致时沿用“最近收录”的稳定次序。
+        const leftCount = likeCounts.get(left.dataset.archiveId ?? '') ?? 0;
+        const rightCount = likeCounts.get(right.dataset.archiveId ?? '') ?? 0;
+        if (leftCount !== rightCount) return rightCount - leftCount;
         const recentOrder = compareRecentEntries(left, right);
         if (recentOrder !== 0) return recentOrder;
       } else if (sortMode === 'date-asc' || sortMode === 'date-desc') {

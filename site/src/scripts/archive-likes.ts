@@ -31,6 +31,10 @@ function renderButton(button: LikeButton, state: LikeState) {
 function setState(itemId: string, state: LikeState) {
 	states.set(itemId, state);
 	for (const button of buttonsFor(itemId)) renderButton(button, state);
+	// 通知同页的其他功能（如档案列表的“最多点赞”排序）刷新计数。
+	document.dispatchEvent(new CustomEvent('archive-likes-updated', {
+		detail: { itemId, count: state.count, liked: state.liked },
+	}));
 }
 
 function setUnavailable(message = '点赞服务暂时不可用') {
@@ -43,6 +47,7 @@ function setUnavailable(message = '点赞服务暂时不可用') {
 		if (label) label.textContent = '暂不可用';
 		if (count) count.textContent = '';
 	}
+	document.dispatchEvent(new CustomEvent('archive-likes-unavailable'));
 }
 
 async function requestJson(url: string, init?: RequestInit) {

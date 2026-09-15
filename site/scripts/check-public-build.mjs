@@ -68,9 +68,20 @@ const pageLoadsScriptMarker = (page, marker) => {
 	return scriptSources.some((source) => scriptTreeIncludes(source, marker));
 };
 const pageDirectlyLoadsScriptMarker = (page, marker) => {
-	const scriptSources = [...page.html.matchAll(/<script\b[^>]*\btype="module"[^>]*\bsrc="([^"]+)"[^>]*>/g)]
-		.map((match) => normalizePublicPath(match[1]));
-	return scriptSources.some((source) => scriptsByPublicPath.get(source)?.includes(marker));
+  const scriptSources = [...page.html.matchAll(/<script\b[^>]*\btype="module"[^>]*\bsrc="([^"]+)"[^>]*>/g)]
+    .map((match) => normalizePublicPath(match[1]));
+  return scriptSources.some((source) => scriptsByPublicPath.get(source)?.includes(marker));
+};
+// 读取页面内嵌的「随手翻一件」随机档案编号索引。
+const extractRandomIndexIds = (html) => {
+  const match = html.match(/id="random-record-index"[^>]*>([\s\S]*?)<\/script>/);
+  if (!match) return [];
+  try {
+    const parsed = JSON.parse(match[1]);
+    return Array.isArray(parsed) ? parsed.filter((value) => typeof value === 'string') : [];
+  } catch {
+    return [];
+  }
 };
 const home = htmlEntries.find((entry) => entry.relativePath === 'index.html');
 const archiveIndex = htmlEntries.find((entry) => entry.relativePath === 'archive/index.html');
@@ -99,15 +110,25 @@ check(
 );
 check(archiveLikesSource.includes("window.addEventListener('load'"), '点赞计数应在页面主要资源完成后再读取。');
 check(!archiveLikesSource.includes('likePreloadItems'), '首页不应提前读取尚未显示的轮播档案点赞计数。');
+check(archiveLikesSource.includes('archive-likes-updated'), '点赞计数更新缺少页面通知事件，列表页无法按最多点赞排序。');
 check(archiveDetailSource.includes("item.core.object_type === 'LET'"), '详情页缺少信件类型专属判断。');
 for (const marker of ['data-letter-reader', '文字阅读', '原件对照', '只看原件', '原件图片是最终核对依据']) {
-	check(archiveDetailSource.includes(marker), `信件阅读模板缺少必要内容：${marker}。`);
+  check(archiveDetailSource.includes(marker), `信件阅读模板缺少必要内容：${marker}。`);
 }
+check(archiveDetailSource.includes('data-letter-size-select'), '信件阅读缺少字号调节控件。');
+check(archiveDetailSource.includes('record-view-data'), '详情页缺少浏览足迹记录数据。');
 
 if (notFoundPage) {
-	check(notFoundPage.html.includes('这页目前找不到'), '404 页面缺少清晰的不可访问说明。');
-	check(notFoundPage.html.includes('href="/archive/"'), '404 页面缺少返回档案列表的入口。');
-	check(notFoundPage.html.includes('href="/corrections/"'), '404 页面缺少纠错与撤下说明入口。');
+  check(notFoundPage.html.includes('这页目前找不到'), '404 页面缺少清晰的不可访问说明。');
+  check(notFoundPage.html.includes('href="/archive/"'), '404 页面缺少返回档案列表的入口。');
+  check(notFoundPage.html.includes('href="/corrections/"'), '404 页面缺少纠错与撤下说明入口。');
+  check(notFoundPage.html.includes('id="not-found-search-input"'), '404 页面缺少关键词搜索框。');
+  check(notFoundPage.html.includes('action="/archive/"'), '404 页面搜索框没有指向档案列表页。');
+  check(notFoundPage.html.includes('data-random-record-button'), '404 页面缺少「随手翻一件」随机浏览入口。');
+  check(
+    extractRandomIndexIds(notFoundPage.html).length === detailPages.length,
+    '404 页随机浏览索引与公开详情页数量不一致。',
+  );
 }
 
 if (correctionsPage) {
@@ -162,6 +183,13 @@ if (home) {
 	check([...featuredIds, ...recentIds].every((itemId) => likeIds.includes(itemId)), '首页点赞入口与展示档案不一致。');
 	check(pageLoadsScriptMarker(home, '/api/likes?items='), '首页缺少点赞计数程序。');
 	check(!home.html.includes('ARCHIVE · 001'), '首页重新出现已移除的装饰性档案编号。');
+	check(homeSource.includes('data-random-record-button'), '首页缺少「随手翻一件」随机浏览入口。');
+	check(homeSource.includes('data-view-history'), '首页缺少「您最近看过」浏览足迹区块。');
+	check(homeSource.includes('data-view-history-clear'), '首页浏览足迹缺少清空入口。');
+	check(
+		extractRandomIndexIds(home.html).length === detailPages.length,
+		'首页随机浏览索引与公开详情页数量不一致。',
+	);
 }
 
 if (archiveIndex) {
@@ -187,7 +215,7 @@ if (archiveIndex) {
 	check(archiveIndexSource.includes('compareRecentEntries'), '档案列表缺少统一的最近收录排序规则。');
 	check(archiveIndexSource.includes('item.core.created_date?.trim()'), '最近收录排序没有使用首次录入日期。');
 	check(archiveIndexSource.includes('.archive-list > li[hidden]'), '档案列表缺少筛选结果卡片的明确隐藏样式。');
-	for (const sortValue of ['recent', 'date-asc', 'date-desc', 'type', 'relevance']) {
+	for (const sortValue of ['recent', 'likes', 'date-asc', 'date-desc', 'type', 'relevance']) {
 		check(archiveIndex.html.includes(`value="${sortValue}"`), `档案列表缺少排序方式：${sortValue}。`);
 	}
 }
