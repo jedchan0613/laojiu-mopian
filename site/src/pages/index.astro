@@ -40,18 +40,12 @@ const categoryViewGroups = archiveCategories.map((category) => ({
 		.sort(compareViewsByCreatedDate),
 }));
 
-// 上方精选：每种访客分类至少有两件藏品时，取创建时间最新的两件，
-// 每件只展示首张图片；按分类交替排列，总数由实际符合条件的分类决定。
-const featuredViewsPerCategory = 2;
-const featuredViewGroups = categoryViewGroups.map(({ category, views }) => ({
-	category,
-	views: views.length >= featuredViewsPerCategory ? views.slice(0, featuredViewsPerCategory) : [],
-}));
-const featuredSlides = Array.from({ length: featuredViewsPerCategory }, (_, roundIndex) =>
-	featuredViewGroups.flatMap(({ category, views }) => {
-		const view = views[roundIndex];
-		const source = view?.images[0];
-		return view && source ? [{
+// 上方精选：每种访客分类取创建时间最新的一件，只展示首张图片，
+// 按分类顺序排列，总数由实际符合条件的分类决定（最多 7 张）。
+const featuredSlides = categoryViewGroups.flatMap(({ category, views }) => {
+	const view = views[0];
+	const source = view?.images[0];
+	return view && source ? [{
 		image: getResponsiveImage(source),
 		description: view.imageDescriptions[0],
 		itemId: view.id,
@@ -59,9 +53,8 @@ const featuredSlides = Array.from({ length: featuredViewsPerCategory }, (_, roun
 		dateDisplay: view.dateDisplay,
 		href: `/archive/${view.id}/`,
 		categorySlug: category.slug,
-		}] : [];
-	}),
-).flat();
+	}] : [];
+});
 const featuredImage = featuredSlides[0]?.image;
 const firstFeaturedSlide = featuredSlides[0];
 
@@ -250,7 +243,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 									data-home-recent-category={getArchiveCategorySlug(view.objectType)}
 								>
 									<span class="recent-record-image">
-										<span class="recent-record-index" aria-hidden="true">{String(index + 2).padStart(2, '0')}</span>
+										<span class="recent-record-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
 										{image && (
 											<img
 												src={image.src}
@@ -288,6 +281,11 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 <style>
 	.home {
+		/* 字间距统一分四档：紧凑 / 常规 / 宽松 / 展示，避免零散数值 */
+		--ls-tight: 0.05em;
+		--ls-text: 0.08em;
+		--ls-wide: 0.12em;
+		--ls-display: 0.22em;
 		width: min(100%, 65rem);
 		margin: 0 auto;
 	}
@@ -325,7 +323,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		font-size: clamp(2.25rem, 4.1vw, 3rem);
 		font-weight: 700;
 		line-height: 1.35;
-		letter-spacing: 0.06em;
+		letter-spacing: var(--ls-tight);
 		white-space: nowrap;
 	}
 
@@ -349,7 +347,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		font-size: clamp(0.875rem, 1.4vw, 1.125rem);
 		font-weight: 500;
 		line-height: 1.8;
-		letter-spacing: 0.22em;
+		letter-spacing: var(--ls-display);
 	}
 
 	.introduction p {
@@ -358,7 +356,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		font-size: clamp(1.03rem, 1.55vw, 1.22rem);
 		font-weight: 400;
 		line-height: 1.9;
-		letter-spacing: 0.055em;
+		letter-spacing: var(--ls-tight);
 	}
 
 	.introduction-line {
@@ -375,7 +373,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		margin-top: 22px;
 		padding: 0.7rem 1.2rem;
 		font-size: 0.9375rem;
-		letter-spacing: 0.1em;
+		letter-spacing: var(--ls-wide);
 	}
 
 	.hero-record-shell {
@@ -418,7 +416,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		display: block;
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: contain;
 		transition: transform 240ms ease;
 	}
 
@@ -433,7 +431,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		background: var(--site-accent);
 		font-size: var(--site-text-micro);
 		line-height: 1.4;
-		letter-spacing: 0.12em;
+		letter-spacing: var(--ls-wide);
 	}
 
 	.hero-record figcaption {
@@ -457,12 +455,12 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		display: inline-flex;
 		align-items: baseline;
 		gap: 0.3rem;
-		color: #686359;
+		color: #655f52;
 		font-family: Georgia, 'Times New Roman', serif;
 		font-size: var(--site-text-micro);
 		font-weight: 400;
 		line-height: 1.45;
-		letter-spacing: 0.04em;
+		letter-spacing: var(--ls-tight);
 		white-space: nowrap;
 	}
 
@@ -470,7 +468,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		color: var(--site-accent);
 		font-family: inherit;
 		font-size: 0.62rem;
-		letter-spacing: 0.08em;
+		letter-spacing: var(--ls-text);
 	}
 
 	.hero-record figcaption strong {
@@ -478,14 +476,14 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		font-size: clamp(0.96rem, 1.5vw, 1.1rem);
 		font-weight: 500;
 		line-height: 1.45;
-		letter-spacing: 0.05em;
+		letter-spacing: var(--ls-tight);
 	}
 
 	.hero-record-open {
 		color: var(--site-accent);
 		font-size: 0.74rem;
 		line-height: 1.5;
-		letter-spacing: 0.08em;
+		letter-spacing: var(--ls-text);
 	}
 
 	.hero-record:hover img,
@@ -497,6 +495,10 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	.hero-record:focus-visible figure {
 		border-color: rgba(154, 63, 46, 0.62);
 		box-shadow: 0.7rem 0.7rem 0 rgba(154, 63, 46, 0.11);
+	}
+
+	.hero-record:active figure {
+		transform: translateY(1px);
 	}
 
 	.hero-record:hover figcaption strong,
@@ -544,7 +546,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		font: inherit;
 		font-size: 0.72rem;
 		line-height: 1.35;
-		letter-spacing: 0.05em;
+		letter-spacing: var(--ls-tight);
 		transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
 	}
 
@@ -555,15 +557,19 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		border-color: rgba(154, 63, 46, 0.62);
 	}
 
+	.hero-carousel-controls > button:active {
+		transform: translateY(1px);
+	}
+
 	.hero-carousel-progress {
 		display: grid;
 		justify-items: center;
 		gap: 0.18rem;
 		min-width: 0;
-		color: #777166;
+		color: #655f52;
 		font-size: var(--site-text-micro);
 		line-height: 1.35;
-		letter-spacing: 0.04em;
+		letter-spacing: var(--ls-tight);
 		text-align: center;
 	}
 
@@ -607,7 +613,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 	.archive-entrances-heading p {
 		font-size: 0.88rem;
-		letter-spacing: 0.12em;
+		letter-spacing: var(--ls-wide);
 	}
 
 
@@ -625,7 +631,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		border: 1px solid #c7bfaf;
 		font-size: clamp(0.9rem, 1.4vw, 1rem);
 		line-height: 1.6;
-		letter-spacing: 0.12em;
+		letter-spacing: var(--ls-wide);
 		transition: border-color 160ms ease, box-shadow 160ms ease;
 	}
 
@@ -644,10 +650,10 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	}
 
 	.category-index {
-		color: #8a8377;
+		color: #655f52;
 		font-family: Georgia, 'Times New Roman', serif;
 		font-size: var(--site-text-micro);
-		letter-spacing: 0.08em;
+		letter-spacing: var(--ls-text);
 	}
 
 	.archive-entrances :global(.category-icon) {
@@ -659,13 +665,13 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 	.archive-entrances small {
 		flex: 0 0 auto;
-		color: #777166;
+		color: #655f52;
 		font-size: var(--site-text-micro);
-		letter-spacing: 0.08em;
+		letter-spacing: var(--ls-text);
 	}
 
 	.category-arrow {
-		color: #8a8377;
+		color: #655f52;
 		font-size: 0.8rem;
 		transition: transform 160ms ease;
 	}
@@ -690,7 +696,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	}
 
 	.archive-entrances .is-empty a {
-		color: #79746a;
+		color: #655f52;
 		background: rgba(238, 233, 220, 0.2);
 	}
 
@@ -705,8 +711,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	.archive-entrances .is-empty .category-index,
 	.archive-entrances .is-empty small,
 	.archive-entrances .is-empty :global(.category-icon) {
-		color: #918b80;
-		opacity: 0.72;
+		color: #655f52;
 	}
 
 	.archive-entrances .is-empty .category-arrow {
@@ -730,6 +735,10 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	.archive-entrances a:focus-visible .category-arrow {
 		opacity: 1;
 		transform: translateX(3px);
+	}
+
+	.archive-entrances a:active {
+		transform: translateY(1px);
 	}
 
 	.archive-entrances li:hover,
@@ -765,7 +774,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	.discovery-heading h2 {
 		font-size: clamp(1.45rem, 2.8vw, 2rem);
 		font-weight: 500;
-		letter-spacing: 0.08em;
+		letter-spacing: var(--ls-text);
 	}
 
 	.discovery-title {
@@ -781,9 +790,9 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	}
 
 	.recent-records small {
-		color: #777166;
+		color: #655f52;
 		font-size: 0.72rem;
-		letter-spacing: 0.08em;
+		letter-spacing: var(--ls-text);
 		line-height: 1.6;
 	}
 
@@ -842,14 +851,14 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		font-family: Georgia, 'Times New Roman', serif;
 		font-size: var(--site-text-micro);
 		line-height: 1;
-		letter-spacing: 0.08em;
+		letter-spacing: var(--ls-text);
 	}
 
 	.recent-records img {
 		display: block;
 		width: 100%;
 		height: clamp(11rem, 17vw, 13.5rem);
-		object-fit: cover;
+		object-fit: contain;
 		background: #e4dece;
 		transition: transform 220ms ease;
 	}
@@ -878,7 +887,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		color: var(--site-accent);
 		font-size: 0.74rem;
 		font-style: normal;
-		letter-spacing: 0.08em;
+		letter-spacing: var(--ls-text);
 		transition: transform 160ms ease;
 	}
 
@@ -896,6 +905,10 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	.recent-records a:hover em,
 	.recent-records a:focus-visible em {
 		transform: translateX(3px);
+	}
+
+	.recent-records a:active {
+		transform: translateY(1px);
 	}
 
 	.recent-record-actions {
@@ -949,6 +962,8 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		}
 
 		.hero-carousel-controls > button {
+			min-height: 44px;
+			min-width: 44px;
 			padding-right: 0.5rem;
 			padding-left: 0.5rem;
 		}
@@ -965,13 +980,11 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 		.masthead h1 {
 			font-size: clamp(2rem, 8.5vw, 2.375rem);
-			letter-spacing: 0.05em;
 		}
 
 		.masthead p {
 			margin-top: 5px;
 			font-size: 0.75rem;
-			letter-spacing: 0.15em;
 		}
 
 		.introduction p {
