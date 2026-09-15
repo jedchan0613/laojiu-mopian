@@ -36,6 +36,39 @@ test('新建档案仍直接进入原有编辑流程', async () => {
 	assert.match(startNewRecordBlock, /renderEditor\(\)/);
 });
 
+test('档案管理可按藏品时间从新到旧排序，并将未知年代放在最后', async () => {
+	const [html, script] = await Promise.all([
+		readFile(new URL('local-admin/public/index.html', projectRoot), 'utf8'),
+		readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8'),
+	]);
+
+	assert.match(html, /<option value="item-date-desc">按藏品时间<\/option>/);
+	const sortingStart = script.indexOf('const normalizeRecordItemDate =');
+	const sortingEnd = script.indexOf('const queryCodeLabel =');
+	assert.ok(sortingStart >= 0 && sortingEnd > sortingStart, '应能读取档案排序逻辑');
+	const createSortingHelpers = new Function(
+		'state',
+		'chineseCollator',
+		`${script.slice(sortingStart, sortingEnd)}\nreturn { sortedRecords };`,
+	);
+	const { sortedRecords } = createSortingHelpers(
+		{ recordSort: 'item-date-desc' },
+		new Intl.Collator('zh-CN'),
+	);
+	const records = [
+		{ core: { item_id: 'LJM-D', date_display: '年代未知' } },
+		{ core: { item_id: 'LJM-B', date_display: '约1999年' } },
+		{ core: { item_id: 'LJM-C', date_display: '年代未知', date_end: '1980-12-31' } },
+		{ core: { item_id: 'LJM-A', date_display: '2008年', date_start: '2001-06-01' } },
+		{ core: { item_id: 'LJM-E', date_display: '2001年' } },
+	];
+
+	assert.deepEqual(
+		sortedRecords(records).map((record) => record.core.item_id),
+		['LJM-A', 'LJM-E', 'LJM-B', 'LJM-C', 'LJM-D'],
+	);
+});
+
 test('保存发布支持取消，并使用轻量图片与按需巡检', async () => {
 	const [html, script, server] = await Promise.all([
 		readFile(new URL('local-admin/public/index.html', projectRoot), 'utf8'),
