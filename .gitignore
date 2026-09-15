@@ -159,3 +159,6 @@ outputs/
 
 # 投稿内容、联系方式、审核记录仅供私密管理，不能提交到代码仓库。
 local-admin/submissions/
+
+# TRAE 本地 HTML 预览分享包属于生成产物（local-admin/public/ 源文件的打包副本），不入库；迭代直接修改源文件
+.trae-html-share-packages/
