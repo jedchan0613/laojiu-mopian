@@ -109,6 +109,37 @@ test('字段旁直接标红错误并在发布失败时定位到第一个出错�
 	assert.doesNotMatch(publishBlock, /state\.activeTab = 'preview';/);
 });
 
+test('字段提示隐藏内部维度编号并去除重复操作说明', async () => {
+	const [script, server, styles] = await Promise.all([
+		readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8'),
+		readFile(new URL('local-admin/server.mjs', projectRoot), 'utf8'),
+		readFile(new URL('local-admin/public/styles.css', projectRoot), 'utf8'),
+	]);
+
+	// 必填错误只说用户需要做什么，不再把 D02、D06 等内部维度编号重复显示。
+	assert.doesNotMatch(script, /message:\s*`\$\{dimension\.dimension_code\}\s*·/);
+	assert.doesNotMatch(server, /message:\s*`\$\{dimension\.dimension_code\}\s*·/);
+	assert.match(script, /message:\s*`\$\{dimension\.name\}至少填写一项。`/);
+	assert.match(server, /message:\s*`\$\{dimension\.name\}至少填写一项。`/);
+	// 一般编辑卡片和查询摘要只显示中文名称；编码生成逻辑仍保留底层数据关系。
+	assert.doesNotMatch(script, /<summary><span>\$\{escapeHtml\(dimension\.dimension_code\)\}/);
+	assert.doesNotMatch(script, /escapeHtml\(entry\.dimension_code\)\}\} ·/);
+	assert.doesNotMatch(script, /这是 Excel 中已打勾/);
+	// 复选框和逐行输入已经接管格式，不再提示用户使用英文分号。
+	assert.match(script, /!\/英文分号\|分号分隔\/\.test\(part\)/);
+	assert.match(script, /part !== '规范名称'/);
+	// 每个字段只显示一条简短提示：错误优先，不与普通帮助同时堆叠。
+	assert.match(script, /const briefFieldHelpOverrides = new Map/);
+	assert.match(script, /const briefFieldError = \(messages\) =>/);
+	assert.match(script, /const notes = fieldIssues\.length[\s\S]{0,500}: help\.text/);
+	assert.doesNotMatch(script, /escapeHtml\(fieldIssues\.join\('；'\)\)/);
+	// 普通表单不再展示英文内部字段名，错误时也不再把整段字段标题染红。
+	assert.doesNotMatch(script, /fieldVisibilityBadge\(scope, fieldCode\)\}<small>/);
+	assert.match(styles, /\.form-field\.is-invalid > \.field-label \{\s*color: #4d4941;/s);
+	assert.match(styles, /\.field-help \{[\s\S]{0,260}white-space: nowrap;/);
+	assert.match(styles, /\.field-error \{[\s\S]{0,260}white-space: nowrap;/);
+});
+
 test('停止编辑约半分钟后自动保存草稿并更新状态栏', async () => {
 	const script = await readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8');
 

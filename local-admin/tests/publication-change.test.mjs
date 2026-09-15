@@ -97,7 +97,7 @@ test('对照逻辑：识别基本信息、专属资料、公开内容与图片�
 	const typeEntry = entries.find((entry) => entry.code === 'PC01.postcard_type');
 	assert.equal(typeEntry.from, 'PT-PHO');
 	assert.equal(typeEntry.to, 'PT-GRT');
-	assert.match(typeEntry.label, /PC01 · 明信片类型/);
+	assert.equal(typeEntry.label, '明信片类型');
 	// 空值与未填写视为相同
 	assert.equal(helper.sameCompareValue('', undefined), true);
 	assert.equal(helper.sameCompareValue([], undefined), true);

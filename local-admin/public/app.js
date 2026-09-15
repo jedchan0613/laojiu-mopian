@@ -280,21 +280,21 @@ const administrativeRegionFieldState = (fieldCode, value) => {
 	const provinceEntry = currentAdministrativeProvince();
 	if (fieldCode === 'province') return {
 		placeholder: '选择或输入省级行政区',
-		message: '选择省级后，市级选项会自动缩小；历史地名仍可直接输入。',
+		message: '选定省级后，市级会自动联动；历史地名可直接输入。',
 		warning: false,
 	};
 	if (fieldCode === 'city') {
 		if (!provinceEntry) return {
 			placeholder: '请先选择省级',
-			message: '请先选择省级，再从对应的市级范围中选择；历史地名仍可直接输入。',
+			message: '请先选择省级；历史地名可直接输入。',
 			warning: Boolean(value && state.current?.core?.province),
 		};
 		const allowed = administrativeCitiesForProvince(provinceEntry);
 		return {
 			placeholder: `选择${provinceEntry.province}下属市级`,
 			message: value && !allowed.includes(value)
-				? `“${value}”不属于当前省级参照，请重新选择或确认它是历史地名。`
-				: `当前只提示${provinceEntry.province}下属市级；历史地名仍可直接输入。`,
+				? `“${value}”不在当前参照中，请确认是否为历史地名。`
+				: `仅显示${provinceEntry.province}下属市级；历史地名可直接输入。`,
 			warning: Boolean(value && !allowed.includes(value)),
 		};
 	}
@@ -310,10 +310,10 @@ const administrativeRegionFieldState = (fieldCode, value) => {
 		return {
 			placeholder: allowed.length ? `选择${parentLabel}下属区县` : '可输入区县或历史地名',
 			message: value && allowed.length && !allowed.includes(value)
-				? `“${value}”不属于当前上级行政区参照，请重新选择或确认它是历史地名。`
+				? `“${value}”不在当前参照中，请确认是否为历史地名。`
 				: allowed.length
-					? `当前只提示${parentLabel}下属区县；历史地名仍可直接输入。`
-					: '当前上级没有下一级参照，可留空或输入历史地名。',
+					? `仅显示${parentLabel}下属区县；历史地名可直接输入。`
+					: '没有下一级参照，可留空或输入历史地名。',
 			warning: Boolean(value && allowed.length && !allowed.includes(value)),
 		};
 	}
@@ -345,9 +345,9 @@ const basicFieldRule = (fieldCode) => {
 	}
 	if (!matches.length) return { required: false, context: '' };
 	const required = matches.some((match) => match.isCodeField);
-	const context = matches.map(({ dimension, isCodeField }) =>
-		`${dimension.dimension_code} · ${dimension.name}：${isCodeField ? '对象专属必填编码字段' : '对象专属必填维度，同组至少填写一项'}`).join('；');
-	return { required, context };
+	// 分组标题与字段旁的“必填”标记已经说明填写要求。这里不再把内部维度编号
+	// 和同一条必填规则重复铺到每个字段下方。
+	return { required, context: '' };
 };
 
 const currentCollectionRules = () =>
@@ -387,7 +387,7 @@ const getCollectionCodeResult = () => {
 				code: `collection_code_required_${field.field_code}`,
 				tab: 'basic',
 				field: field.field_code,
-				message: `${field.name ?? humanFieldLabel(field.field_code)}是藏品编码组成字段，必须填写。`,
+				message: `${field.name ?? '该字段'}是藏品编码组成字段，必须填写。`,
 			});
 			continue;
 		}
@@ -399,7 +399,7 @@ const getCollectionCodeResult = () => {
 				code: `collection_code_invalid_${field.field_code}`,
 				tab: 'basic',
 				field: field.field_code,
-				message: `${field.name ?? humanFieldLabel(field.field_code)}无法生成有效的藏品编码片段。`,
+				message: `${field.name ?? '该字段'}无法生成有效的藏品编码片段。`,
 			});
 			continue;
 		}
@@ -416,7 +416,7 @@ const getCollectionCodeResult = () => {
 				code: `collection_required_${dimension.dimension_code}`,
 				tab: allCore ? 'basic' : 'specific',
 				field: issueField.field_code,
-				message: `${dimension.dimension_code} · ${dimension.name}为必填维度，请至少填写一项。`,
+				message: `${dimension.name}至少填写一项。`,
 			});
 		}
 		const dimensionCodes = [];
@@ -428,7 +428,7 @@ const getCollectionCodeResult = () => {
 					code: `collection_code_required_${dimension.dimension_code}_${codeField.field_code}`,
 					tab: codeField.scope === 'core' ? 'basic' : 'specific',
 					field: codeField.field_code,
-					message: `${dimension.dimension_code} · ${dimension.name}需要填写可编码的${humanFieldLabel(codeField.field_code)}。`,
+					message: `${dimension.name}还需填写${humanFieldLabel(codeField.field_code)}。`,
 				});
 				continue;
 			}
@@ -439,7 +439,7 @@ const getCollectionCodeResult = () => {
 						code: `collection_code_invalid_${dimension.dimension_code}_${codeField.field_code}_${code}`,
 						tab: codeField.scope === 'core' ? 'basic' : 'specific',
 						field: codeField.field_code,
-						message: `${dimension.dimension_code} · ${dimension.name}中的 ${code} 未匹配正式代码字典。`,
+						message: `${dimension.name}中的“${code}”不是有效选项，请重新选择。`,
 					});
 					continue;
 				}
@@ -506,11 +506,11 @@ const renderCollectionCodeLogic = () => {
 	</li>`;
 	return `<details class="code-logic-details"><summary><span>编码生成逻辑</span><small>${breakdown.length + 2} 个组成项 · 点击查看</small></summary>
 		<div class="code-logic-content"><div class="code-logic-intro">
-		<p>第一段写入藏品大类的正式对象类型代码，例如明信片为 <code>PST</code>；第二段写入基本信息中必填的显示年代，例如 <code>1979</code>。显示年代会去除空格，并把斜线、下划线等分隔符规范为短横线。随后只取 Excel 打勾维度中能够匹配正式代码字典的必填字段；正式代码去掉第一个短横线及其前缀，例如 <code>PT-VIEW</code> 取 <code>VIEW</code>。不写入 <code>PC01</code> 等维度编号，各段用 <code>_</code> 连接，同一维度内多个代码仍用 <code>+</code>，不包含永久编号。</p></div>
+		<p>收藏品编码按“类型、显示年代、必填属性”依次生成；系统会自动整理分隔符并缩短属性代码。编码不包含永久编号，也不需要手工填写。</p></div>
 		<ol class="code-logic-list">${objectTypeDetail}${dateDisplayDetail}${breakdown.map((dimension) => `<li>
-			<div class="code-dimension-heading"><strong>${escapeHtml(dimension.dimensionCode)} · ${escapeHtml(dimension.dimensionName)}</strong>
+			<div class="code-dimension-heading"><strong>${escapeHtml(dimension.dimensionName)}</strong>
 			<code>${escapeHtml(dimension.segment || '待填写')}</code></div>
-			<ul>${dimension.fields.map((field) => `<li><span>${escapeHtml(field.fieldName)} <small>${escapeHtml(field.fieldCode)} · ${escapeHtml(field.dictionaryKey)}</small></span>
+			<ul>${dimension.fields.map((field) => `<li><span>${escapeHtml(field.fieldName)}</span>
 				<strong>${field.selections.length ? field.selections.map((selection) =>
 					`${escapeHtml(selection.label)}（${escapeHtml(selection.code)} → ${escapeHtml(selection.shortCode)}）`).join('、') : '待填写'}</strong></li>`).join('')}</ul>
 		</li>`).join('')}</ol>${breakdown.length ? '' : '<p class="code-logic-empty">当前对象类型没有专属编码维度，因此收藏品编码由大类代码和显示年代组成。</p>'}</div></details>`;
@@ -883,7 +883,7 @@ const renderQueryDetails = (record) => {
 	].filter(([, value]) => value);
 	const specificRows = (record.specific_summary ?? []).map((entry) => {
 		const value = Array.isArray(entry.value) ? entry.value.join('、') : entry.value;
-		return `<div><dt>${escapeHtml(entry.dimension_code)} · ${escapeHtml(humanFieldLabel(entry.field_code))}</dt><dd>${escapeHtml(value)}</dd></div>`;
+		return `<div><dt>${escapeHtml(humanFieldLabel(entry.field_code))}</dt><dd>${escapeHtml(value)}</dd></div>`;
 	}).join('');
 	const imageRows = record.images.length ? record.images.map((image, index) => `<li>
 		<div><strong>第 ${index + 1} 张 · ${escapeHtml(image.filename)}</strong><span>${escapeHtml(image.description || '图片说明待补')}</span></div>
@@ -1753,6 +1753,56 @@ const buildFieldIssueMap = (tab) => {
 	return map;
 };
 
+const briefFieldHelpOverrides = new Map([
+	['object_type', '先选首页分类，必要时再选精确类型。'],
+	['accession_date', '实际接收或购入日期（YYYY-MM-DD）。'],
+	['title', '题名应简明可检索；推测内容注明“约／疑似／未知”。'],
+	['batch_id', '同批获得或同一原始组合使用相同编号。'],
+	['date_display', '例如“1989”“约1985年”或“年代未知”。'],
+	['physical_location', '填写柜、盒、夹或保护袋等存放位置。'],
+	['acquisition_method', '记录藏品如何进入本档案。'],
+	['source_name', '填写姓名、摊主代称、机构或平台。'],
+	['source_place', '填写市场、家庭、商店或线上平台。'],
+	['provenance_notes', '简要记录保存、转手或流传经历。'],
+	['notes', '记录其他必要说明。'],
+	['description', '用一两句话概括藏品内容。'],
+	['transcription', '按原件录入；敏感内容不得公开。'],
+	['revision_note', '仅在公开内容有实质变化时简要说明。'],
+	['tags', '填写便于检索的关键词。'],
+]);
+
+const briefFieldHelp = ({ fieldCode, rawHelp, multi, hasOptions }) => {
+	const override = briefFieldHelpOverrides.get(fieldCode);
+	if (override) return { text: override, full: String(rawHelp ?? '').trim() };
+	const parts = String(rawHelp ?? '').split(/[；;]/).map((part) => part.trim()).filter(Boolean)
+		.filter((part) => part !== '规范名称')
+		.filter((part) => !/英文分号|分号分隔/.test(part))
+		.filter((part) => !(multi && hasOptions && part === '可多选'))
+		.filter((part) => !/^所有对象必填$/.test(part));
+	if (!parts.length) {
+		return { text: multi && !hasOptions ? '多项内容请每行填写一项。' : '', full: '' };
+	}
+	const selected = [parts[0]];
+	const safetyPart = parts.slice(1).find((part) => /隐私|敏感|不得|不要/.test(part));
+	if (safetyPart) selected.push(safetyPart);
+	else if (parts[1] && `${parts[0]}；${parts[1]}`.length <= 38) selected.push(parts[1]);
+	const combined = selected.join('；');
+	if (combined.length <= 42) return { text: combined, full: String(rawHelp ?? '').trim() };
+	const lead = combined.slice(0, 42);
+	const breakAt = Math.max(lead.lastIndexOf('，'), lead.lastIndexOf('、'));
+	return {
+		text: `${combined.slice(0, breakAt >= 24 ? breakAt : 40)}…`,
+		full: String(rawHelp ?? '').trim(),
+	};
+};
+
+const briefFieldError = (messages) => {
+	const message = String(messages[0] ?? '').trim();
+	if (/至少填写一项/.test(message)) return '本组至少填写一项。';
+	if (/尚未填写|必须填写|还需填写|还缺少/.test(message)) return '请填写此项。';
+	return message.length > 48 ? `${message.slice(0, 46)}…` : message;
+};
+
 const renderField = ({
 	scope = 'core', dimension = '', fieldCode, definition, value, required = false, readonly = false,
 	context = '', dictionaryKey = null,
@@ -1808,13 +1858,23 @@ const renderField = ({
 		control = `<input class="field-control" type="${inputType}"${stepAttribute}${dateAttributes} ${attributes}${requiredControlAttribute} value="${escapeHtml(value ?? '')}" />`;
 	}
 	const wrapperTag = fieldCode === 'object_type' ? 'div' : 'label';
-	const help = fieldCode === 'object_type'
+	const rawHelp = fieldCode === 'object_type'
 		? '首页和管理端共用同一套七类；一个分类对应多个正式类型时，再选择精确类型。'
 		: definition?.rule || (multi && !options.length ? '多项内容请每行填写一项。' : '');
-	const errorNote = fieldIssues.length ? `<span class="field-error" role="alert">${escapeHtml(fieldIssues.join('；'))}</span>` : '';
-	const notes = `${errorNote}${context ? `<span class="field-context">${escapeHtml(context)}</span>` : ''}${regionState?.message ? `<span class="field-context${regionState.warning ? ' is-warning' : ''}">${escapeHtml(regionState.message)}</span>` : ''}${help ? `<span class="field-help">${escapeHtml(help)}</span>` : ''}`;
+	const help = briefFieldHelp({ fieldCode, rawHelp, multi, hasOptions: options.length > 0 });
+	// 每个字段最多显示一条提示：有错误时只显示错误；否则依次选择联动提示、
+	// 分组提示或简短帮助，避免红色和灰色说明同时堆叠。
+	const notes = fieldIssues.length
+		? `<span class="field-error" role="alert">${escapeHtml(briefFieldError(fieldIssues))}</span>`
+		: regionState?.message
+			? `<span class="field-context${regionState.warning ? ' is-warning' : ''}">${escapeHtml(regionState.message)}</span>`
+			: context
+				? `<span class="field-context">${escapeHtml(context)}</span>`
+				: help.text
+					? `<span class="field-help"${help.full && help.full !== help.text ? ` title="${escapeHtml(help.full)}"` : ''}>${escapeHtml(help.text)}</span>`
+					: '';
 	return `<${wrapperTag} class="form-field ${wide ? 'is-wide' : ''} ${fieldCode === 'object_type' ? 'is-object-type' : ''}${fieldIssues.length ? ' is-invalid' : ''}">
-		<span class="field-label">${escapeHtml(label)}${required ? '<span class="required-mark">必填</span>' : ''}${fieldVisibilityBadge(scope, fieldCode)}<small>${escapeHtml(fieldCode)}</small></span>
+		<span class="field-label">${escapeHtml(label)}${required ? '<span class="required-mark">必填</span>' : ''}${fieldVisibilityBadge(scope, fieldCode)}</span>
 		${control}${notes ? `<span class="field-notes">${notes}</span>` : ''}
 	</${wrapperTag}>`;
 };
@@ -1868,7 +1928,7 @@ const renderBasic = () => {
 		left.originalIndex - right.originalIndex);
 	const moreFields = moreFieldGroups.map(({ section, fields, requiredCount, groupRequirements }) => {
 		const requiredBadge = groupRequirements.length
-			? `<strong class="more-fields-required" title="${escapeHtml(groupRequirements.map((rule) => `${rule.dimension_code} · ${rule.name}`).join('；'))}">必填 · 至少一项</strong>`
+			? `<strong class="more-fields-required" title="${escapeHtml(groupRequirements.map((rule) => rule.name).join('；'))}">必填 · 至少一项</strong>`
 			: requiredCount
 			? `<strong class="more-fields-required">必填 ${requiredCount} 项</strong>`
 			: '';
@@ -1889,10 +1949,10 @@ const renderBasic = () => {
 		}
 		: undefined;
 	return `<section class="form-section">
-		<div class="section-heading"><div><h3>常用档案信息</h3><p>必填字段已排在前面；永久编号首次保存后不变，收藏品编码由正式对象类型、显示年代和必填属性代码组成。</p></div></div>
-	<div class="form-grid common-info-grid"><label class="form-field is-item-id"><span class="field-label">永久编号 ${fieldVisibilityBadge('core', 'item_id')} <small>item_id</small></span>
+		<div class="section-heading"><div><h3>常用档案信息</h3><p>必填项已排在前面；永久编号首次保存后固定，收藏品编码自动生成。</p></div></div>
+	<div class="form-grid common-info-grid"><label class="form-field is-item-id"><span class="field-label">永久编号 ${fieldVisibilityBadge('core', 'item_id')}</span>
 	<input type="text" value="${escapeHtml(state.current.core.item_id || '尚未分配')}" readonly /></label>
-	<label class="form-field is-code-output"><span class="field-label">收藏品编码 ${fieldVisibilityBadge('core', 'collection_code')} <small>collection_code</small></span>
+	<label class="form-field is-code-output"><span class="field-label">收藏品编码 ${fieldVisibilityBadge('core', 'collection_code')}</span>
 		<input type="text" data-collection-code-output value="${escapeHtml(state.current.core.collection_code || '请先填写收藏品编码组成字段')}" readonly />
 		<span class="field-notes"><span class="field-help">系统自动生成，不需要手工填写。</span></span></label>
 		${objectTypeField}${primary}</div>
@@ -1914,7 +1974,7 @@ const renderBasic = () => {
 		})}
 		${renderField({ scope: 'public', fieldCode: 'tags', value: state.current.public_view.tags })}</div>
 	</section>
-	<section class="form-section"><div class="section-heading"><div><h3>更多通用字段</h3><p>通用内容只在这里填写；对象专属必填规则会直接标在对应字段上，不再到专属页重复填写。</p></div></div>${moreFields}</section>`;
+	<section class="form-section"><div class="section-heading"><div><h3>更多通用字段</h3><p>通用信息只填写一次；含必填项的分组已排在前面。</p></div></div>${moreFields}</section>`;
 };
 
 const renderImages = () => {
@@ -1999,7 +2059,6 @@ const renderSpecific = () => {
 		value: collectionRuleFieldValue(dimension.dimension_code, codeField),
 		required: true,
 		readonly: codeField.scope === 'core',
-		context: `${dimension.dimension_code} · ${dimension.name} · 代码字典：${codeField.dictionary_key}`,
 		dictionaryKey: codeField.dictionary_key,
 	})).join('');
 	const orderedDimensions = [...standard.dimensions].sort((left, right) => {
@@ -2050,14 +2109,19 @@ const renderSpecific = () => {
 			? '<span class="dimension-required">必填 · 至少一项</span>'
 			: localCodeFieldCount ? '<span class="dimension-code-moved">编码字段已前置</span>'
 				: satisfiedByBasicField ? '<span class="dimension-code-moved">必填 · 由基本信息满足</span>' : '';
-		return `<details class="dimension-card ${requiresOneField ? 'is-required' : ''}" ${requiresOneField || filled ? 'open' : ''}><summary><span>${escapeHtml(dimension.dimension_code)} · ${escapeHtml(dimension.name)}${filled ? ` · 已填 ${filled} 项` : ''}</span>${badge}</summary>
-		<div class="dimension-content">${requiresOneField ? '<p class="required-guidance">这是 Excel 中已打勾但当前没有正式字典代码的必填维度，其中至少填写一项。</p>' : ''}<p class="field-help">${escapeHtml(dimension.rule)}；不确定时：${escapeHtml(dimension.uncertainty_rule)}</p>
+		const guidance = [dimension.rule, dimension.uncertainty_rule]
+			.map((text) => String(text ?? '').trim()).filter(Boolean)
+			.filter((text, index, entries) => entries.findIndex((entry) =>
+				entry.replace(/[\s，。；：、]/g, '') === text.replace(/[\s，。；：、]/g, '')) === index)
+			.join('；');
+		return `<details class="dimension-card ${requiresOneField ? 'is-required' : ''}" ${requiresOneField || filled ? 'open' : ''}><summary><span>${escapeHtml(dimension.name)}${filled ? ` · 已填 ${filled} 项` : ''}</span>${badge}</summary>
+		<div class="dimension-content">${guidance ? `<p class="field-help">${escapeHtml(guidance)}</p>` : ''}
 		<div class="form-grid">${fields}</div></div></details>`;
 	}).join('');
-	return `<section class="form-section"><div class="section-heading"><div><h3>${escapeHtml(specificSchemaLabels[schema] ?? standard.system)}</h3><p>这里只填写当前类型独有的信息；通用字段统一回到“基本信息”，此处不再重复显示。</p></div></div>
+	return `<section class="form-section"><div class="section-heading"><div><h3>${escapeHtml(specificSchemaLabels[schema] ?? standard.system)}</h3><p>这里只填写当前类型独有的信息，通用信息不再重复显示。</p></div></div>
 		<section class="collection-code-fields"><div class="collection-code-heading"><div><h4>收藏品编码组成字段</h4><p>以下字段全部必填，修改后会立即重新生成编码。</p></div><output data-collection-code-output>${escapeHtml(state.current.core.collection_code || '请先填写收藏品编码组成字段')}</output></div>
 		<div class="form-grid">${encodingFields}</div><aside class="collection-code-logic is-inline" data-collection-code-logic>${renderCollectionCodeLogic()}</aside></section>
-		<div class="section-heading secondary"><div><h4>其他属性字段</h4><p>其余必填维度已排在普通可选维度前面；只填写有依据的内容。</p></div></div>${cards}</section>`;
+		<div class="section-heading secondary"><div><h4>其他属性字段</h4><p>含必填项的分组已排在前面；只填写有依据的内容。</p></div></div>${cards}</section>`;
 };
 
 const renderPrivacy = () => {
@@ -2429,8 +2493,9 @@ const publicationChangeEntries = () => {
 		for (const fieldCode of new Set([...Object.keys(officialFields), ...Object.keys(currentFields)])) {
 			if (sameCompareValue(officialFields[fieldCode], currentFields[fieldCode])) continue;
 			const dimensionName = dimensionNames.get(dimensionCode);
+			const fieldLabel = humanFieldLabel(fieldCode);
 			append('specific',
-				`${humanFieldLabel(fieldCode)}（${dimensionCode}${dimensionName ? ` · ${dimensionName}` : ''}）`,
+				dimensionName && dimensionName !== fieldLabel ? `${fieldLabel}（${dimensionName}）` : fieldLabel,
 				`${dimensionCode}.${fieldCode}`, officialFields[fieldCode], currentFields[fieldCode]);
 		}
 	}
@@ -2483,7 +2548,7 @@ const renderPublicationChangeReview = (title = '本次修改对照') => {
 			<tbody>${groups.map(([group, label]) => `
 				<tr class="publication-change-group"><td colspan="3">${escapeHtml(label)}</td></tr>
 				${entries.filter((entry) => entry.group === group).map((entry) => `
-				<tr><th scope="row">${escapeHtml(entry.label)}<small>${escapeHtml(entry.code)}</small></th>
+				<tr><th scope="row">${escapeHtml(entry.label)}</th>
 					<td>${escapeHtml(compareValueText(entry.from))}</td>
 					<td>${escapeHtml(compareValueText(entry.to))}</td></tr>`).join('')}`).join('')}
 			</tbody></table>` : ''}
@@ -2538,7 +2603,6 @@ const renderPreview = () => {
 			: undefined,
 	].filter(Boolean);
 	const specificFacts = pvSpecificMetadataFacts(record);
-	const specificTechnicalFacts = pvSpecificMetadataFacts(record, { includeCodes: true });
 	const researchManagementFacts = compactFacts([
 		{ label: '永久编号', value: view.id },
 		{ label: '收藏品编码', value: view.collectionCode },
@@ -2555,7 +2619,7 @@ const renderPreview = () => {
 		{ label: '权利状态', value: pvDisplayCode(record.core.rights_status) },
 		{ label: '利用状态', value: pvDisplayCode(record.core.use_status) },
 		{ label: '档案状态', value: pvDisplayCode(record.core.record_status) },
-		...specificTechnicalFacts.map((fact) => ({ label: `专属维度 · ${fact.label}`, value: fact.value, code: fact.code })),
+		...specificFacts.map((fact) => ({ label: `专属信息 · ${fact.label}`, value: fact.value })),
 	]);
 	const galleryImages = view.images.map((src, index) => ({
 		src,

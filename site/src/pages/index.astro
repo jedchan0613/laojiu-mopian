@@ -208,10 +208,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			<header class="view-history-header">
 				<div class="view-history-title">
 					<SiteIcon name="compass" />
-					<div>
-						<h2 id="view-history-heading">您最近看过</h2>
-						<p>继续上次的浏览 · 足迹只保存在这台设备的浏览器里</p>
-					</div>
+					<h2 id="view-history-heading">最近看过</h2>
 				</div>
 				<button class="view-history-clear" type="button" data-view-history-clear>清空足迹</button>
 			</header>
@@ -311,7 +308,9 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			historySection.hidden = entries.length === 0;
 			historyList.replaceChildren(...entries.map((entry) => {
 				const item = document.createElement('li');
+				item.className = 'view-history-item';
 				const link = document.createElement('a');
+				link.className = 'view-history-link';
 				link.href = `/archive/${entry.id}/`;
 				link.setAttribute('aria-label', `继续查看档案：${entry.title}`);
 				const image = document.createElement('span');
@@ -459,7 +458,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 	.view-history {
 		margin: clamp(1.9rem, 3.8vw, 2.75rem) 0 0;
-		padding: 1.05rem clamp(1rem, 2.2vw, 1.25rem) 1.2rem;
+		padding: 0.72rem clamp(0.85rem, 2vw, 1.05rem) 0.78rem;
 		background: rgba(224, 215, 197, 0.3);
 		border-left: 3px solid var(--site-accent);
 	}
@@ -474,36 +473,28 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	.view-history-title {
 		display: flex;
 		align-items: center;
-		gap: 0.65rem;
+		gap: 0.5rem;
 		min-width: 0;
 	}
 
 	.view-history-title > :global(.site-icon) {
 		flex: 0 0 auto;
-		width: 1.2rem;
-		height: 1.2rem;
+		width: 1.1rem;
+		height: 1.1rem;
 		color: var(--site-accent);
 	}
 
 	.view-history-title h2 {
 		margin: 0;
-		font-size: 1rem;
+		font-size: 0.95rem;
 		font-weight: 500;
 		letter-spacing: var(--ls-wide);
-	}
-
-	.view-history-title p {
-		margin: 0.22rem 0 0;
-		color: #655f52;
-		font-size: 0.74rem;
-		line-height: 1.55;
-		letter-spacing: var(--ls-text);
 	}
 
 	.view-history-clear {
 		flex: 0 0 auto;
 		min-height: 44px;
-		padding: 0.45rem 0.85rem;
+		padding: 0.35rem 0.72rem;
 		color: #6d675c;
 		background: transparent;
 		border: 1px solid #b9b1a0;
@@ -530,79 +521,91 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	.view-history-list {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: 0.9rem;
-		margin: 0.95rem 0 0;
+		gap: 0.65rem;
+		margin: 0.45rem 0 0;
 		padding: 0;
 		list-style: none;
 	}
 
-	.view-history-list a {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
-		gap: 0.7rem;
-		align-items: center;
-		min-height: 44px;
-		padding: 0.35rem;
-		color: inherit;
-		text-decoration: none;
+	/* 列表项由浏览器脚本动态生成，必须用全局子选择器，避免 Astro 的局部样式
+	   因动态节点没有页面标记而失效，让原图按自身尺寸撑破版面。 */
+	.view-history-list :global(.view-history-item) {
+		min-width: 0;
+		overflow: hidden;
 	}
 
-	.view-history-list a:hover strong,
-	.view-history-list a:focus-visible strong {
+	.view-history-list :global(.view-history-link) {
+		display: grid;
+		grid-template-columns: 3rem minmax(0, 1fr);
+		gap: 0.6rem;
+		align-items: center;
+		min-height: 44px;
+		padding: 0.15rem 0;
+		color: inherit;
+		text-decoration: none;
+		overflow: hidden;
+	}
+
+	.view-history-list :global(.view-history-link:hover strong),
+	.view-history-list :global(.view-history-link:focus-visible strong) {
 		text-decoration: underline;
 		text-decoration-thickness: 1px;
 		text-underline-offset: 0.32em;
 	}
 
-	.view-history-list a:active {
+	.view-history-list :global(.view-history-link:active) {
 		transform: translateY(1px);
 	}
 
-	.view-history-image {
+	.view-history-list :global(.view-history-image) {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 3.4rem;
-		height: 3.4rem;
+		width: 3rem;
+		height: 3rem;
+		max-width: 100%;
 		overflow: hidden;
 		background: #e7dfcd;
 		border: 1px solid #c4baa7;
 	}
 
-	.view-history-image img {
+	.view-history-list :global(.view-history-image img) {
+		display: block;
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
+		object-position: center;
 	}
 
-	.view-history-copy {
+	.view-history-list :global(.view-history-copy) {
 		display: grid;
-		gap: 0.12rem;
+		gap: 0;
 		min-width: 0;
-	}
-
-	.view-history-copy small {
-		color: #655f52;
-		font-size: 0.7rem;
-		letter-spacing: var(--ls-text);
-		line-height: 1.5;
-	}
-
-	.view-history-copy strong {
 		overflow: hidden;
-		font-size: 0.88rem;
+	}
+
+	.view-history-list :global(.view-history-copy small) {
+		color: #655f52;
+		font-size: 0.68rem;
+		letter-spacing: var(--ls-text);
+		line-height: 1.35;
+	}
+
+	.view-history-list :global(.view-history-copy strong) {
+		overflow: hidden;
+		font-size: 0.84rem;
 		font-weight: 500;
-		line-height: 1.5;
+		line-height: 1.35;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.view-history-copy em {
+	.view-history-list :global(.view-history-copy em) {
 		color: var(--site-accent);
-		font-size: 0.72rem;
+		font-size: 0.69rem;
 		font-style: normal;
 		letter-spacing: var(--ls-text);
-		line-height: 1.5;
+		line-height: 1.35;
 	}
 
 	.hero-record-toolbar {
@@ -1236,18 +1239,17 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 		.view-history {
 			margin: 1.5rem 0 0;
-			padding: 0.95rem 0.9rem 1.05rem;
+			padding: 0.68rem 0.75rem 0.72rem;
 		}
 
 		.view-history-header {
-			align-items: flex-start;
-			flex-direction: column;
-			gap: 0.55rem;
+			align-items: center;
+			gap: 0.6rem;
 		}
 
 		.view-history-clear {
-			align-self: flex-end;
-			margin-top: -0.35rem;
+			align-self: center;
+			margin-top: 0;
 		}
 
 		.view-history-list {
@@ -1338,6 +1340,12 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 		.recent-records em {
 			display: none;
+		}
+	}
+
+	@media (max-width: 430px) {
+		.view-history-list {
+			grid-template-columns: 1fr;
 		}
 	}
 
