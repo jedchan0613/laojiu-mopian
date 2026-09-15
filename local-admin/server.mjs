@@ -943,7 +943,7 @@ const getCollectionCodeResult = (record, collectionCodeRules, codeDictionary) =>
 					code: `collection_code_required_${field.field_code}`,
 					tab: 'basic',
 					field: field.field_code,
-					message: `${field.name ?? field.field_code}是藏品编码组成字段，必须填写。`,
+					message: `${field.name ?? '该字段'}是藏品编码组成字段，必须填写。`,
 				});
 			}
 			continue;
@@ -956,7 +956,7 @@ const getCollectionCodeResult = (record, collectionCodeRules, codeDictionary) =>
 				code: `collection_code_invalid_${field.field_code}`,
 				tab: 'basic',
 				field: field.field_code,
-				message: `${field.name ?? field.field_code}无法生成有效的藏品编码片段。`,
+				message: `${field.name ?? '该字段'}无法生成有效的藏品编码片段。`,
 			});
 			continue;
 		}
@@ -974,7 +974,7 @@ const getCollectionCodeResult = (record, collectionCodeRules, codeDictionary) =>
 				code: `collection_required_${dimension.dimension_code}`,
 				tab: allCore ? 'basic' : 'specific',
 				field: issueField.field_code,
-				message: `${dimension.dimension_code} · ${dimension.name}为必填维度，请至少填写一项。`,
+				message: `${dimension.name}至少填写一项。`,
 			});
 		}
 
@@ -988,7 +988,7 @@ const getCollectionCodeResult = (record, collectionCodeRules, codeDictionary) =>
 						code: `collection_code_required_${dimension.dimension_code}_${codeField.field_code}`,
 						tab: codeField.scope === 'core' ? 'basic' : 'specific',
 						field: codeField.field_code,
-						message: `${dimension.dimension_code} · ${dimension.name}需要填写可编码的${codeField.field_code}。`,
+						message: `${dimension.name}还缺少一项编码选项。`,
 					});
 				}
 				continue;
@@ -1000,7 +1000,7 @@ const getCollectionCodeResult = (record, collectionCodeRules, codeDictionary) =>
 						code: `collection_code_invalid_${dimension.dimension_code}_${codeField.field_code}_${code}`,
 						tab: codeField.scope === 'core' ? 'basic' : 'specific',
 						field: codeField.field_code,
-						message: `${dimension.dimension_code} · ${dimension.name}中的 ${code} 未匹配正式代码字典。`,
+						message: `${dimension.name}中的“${code}”不是有效选项，请重新选择。`,
 					});
 					continue;
 				}
@@ -1147,6 +1147,8 @@ const loadBootstrap = async (standards) => {
 	const officialById = new Map(officialRecords.map((record) => [record.core.item_id, record]));
 	const draftById = new Map(drafts.map((draft) => [draft.record.core.item_id, draft]));
 	const allIds = new Set([...officialById.keys(), ...draftById.keys()]);
+	const commonFieldNames = new Map((commonFields?.fields ?? [])
+		.map((field) => [field.field_code, field.name]));
 	const records = await Promise.all([...allIds].map(async (itemId) => {
 		const official = officialById.get(itemId);
 		const draft = draftById.get(itemId);
@@ -1160,7 +1162,7 @@ const loadBootstrap = async (standards) => {
 			code: `shared_field_conflict_${conflict.dimension_code}_${conflict.field_code}`,
 			tab: 'basic',
 			field: conflict.field_code,
-			message: `${conflict.field_code} 的旧基本信息值与对象专属旧值不一致，已保留两份原值并停止自动覆盖。`,
+			message: `${commonFieldNames.get(conflict.field_code) ?? '该字段'}的旧基本信息值与专属信息不一致，已保留原值并停止自动覆盖。`,
 		}));
 		record._admin = {
 			hasDraft: Boolean(draft),

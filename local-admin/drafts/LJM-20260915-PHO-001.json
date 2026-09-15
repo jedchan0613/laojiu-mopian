@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "saved_at": "2026-09-15T07:58:04.893Z",
+  "removed_images": [],
+  "removed_image_descriptions": {},
+  "restored_from_history": null,
+  "restored_from_withdrawal": null,
+  "record": {
+    "core": {
+      "record_status": "SUS",
+      "item_id": "LJM-20260915-PHO-001",
+      "accession_date": "2026-09-15",
+      "object_type": "PHO",
+      "title": "1212",
+      "date_display": "1992",
+      "privacy_level": "Y",
+      "rights_status": "UNK",
+      "research_status": "R0",
+      "evidence_level": "D",
+      "digitization_status": "DG0",
+      "transcription_status": "TX0",
+      "use_status": "U0",
+      "publication_file_path": [],
+      "collection_code": "PHO_1992_Y",
+      "created_date": "2026-09-15",
+      "updated_date": "2026-09-15"
+    },
+    "metadata": {
+      "schema": "photo",
+      "dimensions": {}
+    },
+    "public_view": {
+      "description": "",
+      "transcription": "",
+      "revision_note": "",
+      "tags": []
+    }
+  }
+}

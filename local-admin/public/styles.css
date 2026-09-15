@@ -939,7 +939,7 @@ body[data-workspace="query"] .editor-surface {
 	display: flex;
 	min-width: 0;
 	flex-direction: column;
-	gap: 0.34rem;
+	gap: 0.26rem;
 }
 
 .form-field.is-wide {
@@ -966,8 +966,11 @@ body[data-workspace="query"] .editor-surface {
 .field-context {
 	display: block;
 	color: #7d7468;
-	font-size: 0.65rem;
-	line-height: 1.45;
+	font-size: 0.64rem;
+	line-height: 1.35;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .field-context.is-warning {
@@ -976,8 +979,8 @@ body[data-workspace="query"] .editor-surface {
 }
 
 .field-notes {
-	display: grid;
-	gap: 0.12rem;
+	display: block;
+	min-width: 0;
 }
 
 .required-mark {
@@ -1026,13 +1029,16 @@ body[data-workspace="query"] .editor-surface {
 .field-error {
 	display: block;
 	color: #8d3427;
-	font-size: 0.67rem;
+	font-size: 0.64rem;
 	font-weight: 600;
-	line-height: 1.5;
+	line-height: 1.35;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .form-field.is-invalid > .field-label {
-	color: #8d3427;
+	color: #4d4941;
 }
 
 .form-field.is-invalid input:not([readonly]),
@@ -1052,8 +1058,11 @@ body[data-workspace="query"] .editor-surface {
 	display: block;
 	margin: 0;
 	color: #8a8377;
-	font-size: 0.67rem;
-	line-height: 1.55;
+	font-size: 0.64rem;
+	line-height: 1.35;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .object-type-controls {

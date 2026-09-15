@@ -186,6 +186,10 @@ if (home) {
 	check(homeSource.includes('data-random-record-button'), '首页缺少「随手翻一件」随机浏览入口。');
 	check(homeSource.includes('data-view-history'), '首页缺少「您最近看过」浏览足迹区块。');
 	check(homeSource.includes('data-view-history-clear'), '首页浏览足迹缺少清空入口。');
+	check(!homeSource.includes('继续上次浏览'), '首页浏览足迹仍显示已删除的重复说明。');
+	check(homeSource.includes("item.className = 'view-history-item'"), '首页浏览足迹缺少受控列表项样式标记。');
+	check(homeSource.includes(':global(.view-history-image img)'), '首页浏览足迹的动态图片没有进入尺寸约束。');
+	check(homeSource.includes('object-fit: contain;'), '首页浏览足迹图片没有保持比例适配缩略图。');
 	check(
 		extractRandomIndexIds(home.html).length === detailPages.length,
 		'首页随机浏览索引与公开详情页数量不一致。',
