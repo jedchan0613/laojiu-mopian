@@ -123,6 +123,7 @@ const privacyChecks = [
 const state = {
 	records: [], standards: null, dictionary: new Map(), commonFields: new Map(), activeId: null,
 	current: null, isNew: false, dirty: false, search: '', activeTab: 'basic', images: [],
+	officialSnapshot: null,
 	confirmedPublicationCopies: false, workspaceMode: 'records', recordViewMode: 'overview', drafts: [], history: [], recycleBin: [],
 	pendingRemovedImages: [], validationIssues: [], pendingObjectCategory: '', recordStatusFilter: 'normal',
 	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '',
@@ -1548,6 +1549,8 @@ const openRecord = (itemId, viewMode = 'editor') => {
 	state.recordViewMode = viewMode;
 	state.recordStatusFilter = recordIsWithdrawn(record) ? 'withdrawn' : 'normal';
 	state.current = deepClone(record);
+	state.officialSnapshot = record._admin?.officialSnapshot
+		? deepClone(record._admin.officialSnapshot) : null;
 	setMobileRecordBrowserOpen(false);
 	elements.recordMoreActions.open = false;
 	state.pendingObjectCategory = '';
@@ -1610,6 +1613,7 @@ const startNewRecord = (templateRecord = null) => {
 	state.imagePreflight = [];
 	state.confirmedPublicationCopies = false;
 	state.pendingObjectCategory = '';
+	state.officialSnapshot = null;
 	const reusableCore = templateRecord ? Object.fromEntries(similarCoreFieldCodes
 		.filter((fieldCode) => templateRecord.core[fieldCode] !== undefined)
 		.map((fieldCode) => [fieldCode, deepClone(templateRecord.core[fieldCode])])) : {};
@@ -2059,11 +2063,20 @@ const renderSpecific = () => {
 const renderPrivacy = () => {
 	const core = state.current.core;
 	const qualityWarnings = contentQualityWarnings();
+	const officialForCompare = state.officialSnapshot && pvIsPublished(state.officialSnapshot)
+		? state.officialSnapshot : null;
+	const changeCount = officialForCompare ? publicationChangeEntries().length : 0;
+	const changeSummaryMarkup = officialForCompare ? `<div class="publication-change-summary ${changeCount ? 'has-changes' : ''}">
+		<span>${changeCount
+		? `相对当前已发布版本修改了 ${changeCount} 项，正式发布前请在“发布前预览”最后扫一眼对照。`
+		: '当前内容与已发布版本一致，没有需要对照的修改。'}</span>
+		<button class="issue-button" data-issue-tab="preview" type="button">查看发布前预览</button></div>` : '';
 	return `<section class="form-section"><div class="section-heading"><div><h3>隐私与正式发布</h3><p>每次发布都必须由你本人逐项检查，不能由程序代替判断。</p></div></div>
 		<div class="status-grid"><div class="status-card"><span>档案状态</span><strong>${escapeHtml(core.record_status === 'ACT' ? '有效' : core.record_status === 'WDR' ? '已撤销' : '草稿／暂停')}</strong></div>
 		<div class="status-card"><span>隐私等级</span><strong>${escapeHtml(core.privacy_level === 'G' ? '可公开' : core.privacy_level === 'R' ? '限制' : '待判断')}</strong></div>
 		<div class="status-card"><span>使用状态</span><strong>${escapeHtml(core.use_status === 'U3' ? '已发布' : '未发布')}</strong></div></div>
 		${renderContentQualityPanel(qualityWarnings, '发布前内容质量提示')}
+		${changeSummaryMarkup}
 		<label class="privacy-select-all"><input id="privacy-select-all" type="checkbox" checked /><span><strong>全选</strong><small>我已逐项阅读并确认以下全部检查内容。</small></span></label>
 		<ol class="privacy-list">${privacyChecks.map((text, index) => `<li><label class="privacy-item"><input type="checkbox" data-privacy-index="${index}" checked /><span>${index + 1}. ${escapeHtml(text)}</span></label></li>`).join('')}</ol>
 		<div class="privacy-warning">以下项目按你的设置默认选中。如果任何一项不能确认，请先取消该项，也不要发布。保存草稿不会把图片复制到网站公开目录。</div>
@@ -2359,6 +2372,124 @@ const pvFormatDisplayDate = (value) => {
 };
 const pvNormalizePlaceLabel = (value) => value.trim().replace(/[省市区县]$/, '');
 
+// —— 发布前变更对照 ————————————————————————————————————————————
+// 只对照编辑器实际维护的字段：发布时服务器派生的地点显示文字、地点筛选值
+// （public_view.place_display / place_filters）不在草稿中维护，跳过不比。
+const compareSkipCoreFields = new Set(['updated_date']);
+const comparePublicViewFields = [
+	['description', '公开简介'],
+	['transcription', '公开转录'],
+	['revision_note', '修订说明'],
+	['tags', '标签'],
+];
+const compareValueFilled = (value) => Array.isArray(value)
+	? value.some((entry) => compareValueFilled(entry))
+	: value !== null && value !== undefined && String(value).trim() !== '';
+const sameCompareValue = (left, right) => {
+	const leftEmpty = !compareValueFilled(left);
+	const rightEmpty = !compareValueFilled(right);
+	if (leftEmpty || rightEmpty) return leftEmpty === rightEmpty;
+	return JSON.stringify(left) === JSON.stringify(right);
+};
+const compareValueText = (value) => {
+	if (Array.isArray(value)) {
+		const entries = value.filter(compareValueFilled);
+		return entries.length ? entries.map((entry) => compareValueText(entry)).join('、') : '（未填写）';
+	}
+	if (!compareValueFilled(value)) return '（未填写）';
+	const text = String(value).trim();
+	const entry = pvCodeEntry(text);
+	return entry ? `${entry.label}（${text}）` : text;
+};
+const compareImageFilename = (publicPath) => String(publicPath ?? '').split('/').filter(Boolean).at(-1) ?? '';
+const dimensionNameMap = (schema) => new Map(
+	(state.standards?.dimensions?.[schema]?.dimensions ?? [])
+		.map((dimension) => [dimension.dimension_code, dimension.name]));
+
+const publicationChangeEntries = () => {
+	const official = state.officialSnapshot;
+	const current = state.current;
+	if (!official || !current || !pvIsPublished(official)) return [];
+	const entries = [];
+	const append = (group, label, code, from, to) => entries.push({ group, label, code, from, to });
+	const officialCore = official.core ?? {};
+	const currentCore = current.core ?? {};
+	for (const fieldCode of new Set([...Object.keys(officialCore), ...Object.keys(currentCore)])) {
+		if (compareSkipCoreFields.has(fieldCode)) continue;
+		if (!sameCompareValue(officialCore[fieldCode], currentCore[fieldCode])) {
+			append('basic', humanFieldLabel(fieldCode), fieldCode, officialCore[fieldCode], currentCore[fieldCode]);
+		}
+	}
+	const officialDimensions = official.metadata?.dimensions ?? {};
+	const currentDimensions = current.metadata?.dimensions ?? {};
+	const dimensionNames = dimensionNameMap(current.metadata?.schema ?? official.metadata?.schema ?? '');
+	for (const dimensionCode of new Set([...Object.keys(officialDimensions), ...Object.keys(currentDimensions)])) {
+		const officialFields = officialDimensions[dimensionCode] ?? {};
+		const currentFields = currentDimensions[dimensionCode] ?? {};
+		for (const fieldCode of new Set([...Object.keys(officialFields), ...Object.keys(currentFields)])) {
+			if (sameCompareValue(officialFields[fieldCode], currentFields[fieldCode])) continue;
+			const dimensionName = dimensionNames.get(dimensionCode);
+			append('specific',
+				`${humanFieldLabel(fieldCode)}（${dimensionCode}${dimensionName ? ` · ${dimensionName}` : ''}）`,
+				`${dimensionCode}.${fieldCode}`, officialFields[fieldCode], currentFields[fieldCode]);
+		}
+	}
+	const officialPublicView = official.public_view ?? {};
+	const currentPublicView = current.public_view ?? {};
+	for (const [fieldCode, label] of comparePublicViewFields) {
+		if (!sameCompareValue(officialPublicView[fieldCode], currentPublicView[fieldCode])) {
+			append('public', label, fieldCode, officialPublicView[fieldCode], currentPublicView[fieldCode]);
+		}
+	}
+	// 图片以编辑器当前状态（state.images，含尚未保存的调整）对照已发布清单与说明。
+	const officialImages = officialCore.publication_file_path ?? [];
+	const currentImageNames = state.images.map((image) => image.filename ?? '');
+	if (!sameCompareValue(officialImages.map(compareImageFilename), currentImageNames)) {
+		append('images', '发布图片清单', 'publication_file_path',
+			officialImages.map(compareImageFilename), currentImageNames);
+	}
+	const officialDescriptions = officialPublicView.image_descriptions ?? [];
+	const descriptionCount = Math.max(officialDescriptions.length, state.images.length);
+	for (let index = 0; index < descriptionCount; index += 1) {
+		const currentDescription = state.images[index]?.description ?? '';
+		if (sameCompareValue(officialDescriptions[index], currentDescription)) continue;
+		append('images', `第 ${index + 1} 张图片说明`, `image_descriptions.${index + 1}`,
+			officialDescriptions[index] ?? '', currentDescription);
+	}
+	return entries;
+};
+
+const publicationChangeGroups = [
+	['basic', '基本信息'],
+	['specific', '专属资料'],
+	['public', '公开内容'],
+	['images', '发布图片'],
+];
+
+const renderPublicationChangeReview = (title = '本次修改对照') => {
+	const official = state.officialSnapshot;
+	if (!official || !pvIsPublished(official)) return '';
+	const entries = publicationChangeEntries();
+	const groups = publicationChangeGroups
+		.filter(([group]) => entries.some((entry) => entry.group === group));
+	return `<section class="publication-change-review ${entries.length ? 'has-changes' : 'is-identical'}" aria-labelledby="publication-change-heading">
+		<div class="publication-change-heading"><div><h2 id="publication-change-heading">${escapeHtml(title)}</h2>
+			<p>${entries.length
+		? `相对当前已发布版本共修改 ${entries.length} 项；正式发布前请最后扫一眼。`
+		: '当前内容与已发布版本一致，没有发现修改。'}</p></div>
+			<span class="publication-change-mark">管理端对照 · 不进入公开页面</span></div>
+		${entries.length ? `<table class="publication-change-table">
+			<thead><tr><th scope="col">字段</th><th scope="col">已发布版本</th><th scope="col">本次修改</th></tr></thead>
+			<tbody>${groups.map(([group, label]) => `
+				<tr class="publication-change-group"><td colspan="3">${escapeHtml(label)}</td></tr>
+				${entries.filter((entry) => entry.group === group).map((entry) => `
+				<tr><th scope="row">${escapeHtml(entry.label)}<small>${escapeHtml(entry.code)}</small></th>
+					<td>${escapeHtml(compareValueText(entry.from))}</td>
+					<td>${escapeHtml(compareValueText(entry.to))}</td></tr>`).join('')}`).join('')}
+			</tbody></table>` : ''}
+	</section>`;
+};
+
 const renderPreview = () => {
 	const record = state.current;
 	const issues = currentPreviewIssues();
@@ -2538,6 +2669,7 @@ const renderPreview = () => {
 			<span class="breadcrumb-current">${escapeHtml(view.title || '未命名藏品')}</span>
 		</nav>
 		<span class="back-link ui-text-link">← 返回档案</span>
+		${renderPublicationChangeReview()}
 		<header class="record-heading">
 			<p class="section-mark">${escapeHtml(view.typeLabel)}</p>
 			<h1>${escapeHtml(view.title || '未命名藏品')}</h1>
