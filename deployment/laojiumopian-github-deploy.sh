@@ -255,6 +255,7 @@ export LJM_SITE_DIR="$staging_directory/site"
 export PATH="/snap/node/current/bin:/usr/local/bin:/usr/bin:/bin"
 export HOME="$NPM_HOME"
 export NPM_CONFIG_CACHE="$NPM_CACHE"
+export LJM_REQUIRE_SITE_URL=1
 
 sync_runtime_site_data() {
 	assert_staging_path

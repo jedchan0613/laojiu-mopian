@@ -18,6 +18,8 @@ let receipt: Receipt | null = null;
 let selected: Array<{ file: File; url: string; hash: string }> = [];
 let busy = false, dirty = false, available = false, selecting = false;
 let activeLookup: { id: string; key: string } | null = null;
+// 加密能力只在安全连接（https 或本机地址）下可用；其余环境提前给出明确提示。
+const secureContext = window.isSecureContext && Boolean(crypto.subtle);
 
 const hex = (buffer: ArrayBuffer | Uint8Array) => Array.from(buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer), b => b.toString(16).padStart(2, '0')).join('');
 const digest = async (value: ArrayBuffer | Uint8Array) => hex(await crypto.subtle.digest('SHA-256', value as BufferSource));
@@ -69,6 +71,7 @@ function renderImages() {
 }
 async function addFiles(files: File[]) {
  if (busy || selecting) return;
+ if (!secureContext) { fileFeedback.textContent = '当前访问地址不是安全连接，无法读取和加密图片。请通过网站的正式地址访问后再投稿。'; picker.value = ''; return; }
  selecting = true; submit.disabled = true;
  const errors: string[] = [];
  try {
@@ -106,15 +109,14 @@ for (const input of form.querySelectorAll<HTMLInputElement>('input[name=attribut
  const named = (new FormData(form)).get('attribution') === 'named'; $('#credit-field').hidden = !named; $<HTMLInputElement>('#submission-credit').required = named;
 });
 window.addEventListener('beforeunload', event => { if (dirty || busy) { event.preventDefault(); event.returnValue = ''; } });
-const toDataUrl = (file: File) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); });
-function upload(payload: unknown): Promise<{ id: string }> {
+function upload(payload: FormData): Promise<{ id: string }> {
  return new Promise((resolve, reject) => {
   const xhr = new XMLHttpRequest(); xhr.open('POST', '/api/submissions'); xhr.timeout = 120_000;
-  xhr.setRequestHeader('Content-Type', 'application/json'); xhr.setRequestHeader('X-LJM-Submission', '1');
+  xhr.setRequestHeader('X-LJM-Submission', '1');
   xhr.upload.onprogress = event => { if (event.lengthComputable) { progress.value = Math.round(event.loaded / event.total * 100); announce(progress.value === 100 ? '图片已发送，正在检查并保存，请稍候…' : `正在上传 ${progress.value}%…`); } };
   xhr.onload = () => { try { const data = JSON.parse(xhr.responseText); if (xhr.status < 200 || xhr.status >= 300) reject(new Error(data.error || '投稿未完成。')); else resolve(data); } catch { reject(new Error('没有收到明确的接收结果，请先查询回执。')); } };
   xhr.onerror = xhr.ontimeout = () => reject(new Error('连接中断或等待超时，请先查询回执确认是否收到；未收到时可以重试。'));
-  xhr.send(JSON.stringify(payload));
+  xhr.send(payload);
  });
 }
 form.addEventListener('submit', async event => {
@@ -127,7 +129,16 @@ form.addEventListener('submit', async event => {
   const key = receipt && !receipt.confirmed ? receipt.key : hex(crypto.getRandomValues(new Uint8Array(32)));
   const id = `TG-${(await digest(new TextEncoder().encode(key))).slice(0, 24).toUpperCase()}`;
   remember({ id, key, confirmed: false });
-  const result = await upload({ ...Object.fromEntries(data), key, consent_version: '2026-09-05-v1', consents: Object.fromEntries(['copies', 'rights', 'privacy', 'processing'].map(name => [name, data.get(name) === 'on'])), images: await Promise.all(selected.map(async ({ file }) => ({ name: file.name, data: await toDataUrl(file) }))) });
+  const payload = new FormData();
+  for (const [name, value] of data.entries()) {
+   if (typeof value !== 'string') continue;
+   if (['copies', 'rights', 'privacy', 'processing'].includes(name)) continue;
+   payload.append(name, value);
+  }
+  for (const name of ['copies', 'rights', 'privacy', 'processing']) if (data.get(name) === 'on') payload.append(`consents_${name}`, 'true');
+  payload.append('key', key); payload.append('consent_version', '2026-09-05-v1');
+  for (const { file } of selected) payload.append('images', file, file.name);
+  const result = await upload(payload);
   if (result.id !== id) throw new Error('接收回执需要核实，请先查询进度。');
   showReceipt({ id, key, confirmed: true });
   for (const entry of selected) URL.revokeObjectURL(entry.url);
@@ -166,4 +177,7 @@ try {
  const saved = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
  if (saved && /^TG-[A-F0-9]{24}$/.test(saved.id) && /^[a-f0-9]{64}$/.test(saved.key)) { remember(saved); if (!saved.confirmed) showReceipt(saved); }
 } catch { /* 不持久化表单正文、联系方式或图片。 */ }
-void checkService();
+if (!secureContext) {
+ available = false; submit.disabled = true; service.dataset.unavailable = '';
+ service.textContent = '当前访问地址不是安全连接，无法加密处理投稿内容。请改用网站的正式地址（https）访问后再投稿。';
+} else void checkService();

@@ -10,7 +10,10 @@ const configuredSiteUrl = process.env.PUBLIC_SITE_URL?.trim();
 
 if (!configuredSiteUrl) {
 	await rm(sitemapPath, { force: true });
-	process.stdout.write('站点地图：尚未配置正式 PUBLIC_SITE_URL，本次不生成。\n');
+	if (process.env.LJM_REQUIRE_SITE_URL === '1') {
+		throw new Error('正式发布构建缺少 PUBLIC_SITE_URL（网站正式地址），已停止构建：这样生成的站点不会有规范网址和站点地图。本地预览构建不需要此配置；正式发布前请先设置网站地址再重新构建。');
+	}
+	process.stdout.write('站点地图：本地预览构建未配置 PUBLIC_SITE_URL，本次不生成。\n');
 	process.exit(0);
 }
 

@@ -1,9 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { Readable } from 'node:stream';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
 
-export const submissionLimits = Object.freeze({ images: 8, imageBytes: 5 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, requestBytes: 28 * 1024 * 1024 });
+export const submissionLimits = Object.freeze({ images: 8, imageBytes: 5 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, requestBytes: 22 * 1024 * 1024 });
 export const consentVersion = '2026-09-05-v1';
 export const submissionStates = { pending: '待审核', needs_info: '待补充', approved: '初审通过', declined: '暂不采用', withdrawn: '已停止处理' };
 export const privacyChecks = [
@@ -73,7 +74,19 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   if (!['none', 'yes', 'unsure'].includes(fields.people)) fail('请说明是否涉及可以识别的真实人物。');
   if (payload.consent_version !== consentVersion || !['copies', 'rights', 'privacy', 'processing'].every((key) => payload.consents?.[key] === true)) fail('请阅读并逐项确认图片、授权和隐私说明。');
   if (!Array.isArray(payload.images) || payload.images.length < 1 || payload.images.length > submissionLimits.images) fail('每次请提交 1—8 张图片。');
-  const fingerprint = hash(JSON.stringify({ fields, images: payload.images, consent_version: payload.consent_version }));
+  const staged = [];
+  let incoming = 0;
+  for (const image of payload.images) {
+   const originalName = text(image?.name, '图片文件名', 1, 180);
+   if (!/\.(jpe?g|png|webp)$/i.test(originalName) || /(master|original|raw|主档|原始)/i.test(originalName)) fail('只接收 JPG、PNG、WebP 筛选副本，不接收主档或原始文件。');
+   const raw = image?.buffer ?? image?.file;
+   const buffer = raw instanceof Uint8Array ? Buffer.from(raw) : (raw && typeof raw.arrayBuffer === 'function' ? Buffer.from(await raw.arrayBuffer()) : null);
+   if (!buffer?.length) fail('图片格式无法读取。');
+   incoming += buffer.length;
+   if (buffer.length > submissionLimits.imageBytes || incoming > submissionLimits.totalBytes) fail('每张图片最多 5 MB，每次合计最多 20 MB。', 413);
+   staged.push({ name: originalName, buffer });
+  }
+  const fingerprint = hash(JSON.stringify({ fields, images: staged.map((image) => [image.name, hash(image.buffer)]), consent_version: payload.consent_version }));
   return locked('intake', async () => locked(id, async () => {
    if (await exists(recordPath(id))) {
     const old = await read(id);
@@ -84,21 +97,14 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    if (records.length >= maxEntries || records.reduce((n, r) => n + r.images.reduce((s, i) => s + i.bytes, 0), 0) + submissionLimits.totalBytes > maxStorageBytes) fail('投稿收件区暂满，请稍后再试。', 503);
    sharp ??= require('sharp');
    const images = [];
-   let total = 0;
-   for (const [index, image] of payload.images.entries()) {
-    const originalName = text(image.name, '图片文件名', 1, 180);
-    if (!/\.(jpe?g|png|webp)$/i.test(originalName) || /(master|original|raw|主档|原始)/i.test(originalName)) fail('只接收 JPG、PNG、WebP 筛选副本，不接收主档或原始文件。');
-    const match = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(image.data ?? '');
-    if (!match) fail('图片格式无法读取。');
-    const buffer = Buffer.from(match[2], 'base64');
-    total += buffer.length;
-    if (!buffer.length || buffer.length > submissionLimits.imageBytes || total > submissionLimits.totalBytes) fail('每张图片最多 5 MB，每次合计最多 20 MB。', 413);
+   for (const [index, image] of staged.entries()) {
     try {
-     const input = sharp(buffer, { limitInputPixels: 40_000_000, failOn: 'warning', animated: false });
+     const input = sharp(image.buffer, { limitInputPixels: 40_000_000, failOn: 'warning', animated: false });
      const info = await input.metadata();
-     if (info.format !== match[1] || (info.pages ?? 1) > 1) fail('图片真实格式不符，或包含动画/多页内容。');
+     const expectedFormat = /\.(png)$/i.test(image.name) ? 'png' : /\.(webp)$/i.test(image.name) ? 'webp' : 'jpeg';
+     if (info.format !== expectedFormat || (info.pages ?? 1) > 1) fail('图片真实格式不符，或包含动画/多页内容。');
      const clean = await input.rotate().resize({ width: 2400, height: 2400, fit: 'inside', withoutEnlargement: true }).flatten({ background: '#ffffff' }).jpeg({ quality: 88 }).toBuffer();
-     images.push({ filename: `copy-${String(index + 1).padStart(2, '0')}.jpg`, original_name: originalName, bytes: clean.length, buffer: clean });
+     images.push({ filename: `copy-${String(index + 1).padStart(2, '0')}.jpg`, original_name: image.name, bytes: clean.length, buffer: clean });
     } catch (error) { if (error instanceof SubmissionError) throw error; fail(`第 ${index + 1} 张图片损坏、尺寸过大或无法解码，请重新导出副本。`); }
    }
    const now = new Date().toISOString();
@@ -198,6 +204,40 @@ export async function readSubmissionJson(request, maximum = submissionLimits.req
  } catch { fail('提交内容无法读取。'); }
 }
 
+// 投稿正文使用 multipart 表单直传，图片不再经 base64 膨胀；文字字段与图片在读取时统一转成内部结构。
+export async function readSubmissionForm(request, maximum = submissionLimits.requestBytes) {
+ const contentType = String(request.headers['content-type'] ?? '');
+ if (!contentType.startsWith('multipart/form-data')) fail('提交格式无效。', 415);
+ if (Number(request.headers['content-length']) > maximum) fail('提交内容过大。', 413);
+ let bytes = 0;
+ const limited = Readable.toWeb(request).pipeThrough(new TransformStream({
+  transform(chunk, controller) {
+   bytes += chunk.length;
+   if (bytes > maximum) controller.error(new SubmissionError('提交内容过大。', 413));
+   else controller.enqueue(chunk);
+  },
+ }));
+ let form;
+ try {
+  form = await new Request('http://127.0.0.1/', { method: 'POST', headers: { 'content-type': contentType }, body: limited, duplex: 'half' }).formData();
+ } catch (error) {
+  if (error instanceof SubmissionError) throw error;
+  if (bytes > maximum) fail('提交内容过大。', 413);
+  fail('提交内容无法读取。');
+ }
+ const payload = { consents: {}, images: [] };
+ for (const [key, value] of form.entries()) {
+  if (typeof value !== 'string') {
+   if (key !== 'images') fail('提交内容无法读取。');
+   payload.images.push({ name: value.name, buffer: Buffer.from(await value.arrayBuffer()) });
+   continue;
+  }
+  if (key.startsWith('consents_')) payload.consents[key.slice('consents_'.length)] = value === 'true';
+  else if (key !== 'images') payload[key] = value;
+ }
+ return payload;
+}
+
 export function createPublicSubmissionHandler({ store, origin, local = false, trustProxy = false }) {
  const rate = new Map(); let active = 0;
  const send = (response, code, data) => {
@@ -225,7 +265,7 @@ export function createPublicSubmissionHandler({ store, origin, local = false, tr
    if (previous.count > (pathname === '/api/submissions' ? 5 : 40)) fail('操作太频繁，请十分钟后再试。', 429);
    if (active >= 2) fail('当前正在接收其他投稿，请稍后重试。', 503);
    active++; admitted = true;
-   const payload = await readSubmissionJson(request, pathname === '/api/submissions' ? submissionLimits.requestBytes : 4096);
+   const payload = pathname === '/api/submissions' ? await readSubmissionForm(request, submissionLimits.requestBytes) : await readSubmissionJson(request, 4096);
    const data = pathname === '/api/submissions' ? await store.create(payload) : pathname.endsWith('/lookup') ? await store.lookup(payload) : await store.withdraw(payload);
    send(response, pathname === '/api/submissions' ? 201 : 200, data);
   } catch (error) { if (!response.headersSent) send(response, error instanceof SubmissionError ? error.statusCode : 500, { error: error instanceof SubmissionError ? error.message : '暂时无法完成操作，请保留回执并稍后重试。' }); }

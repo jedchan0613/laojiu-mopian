@@ -94,6 +94,12 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 <BaseLayout image={featuredImage?.src}>
 	<div class="home">
+		<noscript>
+			<style>
+				.hero-carousel-controls,
+				[data-random-record-button] { display: none !important; }
+			</style>
+		</noscript>
 		<div class="hero">
 			<div class="hero-copy">
 				<header class="masthead">
@@ -110,7 +116,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 					</p>
 					<div class="introduction-actions">
 						<a class="browse-link ui-action ui-action--primary" href="/archive/">浏览全部 {publishedItems.length} 件档案 →</a>
-						<button class="browse-link ui-action ui-action--secondary" type="button" data-random-record-button hidden>随手翻一件</button>
+						<button class="browse-link ui-action ui-action--secondary" type="button" data-random-record-button>随手翻一件</button>
 					</div>
 				</section>
 			</div>
@@ -452,6 +458,22 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		letter-spacing: var(--ls-wide);
 	}
 
+	/* 随机档案按钮：JS 就绪前先占位但不可见，避免按钮出现时把整行推下去（CLS）。
+	   脚本会在拿到有效档案编号后为按钮加上 data-random-record-ready。 */
+	[data-random-record-button] {
+		visibility: hidden;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 220ms ease, visibility 0s linear 220ms;
+	}
+
+	[data-random-record-button][data-random-record-ready] {
+		visibility: visible;
+		opacity: 1;
+		pointer-events: auto;
+		transition: opacity 220ms ease, visibility 0s;
+	}
+
 	.hero-record-shell {
 		min-width: 0;
 	}
@@ -749,15 +771,21 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	}
 
 	.hero-carousel-controls {
-		display: none;
+		display: grid;
 		flex: 1 1 20rem;
 		grid-template-columns: auto minmax(5rem, 1fr) auto auto;
 		align-items: center;
 		gap: 0.45rem;
+		/* JS 就绪前先占位但不可见，避免控制栏出现时把下方内容推下去（CLS）。 */
+		visibility: hidden;
+		opacity: 0;
+		transition: opacity 200ms ease, visibility 0s linear 200ms;
 	}
 
 	.hero-record-shell[data-carousel-ready] .hero-carousel-controls {
-		display: grid;
+		visibility: visible;
+		opacity: 1;
+		transition: opacity 200ms ease, visibility 0s;
 	}
 
 	.hero-carousel-controls > button {
