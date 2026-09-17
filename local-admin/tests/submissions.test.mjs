@@ -18,7 +18,7 @@ async function fixture(t, options = {}) {
  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ljm-submission-test-'));
  t.after(async () => { const resolved = path.resolve(root); assert.equal(path.dirname(resolved), path.resolve(os.tmpdir())); assert.ok(path.basename(resolved).startsWith('ljm-submission-test-')); await fs.rm(resolved, { recursive: true, force: true }); });
  const store = createSubmissionStore({ root, siteDirectory, ...options });
- const payload = { key: randomBytes(32).toString('hex'), website: '', title: '测试用虚构资料', description: '这是一份自动检查使用的虚构资料，不包含真实人物。', category: '照片', era: '', name: '测试投稿人', contact_type: 'email', contact: 'synthetic@example.invalid', attribution: 'anonymous', credit: '', people: 'none', consent_version: consentVersion, consents: { copies: true, rights: true, privacy: true, processing: true }, images: [{ name: 'screening-copy.jpg', data: `data:image/jpeg;base64,${image.toString('base64')}` }] };
+ const payload = { key: randomBytes(32).toString('hex'), website: '', title: '测试用虚构资料', description: '这是一份自动检查使用的虚构资料，不包含真实人物。', category: '照片', era: '', name: '测试投稿人', contact_type: 'email', contact: 'synthetic@example.invalid', attribution: 'anonymous', credit: '', people: 'none', consent_version: consentVersion, consents: { copies: true, rights: true, privacy: true, processing: true }, images: [{ name: 'screening-copy.jpg', buffer: image }] };
  return { store, root, payload };
 }
 test('接收、重试与回执：私密字段不外泄，元数据被移除，重新打开仍可查询', async t => {
@@ -46,9 +46,9 @@ test('服务端拒绝缺失授权、伪造格式、主档、损坏图片与过�
   { people: 'guess' }, { category: '伪造代码' }, { images: [] }, { images: Array(9).fill(payload.images[0]) },
   { images: [{ ...payload.images[0], name: 'original.jpg' }] },
   { images: [{ ...payload.images[0], name: 'master.tiff' }] },
-  { images: [{ name: 'fake.jpg', data: `data:image/jpeg;base64,${Buffer.from('<script>alert(1)</script>').toString('base64')}` }] },
-  { images: [{ name: 'wrong.png', data: payload.images[0].data.replace('image/jpeg', 'image/png') }] },
-  { images: [{ name: 'huge.jpg', data: `data:image/jpeg;base64,${Buffer.alloc(5 * 1024 ** 2 + 1).toString('base64')}` }] },
+  { images: [{ name: 'fake.jpg', buffer: Buffer.from('<script>alert(1)</script>') }] },
+  { images: [{ name: 'wrong.png', buffer: image }] },
+  { images: [{ name: 'huge.jpg', buffer: Buffer.alloc(5 * 1024 ** 2 + 1) }] },
   { website: 'bot' },
  ]) await assert.rejects(store.create({ ...payload, ...patch }));
  assert.equal((await store.list()).length, 0);
@@ -115,19 +115,31 @@ test('公开 HTTP 仅支持约定路由，限制来源、正文大小和频率',
  server.listen(0, '127.0.0.1'); await once(server, 'listening');
  const origin = `http://127.0.0.1:${server.address().port}`; handler = createPublicSubmissionHandler({ store, origin, local: true });
  t.after(() => { server.closeAllConnections(); return new Promise(resolve => server.close(resolve)); });
- const headers = { 'Content-Type': 'application/json', 'X-LJM-Submission': '1', Origin: origin };
+ const jsonHeaders = { 'Content-Type': 'application/json', 'X-LJM-Submission': '1', Origin: origin };
+ const formHeaders = { 'X-LJM-Submission': '1', Origin: origin };
+ const submissionForm = () => {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(payload)) {
+   if (key === 'images') { for (const image of value) form.append('images', new Blob([image.buffer]), image.name); }
+   else if (key === 'consents') { for (const [name, accepted] of Object.entries(value)) form.append(`consents_${name}`, String(accepted)); }
+   else if (value === null || typeof value === 'object') continue;
+   else form.append(key, String(value));
+  }
+  return form;
+ };
  assert.equal((await fetch(`${origin}/api/submissions/config`)).status, 200);
  assert.equal((await fetch(`${origin}/api/admin/submissions`)).status, 404);
  assert.equal((await fetch(`${origin}/api/submissions/private.jpg`)).status, 404);
- assert.equal((await fetch(`${origin}/api/submissions`, { method: 'POST', headers: { ...headers, Origin: 'https://evil.invalid' }, body: '{}' })).status, 403);
+ assert.equal((await fetch(`${origin}/api/submissions`, { method: 'POST', headers: { ...jsonHeaders, Origin: 'https://evil.invalid' }, body: '{}' })).status, 403);
  assert.equal((await fetch(`${origin}/api/submissions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin }, body: '{}' })).status, 403);
- assert.equal((await fetch(`${origin}/api/submissions/lookup`, { method: 'POST', headers, body: JSON.stringify({ padding: 'x'.repeat(4200) }) })).status, 413);
- const created = await fetch(`${origin}/api/submissions`, { method: 'POST', headers, body: JSON.stringify(payload) }); assert.equal(created.status, 201);
+ assert.equal((await fetch(`${origin}/api/submissions/lookup`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ padding: 'x'.repeat(4200) }) })).status, 413);
+ assert.equal((await fetch(`${origin}/api/submissions`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify(payload) })).status, 415);
+ const created = await fetch(`${origin}/api/submissions`, { method: 'POST', headers: formHeaders, body: submissionForm() }); assert.equal(created.status, 201);
  const { id } = await created.json();
- const lookup = await fetch(`${origin}/api/submissions/lookup`, { method: 'POST', headers, body: JSON.stringify({ id, key: payload.key }) }); assert.equal(lookup.status, 200);
+ const lookup = await fetch(`${origin}/api/submissions/lookup`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ id, key: payload.key }) }); assert.equal(lookup.status, 200);
  assert.ok(!(await lookup.text()).includes(payload.contact));
- for (let n = 0; n < 5; n++) {
-  const response = await fetch(`${origin}/api/submissions`, { method: 'POST', headers, body: '{}' });
-  assert.equal(response.status, n === 4 ? 429 : 400);
+ for (let n = 0; n < 4; n++) {
+  const response = await fetch(`${origin}/api/submissions`, { method: 'POST', headers: formHeaders, body: new FormData() });
+  assert.equal(response.status, n === 3 ? 429 : 400);
  }
 });

@@ -26,20 +26,28 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 	const toggleLabel = carousel.querySelector<HTMLElement>('[data-home-carousel-toggle-label]');
 	const status = carousel.querySelector<HTMLElement>('[data-home-carousel-status]');
 	const announcement = carousel.querySelector<HTMLElement>('[data-home-carousel-announcement]');
+	const controls = carousel.querySelector<HTMLElement>('.hero-carousel-controls');
 
 	let items: FeaturedCarouselItem[] = [];
 	try {
 		items = JSON.parse(carousel.dataset.carouselItems ?? '[]') as FeaturedCarouselItem[];
 	} catch {
+		controls?.remove();
 		return;
 	}
-	if (!image || !recordLink || !previousButton || !nextButton || !toggleButton || items.length < 2) return;
+	if (!image || !recordLink || !previousButton || !nextButton || !toggleButton || items.length < 2) {
+		// 初始化失败属于异常路径：直接移除控制栏，避免留下只占位不可见的空白。
+		controls?.remove();
+		return;
+	}
 
 	const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 	let activeIndex = 0;
 	let autoplayTimer: number | undefined;
 	let preloadedImage: HTMLImageElement | undefined;
-	let userPaused = prefersReducedMotion.matches;
+	// 自动轮播意愿分三档：auto 跟随系统“减少动画”偏好，on/off 是访客手动指定。
+	// 手动指定优先于系统偏好；auto 档在偏好从“减少动画”恢复默认时会自动恢复播放。
+	let autoplayIntent: 'auto' | 'on' | 'off' = 'auto';
 	let pointerInside = false;
 	let focusInside = false;
 
@@ -49,8 +57,11 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 		autoplayTimer = undefined;
 	};
 
+	const isAutoplayPaused = () =>
+		autoplayIntent === 'off' || (autoplayIntent === 'auto' && prefersReducedMotion.matches);
+
 	const canAutoplay = () =>
-		!userPaused && !pointerInside && !focusInside && !document.hidden;
+		!isAutoplayPaused() && !pointerInside && !focusInside && !document.hidden;
 
 	const startAutoplay = () => {
 		stopAutoplay();
@@ -59,10 +70,11 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 	};
 
 	const updateToggle = () => {
-		toggleButton.setAttribute('aria-pressed', String(userPaused));
-		toggleButton.setAttribute('aria-label', userPaused ? '播放自动轮播' : '暂停自动轮播');
-		if (toggleIcon) toggleIcon.textContent = userPaused ? '▶' : 'Ⅱ';
-		if (toggleLabel) toggleLabel.textContent = userPaused ? '播放' : '暂停';
+		const paused = isAutoplayPaused();
+		toggleButton.setAttribute('aria-pressed', String(paused));
+		toggleButton.setAttribute('aria-label', paused ? '播放自动轮播' : '暂停自动轮播');
+		if (toggleIcon) toggleIcon.textContent = paused ? '▶' : 'Ⅱ';
+		if (toggleLabel) toggleLabel.textContent = paused ? '播放' : '暂停';
 	};
 
 	const preloadNextImage = () => {
@@ -120,10 +132,10 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 	nextButton.addEventListener('click', () => selectManually(activeIndex + 1));
 
 	toggleButton.addEventListener('click', () => {
-		userPaused = !userPaused;
+		autoplayIntent = isAutoplayPaused() ? 'on' : 'off';
 		updateToggle();
 		startAutoplay();
-		if (announcement) announcement.textContent = userPaused ? '自动轮播已暂停' : '自动轮播已播放';
+		if (announcement) announcement.textContent = isAutoplayPaused() ? '自动轮播已暂停' : '自动轮播已播放';
 	});
 
 	carousel.addEventListener('mouseenter', () => {
@@ -143,8 +155,7 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 		if (!focusInside) startAutoplay();
 	});
 	document.addEventListener('visibilitychange', startAutoplay);
-	prefersReducedMotion.addEventListener('change', (event) => {
-		if (event.matches) userPaused = true;
+	prefersReducedMotion.addEventListener('change', () => {
 		updateToggle();
 		startAutoplay();
 	});

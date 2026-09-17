@@ -12,6 +12,8 @@ const numberFormatter = new Intl.NumberFormat('zh-CN');
 const maxItemsPerRequest = 20;
 const states = new Map<string, LikeState>();
 const loadingItems = new Set<string>();
+// 记录单条数据异常的档案：只让这一件的按钮显示“暂不可用”，不再拖垮整批，也不再反复重试。
+const brokenItems = new Set<string>();
 
 function buttonsFor(itemId: string) {
 	return buttons.filter((button) => button.dataset.itemId === itemId);
@@ -35,6 +37,19 @@ function setState(itemId: string, state: LikeState) {
 	document.dispatchEvent(new CustomEvent('archive-likes-updated', {
 		detail: { itemId, count: state.count, liked: state.liked },
 	}));
+}
+
+function markItemUnavailable(itemId: string, message = '这件档案的点赞暂时不可用') {
+	brokenItems.add(itemId);
+	for (const button of buttonsFor(itemId)) {
+		const label = button.querySelector<HTMLElement>('[data-like-label]');
+		const count = button.querySelector<HTMLElement>('[data-like-count]');
+		button.hidden = false;
+		button.disabled = true;
+		button.title = message;
+		if (label) label.textContent = '暂不可用';
+		if (count) count.textContent = '';
+	}
 }
 
 function setUnavailable(message = '点赞服务暂时不可用') {
@@ -61,7 +76,7 @@ async function requestJson(url: string, init?: RequestInit) {
 
 async function loadItemStates(itemIds: string[]) {
 	const pendingItemIds = [...new Set(itemIds)]
-		.filter((itemId) => itemId && !states.has(itemId) && !loadingItems.has(itemId));
+		.filter((itemId) => itemId && !states.has(itemId) && !loadingItems.has(itemId) && !brokenItems.has(itemId));
 	if (pendingItemIds.length === 0) return;
 	for (const itemId of pendingItemIds) loadingItems.add(itemId);
 	try {
@@ -73,7 +88,8 @@ async function loadItemStates(itemIds: string[]) {
 			for (const itemId of batch) {
 				const state = payload.items?.[itemId];
 				if (!state || !Number.isInteger(state.count) || state.count < 0 || typeof state.liked !== 'boolean') {
-					throw new Error('点赞接口数据格式不正确');
+					markItemUnavailable(itemId);
+					continue;
 				}
 				setState(itemId, state);
 			}
@@ -94,6 +110,10 @@ function initializeLikes() {
 			const state = itemId ? states.get(itemId) : undefined;
 			if (state) {
 				renderButton(button, state);
+				return;
+			}
+			if (itemId && brokenItems.has(itemId)) {
+				markItemUnavailable(itemId);
 				return;
 			}
 			button.hidden = true;
