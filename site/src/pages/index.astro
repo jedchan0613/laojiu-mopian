@@ -532,7 +532,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 	}
 
 	.view-history-clear:focus-visible {
-		outline: 2px solid #575349;
+		outline: 2px solid var(--site-focus-outline);
 		outline-offset: 2px;
 	}
 
@@ -847,7 +847,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 	.browse-link:focus-visible,
 	.archive-entrances a:focus-visible {
-		outline: 2px solid #575349;
+		outline: 2px solid var(--site-focus-outline);
 		outline-offset: 6px;
 	}
 
@@ -976,7 +976,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 
 	.archive-entrances a:hover,
 	.archive-entrances a:focus-visible {
-		color: #302f2b;
+		color: var(--site-text);
 		background: rgba(154, 63, 46, 0.065);
 	}
 
@@ -1326,7 +1326,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 		.recent-records ul {
 			grid-template-columns: 1fr;
 			gap: 0;
-			border-top: 1px solid #bcb5a4;
+			border-top: 1px solid var(--site-border-soft);
 		}
 
 		.recent-records a {
@@ -1340,7 +1340,7 @@ const categoryEntries = archiveCategories.map((category, index) => {
 			grid-template-columns: minmax(0, 1fr) auto;
 			align-items: center;
 			border-top: 0;
-			border-bottom: 1px solid #bcb5a4;
+			border-bottom: 1px solid var(--site-border-soft);
 		}
 
 		.recent-record-actions {
