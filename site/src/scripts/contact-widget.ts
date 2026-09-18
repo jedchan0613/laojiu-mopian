@@ -51,14 +51,27 @@ if (root && root.dataset.ready !== 'true') {
 	};
 
 	const jsonRequest = async (url: string, payload?: object) => {
-		const response = await fetch(url, payload === undefined ? { cache: 'no-store' } : {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json', 'X-LJM-Contact': '1' },
-			body: JSON.stringify(payload),
-		});
-		const result = await response.json().catch(() => { throw new Error('联系通道返回了无法读取的结果。'); });
-		if (!response.ok) throw new Error(result.error || '操作没有完成，请稍后重试。');
-		return result;
+		const timeoutMs = payload === undefined ? 10_000 : 20_000;
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), timeoutMs);
+		try {
+			const response = await fetch(url, payload === undefined ? { cache: 'no-store', signal: controller.signal } : {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'X-LJM-Contact': '1' },
+				body: JSON.stringify(payload),
+				signal: controller.signal,
+			});
+			const result = await response.json().catch(() => { throw new Error('联系通道返回了无法读取的结果。'); });
+			if (!response.ok) throw new Error(result.error || '操作没有完成，请稍后重试。');
+			return result;
+		} catch (error) {
+			if (error instanceof DOMException && error.name === 'AbortError') {
+				throw new Error('连接等待超时，无法确认这次操作是否完成；请稍后再试一次。');
+			}
+			throw error;
+		} finally {
+			clearTimeout(timer);
+		}
 	};
 
 	const setOpen = (open: boolean) => {

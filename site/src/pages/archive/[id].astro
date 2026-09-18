@@ -949,7 +949,7 @@ const breadcrumbStructuredData = {
   }
 
   .breadcrumb-link:focus-visible {
-    outline: 2px solid #575349;
+    outline: 2px solid var(--site-focus-outline);
     outline-offset: 0.3rem;
   }
 
@@ -959,7 +959,7 @@ const breadcrumbStructuredData = {
   }
 
   .breadcrumb-current {
-    color: #575349;
+    color: var(--site-focus-outline);
     max-width: 24rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -974,7 +974,7 @@ const breadcrumbStructuredData = {
   }
 
   .back-link:focus-visible {
-    outline: 2px solid #575349;
+    outline: 2px solid var(--site-focus-outline);
     outline-offset: 0.35rem;
   }
 
@@ -1024,7 +1024,7 @@ const breadcrumbStructuredData = {
     align-items: start;
     margin-top: clamp(2.4rem, 4vw, 3.3rem);
     padding-top: clamp(2rem, 3.5vw, 2.8rem);
-    border-top: 1px solid #bcb5a4;
+    border-top: 1px solid var(--site-border-soft);
   }
 
   .record-sheet--letter {
@@ -1132,7 +1132,7 @@ const breadcrumbStructuredData = {
 
   .letter-reading-modes button:focus-visible,
   .letter-text-size button:focus-visible {
-    outline: 2px solid #575349;
+    outline: 2px solid var(--site-focus-outline);
     outline-offset: -2px;
   }
 
@@ -1243,7 +1243,7 @@ const breadcrumbStructuredData = {
   }
 
   .record-image-open:focus-visible {
-    outline: 2px solid #575349;
+    outline: 2px solid var(--site-focus-outline);
     outline-offset: -3px;
   }
 
@@ -1304,7 +1304,7 @@ const breadcrumbStructuredData = {
     flex: 0 0 auto;
     padding-right: 0.55rem;
     color: var(--site-accent);
-    border-right: 1px solid #bcb5a4;
+    border-right: 1px solid var(--site-border-soft);
     font-size: var(--site-text-micro);
     font-weight: 600;
     letter-spacing: 0.1em;
@@ -1337,7 +1337,7 @@ const breadcrumbStructuredData = {
     gap: 0.45rem;
     min-height: 2.25rem;
     padding: 0.42rem 0.7rem;
-    color: #575349;
+    color: var(--site-focus-outline);
     background: rgba(248, 244, 234, 0.42);
     border: 1px solid #bdb5a5;
     cursor: pointer;
@@ -1575,7 +1575,7 @@ const breadcrumbStructuredData = {
 
   .record-facts dt,
   .section-facts dt {
-    color: #777165;
+    color: var(--site-subtle);
     font-size: 0.75rem;
     letter-spacing: 0.1em;
     line-height: 1.55;
@@ -1688,14 +1688,14 @@ const breadcrumbStructuredData = {
   }
 
   .record-section:last-child {
-    border-bottom: 1px solid #bcb5a4;
+    border-bottom: 1px solid var(--site-border-soft);
   }
 
   .management-information {
     padding: 0 1rem;
     background: rgba(248, 244, 234, 0.2);
-    border-top: 1px solid #bcb5a4;
-    border-bottom: 1px solid #bcb5a4;
+    border-top: 1px solid var(--site-border-soft);
+    border-bottom: 1px solid var(--site-border-soft);
   }
 
   .management-information > summary {
@@ -1741,7 +1741,7 @@ const breadcrumbStructuredData = {
     max-width: 58rem;
     margin-top: clamp(2.8rem, 5vw, 4.2rem);
     padding-top: 1.25rem;
-    border-top: 1px solid #bcb5a4;
+    border-top: 1px solid var(--site-border-soft);
   }
 
   .record-related-heading {
@@ -1764,7 +1764,7 @@ const breadcrumbStructuredData = {
   }
 
   .record-related-heading span {
-    color: #777165;
+    color: var(--site-subtle);
     font-size: 0.72rem;
     line-height: 1.6;
   }
@@ -1910,8 +1910,8 @@ const breadcrumbStructuredData = {
   .record-downloads a:hover,
   .record-downloads a:focus-visible {
     color: #fbf5e9;
-    background: #7f3427;
-    border-color: #7f3427;
+    background: var(--site-accent-dark);
+    border-color: var(--site-accent-dark);
   }
 
   .record-downloads p {
@@ -1921,7 +1921,7 @@ const breadcrumbStructuredData = {
   .record-neighbors {
     margin-top: clamp(3rem, 6vw, 5rem);
     padding: 1.25rem 0 0;
-    border-top: 1px solid #bcb5a4;
+    border-top: 1px solid var(--site-border-soft);
   }
 
   .record-citation {
@@ -1982,7 +1982,7 @@ const breadcrumbStructuredData = {
 
   .record-neighbors > p {
     margin: 0 0 1rem;
-    color: #777165;
+    color: var(--site-subtle);
     font-size: 0.72rem;
     letter-spacing: 0.14em;
   }
@@ -2014,7 +2014,7 @@ const breadcrumbStructuredData = {
   }
 
   .record-neighbors a:focus-visible {
-    outline: 2px solid #575349;
+    outline: 2px solid var(--site-focus-outline);
     outline-offset: 3px;
   }
 
@@ -2058,7 +2058,7 @@ const breadcrumbStructuredData = {
 
   .subsection h3 {
     margin: 0 0 0.75rem;
-    color: #777165;
+    color: var(--site-subtle);
     font-size: 0.74rem;
     font-weight: 400;
     letter-spacing: 0.12em;

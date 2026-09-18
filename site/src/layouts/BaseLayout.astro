@@ -108,18 +108,23 @@ const serializedStructuredData = structuredData
 	:root {
 		color-scheme: light;
 		font-family: "Songti SC", "STSong", "SimSun", serif;
-		background: #eee9dc;
-		color: #302f2b;
+		background: var(--site-bg);
+		color: var(--site-text);
 		font-synthesis: none;
 		--site-content-width: 1120px;
 		--site-brand-font: 'LJM Brand Serif', 'Songti SC', 'STSong', 'SimSun', serif;
+		--site-bg: #eee9dc;
+		--site-text: #302f2b;
 		--site-border: #aaa397;
+		--site-border-soft: #bcb5a4;
 		--site-accent: #9a3f2e;
+		--site-accent-dark: #7f3427;
 		--site-accent-soft: rgba(154, 63, 46, 0.075);
 		--site-paper: rgba(248, 244, 234, 0.32);
 		--site-paper-strong: #e7dfcf;
 		--site-muted: #625e55;
 		--site-subtle: #777165;
+		--site-focus-outline: #575349;
 		--site-text-micro: 0.72rem;
 		--site-text-small: 0.78rem;
 		--site-control-height: 2.5rem;
@@ -131,15 +136,15 @@ const serializedStructuredData = structuredData
 
 	html {
 		min-width: 0;
-		background: #eee9dc;
+		background: var(--site-bg);
 	}
 
 	body {
 		margin: 0;
 		min-width: 0;
 		min-height: 100vh;
-		background: #eee9dc;
-		color: #302f2b;
+		background: var(--site-bg);
+		color: var(--site-text);
 		text-rendering: optimizeLegibility;
 		-webkit-font-smoothing: antialiased;
 	}
@@ -207,8 +212,8 @@ const serializedStructuredData = structuredData
 
 	.ui-action--primary:hover,
 	.ui-action--primary:focus-visible {
-		background: #7f3427;
-		border-color: #7f3427;
+		background: var(--site-accent-dark);
+		border-color: var(--site-accent-dark);
 	}
 
 	.ui-action--secondary:hover,
@@ -249,7 +254,7 @@ const serializedStructuredData = structuredData
 		z-index: 100;
 		padding: 0.65rem 0.85rem;
 		color: #f8f3e8;
-		background: #302f2b;
+		background: var(--site-text);
 		border: 1px solid #f8f3e8;
 		text-decoration: none;
 		transform: translateY(calc(-100% - 1rem));
@@ -262,7 +267,7 @@ const serializedStructuredData = structuredData
 	}
 
 	:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-		outline: 2px solid #575349;
+		outline: 2px solid var(--site-focus-outline);
 		outline-offset: 3px;
 	}
 
@@ -308,7 +313,7 @@ const serializedStructuredData = structuredData
 	}
 
 	.site-header a:focus-visible {
-		outline: 2px solid #575349;
+		outline: 2px solid var(--site-focus-outline);
 		outline-offset: 6px;
 	}
 
@@ -379,7 +384,7 @@ const serializedStructuredData = structuredData
 	}
 
 	.footer-name {
-		color: #302f2b;
+		color: var(--site-text);
 		font-family: var(--site-brand-font);
 		font-weight: 700;
 		font-size: 0.96rem;

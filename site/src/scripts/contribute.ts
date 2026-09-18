@@ -18,6 +18,8 @@ let receipt: Receipt | null = null;
 let selected: Array<{ file: File; url: string; hash: string }> = [];
 let busy = false, dirty = false, available = false, selecting = false;
 let activeLookup: { id: string; key: string } | null = null;
+// 同意条款版本以服务端 /api/submissions/config 返回值为准；前端不再硬编码，避免版本号变化时投稿通道整体失效。
+let consentVersion = '';
 // 加密能力只在安全连接（https 或本机地址）下可用；其余环境提前给出明确提示。
 const secureContext = window.isSecureContext && Boolean(crypto.subtle);
 
@@ -49,11 +51,12 @@ async function checkService() {
  try {
   const response = await fetch('/api/submissions/config', { cache: 'no-store', signal: AbortSignal.timeout(10_000) });
   const config = await response.json();
-  if (!response.ok || !config.available || config.consent_version !== '2026-09-05-v1') throw new Error();
+  if (!response.ok || !config.available || typeof config.consent_version !== 'string' || !config.consent_version) throw new Error();
+  consentVersion = config.consent_version;
   available = true; submit.disabled = false;
   service.textContent = config.local_preview ? '本地体验：投稿只进入本机的私密审核区。' : '投稿通道已开放。您填写的内容仅在点击提交后发送。';
  } catch {
-  available = false; submit.disabled = true; service.dataset.unavailable = '';
+  available = false; consentVersion = ''; submit.disabled = true; service.dataset.unavailable = '';
   service.textContent = '投稿通道暂未开放或连接失败。当前不会发送资料；请稍后刷新重试。';
  }
 }
@@ -121,6 +124,7 @@ function upload(payload: FormData): Promise<{ id: string }> {
 }
 form.addEventListener('submit', async event => {
  event.preventDefault(); if (busy || selecting || !available || !form.reportValidity()) return;
+ if (!consentVersion) { announce('同意条款版本尚未获取，请刷新页面后再试。'); return; }
  if (!selected.length) { announce('请先选择至少一张经过筛选的图片副本。'); picker.focus(); return; }
  const data = new FormData(form);
  busy = true; submit.disabled = true; fields.disabled = true; progress.hidden = false; progress.value = 0;
@@ -136,7 +140,7 @@ form.addEventListener('submit', async event => {
    payload.append(name, value);
   }
   for (const name of ['copies', 'rights', 'privacy', 'processing']) if (data.get(name) === 'on') payload.append(`consents_${name}`, 'true');
-  payload.append('key', key); payload.append('consent_version', '2026-09-05-v1');
+  payload.append('key', key); payload.append('consent_version', consentVersion);
   for (const { file } of selected) payload.append('images', file, file.name);
   const result = await upload(payload);
   if (result.id !== id) throw new Error('接收回执需要核实，请先查询进度。');

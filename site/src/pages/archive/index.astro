@@ -864,7 +864,7 @@ const searchIndexJson = JSON.stringify(
     margin-top: clamp(2.25rem, 4vw, 3.25rem);
     padding: 1.15rem clamp(0.9rem, 2vw, 1.25rem) 1.35rem;
     background: var(--site-paper);
-    border-top: 1px solid #aaa397;
+    border-top: 1px solid var(--site-border);
     border-bottom: 1px solid #c4bdad;
   }
 
@@ -954,7 +954,7 @@ const searchIndexJson = JSON.stringify(
 
   .archive-path-group h3 {
     margin-bottom: 0.7rem;
-    color: #777165;
+    color: var(--site-subtle);
     font-size: 0.74rem;
     font-weight: 400;
     letter-spacing: 0.12em;
@@ -1000,7 +1000,7 @@ const searchIndexJson = JSON.stringify(
     gap: 1.5rem;
     margin-bottom: 1.15rem;
     padding-bottom: 0.85rem;
-    border-bottom: 1px solid #bcb5a4;
+    border-bottom: 1px solid var(--site-border-soft);
   }
 
   .archive-index-heading h2,
@@ -1050,7 +1050,7 @@ const searchIndexJson = JSON.stringify(
     border: 1px solid #9f988b;
     border-radius: 0;
     background: transparent;
-    color: #302f2b;
+    color: var(--site-text);
     font: inherit;
     font-size: 1rem;
     line-height: 1.6;
@@ -1111,8 +1111,8 @@ const searchIndexJson = JSON.stringify(
 
   .archive-control input:focus-visible,
   .archive-control select:focus-visible {
-    border-color: #575349;
-    outline: 2px solid #575349;
+    border-color: var(--site-focus-outline);
+    outline: 2px solid var(--site-focus-outline);
     outline-offset: 3px;
   }
 
@@ -1129,7 +1129,7 @@ const searchIndexJson = JSON.stringify(
   }
 
   .archive-search-assist > span {
-    color: #777165;
+    color: var(--site-subtle);
     font-size: var(--site-text-micro);
     letter-spacing: 0.08em;
   }
@@ -1200,7 +1200,7 @@ const searchIndexJson = JSON.stringify(
   }
 
   #archive-filter-chips button:hover {
-    color: #302f2b;
+    color: var(--site-text);
     border-color: #716c61;
   }
 
@@ -1218,12 +1218,12 @@ const searchIndexJson = JSON.stringify(
   }
 
   .clear-filters:hover {
-    border-bottom-color: #575349;
-    color: #302f2b;
+    border-bottom-color: var(--site-focus-outline);
+    color: var(--site-text);
   }
 
   .clear-filters:focus-visible {
-    outline: 2px solid #575349;
+    outline: 2px solid var(--site-focus-outline);
     outline-offset: 4px;
   }
 
@@ -1239,7 +1239,7 @@ const searchIndexJson = JSON.stringify(
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(1.25rem, 2.6vw, 2rem);
     padding-top: clamp(1rem, 2vw, 1.4rem);
-    border-top: 1px solid #bcb5a4;
+    border-top: 1px solid var(--site-border-soft);
   }
 
   .archive-list > li {
@@ -1263,8 +1263,8 @@ const searchIndexJson = JSON.stringify(
 
   .archive-empty-state {
     padding: clamp(2rem, 6vw, 3.5rem);
-    border-top: 1px solid #bcb5a4;
-    border-bottom: 1px solid #bcb5a4;
+    border-top: 1px solid var(--site-border-soft);
+    border-bottom: 1px solid var(--site-border-soft);
     text-align: center;
   }
 
@@ -1302,7 +1302,7 @@ const searchIndexJson = JSON.stringify(
   }
 
   .archive-entry:focus-visible {
-    outline: 2px solid #575349;
+    outline: 2px solid var(--site-focus-outline);
     outline-offset: 0.6rem;
   }
 
@@ -1377,7 +1377,7 @@ const searchIndexJson = JSON.stringify(
 
   .archive-facts dt {
     margin-bottom: 0.3rem;
-    color: #777165;
+    color: var(--site-subtle);
     font-size: 0.76rem;
     letter-spacing: 0.16em;
   }
@@ -1447,7 +1447,7 @@ const searchIndexJson = JSON.stringify(
     gap: 1rem;
     margin-top: 1.5rem;
     padding-top: 1rem;
-    border-top: 1px solid #bcb5a4;
+    border-top: 1px solid var(--site-border-soft);
   }
 
   .archive-pagination[hidden] {

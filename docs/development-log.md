@@ -3272,3 +3272,41 @@
 - 在 `site/` 执行正式 `npm run build` 成功：生成 12 个公开页面、6 个档案详情，公开页面回归检查（首页精选与去重、分类顺序、空区块、图片尺寸和管理端隔离）全部通过。
 
 当前状态：第 3、5 条修复已在本地完成并通过检查，尚未提交、推送或部署。检查清单中剩余的次要项（联系表单超时、同意条款版本硬编码、颜色变量收敛、字体预加载核实等）待用户安排。
+
+## 2026-09-18：联系表单增加超时保护
+
+修复全站检查清单中的联系表单问题。访客通过”私密联系”通道检查可用性、提交来信或查询回执时，如果服务器建立连接后长时间不响应，页面此前会无限等待，提交按钮一直禁用且没有任何提示。
+
+完成内容：
+
+- `site/src/scripts/contact-widget.ts` 的 `jsonRequest` 统一加入超时控制：通道可用性检查（GET）10 秒、提交来信与查询回执（POST）20 秒，与投稿页的既有做法保持一致。
+- 超时后中断等待，并向访客显示明确提示：”连接等待超时，无法确认这次操作是否完成；请稍后再试一次。”提交按钮自动恢复可点；重试时复用同一次会话生成的查询密钥，服务端可据此识别重复来信。
+- 通道可用性检查超时会像其他失败一样显示”私密联系通道暂时不可用，请稍后再试”，不再让面板开着却毫无反应。
+
+检查结果：
+
+- 在 `site/` 执行正式 `npm run build` 成功：12 个公开页面、6 个档案详情，公开页面回归检查通过。
+- 抽查构建产物：新超时逻辑（AbortController 与超时提示文案）已进入 `contact-widget` 打包文件。
+
+当前状态：联系表单超时保护已在本地完成并通过检查，尚未提交、推送或部署。检查清单剩余次要项为同意条款版本硬编码、颜色变量收敛、字体预加载核实、首页档案编号索引按需加载，均无访客可见影响，待用户安排。
+
+## 2026-09-18：检查清单三项收尾（投稿同意版本、颜色 token 收敛、字体 preload 核实）
+
+继续处理上一批全站检查中挂起的次要项，只做前端代码整理和核实，不改变档案数据、隐私门禁和管理端功能范围。本次未修改工作区里已有的联系表单超时改动，保留由用户自行决定是否一并提交。
+
+完成内容：
+
+- 投稿同意条款版本不再硬编码（`site/src/scripts/contribute.ts`）：`checkService()` 现在直接读取 `/api/submissions/config` 返回的 `consent_version` 字符串并存入模块级变量 `consentVersion`；`submit` 处理里发送的 `consent_version` 字段改为使用该变量。之前两处写死的 `'2026-09-05-v1'` 移除后，服务端 `local-admin/submissions.mjs` 未来更新版本号时投稿通道不会再一次性失效。作为额外保险，提交前若 `consentVersion` 为空（config 请求失败或未返回），前端直接中止提交并提示”同意条款版本尚未获取，请刷新页面后再试”，不会以空值继续。
+- 颜色 token 收敛（`site/src/layouts/BaseLayout.astro` + 全站 10 个 `.astro` 文件）：在 `:root` 里新增 5 个 token（`--site-bg`、`--site-text`、`--site-border-soft`、`--site-accent-dark`、`--site-focus-outline`），把散落在多处的相同硬编码色集中到一处声明。随后对全站 12 个 `.astro` 文件做**精确同色替换**：只替换与已有或新增 token 完全相等的十六进制值（例如 `#aaa397` → `var(--site-border)`、`#575349` → `var(--site-focus-outline)`），共 69 处；近似色（`#655f52`、`#4f4b43`、`#5f5a50`、`#6b665b`、`#625e54` 等 muted 变体）保留原样，避免视觉漂移。替换通过一次性 Node 脚本完成，脚本明确跳过 `:root` 内 token 声明行和 `<meta name=”theme-color” content=”#eee9dc”>`（后者无法解析 CSS 变量），运行后即删除，未留在仓库中。
+- 字体 preload 核实：`site/src/layouts/BaseLayout.astro` 用 `import brandFont from '...?url'` 生成 preload `<link>`，@font-face 用 `url('../assets/fonts/noto-serif-sc-brand.woff2')`。构建后在 `site/dist/index.html` 与 `site/dist/_astro/BaseLayout.*.css` 中确认两处最终 URL 均为 `/_astro/noto-serif-sc-brand.CT5vpbqx.woff2`，与 `site/dist/_astro/` 下唯一的 woff2 产物完全一致，preload 不会浪费一次请求，也不需要修改源码。
+
+检查结果：
+
+- `contribute.ts` 中已无 `2026-09-05-v1` 字面量；`consent_version` 全部改为读变量；服务端 `local-admin/submissions.mjs` 保持导出的 `consentVersion` 常量，测试用例已经通过导入符号引用，无需同步修改。
+- `grep` 复查：全站 `.astro` 文件里 9 个目标十六进制色仅在 `BaseLayout.astro` 的 `:root` 声明与 `<meta name=”theme-color”>` 中出现，其余 69 处全部改为 `var(--site-*)`；`#9a3f2e33` 等带 alpha 的 8 位十六进制值因负向前瞻未被误替换。
+- 构建产物核对：`site/dist/_astro/BaseLayout.*.css` 里 `:root` 保留全部 9 个 `--site-*` token 声明，`var(--site-accent)`、`var(--site-text)`、`var(--site-focus-outline)` 等在多份打包 CSS 中正常引用；焦点轮廓 `outline:2px solid var(--site-focus-outline)` 等在最终 CSS 中可见。
+- 因为本次替换全部是精确同色，WCAG 对比度按定义不变；沿用 2026-09-16 已复核的相对亮度结论（`--site-muted` 对 `#eee9dc` 为 5.33:1，首页各 muted 变体 ≥4.6:1）。
+- 本地管理端 49 项测试：48 项通过、0 项失败、1 项按既有条件跳过，与既有基线一致；投稿与联系模块单独 13 项测试全部通过。
+- 在 `site/` 执行正式 `npm run build` 成功：复用 13 张响应式图片，生成 12 个公开页面、6 个档案详情；公开页面回归检查（首页精选与去重、分类顺序、空区块、图片尺寸和管理端隔离）全部通过。
+
+当前状态：三项修改已在本地完成并通过检查，尚未提交、推送或部署。工作区仍保留 2026-09-17 的联系表单超时改动（`site/src/scripts/contact-widget.ts`），本次未触碰，等用户决定是否与本批一起提交。检查清单里的其余次要项（若还有）待用户安排。

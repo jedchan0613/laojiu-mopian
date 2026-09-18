@@ -132,7 +132,7 @@ const visibleProfiles = import.meta.env.DEV
 		padding: 0.42rem 0.25rem 0.38rem;
 		color: #4f4b43;
 		background: rgba(248, 244, 234, 0.28);
-		border: 1px solid #aaa397;
+		border: 1px solid var(--site-border);
 		cursor: pointer;
 		font: inherit;
 		line-height: 1.2;
@@ -156,7 +156,7 @@ const visibleProfiles = import.meta.env.DEV
 	}
 
 	.social-profile-link small {
-		color: #777165;
+		color: var(--site-subtle);
 		font-size: 0.67rem;
 		letter-spacing: 0.04em;
 	}
@@ -170,7 +170,7 @@ const visibleProfiles = import.meta.env.DEV
 	.social-profile-link--pending:hover {
 		color: #4f4b43;
 		background: rgba(248, 244, 234, 0.28);
-		border-color: #aaa397;
+		border-color: var(--site-border);
 	}
 
 	:global(.social-profile-icon) {
