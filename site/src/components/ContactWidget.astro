@@ -8,7 +8,7 @@ const fallbackMailto = contactEmail
 	: '';
 ---
 
-<aside class="contact-widget" data-contact-widget data-ready="false" aria-label="联系站主">
+<div class="contact-widget" data-contact-widget data-ready="false" aria-label="联系站主">
 	<button
 		class="contact-launcher"
 		type="button"
@@ -17,7 +17,7 @@ const fallbackMailto = contactEmail
 		aria-controls="contact-panel"
 	>
 		<SiteIcon name="letters" />
-		<span>联系我</span>
+		<span>联系站主</span>
 	</button>
 
 	<section
@@ -167,7 +167,7 @@ const fallbackMailto = contactEmail
 			<p class="contact-lookup-result" data-contact-lookup-result role="status" aria-live="polite"></p>
 		</div>
 	</section>
-</aside>
+</div>
 
 <script>
 	const contactRoot = document.querySelector<HTMLElement>('[data-contact-widget]');
@@ -197,54 +197,56 @@ const fallbackMailto = contactEmail
 </script>
 
 <style>
+	/* 联系入口改为页脚的小型文字入口；只有面板打开时才固定在右下角。 */
 	.contact-widget {
-		position: fixed;
-		right: max(16px, env(safe-area-inset-right));
-		bottom: max(16px, env(safe-area-inset-bottom));
-		z-index: 70;
+		display: inline-flex;
 		font-family: "Songti SC", "STSong", "SimSun", serif;
 	}
 
 	.contact-launcher {
 		display: inline-flex;
 		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		min-width: 7rem;
-		min-height: 2.75rem;
-		padding: 0.58rem 0.8rem;
-		color: #fff8ed;
-		background: var(--site-accent);
-		border: 1px solid var(--site-accent);
-		box-shadow: 0 7px 22px rgba(48, 45, 39, 0.2);
+		gap: 0.4rem;
+		min-height: 2rem;
+		padding: 0;
+		color: var(--site-muted);
+		background: transparent;
+		border: 0;
 		cursor: pointer;
 		font: inherit;
 		font-size: var(--site-text-small);
-		letter-spacing: 0.09em;
+		letter-spacing: 0.1em;
+		text-decoration: underline;
+		text-decoration-color: var(--site-border);
+		text-decoration-thickness: 1px;
+		text-underline-offset: 0.3em;
+		transition: color 150ms ease;
 	}
 
 	.contact-launcher:hover,
-	.contact-launcher:focus-visible {
-		background: var(--site-accent-dark);
-		border-color: var(--site-accent-dark);
+	.contact-launcher:focus-visible,
+	.contact-launcher[aria-expanded='true'] {
+		color: var(--site-accent);
+		text-decoration-color: currentColor;
 	}
 
 	.contact-launcher .site-icon {
-		width: 1rem;
-		height: 1rem;
+		width: 0.95rem;
+		height: 0.95rem;
 	}
 
 	.contact-panel {
-		position: absolute;
-		right: 0;
-		bottom: 3.45rem;
+		position: fixed;
+		right: max(16px, env(safe-area-inset-right));
+		bottom: max(16px, env(safe-area-inset-bottom));
+		z-index: 70;
 		width: min(25rem, calc(100vw - 32px));
-		max-height: calc(100vh - 6.5rem);
-		max-height: calc(100svh - 6.5rem);
+		max-height: calc(100vh - 3rem);
+		max-height: calc(100svh - 3rem);
 		padding: 1.25rem;
 		overflow-y: auto;
 		color: var(--site-text);
-		background: #f7f2e6;
+		background: var(--site-paper);
 		border: 1px solid #9f978a;
 		box-shadow: 0 18px 48px rgba(59, 48, 34, 0.22);
 	}
@@ -649,20 +651,16 @@ const fallbackMailto = contactEmail
 	}
 
 	@media (max-width: 640px) {
-		.contact-widget {
+		.contact-panel {
 			right: max(10px, env(safe-area-inset-right));
 			bottom: max(10px, env(safe-area-inset-bottom));
-		}
-
-		.contact-panel {
-			bottom: 3.15rem;
 			width: calc(100vw - 20px);
-			max-height: calc(100svh - 4.75rem);
+			max-height: calc(100svh - 2rem);
 			padding: 1rem;
 		}
 
 		.contact-launcher {
-			min-height: 2.5rem;
+			min-height: 2.75rem;
 		}
 
 		#contact-form input:not([type='checkbox']),
