@@ -117,26 +117,29 @@ const visibleProfiles = import.meta.env.DEV
 
 	.social-follow ul {
 		display: flex;
-		gap: 0.45rem;
+		flex-wrap: wrap;
+		gap: 0.25rem 1rem;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
 	.social-profile-link {
-		display: grid;
-		place-items: center;
-		gap: 0.16rem;
-		width: 4rem;
-		min-height: 4rem;
-		padding: 0.42rem 0.25rem 0.38rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: flex-start;
+		gap: 0.38rem;
+		width: auto;
+		min-height: 44px;
+		padding: 0.3rem 0;
 		color: #4f4b43;
-		background: rgba(245, 240, 226, 0.5);
-		border: 1px solid var(--site-border);
+		background: transparent;
+		border: 0;
+		border-bottom: 1px solid transparent;
 		cursor: pointer;
 		font: inherit;
 		line-height: 1.2;
-		text-align: center;
+		text-align: left;
 		text-decoration: none;
 		transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
 	}
@@ -145,37 +148,36 @@ const visibleProfiles = import.meta.env.DEV
 	.social-profile-link:focus-visible,
 	.social-profile-details[open] > .social-profile-link {
 		color: var(--site-accent);
-		background: var(--site-accent-soft);
-		border-color: var(--site-accent);
+		background: transparent;
+		border-bottom-color: var(--site-accent);
 	}
 
 	.social-profile-link strong {
-		font-size: 0.72rem;
+		font-size: 0.78rem;
 		font-weight: 500;
 		letter-spacing: 0.06em;
 	}
 
 	.social-profile-link small {
 		color: var(--site-subtle);
-		font-size: 0.67rem;
+		font-size: 0.75rem;
 		letter-spacing: 0.04em;
 	}
 
 	.social-profile-link--pending {
 		cursor: default;
-		border-style: dashed;
 		opacity: 0.68;
 	}
 
 	.social-profile-link--pending:hover {
 		color: #4f4b43;
-		background: rgba(245, 240, 226, 0.5);
-		border-color: var(--site-border);
+		background: transparent;
+		border-bottom-color: transparent;
 	}
 
 	:global(.social-profile-icon) {
-		width: 1.18rem;
-		height: 1.18rem;
+		width: 1.05rem;
+		height: 1.05rem;
 		color: var(--site-muted);
 		stroke-width: 1.5;
 	}
@@ -190,7 +192,7 @@ const visibleProfiles = import.meta.env.DEV
 
 	.social-profile-panel {
 		position: absolute;
-		bottom: calc(4rem + 0.7rem);
+		bottom: calc(100% + 0.7rem);
 		left: 0;
 		z-index: 10;
 		display: grid;
@@ -213,7 +215,7 @@ const visibleProfiles = import.meta.env.DEV
 	}
 
 	.social-profile-panel p {
-		font-size: 0.72rem;
+		font-size: 0.75rem;
 		letter-spacing: 0.08em;
 	}
 
@@ -240,8 +242,17 @@ const visibleProfiles = import.meta.env.DEV
 	.social-profile-panel small {
 		margin-top: 0.4rem;
 		color: #71695d;
-		font-size: 0.66rem;
+		font-size: 0.75rem;
 		line-height: 1.6;
+	}
+
+	@media (max-width: 640px) {
+		.social-profile-panel {
+			position: fixed;
+			inset: auto 1rem calc(1rem + env(safe-area-inset-bottom)) 1rem;
+			width: auto;
+			max-height: calc(100svh - 2rem - env(safe-area-inset-bottom));
+		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
