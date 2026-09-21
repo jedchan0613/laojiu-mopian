@@ -258,7 +258,7 @@ const breadcrumbStructuredData = {
       {isLetter && (
         <header class="letter-reading-header">
           <div>
-            <h2 class="icon-heading"><SiteIcon name="story" /><span>信件阅读</span></h2>
+            <h2 class="icon-heading"><span>信件阅读</span></h2>
           </div>
           <div class="letter-reading-controls">
             {letterReadingModes.length > 1 && (
@@ -393,25 +393,27 @@ const breadcrumbStructuredData = {
               </div>
             )}
 
-            <dialog class="record-lightbox" data-gallery-lightbox aria-label="放大查看档案图片">
+            <dialog class="record-lightbox" data-gallery-lightbox aria-label="在暗室中查看档案图片">
               <div class="lightbox-shell">
-                <button class="lightbox-close" type="button" data-gallery-close aria-label="关闭放大图片">关闭 ×</button>
+                <button class="lightbox-close" type="button" data-gallery-close aria-label="关闭放大图片">关闭</button>
                 {galleryImages.length > 1 && (
                   <button class="lightbox-previous" type="button" data-gallery-previous aria-label="查看上一张图片">
-                    <span aria-hidden="true">←</span><small>上一张</small>
+                    <span aria-hidden="true">←</span>
                   </button>
                 )}
                 <figure class="lightbox-figure" data-gallery-swipe>
-                  <img
-                    data-lightbox-main
-                    src={galleryImages[0].src}
-                    srcset={galleryImages[0].srcset}
-                    sizes="100vw"
-                    alt={galleryImages[0].description}
-                    width={galleryImages[0].width}
-                    height={galleryImages[0].height}
-                    decoding="async"
-                  />
+                  <div class="lightbox-stage">
+                    <img
+                      data-lightbox-main
+                      src={galleryImages[0].src}
+                      srcset={galleryImages[0].srcset}
+                      sizes="100vw"
+                      alt={galleryImages[0].description}
+                      width={galleryImages[0].width}
+                      height={galleryImages[0].height}
+                      decoding="async"
+                    />
+                  </div>
                   <figcaption>
                     <span class="lightbox-caption-copy">
                       <strong data-lightbox-role>{galleryImages[0].role}</strong>
@@ -422,7 +424,7 @@ const breadcrumbStructuredData = {
                 </figure>
                 {galleryImages.length > 1 && (
                   <button class="lightbox-next" type="button" data-gallery-next aria-label="查看下一张图片">
-                    <span aria-hidden="true">→</span><small>下一张</small>
+                    <span aria-hidden="true">→</span>
                   </button>
                 )}
               </div>
@@ -1077,9 +1079,13 @@ const breadcrumbStructuredData = {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.7rem 1.25rem;
-    padding: 0.9rem 1rem 1rem;
-    background: rgba(224, 215, 197, 0.34);
-    border-left: 3px solid var(--site-ink);
+    padding: 0 0 1rem;
+    background: transparent;
+    border-bottom: 1px solid var(--site-border);
+  }
+
+  .letter-reading-header .site-icon {
+    display: none;
   }
 
   .letter-reading-header p,
@@ -1170,15 +1176,18 @@ const breadcrumbStructuredData = {
     grid-column: 1 / -1;
     width: min(100%, 54rem);
     justify-self: center;
-    padding: clamp(1.2rem, 3.5vw, 2.4rem) clamp(1rem, 4.5vw, 3.5rem);
-    background: rgba(249, 246, 237, 0.82);
-    border: 1px solid #c8bfad;
-    box-shadow: 0 0.65rem 1.8rem rgba(69, 62, 49, 0.06);
+    padding: clamp(1.8rem, 4vw, 3rem) clamp(1.2rem, 5vw, 3.6rem);
+    color: #e8e0d2;
+    background: var(--site-darkroom);
+    border: 0;
+    box-shadow: none;
   }
 
   .record-sheet--letter[data-letter-mode='compare'] > .letter-transcription {
     grid-column: 1;
     width: 100%;
+    padding: 1.35rem 1.2rem 1.5rem;
+    background: #161310;
   }
 
   .record-sheet--letter[data-letter-mode='compare'] > .record-gallery {
@@ -1191,35 +1200,27 @@ const breadcrumbStructuredData = {
     justify-content: space-between;
     gap: 1rem;
     padding-bottom: 0.85rem;
-    border-bottom: 1px solid #d1c9b9;
+    border-bottom: 1px solid rgba(232, 224, 210, 0.18);
   }
 
   .letter-transcription > header h2 {
     margin: 0;
-  }
-
-  .letter-transcription > header h2 {
-    font-size: 1.08rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-  }
-
-  .letter-transcription > header > span {
-    flex: 0 0 auto;
-    color: #777064;
+    color: #c9c0b1;
+    font-family: var(--site-ui-font);
     font-size: 0.72rem;
-    letter-spacing: 0.08em;
+    font-weight: 500;
+    letter-spacing: 0.18em;
   }
 
   .letter-transcription-text {
-    max-width: 44rem;
-    margin: clamp(1.5rem, 4vw, 2.8rem) auto;
+    max-width: 36rem;
+    margin: clamp(1.5rem, 4vw, 2.6rem) auto;
     overflow-wrap: anywhere;
-    color: #34322d;
+    color: #f3eadc;
     font-family: var(--site-text-font);
-    font-size: clamp(1.02rem, 1.5vw, 1.15rem);
-    letter-spacing: 0.035em;
-    line-height: 2.15;
+    font-size: clamp(1.02rem, 1.5vw, 1.18rem);
+    letter-spacing: 0.06em;
+    line-height: 2.2;
     white-space: pre-wrap;
   }
 
@@ -1237,8 +1238,8 @@ const breadcrumbStructuredData = {
     flex-wrap: wrap;
     gap: 0.35rem 1.2rem;
     padding-top: 0.85rem;
-    color: #7a7368;
-    border-top: 1px solid #d1c9b9;
+    color: #9f9688;
+    border-top: 1px solid rgba(232, 224, 210, 0.18);
     font-size: var(--site-text-micro);
     line-height: 1.6;
   }
@@ -1449,23 +1450,26 @@ const breadcrumbStructuredData = {
     max-height: none;
     margin: 0;
     padding: 0;
-    color: #f4eee3;
-    background: rgba(25, 25, 23, 0.97);
+    color: #e8e0d2;
+    color-scheme: dark;
+    background:
+      radial-gradient(ellipse 68% 52% at 50% 40%, rgba(78, 36, 18, 0.2), transparent 64%),
+      var(--site-darkroom);
     border: 0;
   }
 
   .record-lightbox::backdrop {
-    background: rgba(16, 16, 14, 0.92);
+    background: #070605;
   }
 
   .lightbox-shell {
     position: relative;
     display: grid;
-    grid-template-columns: 5rem minmax(0, 1fr) 5rem;
+    grid-template-columns: 4.25rem minmax(0, 1fr) 4.25rem;
     align-items: center;
     width: 100%;
     height: 100%;
-    padding: 3.8rem clamp(1rem, 3vw, 2.5rem) 1rem;
+    padding: 3.6rem clamp(0.8rem, 3vw, 2.25rem) 1rem;
   }
 
   .lightbox-close,
@@ -1475,10 +1479,12 @@ const breadcrumbStructuredData = {
     min-width: 2.75rem;
     min-height: 2.75rem;
     place-items: center;
-    color: #f4eee3;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #e8e0d2;
+    background: transparent;
+    border: 0;
     cursor: pointer;
+    font-family: var(--site-ui-font);
+    letter-spacing: 0.12em;
   }
 
   .lightbox-close:hover,
@@ -1487,31 +1493,33 @@ const breadcrumbStructuredData = {
   .lightbox-previous:focus-visible,
   .lightbox-next:hover,
   .lightbox-next:focus-visible {
-    background: rgba(255, 255, 255, 0.17);
-    outline: 2px solid #f4eee3;
+    color: #f7f1e6;
+    background: rgba(255, 255, 255, 0.06);
+    outline: 2px solid #e8e0d2;
     outline-offset: 2px;
   }
 
   .lightbox-close {
     position: absolute;
-    top: 0.8rem;
-    right: clamp(1rem, 3vw, 2.5rem);
+    top: 0.7rem;
+    right: clamp(0.8rem, 3vw, 2.25rem);
     z-index: 1;
     min-width: auto;
-    padding: 0.55rem 0.75rem;
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.72rem;
   }
 
   .lightbox-previous,
   .lightbox-next {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.2rem;
-    min-height: 4.25rem;
-    font-size: 1.15rem;
+    font-size: 1.35rem;
+    opacity: 0.72;
+  }
+
+  .lightbox-previous:hover,
+  .lightbox-next:hover,
+  .lightbox-previous:focus-visible,
+  .lightbox-next:focus-visible {
+    opacity: 1;
   }
 
   .lightbox-previous {
@@ -1524,14 +1532,6 @@ const breadcrumbStructuredData = {
     grid-row: 1;
   }
 
-  .lightbox-previous small,
-  .lightbox-next small {
-    color: inherit;
-    font-size: 0.66rem;
-    line-height: 1;
-    letter-spacing: 0.08em;
-  }
-
   .lightbox-figure {
     display: grid;
     grid-column: 2;
@@ -1541,8 +1541,19 @@ const breadcrumbStructuredData = {
     min-width: 0;
     min-height: 0;
     margin: 0;
-    padding: 0 clamp(0.6rem, 2vw, 1.5rem);
+    padding: 0 clamp(0.4rem, 1.6vw, 1.1rem);
     touch-action: pan-y;
+  }
+
+  .lightbox-stage {
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    background:
+      radial-gradient(ellipse at center, rgba(255, 214, 168, 0.1), transparent 68%);
   }
 
   .lightbox-figure img {
@@ -1557,8 +1568,9 @@ const breadcrumbStructuredData = {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    padding-top: 0.7rem;
-    color: #cfc7ba;
+    padding-top: 0.75rem;
+    color: #c9c0b1;
+    font-family: var(--site-ui-font);
     font-size: 0.72rem;
     letter-spacing: 0.06em;
     line-height: 1.6;
@@ -1567,11 +1579,12 @@ const breadcrumbStructuredData = {
   .lightbox-figure figcaption small {
     flex: 0 0 auto;
     font-size: inherit;
+    color: #9f9688;
   }
 
   .lightbox-caption-copy strong {
-    color: #f0a796;
-    border-right-color: rgba(255, 255, 255, 0.28);
+    color: #e8e0d2;
+    border-right-color: rgba(255, 255, 255, 0.18);
   }
 
   .facts-heading {
@@ -1703,10 +1716,9 @@ const breadcrumbStructuredData = {
     display: grid;
     grid-template-columns: minmax(8.5rem, 0.3fr) minmax(0, 1fr);
     gap: clamp(1.5rem, 5vw, 4rem);
-    padding: 1.35rem 1rem 1.5rem;
-    background: var(--site-paper);
-    border-top: 1px solid #c8c0b1;
-    border-left: 3px solid rgba(44, 40, 35, 0.28);
+    padding: 1.35rem 0 1.5rem;
+    background: transparent;
+    border-top: 1px solid var(--site-border-soft);
   }
 
   .record-section + .record-section,
@@ -1719,8 +1731,8 @@ const breadcrumbStructuredData = {
   }
 
   .management-information {
-    padding: 0 1rem;
-    background: rgba(248, 244, 234, 0.2);
+    padding: 0;
+    background: transparent;
     border-top: 1px solid var(--site-border-soft);
     border-bottom: 1px solid var(--site-border-soft);
   }
@@ -1807,23 +1819,23 @@ const breadcrumbStructuredData = {
     display: grid;
     grid-template-rows: auto 1fr;
     min-width: 0;
-    padding: 0.55rem;
+    padding: 0;
     color: inherit;
-    border: 1px solid #c4bdad;
+    border: 0;
     text-decoration: none;
   }
 
   .record-related-grid a:hover,
   .record-related-grid a:focus-visible {
-    border-color: #6b665b;
+    color: var(--site-ink);
   }
 
   .record-related-grid figure {
     aspect-ratio: 3 / 2;
     margin: 0;
     overflow: hidden;
-    background: #dfd8c9;
-    border: 1px solid #d0c8b8;
+    background: var(--site-mat-deep);
+    border: 0;
   }
 
   .record-related-grid img {
@@ -1864,10 +1876,9 @@ const breadcrumbStructuredData = {
     gap: clamp(1.5rem, 5vw, 4rem);
     max-width: 58rem;
     margin-top: clamp(2.5rem, 5vw, 4rem);
-    padding: 1.2rem 1.1rem 1.3rem;
-    background: var(--site-paper);
-    border: 1px solid #c7bfaf;
-    border-left: 3px solid var(--site-ink);
+    padding: 1.2rem 0 1.3rem;
+    background: transparent;
+    border-top: 1px solid var(--site-border-soft);
   }
 
   .record-usage-heading h2,
@@ -1957,9 +1968,9 @@ const breadcrumbStructuredData = {
     gap: clamp(1.5rem, 5vw, 4rem);
     max-width: 58rem;
     margin-top: clamp(2.5rem, 5vw, 4rem);
-    padding: 1.2rem 1.1rem 1.3rem;
-    background: var(--site-paper);
-    border: 1px solid #c7bfaf;
+    padding: 1.2rem 0 1.3rem;
+    background: transparent;
+    border-top: 1px solid var(--site-border-soft);
   }
 
   .record-citation-heading h2,
@@ -2179,7 +2190,7 @@ const breadcrumbStructuredData = {
 
     .letter-reading-header {
       grid-template-columns: 1fr;
-      padding: 0.8rem;
+      padding: 0 0 0.85rem;
     }
 
     .letter-reading-controls {
@@ -2233,8 +2244,8 @@ const breadcrumbStructuredData = {
     }
 
     .lightbox-shell {
-      grid-template-columns: 3.35rem minmax(0, 1fr) 3.35rem;
-      padding: 3.7rem 0.55rem 0.75rem;
+      grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+      padding: 3.5rem 0.4rem 0.75rem;
     }
 
     .lightbox-figure {
@@ -2257,7 +2268,7 @@ const breadcrumbStructuredData = {
     .record-section {
       grid-template-columns: 1fr;
       gap: 1rem;
-      padding: 1.15rem 0.85rem 1.3rem;
+      padding: 1.15rem 0 1.3rem;
     }
 
     .record-citation {

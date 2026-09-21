@@ -90,7 +90,7 @@ const serializedStructuredData = structuredData
 						<a href="/corrections/">纠错与撤下</a>
 						<ContactWidget />
 					</div>
-					<p class="footer-statement">把那些原本会消失的人生，留下来。</p>
+					<p class="footer-statement">公开页只展示经过核对的发布副本。</p>
 				</div>
 			</footer>
 		</div>
@@ -138,6 +138,8 @@ const serializedStructuredData = structuredData
 		--site-text-small: 0.78rem;
 		--site-control-height: 2.5rem;
 		--site-label-tracking: 0.08em;
+		--site-darkroom: #0c0b09;
+		--site-paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch' seed='2'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.28 0 0 0 0 0.24 0 0 0 0 0.16 0.22 0.2 0.16 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 	}
 
 	* {
@@ -146,14 +148,42 @@ const serializedStructuredData = structuredData
 
 	html {
 		min-width: 0;
-		background: var(--site-bg);
+		background-color: var(--site-bg);
+		background-image:
+			var(--site-paper-grain),
+			repeating-linear-gradient(
+				90deg,
+				rgba(72, 58, 36, 0.028) 0 1px,
+				transparent 1px 4px
+			),
+			repeating-linear-gradient(
+				0deg,
+				rgba(72, 58, 36, 0.02) 0 1px,
+				transparent 1px 5px
+			);
+		background-size: 256px 256px, 4px 100%, 100% 5px;
+		background-repeat: repeat;
 	}
 
 	body {
 		margin: 0;
 		min-width: 0;
 		min-height: 100vh;
-		background: var(--site-bg);
+		background-color: var(--site-bg);
+		background-image:
+			var(--site-paper-grain),
+			repeating-linear-gradient(
+				90deg,
+				rgba(72, 58, 36, 0.028) 0 1px,
+				transparent 1px 4px
+			),
+			repeating-linear-gradient(
+				0deg,
+				rgba(72, 58, 36, 0.02) 0 1px,
+				transparent 1px 5px
+			);
+		background-size: 256px 256px, 4px 100%, 100% 5px;
+		background-repeat: repeat;
 		color: var(--site-text);
 		text-rendering: optimizeLegibility;
 		-webkit-font-smoothing: antialiased;
@@ -193,11 +223,11 @@ const serializedStructuredData = structuredData
 	.icon-heading {
 		display: flex;
 		align-items: center;
-		gap: 0.55rem;
+		gap: 0;
 	}
 
 	.icon-heading .site-icon {
-		color: var(--site-muted);
+		display: none;
 	}
 
 	.ui-action {
@@ -521,6 +551,17 @@ const serializedStructuredData = structuredData
 			gap: 9px;
 			letter-spacing: 0;
 		}
+	}
+
+	@keyframes ljm-fade-in {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	.hero-record-image img,
+	.archive-image img,
+	.record-image img {
+		animation: ljm-fade-in 0.7s ease both;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
