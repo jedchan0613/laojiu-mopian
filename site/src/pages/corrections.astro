@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SiteIcon from '../components/SiteIcon.astro';
 
 const configuredEmail = import.meta.env.PUBLIC_CONTACT_EMAIL?.trim() ?? '';
 const contactEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(configuredEmail) ? configuredEmail : '';
@@ -22,38 +21,58 @@ const mailtoHref = contactEmail
 >
   <article class="correction-page">
     <header class="correction-heading">
-      <h1>纠错与撤下说明</h1>
-      <p>如果公开档案存在事实错误、权利信息缺失、隐私风险或不适合继续公开的情况，可以按下面的范围准备核对材料。</p>
+      <p class="correction-eyebrow">纠错与撤下</p>
+      <h1>如果某件档案需要更正，或不再适合公开，可以按这里的方式联系。</h1>
+      <p>本页没有在线表单，不会收集您填写的内容。请先准备核对材料，再通过联系站主或邮件提交。</p>
     </header>
 
-    <section class="request-types" aria-labelledby="request-types-heading">
+    <section class="correction-section" aria-labelledby="request-types-heading">
       <h2 id="request-types-heading">可以提出哪些申请</h2>
-      <div>
-        <article><span>01</span><strong>资料纠错</strong><p>题名、年代、地点、人物、事件或其他说明可能存在错误。</p></article>
-        <article><span>02</span><strong>权利补充</strong><p>补充著作权、授权范围、署名方式或资料来源。</p></article>
-        <article><span>03</span><strong>限制公开</strong><p>申请遮盖敏感内容、限制下载或缩小公开范围。</p></article>
-        <article><span>04</span><strong>撤下申请</strong><p>申请暂时或长期停止公开某件档案及其发布副本。</p></article>
-      </div>
+      <dl>
+        <div>
+          <dt>资料纠错</dt>
+          <dd>题名、年代、地点、人物、事件或其他说明可能存在错误。</dd>
+        </div>
+        <div>
+          <dt>权利补充</dt>
+          <dd>补充著作权、授权范围、署名方式或资料来源。</dd>
+        </div>
+        <div>
+          <dt>限制公开</dt>
+          <dd>申请遮盖敏感内容、限制下载或缩小公开范围。</dd>
+        </div>
+        <div>
+          <dt>撤下申请</dt>
+          <dd>申请暂时或长期停止公开某件档案及其发布副本。</dd>
+        </div>
+      </dl>
     </section>
 
-    <section class="request-process" aria-labelledby="request-process-heading">
-      <div>
-        <p class="section-index">提交前准备</p>
-        <h2 id="request-process-heading" class="icon-heading"><SiteIcon name="citation" /><span>以永久编号定位档案</span></h2>
-      </div>
+    <section class="correction-section" aria-labelledby="request-process-heading">
+      <h2 id="request-process-heading">提交前请准备</h2>
       <ol>
-        <li><strong>提供永久编号和页面地址</strong><span>永久编号通常以“LJM-”开头，用它可以避免认错档案。</span></li>
-        <li><strong>说明希望核对的内容</strong><span>明确指出哪句话、哪项资料或哪张发布图片需要处理。</span></li>
-        <li><strong>提供能够帮助判断的依据</strong><span>可以说明资料来源或关系，但不要通过公开网页提交身份证号、完整地址、签名等敏感信息。</span></li>
-        <li><strong>等待人工核对</strong><span>收到申请不等于立即修改；必要时会先暂时撤下，再核对档案和权利情况。</span></li>
+        <li>
+          <strong>提供永久编号和页面地址</strong>
+          <span>永久编号通常以“LJM-”开头，用它可以避免认错档案。</span>
+        </li>
+        <li>
+          <strong>说明希望核对的内容</strong>
+          <span>明确指出哪句话、哪项资料或哪张发布图片需要处理。</span>
+        </li>
+        <li>
+          <strong>提供能够帮助判断的依据</strong>
+          <span>可以说明资料来源或关系，但不要通过公开网页提交身份证号、完整地址、签名等敏感信息。</span>
+        </li>
+        <li>
+          <strong>等待人工核对</strong>
+          <span>收到申请不等于立即修改；必要时会先暂时撤下，再核对档案和权利情况。</span>
+        </li>
       </ol>
     </section>
 
-    <section class="request-template" aria-labelledby="request-template-heading">
-      <div>
-        <h2 id="request-template-heading">申请内容模板</h2>
-        <p>本页没有在线表单，不会把你填写的内容上传或保存在网站中。复制模板后，请在你自己的邮件或文字工具中填写。</p>
-      </div>
+    <section class="correction-section" aria-labelledby="request-template-heading">
+      <h2 id="request-template-heading">申请内容模板</h2>
+      <p>复制模板后，请在您自己的邮件或文字工具中填写。站点不会在这一页保存任何申请内容。</p>
       <pre id="correction-request-template">{requestTemplate}</pre>
       <div class="request-actions">
         <button class="ui-action ui-action--secondary" type="button" data-copy-correction-template>复制申请模板</button>
@@ -91,156 +110,127 @@ const mailtoHref = contactEmail
 
 <style>
   .correction-page {
-    max-width: 58rem;
+    max-width: 42rem;
     margin: 0 auto;
-    padding-top: clamp(3.5rem, 7vw, 5.5rem);
+    padding-top: clamp(3.25rem, 7vw, 5.25rem);
   }
 
-  .section-index {
-    margin: 0;
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
+  .correction-eyebrow {
+    margin: 0 0 0.85rem;
+    color: var(--site-subtle);
+    font-family: var(--site-ui-font);
     font-size: var(--site-text-micro);
     letter-spacing: 0.16em;
   }
 
   h1 {
     margin: 0;
-    font-size: clamp(2.2rem, 5vw, 3.6rem);
-    font-weight: 500;
-    letter-spacing: 0.09em;
-    line-height: 1.3;
+    font-size: clamp(1.7rem, 3.4vw, 2.35rem);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.35;
+    text-wrap: balance;
   }
 
   .correction-heading > p:last-child {
-    max-width: 44rem;
     margin: 1.35rem 0 0;
     color: #514e47;
     font-size: 1rem;
-    line-height: 2;
+    line-height: 1.9;
+    letter-spacing: 0.03em;
   }
 
-  .request-types,
-  .request-process,
-  .request-template,
-  .privacy-boundary {
-    margin-top: clamp(2.7rem, 6vw, 4.2rem);
+  .correction-section {
+    margin-top: clamp(2.2rem, 5vw, 3.2rem);
   }
 
-  .request-types h2,
-  .request-process h2,
-  .request-template h2 {
-    margin: 0;
-    font-size: clamp(1.25rem, 2.5vw, 1.6rem);
-    font-weight: 500;
-    letter-spacing: 0.07em;
-  }
-
-  .request-types > div {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.7rem;
-    margin-top: 1rem;
-  }
-
-  .request-types article {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 0.35rem 0.75rem;
-    padding: 1rem;
-    background: var(--site-paper);
-    border: 1px solid #c8c0b1;
-  }
-
-  .request-types article span {
-    grid-row: 1 / span 2;
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: var(--site-text-micro);
-  }
-
-  .request-types strong {
-    font-size: 0.98rem;
+  .correction-section h2 {
+    margin: 0 0 0.95rem;
+    font-size: clamp(1.15rem, 2.1vw, 1.35rem);
     font-weight: 600;
+    letter-spacing: 0.06em;
+    line-height: 1.5;
   }
 
-  .request-types p,
-  .request-template p,
-  .privacy-boundary p {
+  .correction-section p {
+    margin: 0 0 1rem;
+    color: #45433e;
+    font-size: 0.98rem;
+    line-height: 1.95;
+  }
+
+  dl {
     margin: 0;
-    color: var(--site-muted);
+    display: grid;
+    gap: 0.85rem 0;
+  }
+
+  dl > div {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    gap: 0.6rem 1.1rem;
+    padding: 0.7rem 0;
+    border-top: 1px solid var(--site-border-soft);
+  }
+
+  dl > div:last-child {
+    border-bottom: 1px solid var(--site-border-soft);
+  }
+
+  dt {
+    color: var(--site-subtle);
+    font-family: var(--site-ui-font);
     font-size: var(--site-text-small);
-    line-height: 1.8;
+    letter-spacing: 0.08em;
+    line-height: 1.6;
   }
 
-  .request-process {
-    display: grid;
-    grid-template-columns: minmax(10rem, 0.34fr) minmax(0, 1fr);
-    gap: clamp(1.5rem, 5vw, 4rem);
-    padding: 1.25rem;
-    background: var(--site-paper);
-    border: 1px solid #c8c0b1;
-    border-left: 3px solid rgba(154, 63, 46, 0.42);
+  dd {
+    margin: 0;
+    color: #45433e;
+    font-size: 0.95rem;
+    line-height: 1.75;
   }
 
-  .request-process h2 {
-    margin-top: 0.55rem;
-  }
-
-  .request-process ol {
-    display: grid;
-    gap: 0;
+  ol {
     margin: 0;
     padding: 0;
     list-style: none;
+    display: grid;
+    gap: 0;
   }
 
-  .request-process li {
+  ol li {
     display: grid;
     gap: 0.25rem;
-    padding: 0.8rem 0;
-    border-bottom: 1px solid #cbc3b4;
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--site-border-soft);
   }
 
-  .request-process li:first-child {
-    padding-top: 0;
+  ol li:last-child {
+    border-bottom: 1px solid var(--site-border-soft);
   }
 
-  .request-process li:last-child {
-    padding-bottom: 0;
-    border-bottom: 0;
-  }
-
-  .request-process li strong {
-    font-size: 0.9rem;
+  ol li strong {
+    font-size: 0.95rem;
     font-weight: 600;
   }
 
-  .request-process li span {
+  ol li span {
     color: var(--site-muted);
     font-size: var(--site-text-small);
     line-height: 1.75;
   }
 
-  .request-template {
-    padding-top: 1.4rem;
-    border-top: 1px solid var(--site-border);
-  }
-
-  .request-template > div:first-child {
-    display: grid;
-    gap: 0.6rem;
-    max-width: 44rem;
-  }
-
   pre {
     margin: 1rem 0 0;
-    padding: 1rem;
+    padding: 1rem 0;
     overflow-x: auto;
     color: #3f3c36;
-    background: var(--site-paper-strong);
-    border: 1px solid #c1b7a4;
-    font-family: "Microsoft YaHei", sans-serif;
+    background: transparent;
+    border-top: 1px solid var(--site-border-soft);
+    border-bottom: 1px solid var(--site-border-soft);
+    font-family: var(--site-ui-font);
     font-size: 0.78rem;
     line-height: 1.9;
     white-space: pre-wrap;
@@ -250,52 +240,46 @@ const mailtoHref = contactEmail
     display: flex;
     flex-wrap: wrap;
     gap: 0.7rem;
-    margin-top: 0.8rem;
+    margin-top: 0.9rem;
   }
 
   .copy-feedback {
     min-height: 1.4rem;
-    margin-top: 0.45rem !important;
-    color: var(--site-accent) !important;
+    margin: 0.45rem 0 0;
+    color: var(--site-muted);
+    font-size: var(--site-text-small);
   }
 
   .contact-pending,
   .privacy-boundary {
     display: grid;
     gap: 0.35rem;
-    padding: 0.9rem 1rem;
-    background: rgba(248, 244, 234, 0.38);
-    border: 1px solid #c8c0b1;
-  }
-
-  .contact-pending {
-    margin-top: 0.8rem;
+    margin-top: 1.4rem;
+    padding: 1rem 0 0;
+    border-top: 1px solid var(--site-border);
   }
 
   .contact-pending strong,
   .privacy-boundary strong {
-    font-size: 0.86rem;
+    font-size: 0.92rem;
   }
 
+  .privacy-boundary p,
   .contact-pending span {
+    margin: 0;
     color: var(--site-muted);
     font-size: var(--site-text-small);
-    line-height: 1.75;
-  }
-
-  .privacy-boundary {
-    border-left: 3px solid var(--site-accent);
+    line-height: 1.8;
   }
 
   @media (max-width: 640px) {
-    .request-types > div,
-    .request-process {
-      grid-template-columns: 1fr;
+    .correction-page {
+      padding-top: 2.6rem;
     }
 
-    .request-process {
-      gap: 1.2rem;
-      padding: 1rem;
+    dl > div {
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
     }
   }
 </style>
