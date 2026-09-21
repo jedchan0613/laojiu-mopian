@@ -15,6 +15,16 @@ const loadingItems = new Set<string>();
 // 记录单条数据异常的档案：只让这一件的按钮显示“暂不可用”，不再拖垮整批，也不再反复重试。
 const brokenItems = new Set<string>();
 
+function listedItemIds() {
+	const fromButtons = buttons
+		.map((button) => button.dataset.itemId)
+		.filter((itemId): itemId is string => Boolean(itemId));
+	const fromList = [...document.querySelectorAll<HTMLElement>('[data-archive-id]')]
+		.map((element) => element.dataset.archiveId)
+		.filter((itemId): itemId is string => Boolean(itemId));
+	return [...new Set([...fromButtons, ...fromList])];
+}
+
 function buttonsFor(itemId: string) {
 	return buttons.filter((button) => button.dataset.itemId === itemId);
 }
@@ -102,7 +112,8 @@ async function loadItemStates(itemIds: string[]) {
 }
 
 function initializeLikes() {
-	if (buttons.length === 0) return;
+	const initialItemIds = listedItemIds();
+	if (buttons.length === 0 && initialItemIds.length === 0) return;
 
 	for (const button of buttons) {
 		button.addEventListener('archive-like-target-change', () => {
@@ -145,7 +156,6 @@ function initializeLikes() {
 		});
 	}
 
-	const initialItemIds = [...new Set(buttons.map((button) => button.dataset.itemId).filter(Boolean))] as string[];
 	const loadInitialStates = () => { void loadItemStates(initialItemIds); };
 	if (document.readyState === 'complete') window.setTimeout(loadInitialStates, 0);
 	else window.addEventListener('load', loadInitialStates, { once: true });

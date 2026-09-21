@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import ArchiveLikeButton from '../components/ArchiveLikeButton.astro';
 import SiteIcon, { type SiteIconName } from '../components/SiteIcon.astro';
 import BrandMark from '../components/BrandMark.astro';
 import { archiveItems } from '../data/archive';
@@ -220,13 +219,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 							<span class="carousel-announcement" data-home-carousel-announcement aria-live="polite"></span>
 						</div>
 					)}
-					<div class="hero-record-actions">
-						<ArchiveLikeButton
-							itemId={firstFeaturedSlide.itemId}
-							title={firstFeaturedSlide.title}
-							compact
-						/>
-					</div>
 				</div>
 			)}
 		</div>
@@ -303,9 +295,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 								<em>查看档案 →</em>
 							</span>
 						</a>
-						<div class="recent-record-actions">
-							<ArchiveLikeButton itemId={leadEntry.view.id} title={leadEntry.view.title} compact />
-						</div>
 					</article>
 
 					{sideEntries.length > 0 && (
@@ -340,9 +329,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 												<em>查看档案 →</em>
 											</span>
 										</a>
-										<div class="recent-record-actions">
-											<ArchiveLikeButton itemId={view.id} title={view.title} compact />
-										</div>
 									</li>
 								))}
 							</ul>
@@ -366,7 +352,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	</div>
 	<script type="application/json" id="random-record-index" set:html={JSON.stringify(randomRecordIds)} />
 	<script>
-		import '../scripts/archive-likes';
 		import '../scripts/home-featured-carousel';
 		import '../scripts/random-record';
 		import { clearViewHistory, readViewHistory } from '../scripts/view-history';
@@ -551,7 +536,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.random-record-link:hover,
 	.random-record-link:focus-visible {
-		color: var(--site-accent);
+		color: var(--site-ink);
 		text-decoration-color: currentColor;
 	}
 
@@ -628,7 +613,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	}
 
 	.view-history-clear:hover {
-		color: var(--site-accent);
+		color: var(--site-ink);
 		text-decoration-color: currentColor;
 	}
 
@@ -724,7 +709,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	}
 
 	.view-history-list :global(.view-history-copy em) {
-		color: var(--site-accent);
+		color: var(--site-muted);
 		font-size: 0.75rem;
 		font-style: normal;
 		letter-spacing: var(--ls-text);
@@ -780,7 +765,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		align-items: baseline;
 		gap: 0.35rem;
 		color: var(--site-subtle);
-		font-family: Georgia, 'Times New Roman', serif;
+		font-family: var(--site-ui-font);
 		font-size: var(--site-text-micro);
 		font-weight: 400;
 		line-height: 1.45;
@@ -797,6 +782,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.hero-record figcaption strong {
 		min-width: 0;
+		font-family: var(--site-brand-font);
 		font-size: clamp(1.05rem, 1.7vw, 1.3rem);
 		font-weight: 600;
 		line-height: 1.4;
@@ -810,8 +796,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.hero-record:hover figure,
 	.hero-record:focus-visible figure {
-		border-color: rgba(154, 63, 46, 0.4);
-		box-shadow: 0 12px 32px rgba(154, 63, 46, 0.1), 0 3px 8px rgba(154, 63, 46, 0.05);
+		border-color: rgba(44, 40, 35, 0.45);
+		box-shadow: 0 12px 32px rgba(44, 40, 35, 0.1), 0 3px 8px rgba(44, 40, 35, 0.05);
 	}
 
 	.hero-record:active figure {
@@ -823,18 +809,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		text-decoration: underline;
 		text-decoration-thickness: 1px;
 		text-underline-offset: 0.3em;
-	}
-
-	.hero-record-actions {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 0.4rem;
-	}
-
-	.recent-record-actions {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 0.72rem;
 	}
 
 	/* 轮播控件：浮动箭头在图片两侧，圆点指示器在底部居中 */
@@ -885,9 +859,9 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.carousel-arrow:hover,
 	.carousel-arrow:focus-visible {
-		color: var(--site-accent);
+		color: var(--site-ink);
 		background: #f8f2e6;
-		border-color: rgba(154, 63, 46, 0.5);
+		border-color: rgba(44, 40, 35, 0.45);
 		transform: scale(1.06);
 	}
 
@@ -1018,7 +992,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.category-index {
 		color: var(--site-subtle);
-		font-family: Georgia, 'Times New Roman', serif;
+		font-family: var(--site-ui-font);
 		font-size: var(--site-text-micro);
 		letter-spacing: var(--ls-text);
 	}
@@ -1055,14 +1029,14 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	.category-active-list a:hover,
 	.category-active-list a:focus-visible {
 		color: var(--site-text);
-		background: rgba(154, 63, 46, 0.04);
+		background: rgba(44, 40, 35, 0.04);
 	}
 
 	.category-active-list a:hover .category-index,
 	.category-active-list a:focus-visible .category-index,
 	.category-active-list a:hover :global(.category-icon),
 	.category-active-list a:focus-visible :global(.category-icon) {
-		color: var(--site-accent);
+		color: var(--site-ink);
 	}
 
 	.category-active-list a:hover strong,
@@ -1102,7 +1076,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	.category-pending-link {
 		color: var(--site-muted);
 		text-decoration: underline;
-		text-decoration-color: rgba(154, 63, 46, 0.3);
+		text-decoration-color: rgba(44, 40, 35, 0.28);
 		text-decoration-thickness: 1px;
 		text-underline-offset: 0.3em;
 		transition: color 160ms ease, text-decoration-color 160ms ease;
@@ -1110,8 +1084,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.category-pending-link:hover,
 	.category-pending-link:focus-visible {
-		color: var(--site-accent);
-		text-decoration-color: var(--site-accent);
+		color: var(--site-ink);
+		text-decoration-color: var(--site-ink);
 	}
 
 	/* 继续浏览区：编辑式版式——左侧横向主图版，右侧小件错落排列 */
@@ -1223,7 +1197,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	}
 
 	.recent-lead-copy em {
-		color: var(--site-accent);
+		color: var(--site-muted);
 		font-size: 0.76rem;
 		font-style: normal;
 		letter-spacing: var(--ls-text);
@@ -1237,8 +1211,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.recent-lead > a:hover .recent-lead-image,
 	.recent-lead > a:focus-visible .recent-lead-image {
-		border-color: rgba(154, 63, 46, 0.4);
-		box-shadow: 0 8px 22px rgba(154, 63, 46, 0.09);
+		border-color: rgba(44, 40, 35, 0.4);
+		box-shadow: 0 8px 22px rgba(44, 40, 35, 0.09);
 	}
 
 	.recent-lead > a:hover strong,
@@ -1272,10 +1246,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	}
 
 	.recent-side li {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 0.75rem;
-		align-items: start;
+		min-width: 0;
 		padding-top: 1.5rem;
 		border-top: 1px solid var(--site-border-soft);
 	}
@@ -1336,18 +1307,18 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	}
 
 	.recent-record-copy em {
-		color: var(--site-accent);
+		color: var(--site-muted);
 		font-size: 0.75rem;
 		font-style: normal;
 		letter-spacing: var(--ls-text);
 		transition: transform 160ms ease;
 	}
 
-	/* 编号用朱砂红小字，不再使用红底色块 */
+	/* 编号用展签小字，不再使用朱红 */
 	.recent-record-index {
 		margin-right: 0.55rem;
-		color: var(--site-accent);
-		font-family: Georgia, 'Times New Roman', serif;
+		color: var(--site-subtle);
+		font-family: var(--site-ui-font);
 		font-size: 0.75rem;
 		letter-spacing: 0.12em;
 	}
@@ -1372,8 +1343,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.recent-side a:hover .recent-record-image,
 	.recent-side a:focus-visible .recent-record-image {
-		border-color: rgba(154, 63, 46, 0.4);
-		box-shadow: 0 6px 16px rgba(154, 63, 46, 0.08);
+		border-color: rgba(44, 40, 35, 0.4);
+		box-shadow: 0 6px 16px rgba(44, 40, 35, 0.08);
 	}
 
 	.recent-side a:hover strong,
@@ -1392,11 +1363,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		transform: translateY(1px);
 	}
 
-	.recent-side .recent-record-actions {
-		align-self: center;
-		margin: 0;
-	}
-
 	.recent-side-note {
 		margin: 1.75rem 0 0;
 		padding-top: 1rem;
@@ -1405,10 +1371,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		font-size: 0.78rem;
 		line-height: 1.9;
 		letter-spacing: var(--ls-text);
-	}
-
-	.recent-record-actions {
-		margin-top: 0.5rem;
 	}
 
 	@media (max-width: 760px) {
@@ -1469,12 +1431,14 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		}
 
 		.masthead h1 {
-			font-size: clamp(2rem, 8.5vw, 2.375rem);
+			font-size: clamp(1.7rem, 7vw, 2.05rem);
+			letter-spacing: 0.02em;
 		}
 
 		.masthead p {
 			margin-top: 5px;
 			font-size: 0.75rem;
+			letter-spacing: 0.18em;
 		}
 
 		.introduction p {
@@ -1493,7 +1457,11 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		}
 
 		.hero-record-image {
-			aspect-ratio: 4 / 3;
+			aspect-ratio: auto;
+		}
+
+		.hero-record img {
+			height: auto;
 		}
 
 		.introduction-actions {
@@ -1607,10 +1575,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		.recent-record-image {
 			padding: 0.2rem;
 			box-shadow: 0 2px 8px rgba(70, 61, 45, 0.06);
-		}
-
-		.recent-side .recent-record-actions {
-			padding-left: 0.75rem;
 		}
 
 		.recent-lead-copy em,

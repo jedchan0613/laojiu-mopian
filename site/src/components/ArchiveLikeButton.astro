@@ -30,17 +30,18 @@ const { itemId, title, compact = false } = Astro.props;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.4rem;
-		min-height: 2.25rem;
-		padding: 0.42rem 0.7rem;
-		color: #5f5a50;
-		background: rgba(248, 244, 234, 0.76);
-		border: 1px solid #bdb4a3;
-		border-radius: 999px;
+		gap: 0.35rem;
+		min-height: 2.15rem;
+		padding: 0.32rem 0.62rem;
+		color: var(--site-muted);
+		background: transparent;
+		border: 1px solid var(--site-border-soft);
+		border-radius: 0;
 		font: inherit;
-		font-size: 0.76rem;
+		font-family: var(--site-ui-font);
+		font-size: 0.74rem;
 		line-height: 1.35;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.06em;
 		cursor: pointer;
 		transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
 	}
@@ -66,9 +67,9 @@ const { itemId, title, compact = false } = Astro.props;
 
 	.archive-like-button:hover:not(:disabled),
 	.archive-like-button:focus-visible:not(:disabled) {
-		color: var(--site-accent);
-		background: #f8f2e6;
-		border-color: rgba(154, 63, 46, 0.62);
+		color: var(--site-ink);
+		background: var(--site-paper);
+		border-color: var(--site-ink);
 	}
 
 	.archive-like-button:active:not(:disabled) {

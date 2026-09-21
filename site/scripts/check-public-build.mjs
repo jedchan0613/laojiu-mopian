@@ -111,6 +111,7 @@ check(
 check(archiveLikesSource.includes("window.addEventListener('load'"), '点赞计数应在页面主要资源完成后再读取。');
 check(!archiveLikesSource.includes('likePreloadItems'), '首页不应提前读取尚未显示的轮播档案点赞计数。');
 check(archiveLikesSource.includes('archive-likes-updated'), '点赞计数更新缺少页面通知事件，列表页无法按最多点赞排序。');
+check(archiveLikesSource.includes('data-archive-id'), '点赞计数应同时读取列表中的档案编号，供最多点赞排序使用。');
 check(archiveDetailSource.includes("item.core.object_type === 'LET'"), '详情页缺少信件类型专属判断。');
 for (const marker of ['data-letter-reader', '文字阅读', '原件对照', '只看原件', '原件图片是最终核对依据']) {
   check(archiveDetailSource.includes(marker), `信件阅读模板缺少必要内容：${marker}。`);
@@ -179,9 +180,8 @@ if (home) {
 		carouselRoundCategories.add(category);
 		lastCarouselCategoryIndex = categoryIndex;
 	}
-	check(likeIds.length === featuredIds.length + recentIds.length, '首页展示档案没有逐件提供点赞入口。');
-	check([...featuredIds, ...recentIds].every((itemId) => likeIds.includes(itemId)), '首页点赞入口与展示档案不一致。');
-	check(pageLoadsScriptMarker(home, '/api/likes?items='), '首页缺少点赞计数程序。');
+	check(likeIds.length === 0, '首页不应再显示点赞入口。');
+	check(!pageLoadsScriptMarker(home, '/api/likes?items='), '首页不应加载点赞计数程序。');
 	check(!home.html.includes('ARCHIVE · 001'), '首页重新出现已移除的装饰性档案编号。');
 	check(homeSource.includes('data-random-record-button'), '首页缺少「随手翻一件」随机浏览入口。');
 	check(homeSource.includes('data-view-history'), '首页缺少「您最近看过」浏览足迹区块。');
@@ -200,9 +200,7 @@ if (archiveIndex) {
 	const archiveIds = [...archiveIndex.html.matchAll(/data-archive-id="([^"]+)"/g)].map((match) => match[1]);
 	const likeIds = [...archiveIndex.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
 	check(archiveIds.length === detailPages.length, '档案列表数量与公开详情页数量不一致。');
-	check(likeIds.length === archiveIds.length, '档案列表没有逐件提供点赞入口。');
-	check(new Set(likeIds).size === likeIds.length, '档案列表同一件档案出现了重复点赞入口。');
-	check(archiveIds.every((itemId) => likeIds.includes(itemId)), '档案列表点赞入口与展示档案不一致。');
+	check(likeIds.length === 0, '档案列表不应再显示点赞入口。');
 	check(pageLoadsScriptMarker(archiveIndex, '/api/likes?items='), '档案列表缺少点赞计数程序。');
 	check(archiveIndex.html.includes('id="archive-sort"'), '档案列表缺少排序控件。');
 	check(archiveIndex.html.includes('class="archive-paths"'), '档案列表缺少年代与地点浏览入口。');
