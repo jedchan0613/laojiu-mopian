@@ -1,6 +1,7 @@
 import { access, readdir, readFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fontace } from 'fontace';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
@@ -8,6 +9,7 @@ const homeSource = await readFile(join(siteRoot, 'src', 'pages', 'index.astro'),
 const archiveIndexSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', 'index.astro'), 'utf8');
 const archiveDetailSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', '[id].astro'), 'utf8');
 const archiveLikesSource = await readFile(join(siteRoot, 'src', 'scripts', 'archive-likes.ts'), 'utf8');
+const baseLayoutSource = await readFile(join(siteRoot, 'src', 'layouts', 'BaseLayout.astro'), 'utf8');
 const issues = [];
 const check = (condition, message) => {
 	if (!condition) issues.push(message);
@@ -38,6 +40,46 @@ const htmlEntries = await Promise.all(htmlFiles.map(async (path) => ({
 	relativePath: relative(distRoot, path).split(sep).join('/'),
 	html: await readFile(path, 'utf8'),
 })));
+
+// 公共页面正文统一使用本地宋体。直接读取字体文件的真实字形范围，避免
+// 子集缺字时浏览器悄悄回退到另一种宋体，造成同一标题内粗细不一致。
+const brandFontFiles = [
+	'noto-serif-sc-brand.woff2',
+	'noto-serif-sc-brand-supplement.woff',
+];
+const brandFontRanges = (await Promise.all(brandFontFiles.map(async (fileName) => {
+	const fontBuffer = await readFile(join(siteRoot, 'src', 'assets', 'fonts', fileName));
+	return fontace(fontBuffer).unicodeRangeArray.map((range) => {
+		const [start, end = start] = range.slice(2).split('-').map((value) => Number.parseInt(value, 16));
+		return [start, end];
+	});
+}))).flat();
+const brandFontHasGlyph = (character) => {
+	const codePoint = character.codePointAt(0);
+	return brandFontRanges.some(([start, end]) => codePoint >= start && codePoint <= end);
+};
+const publicPageMarkup = htmlEntries
+	.map(({ html }) => html
+		.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+		.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ''))
+	.join('\n');
+const requiredBrandCharacters = new Set([
+	...(publicPageMarkup.match(/\p{Script=Han}/gu) ?? []),
+	// 来自已发布页面截图；即使本地样例数据暂未同步，也必须防止再次回退。
+	...'搞玩都困难暗室',
+]);
+const missingBrandCharacters = [...requiredBrandCharacters]
+	.filter((character) => !brandFontHasGlyph(character))
+	.sort((left, right) => left.localeCompare(right, 'zh-CN'));
+check(
+	missingBrandCharacters.length === 0,
+	`本地宋体缺少公开页面用字：${missingBrandCharacters.join('、')}。请先扩充字体子集。`,
+);
+check(
+	baseLayoutSource.includes("noto-serif-sc-brand-supplement.woff") &&
+		baseLayoutSource.includes('U+56F0, U+5BA4, U+641E, U+6697, U+73A9'),
+	'补充字库没有正确接入公开页面。',
+);
 const scriptEntries = await Promise.all(
 	distFiles.filter((path) => path.endsWith('.js')).map(async (path) => ({
 		publicPath: `/${relative(distRoot, path).split(sep).join('/')}`,
