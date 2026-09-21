@@ -191,6 +191,15 @@ if (home) {
 	check(homeSource.includes(':global(.view-history-image img)'), '首页浏览足迹的动态图片没有进入尺寸约束。');
 	check(homeSource.includes('object-fit: contain;'), '首页浏览足迹图片没有保持比例适配缩略图。');
 	check(
+		homeSource.includes('手机端去掉桌面端的图标列') &&
+			homeSource.includes('grid-template-columns: 1.7rem minmax(0, 1fr) max-content 0.85rem;'),
+		'首页移动端分类入口没有采用紧凑的四列布局。',
+	);
+	check(
+		homeSource.includes('word-break: keep-all;') && homeSource.includes('writing-mode: horizontal-tb;'),
+		'首页移动端分类名称缺少防止逐字竖排的约束。',
+	);
+	check(
 		extractRandomIndexIds(home.html).length === detailPages.length,
 		'首页随机浏览索引与公开详情页数量不一致。',
 	);
