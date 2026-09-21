@@ -226,13 +226,12 @@ const fallbackMailto = contactEmail
 	.contact-launcher:hover,
 	.contact-launcher:focus-visible,
 	.contact-launcher[aria-expanded='true'] {
-		color: var(--site-accent);
+		color: var(--site-ink);
 		text-decoration-color: currentColor;
 	}
 
 	.contact-launcher .site-icon {
-		width: 0.95rem;
-		height: 0.95rem;
+		display: none;
 	}
 
 	.contact-panel {
@@ -268,7 +267,7 @@ const fallbackMailto = contactEmail
 	}
 
 	.contact-heading p {
-		color: var(--site-accent);
+		color: var(--site-ink);
 		font-size: var(--site-text-micro);
 		letter-spacing: 0.12em;
 	}
@@ -313,8 +312,8 @@ const fallbackMailto = contactEmail
 	}
 
 	.contact-view-tabs button[aria-selected='true'] {
-		color: var(--site-accent);
-		border-bottom-color: var(--site-accent);
+		color: var(--site-ink);
+		border-bottom-color: var(--site-ink);
 	}
 
 	.contact-intro,
@@ -378,9 +377,9 @@ const fallbackMailto = contactEmail
 	}
 
 	.contact-categories button[aria-pressed='true'] {
-		color: var(--site-accent-dark);
-		background: var(--site-accent-soft);
-		border-color: var(--site-accent);
+		color: var(--site-ink);
+		background: rgba(44, 40, 35, 0.08);
+		border-color: var(--site-ink);
 	}
 
 	.contact-categories .site-icon {
@@ -414,8 +413,8 @@ const fallbackMailto = contactEmail
 		gap: 0.2rem;
 		margin-top: 0.65rem;
 		padding: 0.62rem 0.7rem;
-		background: rgba(154, 63, 46, 0.07);
-		border-left: 2px solid var(--site-accent);
+		background: rgba(44, 40, 35, 0.05);
+		border-left: 2px solid var(--site-ink);
 	}
 
 	.contact-context strong {
@@ -489,7 +488,7 @@ const fallbackMailto = contactEmail
 		width: 0.95rem;
 		height: 0.95rem;
 		margin-top: 0.16rem;
-		color: var(--site-accent);
+		color: var(--site-ink);
 	}
 
 	.contact-privacy-note p {
@@ -512,7 +511,7 @@ const fallbackMailto = contactEmail
 		width: 1rem;
 		height: 1rem;
 		margin: 0.13rem 0 0;
-		accent-color: var(--site-accent);
+		accent-color: var(--site-ink);
 	}
 
 	.contact-actions,
@@ -534,7 +533,7 @@ const fallbackMailto = contactEmail
 
 	.contact-detail-link,
 	.contact-fallback a {
-		color: var(--site-accent);
+		color: var(--site-ink);
 		font: inherit;
 		font-size: 0.7rem;
 		text-underline-offset: 0.25em;
@@ -604,7 +603,7 @@ const fallbackMailto = contactEmail
 		margin-top: 0.7rem;
 		padding: 0.7rem;
 		background: #eee0ce;
-		border-left: 2px solid var(--site-accent);
+		border-left: 2px solid var(--site-ink);
 	}
 
 	.contact-fallback p {

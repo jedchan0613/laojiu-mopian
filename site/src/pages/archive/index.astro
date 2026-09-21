@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import SiteIcon from '../../components/SiteIcon.astro';
 import { archiveItems } from '../../data/archive';
 import {
   archiveCategories,
@@ -101,7 +100,6 @@ const searchIndexJson = JSON.stringify(
       <section class="archive-paths" aria-labelledby="archive-paths-heading">
         <header class="archive-paths-heading">
           <div class="archive-paths-title">
-            <SiteIcon name="compass" />
             <div>
               <h2 id="archive-paths-heading">按线索浏览</h2>
               <p>选择年代或地点，快速缩小浏览范围</p>
@@ -147,7 +145,6 @@ const searchIndexJson = JSON.stringify(
     >
       <header class="archive-index-heading">
         <div class="archive-index-title">
-          <SiteIcon name="search" />
           <div><h2>查找档案</h2></div>
         </div>
         <span>按关键词、类型和整理线索缩小范围</span>
