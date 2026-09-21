@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveLikeButton from '../../components/ArchiveLikeButton.astro';
-import SiteIcon from '../../components/SiteIcon.astro';
 import { archiveItems, type ArchiveItem } from '../../data/archive';
 import {
   archiveCategories,
@@ -240,7 +239,7 @@ const breadcrumbStructuredData = {
     <header class="record-heading">
       <div class="record-heading-row">
         <div class="record-heading-copy">
-          <p class="section-mark icon-heading"><SiteIcon name="archive" /><span>{view.typeLabel}</span></p>
+          <p class="section-mark icon-heading"><span>{view.typeLabel}</span></p>
           <h1>{view.title}</h1>
         </div>
         <div class="record-heading-actions" aria-label="档案互动操作">
@@ -434,7 +433,7 @@ const breadcrumbStructuredData = {
       }
 
       <section class="record-basic-information" aria-labelledby="basic-heading">
-        <h2 class="facts-heading icon-heading" id="basic-heading"><SiteIcon name="details" /><span>基本信息</span></h2>
+        <h2 class="facts-heading icon-heading" id="basic-heading"><span>基本信息</span></h2>
         <dl class="record-facts">
           {
             basicFacts.map((fact) => (
@@ -456,7 +455,7 @@ const breadcrumbStructuredData = {
           <div class="record-sidebar-meta" aria-label="标签与更新时间">
             {hasTags && (
               <div class="record-sidebar-meta-group">
-                <h3 class="icon-heading"><SiteIcon name="tag" /><span>标签</span></h3>
+                <h3 class="icon-heading"><span>标签</span></h3>
                 <ul class="record-tags record-tags--sidebar">
                   {view.tags.map((tag) => (
                     <li><a href={archiveFilterHref('tag', tag)}>{tag}</a></li>
@@ -466,7 +465,7 @@ const breadcrumbStructuredData = {
             )}
             {hasText(updatedDate) && (
               <div class="record-sidebar-meta-group record-updated-date">
-                <h3 class="icon-heading"><SiteIcon name="status" /><span>最后更新</span></h3>
+                <h3 class="icon-heading"><span>最后更新</span></h3>
                 <p><time datetime={item.core.updated_date}>{updatedDate}</time></p>
               </div>
             )}
@@ -479,7 +478,7 @@ const breadcrumbStructuredData = {
       {
         hasNarrativeContent && (
           <section class="record-section" aria-labelledby="description-heading">
-            <h2 class="icon-heading" id="description-heading"><SiteIcon name="story" /><span>{isLetter ? '流传与来源' : '故事与原文'}</span></h2>
+            <h2 class="icon-heading" id="description-heading"><span>{isLetter ? '流传与来源' : '故事与原文'}</span></h2>
             <div class="section-content">
               {hasText(item.core.provenance_notes) && (
                 <div class="subsection">
@@ -501,7 +500,7 @@ const breadcrumbStructuredData = {
       {
         specificFacts.length > 0 && (
           <section class="record-section" aria-labelledby="specific-heading">
-            <h2 class="icon-heading" id="specific-heading"><SiteIcon name="details" /><span>藏品细节</span></h2>
+            <h2 class="icon-heading" id="specific-heading"><span>藏品细节</span></h2>
             <dl class="section-facts">
               {specificFacts.map((fact) => (
                 <div>
@@ -518,7 +517,7 @@ const breadcrumbStructuredData = {
         researchManagementFacts.length > 0 && (
           <details class="management-information">
             <summary>
-              <span class="icon-heading"><SiteIcon name="archive" /><span>更多信息</span></span>
+              <span class="icon-heading"><span>更多信息</span></span>
               <small>{researchManagementFacts.length} 项</small>
             </summary>
             <dl class="section-facts">
@@ -537,7 +536,7 @@ const breadcrumbStructuredData = {
     {relatedRecordEntries.length > 0 && (
       <section class="record-related" aria-labelledby="record-related-heading">
         <div class="record-related-heading">
-          <h2 class="icon-heading" id="record-related-heading"><SiteIcon name="related" /><span>沿着线索继续看</span></h2>
+          <h2 class="icon-heading" id="record-related-heading"><span>沿着线索继续看</span></h2>
           <span>根据共同标签、地点、年代或分类自动关联。</span>
         </div>
         <div class="record-related-grid">
@@ -576,7 +575,7 @@ const breadcrumbStructuredData = {
       data-download-available={String(usagePolicy.canDownloadPublicationCopy)}
     >
       <div class="record-usage-heading">
-        <h2 class="icon-heading" id="record-usage-heading"><SiteIcon name="rights" /><span>使用与下载</span></h2>
+        <h2 class="icon-heading" id="record-usage-heading"><span>使用与下载</span></h2>
       </div>
       <div class="record-usage-content">
         <div class="record-usage-summary">
@@ -607,7 +606,7 @@ const breadcrumbStructuredData = {
       data-record-identifier={view.id}
     >
       <div class="record-citation-heading">
-        <h2 class="icon-heading" id="record-citation-heading"><SiteIcon name="citation" /><span>引用与分享</span></h2>
+        <h2 class="icon-heading" id="record-citation-heading"><span>引用与分享</span></h2>
       </div>
       <div class="record-citation-content">
         <p class="citation-preview">
@@ -1084,10 +1083,6 @@ const breadcrumbStructuredData = {
     border-bottom: 1px solid var(--site-border);
   }
 
-  .letter-reading-header .site-icon {
-    display: none;
-  }
-
   .letter-reading-header p,
   .letter-reading-header h2 {
     margin: 0;
@@ -1553,7 +1548,7 @@ const breadcrumbStructuredData = {
     height: 100%;
     place-items: center;
     background:
-      radial-gradient(ellipse at center, rgba(255, 214, 168, 0.1), transparent 68%);
+      radial-gradient(ellipse at center, rgba(255, 214, 168, 0.05), transparent 68%);
   }
 
   .lightbox-figure img {
