@@ -124,10 +124,10 @@ import SiteIcon from '../components/SiteIcon.astro';
 
   h1 {
     margin: 0;
-    font-size: clamp(2.35rem, 5vw, 3.7rem);
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    line-height: 1.25;
+    font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    line-height: 1.28;
   }
 
   .about-lead {
@@ -160,15 +160,15 @@ import SiteIcon from '../components/SiteIcon.astro';
   }
 
   .about-index span {
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
+    color: var(--site-subtle);
+    font-family: var(--site-ui-font);
     font-size: var(--site-text-micro);
   }
 
   .about-index a:hover,
   .about-index a:focus-visible {
-    border-color: rgba(154, 63, 46, 0.58);
-    box-shadow: inset 3px 0 var(--site-accent);
+    border-color: rgba(44, 40, 35, 0.45);
+    box-shadow: inset 3px 0 var(--site-ink);
   }
 
   .about-content {
@@ -183,14 +183,14 @@ import SiteIcon from '../components/SiteIcon.astro';
     padding: 1.65rem clamp(0.9rem, 2.5vw, 1.35rem) 1.8rem;
     background: var(--site-paper);
     border: 1px solid #c8c0b1;
-    border-left: 3px solid rgba(154, 63, 46, 0.32);
+    border-left: 3px solid rgba(44, 40, 35, 0.28);
     scroll-margin-top: 1.5rem;
   }
 
   .about-section-index {
     margin: 0;
-    color: var(--site-accent);
-    font-family: Georgia, 'Times New Roman', serif;
+    color: var(--site-subtle);
+    font-family: var(--site-ui-font);
     font-size: var(--site-text-micro);
     letter-spacing: 0.14em;
   }
