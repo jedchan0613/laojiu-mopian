@@ -1,12 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SiteIcon, { type SiteIconName } from '../components/SiteIcon.astro';
 import BrandMark from '../components/BrandMark.astro';
 import { archiveItems } from '../data/archive';
 import {
 	archiveCategories,
 	getArchiveCategorySlug,
-	type ArchiveCategorySlug,
 } from '../data/archive-categories';
 import { createArchiveRecordView, isPublishedArchiveItem } from '../data/archive-view';
 import { getResponsiveImage } from '../data/responsive-images';
@@ -93,21 +91,11 @@ const [leadEntry, ...sideEntries] = recentEntries;
 
 // 随手翻一件：把全部已公开档案编号写入页面，供浏览器端随机挑选跳转。
 const randomRecordIds = publishedViews.map((view) => view.id);
-const categoryIconBySlug: Record<ArchiveCategorySlug, SiteIconName> = {
-	photos: 'photos',
-	postcards: 'postcards',
-	letters: 'letters',
-	credentials: 'credentials',
-	cards: 'cards',
-	notes: 'notes',
-	other: 'objects',
-};
 const categoryEntries = archiveCategories.map((category, index) => {
 	const count = categoryCounts.get(category.slug) ?? 0;
 	return {
 		...category,
 		count,
-		icon: categoryIconBySlug[category.slug],
 		indexLabel: String(index + 1).padStart(2, '0'),
 	};
 });
@@ -225,8 +213,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 		<nav class="archive-entrances" aria-label="档案分类入口">
 			<div class="archive-entrances-heading">
-				<div class="archive-entrances-title icon-heading">
-					<SiteIcon name="collection" />
+				<div class="archive-entrances-title">
 					<p>按藏品类型浏览</p>
 				</div>
 			</div>
@@ -235,7 +222,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 					<li class="has-records">
 						<a href={`/archive/?category=${category.slug}`}>
 							<span class="category-index" aria-hidden="true">{category.indexLabel}</span>
-							<SiteIcon name={category.icon} class="category-icon" />
 							<strong>{category.label}</strong>
 							<small>{category.count} 件档案</small>
 							<span class="category-arrow" aria-hidden="true">→</span>
@@ -342,7 +328,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		<section class="view-history" data-view-history hidden aria-labelledby="view-history-heading">
 			<header class="view-history-header">
 				<div class="view-history-title">
-					<SiteIcon name="compass" />
 					<h2 id="view-history-heading">最近看过</h2>
 				</div>
 				<button class="view-history-clear" type="button" data-view-history-clear>清空足迹</button>
@@ -978,7 +963,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.category-active-list a {
 		display: grid;
-		grid-template-columns: 1.5rem 1.45rem minmax(0, 1fr) auto 1rem;
+		grid-template-columns: 1.5rem minmax(0, 1fr) auto 1rem;
 		align-items: center;
 		gap: 0.62rem;
 		padding: 1.1rem 1rem 1.1rem 0.85rem;
