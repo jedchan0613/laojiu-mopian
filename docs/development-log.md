@@ -3495,3 +3495,23 @@
 - `git diff --check` 未发现补丁格式错误（仅显示项目既有的 Windows 换行符提示）。
 
 当前状态：首页分类入口移动端适配已完成并通过正式构建，尚未提交、推送或部署。
+
+## 2026-09-21：三期视觉方案收尾清理
+
+对照代码审查发现的 5 项可完善点，一次性清理已完成的三期视觉方案中的残留冗余。不改档案数据、隐私规则、管理端，也不改已确认的设计方向和版式结构。
+
+完成内容：
+
+- 纸纹去重（`site/src/layouts/BaseLayout.astro`）：`html` 元素只保留 `background-color: var(--site-bg)`，移除与 `body` 完全重复的三层 `background-image`（SVG 纸纹 + 两组纤维方向渐变）。纸纹仍由 `body` 承载，视觉不变，但低端设备少一次 256×256 SVG filter 光栅化。
+- 隐藏图标清理（`site/src/pages/archive/[id].astro`、`site/src/components/ContactWidget.astro`）：移除详情页 11 处被 `.icon-heading .site-icon { display: none }` 隐藏的 `<SiteIcon>` 组件及其 import；移除联系挂件启动按钮中被隐藏的 `<SiteIcon name="letters" />`。同时删除 BaseLayout 中已无对象的 `.icon-heading .site-icon { display: none }` 规则和详情页的 `.letter-reading-header .site-icon { display: none }` 规则。保留的可见图标：点赞心形、社交平台识别图标、联系面板分类图标。
+- 无用变量清理（`site/src/layouts/BaseLayout.astro`）：移除 `:root` 中声明但全站已无引用的 `--site-accent-dark: #7c3225` 和 `--site-accent-soft: rgba(154, 63, 46, 0.075)`。`--site-accent` 保留，仅供首页印章使用。
+- 暗房灯箱微光减弱（`site/src/pages/archive/[id].astro`）：`.lightbox-stage` 的 `radial-gradient` 暖光透明度从 `0.1` 降到 `0.05`，避免深色藏品放大时在图片两侧形成可见的暖色椭圆边缘。
+- 字体拆分评估：本机缺少 brotli Python 扩展，无法对 woff2 做二次子集化；Google Fonts 的 Noto Serif SC 分片（48 片、总计 >1 MB）反而大于当前已精简的 672 KB 单子集。当前字体已有 `<link rel="preload">` 和 `font-display: swap`，首次加载后浏览器缓存生效，暂不拆分。
+
+检查结果：
+
+- 在 `site/` 执行正式 `npm run build` 成功：复用 13 张响应式图片，生成 12 个公开页面、6 个档案详情；公开页面回归检查全部通过。
+- `node --test local-admin/tests/*.test.mjs`：49 项，48 通过、1 跳过、0 失败，与基线一致。
+- 构建产物复查：CSS 中不再出现 `--site-accent-dark`、`--site-accent-soft`、`.icon-heading .site-icon{display:none}`；`html` 规则只含 `background-color` 和 `min-width`，`body` 保留完整纸纹；详情页 HTML 中剩余的 `site-icon` 仅为点赞心形（1 处）、社交图标（3 处）和联系面板图标（4 处），均为可见元素。
+
+当前状态：三期视觉方案收尾清理已完成并通过正式构建与测试，尚未提交、推送或部署。

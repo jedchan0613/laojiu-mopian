@@ -129,8 +129,6 @@ const serializedStructuredData = structuredData
 		--site-border: #a29a87;
 		--site-border-soft: #b6ad99;
 		--site-accent: #9a3f2e;
-		--site-accent-dark: #7c3225;
-		--site-accent-soft: rgba(154, 63, 46, 0.075);
 		--site-muted: #55514a;
 		--site-subtle: #625c51;
 		--site-focus-outline: #4a463e;
@@ -149,20 +147,6 @@ const serializedStructuredData = structuredData
 	html {
 		min-width: 0;
 		background-color: var(--site-bg);
-		background-image:
-			var(--site-paper-grain),
-			repeating-linear-gradient(
-				90deg,
-				rgba(72, 58, 36, 0.028) 0 1px,
-				transparent 1px 4px
-			),
-			repeating-linear-gradient(
-				0deg,
-				rgba(72, 58, 36, 0.02) 0 1px,
-				transparent 1px 5px
-			);
-		background-size: 256px 256px, 4px 100%, 100% 5px;
-		background-repeat: repeat;
 	}
 
 	body {
@@ -224,10 +208,6 @@ const serializedStructuredData = structuredData
 		display: flex;
 		align-items: center;
 		gap: 0;
-	}
-
-	.icon-heading .site-icon {
-		display: none;
 	}
 
 	.ui-action {
