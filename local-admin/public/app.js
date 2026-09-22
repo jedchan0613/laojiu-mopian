@@ -12,7 +12,26 @@ const primaryCoreFields = [
 
 const hiddenCommonFieldCodes = new Set([
 	'place_code', 'person_ids', 'people_count', 'relationships', 'organization_ids', 'evidence_basis',
+	'checksum_sha256', 'scan_ppi', 'filename_notes', 'storage_box', 'storage_sleeve', 'record_creator',
+	'next_action', 'item_seq', 'collection_id', 'album_id', 'series_id', 'original_position', 'related_item_ids',
 ]);
+
+// 只合并本地表单的展示分组，不改写 Excel 规范、字段编码或已保存的档案内容。
+const commonFieldSectionLabels = new Map([
+	['身份与管理', '时间与来源'], ['时间', '时间与来源'], ['来源与关系', '时间与来源'],
+	['地点', '地点'], ['人物与机构', '人物与内容'], ['内容分类', '人物与内容'],
+	['载体与工艺', '载体与标记'], ['背面与标记', '载体与标记'],
+	['权限与研究', '权限与研究'], ['数字文件', '数字化与备份'],
+	['保存状态', '保存与利用'], ['利用与保管', '保存与利用'],
+]);
+
+const commonFieldSectionFor = (definition, { required = false, value } = {}) => {
+	if (hiddenCommonFieldCodes.has(definition.field_code) && !definition.required && !required) {
+		// 隐藏空的低频可选项；旧值仍有维护入口，保存时不会丢失。
+		return hasMeaningfulValue(value) ? '已保存的扩展字段' : null;
+	}
+	return commonFieldSectionLabels.get(definition.section) ?? definition.section;
+};
 
 const hiddenSpecificFieldCodes = new Set(['place_code', 'evidence_basis', 'dispatch_post_office', 'stamp_issue']);
 const administrativeRegionListIds = {
@@ -128,12 +147,12 @@ const state = {
 	pendingRemovedImages: [], validationIssues: [], pendingObjectCategory: '', recordStatusFilter: 'normal',
 	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '',
 	recordPage: 1, recordPageSize: 15,
+	recordFilters: { category: '', research: '', evidence: '', rights: '', imageStatus: '' },
+	recoveryTab: 'history', recordReferenceOpen: false,
 	integrityReport: null, integrityLoading: false, imagePreflight: [], adminMode: 'local', publicSiteUrl: '',
 	autoSaveNotice: '',
 	query: {
-		loaded: false, loading: false, error: '', records: [], selectedId: '', status: 'normal',
-		search: '', category: '', objectType: '', decade: '', research: '', evidence: '', rights: '',
-		imageStatus: '', page: 1, pageSize: 15, sort: 'updated-desc', advancedOpen: false,
+		loaded: false, loading: false, error: '', records: [], generation: 0,
 	},
 };
 
@@ -163,9 +182,13 @@ const elements = {
 	busyDetail: document.querySelector('#busy-detail'), busyCancelButton: document.querySelector('#busy-cancel-button'),
 	saveState: document.querySelector('#save-state'),
 	recordsBadge: document.querySelector('#records-badge'), draftsBadge: document.querySelector('#drafts-badge'),
-	queryBadge: document.querySelector('#query-badge'),
+	recordAdvanced: document.querySelector('#record-advanced'),
+	recordAdvancedCount: document.querySelector('#record-advanced-count'),
+	recordFiltersClear: document.querySelector('#record-filters-clear'),
+	recordQueryState: document.querySelector('#record-query-state'),
+	recordQueryRefresh: document.querySelector('#record-query-refresh'),
 	maintenanceBadge: document.querySelector('#maintenance-badge'),
-	recycleBadge: document.querySelector('#recycle-badge'), historyBadge: document.querySelector('#history-badge'),
+	recoveryBadge: document.querySelector('#recovery-badge'),
 	normalRecordsBadge: document.querySelector('#normal-records-badge'),
 	withdrawnRecordsBadge: document.querySelector('#withdrawn-records-badge'),
 	brandPending: document.querySelector('#brand-pending'),
@@ -733,7 +756,7 @@ const recordsInCurrentStatusTab = () => state.records.filter((record) =>
 	state.recordStatusFilter === 'withdrawn' ? recordIsWithdrawn(record) : !recordIsWithdrawn(record));
 
 const filteredRecords = () => {
-	const query = state.search.trim().toLocaleLowerCase('zh-CN');
+	const words = state.search.trim().toLocaleLowerCase('zh-CN').split(/\s+/).filter(Boolean);
 	let records = recordsInCurrentStatusTab();
 	if (state.recordTypeFilter) {
 		records = records.filter((record) => record.core.object_type === state.recordTypeFilter);
@@ -744,13 +767,24 @@ const filteredRecords = () => {
 	if (state.recordQuickStatus) {
 		records = records.filter((record) => statusLabel(record) === state.recordQuickStatus);
 	}
-	if (!query) return records;
-	return records.filter((record) => [
-		record.core.item_id, record.core.collection_code, record.core.title, record.core.object_type,
-		record.core.date_display, record.core.province, record.core.city, record.core.district,
-		record.core.source_name, record.core.source_place,
-	]
-		.filter(Boolean).join(' ').toLocaleLowerCase('zh-CN').includes(query));
+	const filters = state.recordFilters;
+	const queryById = new Map(state.query.records.map((record) => [record.item_id, record]));
+	return records.filter((record) => {
+		const core = record.core;
+		const category = (state.standards?.archiveCategories?.categories ?? [])
+			.find((entry) => entry.object_types.includes(core.object_type));
+		if (filters.category && category?.slug !== filters.category) return false;
+		if (filters.research && core.research_status !== filters.research) return false;
+		if (filters.evidence && core.evidence_level !== filters.evidence) return false;
+		if (filters.rights && core.rights_status !== filters.rights) return false;
+		if (filters.imageStatus && queryById.get(core.item_id)?.publication_structure_status !== filters.imageStatus) return false;
+		const haystack = [core.item_id, core.collection_code, core.batch_id, core.title,
+			core.object_type, queryCodeLabel('object_type', core.object_type), category?.label,
+			core.date_display, core.country, core.province, core.city, core.district, core.specific_place,
+			core.source_name, core.source_place, ...(core.people ?? []), ...(core.organizations ?? []),
+			...(core.themes ?? []), ...(core.event_scene ?? [])].filter(Boolean).join(' ').toLocaleLowerCase('zh-CN');
+		return words.every((word) => haystack.includes(word));
+	});
 };
 
 const chineseCollator = new Intl.Collator('zh-CN');
@@ -781,6 +815,13 @@ const compareRecordsByItemDate = (left, right) => {
 const sortedRecords = (records) => {
 	const sorted = [...records];
 	switch (state.recordSort) {
+		case 'updated-asc':
+			sorted.sort((left, right) => String(left.core.updated_date ?? left.core.created_date ?? '')
+				.localeCompare(String(right.core.updated_date ?? right.core.created_date ?? '')));
+			break;
+		case 'decade-asc':
+			sorted.sort((left, right) => String(recordDecade(left) || '9999').localeCompare(String(recordDecade(right) || '9999')));
+			break;
 		case 'accession-desc':
 			sorted.sort((left, right) => String(right.core.accession_date ?? right.core.created_date ?? '')
 				.localeCompare(String(left.core.accession_date ?? left.core.created_date ?? '')));
@@ -819,49 +860,6 @@ const queryStructureLabel = (status) => ({
 	complete: '结构完整', warning: '需要检查', missing: '没有发布图片',
 })[status] ?? '状态未知';
 
-const queryFilteredRecords = () => {
-	const queryState = state.query;
-	const words = queryState.search.trim().toLocaleLowerCase('zh-CN').split(/\s+/).filter(Boolean);
-	return queryState.records.filter((record) => {
-		if (queryState.status === 'withdrawn' ? record.record_status !== 'WDR' : record.record_status === 'WDR') return false;
-		if (queryState.category && record.category !== queryState.category) return false;
-		if (queryState.objectType && record.object_type !== queryState.objectType) return false;
-		if (queryState.decade && record.decade !== queryState.decade) return false;
-		if (queryState.research && record.research_status !== queryState.research) return false;
-		if (queryState.evidence && record.evidence_level !== queryState.evidence) return false;
-		if (queryState.rights && record.rights_status !== queryState.rights) return false;
-		if (queryState.imageStatus && record.publication_structure_status !== queryState.imageStatus) return false;
-		if (!words.length) return true;
-		const haystack = [
-			record.item_id, record.collection_code, record.batch_id, record.title, record.category_label,
-			record.object_type, record.object_type_label, record.date_display, record.place_summary,
-			record.source_name, record.source_place, ...(record.people ?? []), ...(record.organizations ?? []),
-			...(record.themes ?? []), ...(record.event_scene ?? []),
-		].join(' ').toLocaleLowerCase('zh-CN');
-		return words.every((word) => haystack.includes(word));
-	});
-};
-
-const sortQueryRecords = (records) => {
-	const sorted = [...records];
-	switch (state.query.sort) {
-		case 'updated-asc':
-			sorted.sort((left, right) => String(left.updated_date ?? '').localeCompare(String(right.updated_date ?? '')));
-			break;
-		case 'id-asc':
-			sorted.sort((left, right) => chineseCollator.compare(String(left.item_id ?? ''), String(right.item_id ?? '')));
-			break;
-		case 'title-asc':
-			sorted.sort((left, right) => chineseCollator.compare(String(left.title ?? ''), String(right.title ?? '')));
-			break;
-		case 'decade-asc':
-			sorted.sort((left, right) => String(left.decade || '9999').localeCompare(String(right.decade || '9999')));
-			break;
-		default:
-			sorted.sort((left, right) => String(right.updated_date ?? '').localeCompare(String(left.updated_date ?? '')));
-	}
-	return sorted;
-};
 
 const queryOptionMarkup = (records, field, currentValue, labelFor = (value) => value) =>
 	[...new Set(records.map((record) => record[field]).filter(Boolean))]
@@ -891,81 +889,53 @@ const renderQueryDetails = (record) => {
 	</li>`).join('') : '<li class="is-empty">没有登记发布图片。</li>';
 	return `<aside class="query-detail" aria-labelledby="query-detail-title">
 		<div class="query-detail-heading"><div><h3 id="query-detail-title">${escapeHtml(record.title)}</h3><span>${escapeHtml(queryStatusLabel(record))} · 最近更新 ${escapeHtml(record.updated_date || '未知')}</span></div>
-		<div class="query-detail-actions"><button class="quiet-button" data-query-action="copy-id" data-query-id="${escapeHtml(record.item_id)}" type="button">复制永久编号</button><button class="quiet-button" data-query-action="edit" data-query-id="${escapeHtml(record.item_id)}" type="button">在档案管理中打开</button></div></div>
+		<div class="query-detail-actions"><button class="quiet-button" data-query-action="copy-id" data-query-id="${escapeHtml(record.item_id)}" type="button">复制永久编号</button></div></div>
 		<dl class="query-detail-list">${detailRows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>
 		${specificRows ? `<details class="query-detail-section"><summary>对象专属摘要 · ${(record.specific_summary ?? []).length} 项</summary><dl class="query-detail-list">${specificRows}</dl></details>` : ''}
 		<details class="query-detail-section" open><summary>图片结构 · ${record.publication_image_count} 张</summary><p>${record.description_complete_count}/${record.publication_image_count} 张已填写说明 · ${queryStructureLabel(record.publication_structure_status)}</p><ul class="query-image-structure">${imageRows}</ul></details>
 	</aside>`;
 };
 
-const renderQueryCenter = () => {
-	const queryState = state.query;
-	if (queryState.loading) return '<div class="loading-state"><div class="loading-line"></div><div class="loading-line short"></div></div>';
-	if (queryState.error) return `<div class="empty-state">${escapeHtml(queryState.error)}<br /><button class="quiet-button" data-query-action="refresh" type="button">重新读取</button></div>`;
-	if (!queryState.loaded) return '<div class="empty-state">资料查询尚未读取。</div>';
-	const filtered = sortQueryRecords(queryFilteredRecords());
-	const pageCount = Math.max(1, Math.ceil(filtered.length / queryState.pageSize));
-	queryState.page = Math.min(queryState.page, pageCount);
-	const startIndex = (queryState.page - 1) * queryState.pageSize;
-	const pageRecords = filtered.slice(startIndex, startIndex + queryState.pageSize);
-	if (!pageRecords.some((record) => record.item_id === queryState.selectedId)) {
-		queryState.selectedId = pageRecords[0]?.item_id ?? '';
-	}
-	const selected = queryState.records.find((record) => record.item_id === queryState.selectedId);
-	const activeFilterCount = ['search', 'category', 'objectType', 'decade', 'research', 'evidence', 'rights', 'imageStatus']
-		.filter((field) => queryState[field]).length;
-	const allStatusRecords = queryState.records.filter((record) =>
-		queryState.status === 'withdrawn' ? record.record_status === 'WDR' : record.record_status !== 'WDR');
-	const advancedFilterCount = ['objectType', 'research', 'evidence', 'rights', 'imageStatus']
-		.filter((field) => queryState[field]).length;
-	const cards = pageRecords.map((record) => `<button class="query-card ${record.item_id === queryState.selectedId ? 'is-selected' : ''}" data-query-open="${escapeHtml(record.item_id)}" type="button" aria-label="查看${escapeHtml(record.title)}的资料">
-		<span class="query-card-heading"><span class="query-card-kicker"><small>${escapeHtml(record.item_id)}</small><em>${escapeHtml(queryStatusLabel(record))}</em></span><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(record.collection_code || '藏品编码待生成')}</small></span>
-		<span class="query-card-facts">
-			<span><small>类型</small><strong>${escapeHtml(record.category_label)}</strong><em>${escapeHtml(record.object_type_label)} · ${escapeHtml(record.object_type)}</em></span>
-			<span><small>年代与地点</small><strong>${escapeHtml(record.date_display || '年代未知')}</strong><em>${escapeHtml(record.place_summary || '地点未填写')}</em></span>
-			<span><small>图片结构</small><strong>${record.publication_image_count} 张 · ${escapeHtml(queryStructureLabel(record.publication_structure_status))}</strong><em>说明 ${record.description_complete_count}/${record.publication_image_count}</em></span>
-		</span>
-	</button>`).join('');
-	return `<div class="query-workspace">
-		<section class="query-controls" aria-labelledby="query-controls-title"><div class="query-controls-heading"><div><h3 id="query-controls-title">查找与筛选</h3><p>集中查找档案，点击下方结果即可查看资料或进入编辑。</p></div><div class="query-controls-actions"><div class="query-status-switch" role="group" aria-label="档案状态"><button class="${queryState.status === 'normal' ? 'is-active' : ''}" data-query-status="normal" type="button">正常档案</button><button class="${queryState.status === 'withdrawn' ? 'is-active' : ''}" data-query-status="withdrawn" type="button">已撤销</button></div><button class="quiet-button" data-query-action="refresh" type="button">刷新</button></div></div>
-		<div class="query-filter-grid"><label class="query-search"><span>快速搜索</span><input type="search" data-query-search value="${escapeHtml(queryState.search)}" placeholder="编号、题名、人物、地点或来源" /></label>
-		<label><span>访客分类</span><select data-query-filter="category"><option value="">全部分类</option>${queryOptionMarkup(allStatusRecords, 'category', queryState.category, (value) => allStatusRecords.find((record) => record.category === value)?.category_label ?? value)}</select></label>
-		<label><span>年代</span><select data-query-filter="decade"><option value="">全部年代</option>${queryOptionMarkup(allStatusRecords, 'decade', queryState.decade, (value) => `${value}年代`)}</select></label>
-		<label><span>排序</span><select data-query-sort>${[
-		['updated-desc', '最后更新（新→旧）'], ['updated-asc', '最后更新（旧→新）'],
-		['id-asc', '按编号'], ['title-asc', '按题名'], ['decade-asc', '按年代（旧→新）'],
-	].map(([value, label]) => `<option value="${value}" ${queryState.sort === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label></div>
-		<details class="query-advanced" data-query-advanced ${queryState.advancedOpen ? 'open' : ''}><summary><span>更多筛选</span><small>${advancedFilterCount ? `已使用 ${advancedFilterCount} 项` : '精确类型、研究、证据、权利和图片结构'}</small></summary><div class="query-advanced-grid">
-		<label><span>精确类型</span><select data-query-filter="objectType"><option value="">全部类型</option>${queryOptionMarkup(allStatusRecords, 'object_type', queryState.objectType, (value) => `${allStatusRecords.find((record) => record.object_type === value)?.object_type_label ?? value}（${value}）`)}</select></label>
-		<label><span>研究状态</span><select data-query-filter="research"><option value="">全部状态</option>${queryOptionMarkup(allStatusRecords, 'research_status', queryState.research, (value) => queryCodeLabel('research_status', value))}</select></label>
-		<label><span>证据等级</span><select data-query-filter="evidence"><option value="">全部等级</option>${queryOptionMarkup(allStatusRecords, 'evidence_level', queryState.evidence, (value) => queryCodeLabel('evidence_level', value))}</select></label>
-		<label><span>权利状态</span><select data-query-filter="rights"><option value="">全部状态</option>${queryOptionMarkup(allStatusRecords, 'rights_status', queryState.rights, (value) => queryCodeLabel('rights_status', value))}</select></label>
-		<label><span>图片结构</span><select data-query-filter="imageStatus"><option value="">全部状态</option><option value="complete" ${queryState.imageStatus === 'complete' ? 'selected' : ''}>结构完整</option><option value="warning" ${queryState.imageStatus === 'warning' ? 'selected' : ''}>需要检查</option><option value="missing" ${queryState.imageStatus === 'missing' ? 'selected' : ''}>没有发布图片</option></select></label>
-		</div></details>
-		<div class="query-result-summary"><span>命中 <strong>${filtered.length}</strong> 条${activeFilterCount ? ` · 当前 ${activeFilterCount} 个条件` : ''}</span>${activeFilterCount ? '<button class="quiet-button" data-query-action="clear" type="button">清除条件</button>' : ''}</div></section>
-		<div class="query-results-layout"><section class="query-results" aria-label="查询结果"><div class="query-list-heading"><div><h3>档案列表</h3><p>点击一条档案查看详细资料。</p></div><span>本页 ${pageRecords.length} 条</span></div>${pageRecords.length ? `<div class="query-cards">${cards}</div>` : '<div class="empty-state">当前条件没有匹配档案。可以清除部分条件后再试。</div>'}
-		${pageCount > 1 ? `<nav class="query-pagination" aria-label="查询结果分页"><button class="quiet-button" data-query-page="${queryState.page - 1}" type="button" ${queryState.page === 1 ? 'disabled' : ''}>上一页</button><span>第 ${queryState.page} / ${pageCount} 页</span><button class="quiet-button" data-query-page="${queryState.page + 1}" type="button" ${queryState.page === pageCount ? 'disabled' : ''}>下一页</button></nav>` : ''}</section>${renderQueryDetails(selected)}</div>
-	</div>`;
-};
 
 const loadQueryRecords = async () => {
+	if (state.query.loading) return;
+	const generation = ++state.query.generation;
 	state.query.loading = true;
 	state.query.error = '';
-	if (state.workspaceMode === 'query') renderWorkspaceCenter();
+	syncRecordReferenceData();
 	try {
 		const response = await fetch('/api/query-records');
 		const data = await readApiJson(response);
 		if (!response.ok) throw new Error(data.error ?? '结构化资料读取失败。');
+		if (generation !== state.query.generation) return;
 		state.query.records = data.records ?? [];
 		state.query.loaded = true;
-		state.query.selectedId = queryFilteredRecords()[0]?.item_id ?? '';
 	} catch (error) {
-		state.query.error = error.message || '结构化资料读取失败。';
+		if (generation === state.query.generation) state.query.error = error.message || '结构化资料读取失败。';
 	} finally {
-		state.query.loading = false;
-		renderWorkspaceNavigation();
-		if (state.workspaceMode === 'query') renderWorkspaceCenter();
+		if (generation === state.query.generation) {
+			state.query.loading = false;
+			renderRecordList();
+			syncRecordReferenceData();
+		}
 	}
+};
+
+const renderRecordReference = () => {
+	if (state.query.loading) return '<p role="status">正在读取资料与图片结构…</p>';
+	if (state.query.error) return `<p role="status">${escapeHtml(state.query.error)}</p><button class="quiet-button" data-query-action="refresh" type="button">重新读取</button>`;
+	const record = state.query.records.find((entry) => entry.item_id === state.activeId);
+	return state.query.loaded ? renderQueryDetails(record) : '<p>展开后读取资料与图片结构，不会修改档案。</p>';
+};
+
+const syncRecordReferenceData = () => {
+	const imageFilter = document.querySelector('#record-image-filter');
+	imageFilter.disabled = !state.query.loaded || state.query.loading;
+	elements.recordQueryState.textContent = state.query.loading ? '正在读取图片结构…'
+		: state.query.error || (state.query.loaded ? '图片结构已读取，只用于筛选和速览。' : '展开后读取图片结构。');
+	elements.recordQueryRefresh.disabled = state.query.loading;
+	const reference = elements.editorSurface.querySelector('[data-record-reference-body]');
+	if (reference) reference.innerHTML = renderRecordReference();
 };
 
 const recordImages = (record) => (record.core.publication_file_path ?? []).map((publicPath, index) => {
@@ -1090,6 +1060,10 @@ const renderRecordOverview = (record) => {
 				<div class="record-overview-tasks">${taskMarkup}${tasks.length > 4 ? `<button class="record-overview-more" data-record-overview-action="edit" type="button">查看另外 ${tasks.length - 4} 项</button>` : ''}</div>
 			</section>
 		</div>
+		<details class="record-reference" data-record-reference ${state.recordReferenceOpen ? 'open' : ''}>
+			<summary>资料与图片结构 <small>只读速览</small></summary>
+			<div data-record-reference-body>${renderRecordReference()}</div>
+		</details>
 	</div>`;
 };
 
@@ -1104,11 +1078,6 @@ const getMaintenanceOverview = () => {
 		urgentTasks: countTier('urgent'),
 		fillTasks: countTier('fill'),
 		longtermTasks: countTier('longterm'),
-		missingImageDescriptions: records.reduce((total, entry) => total + entry.tasks
-			.filter((task) => task.code === 'image_descriptions')
-			.reduce((count, task) => count + Number.parseInt(task.label, 10), 0), 0),
-		backupUnregistered: records.filter((entry) =>
-			entry.tasks.some((task) => task.code === 'backup_status_unregistered')).length,
 		withdrawnRecords: state.records.filter(recordIsWithdrawn).length,
 	};
 };
@@ -1132,6 +1101,22 @@ const syncRecordToolOptions = (tabRecords) => {
 	elements.recordQuickStatusFilter.innerHTML = `<option value="">全部状态</option>${statuses
 		.map((value) => `<option value="${escapeHtml(value)}" ${value === state.recordQuickStatus ? 'selected' : ''}>${escapeHtml(value)}</option>`)
 		.join('')}`;
+	for (const [filter, field, dictionary, emptyLabel] of [
+		['research', 'research_status', 'research_status', '全部状态'],
+		['evidence', 'evidence_level', 'evidence_level', '全部等级'],
+		['rights', 'rights_status', 'rights_status', '全部状态'],
+	]) {
+		const control = document.querySelector(`[data-record-filter="${filter}"]`);
+		const values = tabRecords.map((record) => record.core);
+		if (state.recordFilters[filter] && !values.some((core) => core[field] === state.recordFilters[filter])) values.push({ [field]: state.recordFilters[filter] });
+		control.innerHTML = `<option value="">${emptyLabel}</option>${queryOptionMarkup(values, field, state.recordFilters[filter], (value) => queryCodeLabel(dictionary, value))}`;
+	}
+	const categories = state.standards?.archiveCategories?.categories ?? [];
+	document.querySelector('#record-category-filter').innerHTML = '<option value="">全部分类</option>' + categories.map((category) =>
+		`<option value="${escapeHtml(category.slug)}" ${category.slug === state.recordFilters.category ? 'selected' : ''}>${escapeHtml(category.label)}</option>`).join('');
+	document.querySelector('#record-image-filter').value = state.recordFilters.imageStatus;
+	const advancedCount = Object.values(state.recordFilters).filter(Boolean).length;
+	elements.recordAdvancedCount.textContent = advancedCount ? `已使用 ${advancedCount} 项` : '研究、证据、权利与图片';
 };
 
 const renderRecordList = () => {
@@ -1139,8 +1124,9 @@ const renderRecordList = () => {
 	syncRecordToolOptions(tabRecords);
 	const records = sortedRecords(filteredRecords());
 	const statusName = state.recordStatusFilter === 'withdrawn' ? '已撤销' : '正常';
-	const activeConditions = [state.search.trim(), state.recordTypeFilter, state.recordDecadeFilter, state.recordQuickStatus]
+	const activeConditions = [state.search.trim(), state.recordTypeFilter, state.recordDecadeFilter, state.recordQuickStatus, ...Object.values(state.recordFilters)]
 		.filter(Boolean).length;
+	elements.recordFiltersClear.hidden = !activeConditions;
 	elements.recordCount.textContent = activeConditions
 		? `${statusName}档案命中 ${records.length} / ${tabRecords.length} 条 · ${activeConditions} 个条件`
 		: `${statusName}档案 ${records.length} 条`;
@@ -1170,13 +1156,11 @@ const renderWorkspaceNavigation = () => {
 	const normalCount = state.records.filter((record) => !recordIsWithdrawn(record)).length;
 	const withdrawnCount = state.records.length - normalCount;
 	elements.recordsBadge.textContent = String(state.records.length);
-	elements.queryBadge.textContent = String(state.query.loaded ? state.query.records.length : state.records.length);
 	elements.maintenanceBadge.textContent = String(getMaintenanceOverview().attentionRecords);
 	elements.normalRecordsBadge.textContent = String(normalCount);
 	elements.withdrawnRecordsBadge.textContent = String(withdrawnCount);
 	elements.draftsBadge.textContent = String(state.drafts.length);
-	elements.recycleBadge.textContent = String(state.recycleBin.length);
-	elements.historyBadge.textContent = String(state.history.length);
+	elements.recoveryBadge.textContent = String(state.recycleBin.length + state.history.length);
 	document.querySelectorAll('[data-workspace]').forEach((button) => {
 		button.classList.toggle('is-active', button.dataset.workspace === state.workspaceMode);
 	});
@@ -1237,6 +1221,16 @@ const renderHistoryCenter = () => {
 		</article>`).join('')}</div>`;
 };
 
+const renderRecoveryCenter = () => `<div class="recovery-workspace">
+	<nav class="recovery-tabs" aria-label="历史与回收分区">
+		<button type="button" data-recovery-tab="history" class="${state.recoveryTab === 'history' ? 'is-active' : ''}" aria-pressed="${state.recoveryTab === 'history'}">历史版本 <small>${state.history.length}</small></button>
+		<button type="button" data-recovery-tab="recycle" class="${state.recoveryTab === 'recycle' ? 'is-active' : ''}" aria-pressed="${state.recoveryTab === 'recycle'}">图片回收区 <small>${state.recycleBin.length}</small></button>
+	</nav>
+	<section aria-label="${state.recoveryTab === 'history' ? '历史版本' : '图片回收区'}">
+		${state.recoveryTab === 'history' ? renderHistoryCenter() : renderRecycleCenter()}
+	</section>
+</div>`;
+
 const renderMaintenanceCenter = () => {
 	const overview = getMaintenanceOverview();
 	const integrity = state.integrityReport;
@@ -1289,12 +1283,9 @@ const renderMaintenanceCenter = () => {
 				<div class="${overview.urgentTasks ? 'is-alert' : 'is-pass'}"><span>需要立即处理</span><strong>${overview.urgentTasks}</strong><small>项问题</small></div>
 				<div><span>现在可以补齐</span><strong>${overview.fillTasks}</strong><small>项内容</small></div>
 				<div><span>长期研究事项</span><strong>${overview.longtermTasks}</strong><small>项持续跟踪</small></div>
-				<div><span>图片说明</span><strong>${overview.missingImageDescriptions}</strong><small>张待补</small></div>
-				<div><span>备份登记</span><strong>${overview.backupUnregistered}</strong><small>条尚未登记，需核实</small></div>
-				<div class="${integrityPassed ? 'is-pass' : 'is-alert'}"><span>完整性巡检</span><strong>${integrityPassed ? '通过' : integrityFailures}</strong><small>${integrityPassed ? `${integrity.summary.checks} 项检查` : '项异常'}</small></div>
+				<div class="${integrityPassed ? 'is-pass' : 'is-alert'}"><span>完整性巡检</span><strong>${integrityPassed ? '通过' : integrityFailures}</strong><small>${integrityPassed ? `${integrity.summary.checks} 项检查` : '项异常'}${overview.withdrawnRecords ? ` · 含 ${overview.withdrawnRecords} 条撤销记录` : ''}</small></div>
 			</div>
-			<p class="maintenance-withdrawn-note">建议每次复核完成后，把“更多通用字段 → 利用与保管 → 复盘日期”安排在未来 12 个月内；到期或未安排会列在“现在可以补齐的内容”中。备份状态由人工登记：显示“尚未登记，需核实”时，表示程序没有检查过实际备份，请以你自己的备份记录为准。</p>
-			${overview.withdrawnRecords ? `<p class="maintenance-withdrawn-note">另有 ${overview.withdrawnRecords} 条已撤销追溯记录，只纳入完整性检查，不计入日常补录任务。</p>` : ''}
+			<details class="maintenance-guidance"><summary>了解复核与备份约定</summary><p>每次复核完成后，建议把“更多通用字段 → 保存与利用 → 复盘日期”安排在未来 12 个月内；到期或未安排会列入“现在可以补齐”。备份状态由人工登记，“尚未登记，需核实”表示程序没有检查实际备份，请以你自己的备份记录为准。</p></details>
 		</section>
 		${tierDefinitions.map(renderTaskSection).join('')}
 		<section class="maintenance-section" aria-labelledby="integrity-heading">
@@ -1306,11 +1297,9 @@ const renderMaintenanceCenter = () => {
 };
 
 const renderWorkspaceCenter = () => {
-	if (state.workspaceMode === 'query') elements.editorSurface.innerHTML = renderQueryCenter();
-	else if (state.workspaceMode === 'maintenance') elements.editorSurface.innerHTML = renderMaintenanceCenter();
+	if (state.workspaceMode === 'maintenance') elements.editorSurface.innerHTML = renderMaintenanceCenter();
 	else if (state.workspaceMode === 'drafts') elements.editorSurface.innerHTML = renderDraftCenter();
-	else if (state.workspaceMode === 'recycle') elements.editorSurface.innerHTML = renderRecycleCenter();
-	else elements.editorSurface.innerHTML = renderHistoryCenter();
+	else if (state.workspaceMode === 'recovery') elements.editorSurface.innerHTML = renderRecoveryCenter();
 };
 
 const loadIntegrityReport = async ({ notify = false } = {}) => {
@@ -1335,7 +1324,7 @@ const loadIntegrityReport = async ({ notify = false } = {}) => {
 };
 
 const setWorkspaceMode = (mode) => {
-	if (!['records', 'query', 'maintenance', 'drafts', 'recycle', 'history'].includes(mode)) return;
+	if (!['records', 'maintenance', 'drafts', 'recovery'].includes(mode)) return;
 	const previousMode = state.workspaceMode;
 	state.workspaceMode = mode;
 	renderWorkspaceNavigation();
@@ -1360,7 +1349,6 @@ const setWorkspaceMode = (mode) => {
 	} else {
 		updateHeader();
 		renderWorkspaceCenter();
-		if (mode === 'query' && !state.query.loaded && !state.query.loading) loadQueryRecords();
 		if (mode === 'maintenance' && !state.integrityReport && !state.integrityLoading) loadIntegrityReport();
 	}
 };
@@ -1401,11 +1389,9 @@ const showRecordActionDock = ({ status, disabled, showPublish }) => {
 
 const updateHeader = () => {
 	const centerTitles = {
-		query: ['资料查询', '在这里集中搜索、筛选并打开档案'],
 		maintenance: ['维护概览', '质量待办与只读完整性巡检'],
 		drafts: ['草稿中心', `${state.drafts.length} 份尚未正式发布的草稿`],
-		recycle: ['图片回收区', `${state.recycleBin.length} 张可以恢复的发布副本`],
-		history: ['历史版本', `${state.history.length} 份发布前版本备份`],
+		recovery: ['历史与回收', `${state.history.length} 份历史版本 · ${state.recycleBin.length} 张回收图片`],
 	};
 	if (state.workspaceMode !== 'records') {
 		const [title, detail] = centerTitles[state.workspaceMode];
@@ -1901,12 +1887,26 @@ const renderBasic = () => {
 	const remainingBySection = new Map();
 	const coreCanonical = coreCanonicalFieldCodes();
 	const dimensionFields = dimensionFieldCodes();
+	const requiredCoreFields = new Set((currentCollectionRules()?.required_dimensions ?? [])
+		.flatMap((dimension) => [...(dimension.fields ?? []), ...(dimension.code_fields ?? [])])
+		.map(normalizeRuleField).filter((field) => field.scope === 'core').map((field) => field.field_code));
 	for (const definition of state.standards.commonFields.fields) {
-		if (managedCoreFields.has(definition.field_code) || hiddenCommonFieldCodes.has(definition.field_code) ||
+		if (managedCoreFields.has(definition.field_code) ||
 			primaryCoreFields.includes(definition.field_code) || definition.data_type === '公式' ||
 			(dimensionFields.has(definition.field_code) && !coreCanonical.has(definition.field_code))) continue;
-		if (!remainingBySection.has(definition.section)) remainingBySection.set(definition.section, []);
-		remainingBySection.get(definition.section).push(definition);
+		const section = commonFieldSectionFor(definition, {
+			required: basicFieldRule(definition.field_code).required || requiredCoreFields.has(definition.field_code),
+			value: state.current.core[definition.field_code],
+		});
+		if (!section) continue;
+		if (!remainingBySection.has(section)) remainingBySection.set(section, []);
+		remainingBySection.get(section).push(definition);
+	}
+	// 历史低频值固定放在末尾，让常用分组的位置稳定。
+	if (remainingBySection.has('已保存的扩展字段')) {
+		const retainedFields = remainingBySection.get('已保存的扩展字段');
+		remainingBySection.delete('已保存的扩展字段');
+		remainingBySection.set('已保存的扩展字段', retainedFields);
 	}
 	const moreFieldGroups = [...remainingBySection.entries()].map(([section, definitions], originalIndex) => {
 		const fields = definitions.map((definition) => {
@@ -3596,8 +3596,11 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	state.adminMode = data.paths?.adminMode ?? 'local';
 	state.publicSiteUrl = (data.paths?.previewUrl ?? '').replace(/\/+$/, '');
 	state.query.loaded = false;
+	state.query.loading = false;
+	state.query.generation += 1;
 	state.query.records = [];
-	state.query.selectedId = '';
+	state.query.error = '';
+	state.recordFilters.imageStatus = '';
 	state.standards = standards;
 	state.commonFields = new Map(standards.commonFields.fields.map((field) => [field.field_code, field]));
 	state.dictionary = new Map();
@@ -3609,6 +3612,7 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	refreshAdministrativeRegionOptions();
 	elements.previewLink.href = publicPreviewUrl('/');
 	renderRecordList();
+	syncRecordReferenceData();
 	renderWorkspaceNavigation();
 	const visibleRecords = sortedRecords(filteredRecords());
 	const targetId = selectedId === null || selectedId === undefined
@@ -3624,6 +3628,7 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 		updateHeader();
 		renderEditor();
 	}
+	if (elements.recordAdvanced.open || state.recordReferenceOpen) void loadQueryRecords();
 };
 
 elements.recordList.addEventListener('click', async (event) => {
@@ -3659,6 +3664,34 @@ elements.recordDecadeFilter.addEventListener('change', (event) => {
 
 elements.recordQuickStatusFilter.addEventListener('change', (event) => {
 	state.recordQuickStatus = event.target.value;
+	state.recordPage = 1;
+	renderRecordList();
+});
+
+elements.recordAdvanced.addEventListener('toggle', () => {
+	if (elements.recordAdvanced.open && !state.query.loaded && !state.query.loading) void loadQueryRecords();
+});
+
+document.querySelectorAll('[data-record-filter]').forEach((control) => {
+	control.addEventListener('change', () => {
+		state.recordFilters[control.dataset.recordFilter] = control.value;
+		state.recordPage = 1;
+		renderRecordList();
+	});
+});
+
+elements.recordQueryRefresh.addEventListener('click', () => {
+	state.query.loaded = false;
+	void loadQueryRecords();
+});
+
+elements.recordFiltersClear.addEventListener('click', () => {
+	state.search = '';
+	elements.recordSearch.value = '';
+	state.recordTypeFilter = '';
+	state.recordDecadeFilter = '';
+	state.recordQuickStatus = '';
+	for (const key of Object.keys(state.recordFilters)) state.recordFilters[key] = '';
 	state.recordPage = 1;
 	renderRecordList();
 });
@@ -3762,58 +3795,14 @@ document.querySelector('.tabs').addEventListener('keydown', (event) => {
 });
 
 elements.editorSurface.addEventListener('toggle', (event) => {
-	if (state.workspaceMode !== 'query' || !event.target.matches('[data-query-advanced]')) return;
-	state.query.advancedOpen = event.target.open;
+	if (!event.target.matches('[data-record-reference]')) return;
+	state.recordReferenceOpen = event.target.open;
+	if (event.target.open && !state.query.loaded && !state.query.loading) void loadQueryRecords();
 }, true);
-
-// 资料查询的搜索框：拼音等输入法“组合输入”期间不刷新列表（避免候选词被打断），
-// 停止输入约 300ms 后再刷新一次；刷新时仅在焦点仍在搜索框时恢复焦点和光标位置。
-let querySearchComposing = false;
-let querySearchRefreshTimer = null;
-const runQuerySearchRefresh = () => {
-	querySearchRefreshTimer = null;
-	if (state.workspaceMode !== 'query') return;
-	const activeSearch = document.activeElement?.matches?.('[data-query-search]') ? document.activeElement : null;
-	const caret = activeSearch?.selectionStart;
-	renderWorkspaceCenter();
-	if (!activeSearch) return;
-	const search = elements.editorSurface.querySelector('[data-query-search]');
-	if (!search) return;
-	search.focus();
-	const position = typeof caret === 'number' ? Math.min(caret, search.value.length) : search.value.length;
-	search.setSelectionRange(position, position);
-};
-const scheduleQuerySearchRefresh = () => {
-	clearTimeout(querySearchRefreshTimer);
-	querySearchRefreshTimer = setTimeout(() => {
-		if (querySearchComposing) {
-			scheduleQuerySearchRefresh();
-			return;
-		}
-		runQuerySearchRefresh();
-	}, 300);
-};
-
-elements.editorSurface.addEventListener('compositionstart', (event) => {
-	if (event.target?.matches?.('[data-query-search]')) querySearchComposing = true;
-});
-
-elements.editorSurface.addEventListener('compositionend', (event) => {
-	if (!event.target?.matches?.('[data-query-search]')) return;
-	querySearchComposing = false;
-	scheduleQuerySearchRefresh();
-});
 
 elements.editorSurface.addEventListener('input', (event) => {
 	if (event.target?.dataset?.mask === 'date') {
 		formatDateMaskInput(event.target);
-	}
-	if (state.workspaceMode === 'query' && event.target.matches('[data-query-search]')) {
-		state.query.search = event.target.value;
-		state.query.page = 1;
-		if (querySearchComposing || event.isComposing) return;
-		scheduleQuerySearchRefresh();
-		return;
 	}
 	if (event.target.matches('[data-image-description]')) {
 		const image = state.images.find((candidate) => candidate.id === event.target.dataset.imageId);
@@ -3832,18 +3821,6 @@ elements.editorSurface.addEventListener('input', (event) => {
 
 elements.editorSurface.addEventListener('change', async (event) => {
 	const control = event.target;
-	if (state.workspaceMode === 'query' && control.matches('[data-query-filter]')) {
-		state.query[control.dataset.queryFilter] = control.value;
-		state.query.page = 1;
-		renderWorkspaceCenter();
-		return;
-	}
-	if (state.workspaceMode === 'query' && control.matches('[data-query-sort]')) {
-		state.query.sort = control.value;
-		state.query.page = 1;
-		renderWorkspaceCenter();
-		return;
-	}
 	if (control.matches('.object-category-control')) {
 		handleObjectCategoryChange(control);
 		return;
@@ -3953,26 +3930,10 @@ elements.editorSurface.addEventListener('click', async (event) => {
 		enterRecordEditor('basic');
 		return;
 	}
-	const queryOpenButton = event.target.closest('[data-query-open]');
-	if (queryOpenButton) {
-		state.query.selectedId = queryOpenButton.dataset.queryOpen;
+	const recoveryTabButton = event.target.closest('[data-recovery-tab]');
+	if (recoveryTabButton) {
+		state.recoveryTab = recoveryTabButton.dataset.recoveryTab;
 		renderWorkspaceCenter();
-		return;
-	}
-	const queryStatusButton = event.target.closest('[data-query-status]');
-	if (queryStatusButton) {
-		state.query.status = queryStatusButton.dataset.queryStatus;
-		state.query.page = 1;
-		state.query.selectedId = '';
-		renderWorkspaceCenter();
-		return;
-	}
-	const queryPageButton = event.target.closest('[data-query-page]');
-	if (queryPageButton && !queryPageButton.disabled) {
-		state.query.page = Number(queryPageButton.dataset.queryPage) || 1;
-		state.query.selectedId = '';
-		renderWorkspaceCenter();
-		elements.editorSurface.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		return;
 	}
 	const queryActionButton = event.target.closest('[data-query-action]');
@@ -3981,16 +3942,6 @@ elements.editorSurface.addEventListener('click', async (event) => {
 		if (action === 'refresh') {
 			state.query.loaded = false;
 			await loadQueryRecords();
-			return;
-		}
-		if (action === 'clear') {
-			for (const field of ['search', 'category', 'objectType', 'decade', 'research', 'evidence', 'rights', 'imageStatus']) state.query[field] = '';
-			state.query.page = 1;
-			renderWorkspaceCenter();
-			return;
-		}
-		if (action === 'edit') {
-			selectRecord(queryActionButton.dataset.queryId);
 			return;
 		}
 		if (action === 'copy-id') {

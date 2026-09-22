@@ -37,6 +37,15 @@ const categoryViewGroups = archiveCategories.map((category) => ({
 		.sort(compareViewsByCreatedDate),
 }));
 
+const getHomepagePlace = (view: (typeof publishedViews)[number]) => [
+	view.item.core.specific_place,
+	view.item.core.street_town,
+	view.item.core.district,
+	view.item.core.city,
+	view.item.core.province,
+	view.item.core.country,
+].find((value) => value?.trim())?.trim();
+
 // 上方精选：每种访客分类取创建时间最新的一件，只展示首张图片，
 // 按分类顺序排列，总数由实际符合条件的分类决定（最多 7 张）。
 const featuredSlides = categoryViewGroups.flatMap(({ category, views }) => {
@@ -48,6 +57,7 @@ const featuredSlides = categoryViewGroups.flatMap(({ category, views }) => {
 		itemId: view.id,
 		title: view.title,
 		dateDisplay: view.dateDisplay,
+		recordInfo: [view.typeLabel, getHomepagePlace(view)].filter(Boolean).join(' · '),
 		href: `/archive/${view.id}/`,
 		categorySlug: category.slug,
 	}] : [];
@@ -65,14 +75,7 @@ const recentViews = categoryViewGroups.flatMap(({ views }) => {
 
 // 首页策展说明只组合已经公开的类型、年代与地点字段，不使用推测性叙述。
 const createHomepageRecordNote = (view: (typeof publishedViews)[number]) => {
-	const place = [
-		view.item.core.specific_place,
-		view.item.core.street_town,
-		view.item.core.district,
-		view.item.core.city,
-		view.item.core.province,
-		view.item.core.country,
-	].find((value) => value?.trim())?.trim();
+	const place = getHomepagePlace(view);
 	const dateFact = view.dateDisplay === '年代未知'
 		? '年代尚待确认'
 		: `年代记录为 ${view.dateDisplay}`;
@@ -86,8 +89,9 @@ const recentEntries = recentViews.map((view) => ({
 	image: view.images[0] ? getResponsiveImage(view.images[0]) : undefined,
 	note: createHomepageRecordNote(view),
 }));
-// 编辑式版式：第一件作为横向主图版，其余作为右侧错落的小件。
+// 仅两件时使用均衡双图版，三件以上才使用一主多次的编辑式版式。
 const [leadEntry, ...sideEntries] = recentEntries;
+const hasPairedEntries = recentEntries.length === 2;
 
 // 随手翻一件：把全部已公开档案编号写入页面，供浏览器端随机挑选跳转。
 const randomRecordIds = publishedViews.map((view) => view.id);
@@ -140,7 +144,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 					data-home-featured-carousel={featuredSlides.length > 1 ? '' : undefined}
 					data-carousel-category-order={featuredSlides.map((slide) => slide.categorySlug).join(',')}
 					data-carousel-record-order={featuredSlides.map((slide) => slide.itemId).join(',')}
-					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description, itemId, title, dateDisplay, href }) => ({
+					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description, itemId, title, dateDisplay, recordInfo, href }) => ({
 						src: image.src,
 						srcset: image.srcset ?? '',
 						width: image.width,
@@ -149,6 +153,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 						itemId,
 						title,
 						dateDisplay,
+						recordInfo,
 						href,
 					}))) : undefined}
 					role={featuredSlides.length > 1 ? 'region' : undefined}
@@ -181,6 +186,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 									<small class="hero-record-date"><span>年代</span><span data-home-carousel-date>{firstFeaturedSlide.dateDisplay}</span></small>
 									<strong data-home-carousel-title>{firstFeaturedSlide.title}</strong>
 								</div>
+								<p class="hero-record-info" data-home-carousel-info>{firstFeaturedSlide.recordInfo}</p>
 							</figcaption>
 						</figure>
 					</a>
@@ -233,10 +239,10 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 				<p class="category-pending">
 					<span class="category-pending-label">正在整理：</span>
 					{pendingCategories.map((category, index) => (
-						<>
+						<span class="category-pending-item">
 							{index > 0 && <span class="category-pending-sep" aria-hidden="true"> · </span>}
 							<a class="category-pending-link" href={`/archive/?category=${category.slug}`}>{category.label}</a>
-						</>
+						</span>
 					))}
 				</p>
 			)}
@@ -252,7 +258,10 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 					<a class="ui-text-link" href="/archive/">查看档案目录 →</a>
 				</header>
 
-				<div class:list={['recent-records', { 'recent-records--solo': sideEntries.length === 0 }]}>
+				<div class:list={['recent-records', {
+					'recent-records--solo': sideEntries.length === 0,
+					'recent-records--pair': hasPairedEntries,
+				}]}>
 					<article class="recent-lead">
 						<a
 							href={`/archive/${leadEntry.view.id}/`}
@@ -299,7 +308,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 													<img
 														src={image.src}
 														srcset={image.srcset}
-														sizes="(max-width: 760px) 88px, 144px"
+														sizes={hasPairedEntries ? '(max-width: 760px) calc(100vw - 32px), 520px' : '(max-width: 760px) 88px, 144px'}
 														alt=""
 														width={image.width}
 														height={image.height}
@@ -318,7 +327,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 									</li>
 								))}
 							</ul>
-							<p class="recent-side-note">更多档案正在整理、核对与释读中。</p>
+							{!hasPairedEntries && <p class="recent-side-note">更多档案正在整理、核对与释读中。</p>}
 						</div>
 					)}
 				</div>
@@ -478,7 +487,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.introduction-line {
 		display: block;
-		white-space: nowrap;
+		text-wrap: balance;
 	}
 
 	.introduction {
@@ -544,6 +553,11 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	.hero-record-shell {
 		position: relative;
 		min-width: 0;
+	}
+
+	.hero-record-shell[data-home-featured-carousel] {
+		/* 为圆点单独保留空间，避免它在手机上压到下方介绍文字。 */
+		margin-bottom: 2.5rem;
 	}
 
 	.view-history {
@@ -774,6 +788,16 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		letter-spacing: 0.02em;
 	}
 
+	.hero-record-info {
+		margin: 0.4rem 0 0;
+		color: var(--site-subtle);
+		font-family: var(--site-ui-font);
+		font-size: var(--site-text-micro);
+		line-height: 1.6;
+		letter-spacing: 0.06em;
+		overflow-wrap: anywhere;
+	}
+
 	.hero-record:hover img,
 	.hero-record:focus-visible img {
 		transform: scale(1.012);
@@ -820,8 +844,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 2.5rem;
-		height: 2.5rem;
+		width: 2.75rem;
+		height: 2.75rem;
 		color: #5f5a50;
 		background: rgba(248, 244, 234, 0.88);
 		border: 1px solid rgba(189, 180, 163, 0.6);
@@ -864,32 +888,42 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.carousel-dots {
 		position: absolute;
-		bottom: -2rem;
+		bottom: -2.5rem;
 		left: 50%;
 		transform: translateX(-50%);
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.25rem;
 		pointer-events: auto;
 	}
 
 	.carousel-dot {
-		width: 0.4rem;
-		height: 0.4rem;
+		display: grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
 		padding: 0;
-		background: #b9b1a0;
+		background: transparent;
 		border: 0;
 		border-radius: 50%;
 		cursor: pointer;
+	}
+
+	.carousel-dot::before {
+		content: '';
+		width: 0.4rem;
+		height: 0.4rem;
+		background: #8a8272;
+		border-radius: 50%;
 		transition: background-color 180ms ease, transform 180ms ease, width 180ms ease;
 	}
 
-	.carousel-dot:hover {
-		background: #8a8272;
+	.carousel-dot:hover::before {
+		background: var(--site-text);
 		transform: scale(1.2);
 	}
 
-	.carousel-dot[aria-selected='true'] {
+	.carousel-dot[aria-selected='true']::before {
 		width: 1.2rem;
 		background: var(--site-text);
 		border-radius: 0.2rem;
@@ -1058,6 +1092,11 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		color: var(--site-subtle);
 	}
 
+	.category-pending-item {
+		display: inline-block;
+		white-space: nowrap;
+	}
+
 	.category-pending-sep {
 		color: var(--site-border);
 	}
@@ -1095,7 +1134,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	.discovery-heading h2 {
 		margin: 0;
 		font-size: clamp(1.6rem, 3vw, 2.15rem);
-		font-weight: 600;
+		font-weight: 700;
 		letter-spacing: 0.04em;
 	}
 
@@ -1106,7 +1145,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.discovery-kicker {
 		margin: 0;
-		color: var(--site-subtle);
+		/* 朱红仅与印章呼应这一处小标题，不扩散到按钮与分类。 */
+		color: var(--site-accent);
 		font-size: 0.75rem;
 		line-height: 1.4;
 		letter-spacing: 0.18em;
@@ -1121,6 +1161,49 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.recent-records--solo {
 		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.recent-records--pair {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.recent-records--pair .recent-side-col {
+		margin-top: 0;
+	}
+
+	.recent-records--pair .recent-side a {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 1.1rem;
+	}
+
+	.recent-records--pair .recent-record-image,
+	.recent-records--pair .recent-lead-image {
+		display: flex;
+		aspect-ratio: 3 / 2;
+		padding: 0.55rem;
+		box-shadow: 0 6px 18px rgba(70, 61, 45, 0.08);
+	}
+
+	.recent-records--pair .recent-record-image img,
+	.recent-records--pair .recent-lead-image img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
+	.recent-records--pair .recent-record-copy {
+		gap: 0.5rem;
+	}
+
+	.recent-records--pair .recent-record-copy strong {
+		font-size: clamp(1.15rem, 2vw, 1.45rem);
+		line-height: 1.45;
+	}
+
+	.recent-records--pair .recent-record-note {
+		font-size: 0.86rem;
+		line-height: 1.9;
+		letter-spacing: 0.04em;
 	}
 
 	.recent-lead > a {
@@ -1395,8 +1478,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		}
 
 		.carousel-arrow {
-			width: 2.25rem;
-			height: 2.25rem;
 			opacity: 0.85;
 		}
 
@@ -1406,11 +1487,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 		.carousel-arrow--next {
 			margin-right: -0.5rem;
-		}
-
-		.carousel-dots {
-			bottom: -1.75rem;
-			gap: 0.4rem;
 		}
 
 		.introduction {
@@ -1463,7 +1539,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 		.random-record-link {
 			width: auto;
-			align-self: center;
+			margin-inline: auto;
 		}
 
 		.view-history {
@@ -1595,6 +1671,24 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 			margin-top: 1.25rem;
 			padding-top: 0;
 			border-top: 0;
+		}
+
+		.recent-records--pair .recent-side {
+			border-top: 0;
+		}
+
+		.recent-records--pair .recent-side li {
+			padding: 0;
+			border-bottom: 0;
+		}
+
+		.recent-records--pair .recent-record-image,
+		.recent-records--pair .recent-lead-image {
+			padding: 0.35rem;
+		}
+
+		.recent-records--pair .recent-record-copy strong {
+			font-size: 1.15rem;
 		}
 	}
 

@@ -1,4 +1,4 @@
-// 单元测试：档案编辑页交互优化（输入法防抖、图片操作焦点恢复、统一确认弹窗、
+// 单元测试：档案编辑页交互优化（统一检索、图片操作焦点恢复、统一确认弹窗、
 // 字段级错误、自动保存、编辑区灯箱、说明字数计数器和 Ctrl+S 保存草稿）。
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -6,18 +6,16 @@ import test from 'node:test';
 
 const projectRoot = new URL('../../', import.meta.url);
 
-test('资料查询搜索框支持输入法组合输入并带防抖', async () => {
-	const script = await readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8');
+test('档案管理使用一个搜索框，输入时只刷新结果列表', async () => {
+	const [html, script] = await Promise.all([
+		readFile(new URL('local-admin/public/index.html', projectRoot), 'utf8'),
+		readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8'),
+	]);
 
-	// 组合输入（拼音等）期间不刷新列表
-	assert.match(script, /compositionstart[\s\S]{0,120}\[data-query-search\]/);
-	assert.match(script, /compositionend[\s\S]{0,120}\[data-query-search\]/);
-	assert.match(script, /if \(querySearchComposing \|\| event\.isComposing\) return;/);
-	// 停止输入约 300ms 后再刷新，且仅焦点仍在搜索框时恢复焦点
-	assert.match(script, /\}, 300\);/);
-	assert.match(script, /const activeSearch = document\.activeElement\?\.matches\?\.\('\[data-query-search\]'\)/);
-	// 不再每敲一个字就整块重画
-	assert.doesNotMatch(script, /data-query-search[\s\S]{0,200}renderWorkspaceCenter\(\);\s*\n\s*requestAnimationFrame/);
+	assert.match(html, /id="record-search"/);
+	assert.doesNotMatch(html, /data-workspace="query"|资料查询/);
+	assert.match(script, /elements\.recordSearch\.addEventListener\('input',[\s\S]{0,180}renderRecordList\(\)/);
+	assert.doesNotMatch(script, /data-query-search|querySearchComposing|scheduleQuerySearchRefresh/);
 });
 
 test('图片排序与移除后恢复滚动位置并把焦点送回原位置', async () => {

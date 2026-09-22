@@ -15,14 +15,45 @@ test('档案管理首页包含独立列表、速览和返回入口', async () =>
 	assert.match(html, /id="back-to-library-button"/);
 	assert.match(script, /recordViewMode: 'overview'/);
 	assert.match(script, /recordPage: 1, recordPageSize: 15/);
-	assert.match(script, /page: 1, pageSize: 15/);
+	assert.match(script, /recordFilters: \{ category: '', research: '', evidence: '', rights: '', imageStatus: '' \}/);
+	assert.match(html, /id="record-advanced"/);
+	assert.match(html, /data-record-filter="research"/);
+	assert.match(html, /data-record-filter="evidence"/);
+	assert.match(html, /data-record-filter="rights"/);
+	assert.match(html, /data-record-filter="imageStatus"/);
 	assert.match(script, /renderRecordOverview/);
+	assert.match(script, /data-record-reference/);
 	assert.match(script, /尚未选择档案/);
 	assert.match(script, /if \(previousMode !== 'records'\) \{/);
 	assert.match(script, /data-record-overview-action="edit"/);
 	assert.doesNotMatch(script, /else if \(visibleRecords\[0\]\) previewRecord/);
 	assert.match(styles, /body\.admin-v2\[data-workspace="records"\] \.app-shell/);
 	assert.match(styles, /\.record-overview-hero/);
+});
+
+test('历史版本与图片回收区合并入口，但原恢复门槛保持不变', async () => {
+	const [html, script] = await Promise.all([
+		readFile(new URL('local-admin/public/index.html', projectRoot), 'utf8'),
+		readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8'),
+	]);
+
+	assert.match(html, /data-workspace="recovery"/);
+	assert.doesNotMatch(html, /data-workspace="history"|data-workspace="recycle"/);
+	assert.match(script, /data-recovery-tab="history"/);
+	assert.match(script, /data-recovery-tab="recycle"/);
+	assert.match(script, /撤销追溯快照保持只读/);
+	assert.match(script, /恢复后只会生成草稿，不会直接公开/);
+	assert.match(script, /\/api\/restore-recycle/);
+	assert.match(script, /\/api\/restore-history/);
+});
+
+test('维护概览只保留四个摘要，图片说明与备份仍留在任务清单', async () => {
+	const script = await readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8');
+
+	assert.doesNotMatch(script, /overview\.missingImageDescriptions|overview\.backupUnregistered/);
+	assert.match(script, /add\('image_descriptions', 'fill'/);
+	assert.match(script, /add\('backup_status_unregistered', 'fill'/);
+	assert.match(script, /class="maintenance-guidance"/);
 });
 
 test('新建档案仍直接进入原有编辑流程', async () => {
