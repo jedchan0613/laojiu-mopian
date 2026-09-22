@@ -38,10 +38,6 @@
 							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4zM8 5v15M8 9h12M8 14h12" /></svg>
 							<span>档案管理</span><small id="records-badge">0</small>
 						</button>
-						<button class="desk-nav-button" data-workspace="query" type="button">
-							<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg>
-							<span>资料查询</span><small id="query-badge">0</small>
-						</button>
 					</div>
 
 					<div class="desk-nav-group">
@@ -62,13 +58,9 @@
 
 					<div class="desk-nav-group">
 						<p class="desk-nav-label">记录与恢复</p>
-						<button class="desk-nav-button" data-workspace="history" type="button">
+						<button class="desk-nav-button" data-workspace="recovery" type="button">
 							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2" /></svg>
-							<span>历史版本</span><small id="history-badge">0</small>
-						</button>
-						<button class="desk-nav-button" data-workspace="recycle" type="button">
-							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16M9 4h6l1 4H8zM6 8l1 12h10l1-12M10 12v4M14 12v4" /></svg>
-							<span>图片回收区</span><small id="recycle-badge">0</small>
+							<span>历史与回收</span><small id="recovery-badge">0</small>
 						</button>
 					</div>
 				</nav>
@@ -100,7 +92,7 @@
 
 				<label class="search-box">
 					<span class="sr-only">搜索藏品</span>
-					<input id="record-search" type="search" placeholder="搜索编号、题名、年代、地点或来源" />
+					<input id="record-search" type="search" placeholder="编号、题名、人物、地点或来源" />
 				</label>
 
 				<div class="record-tools">
@@ -108,6 +100,8 @@
 						<span class="sr-only">排序方式</span>
 						<select id="record-sort" aria-label="排序方式">
 							<option value="updated-desc">按最后更新（新→旧）</option>
+							<option value="updated-asc">按最后更新（旧→新）</option>
+							<option value="decade-asc">按年代（旧→新）</option>
 							<option value="accession-desc">按入藏日期（新→旧）</option>
 							<option value="item-date-desc">按藏品时间</option>
 							<option value="id-asc">按编号</option>
@@ -134,7 +128,19 @@
 					</label>
 				</div>
 
-				<div class="record-count" id="record-count" role="status" aria-live="polite" aria-atomic="true">正在读取档案…</div>
+				<details class="record-advanced" id="record-advanced">
+					<summary>更多筛选 <small id="record-advanced-count">研究、证据、权利与图片</small></summary>
+					<div class="record-advanced-fields">
+						<label>藏品分类<select id="record-category-filter" data-record-filter="category"><option value="">全部分类</option></select></label>
+						<label>研究状态<select id="record-research-filter" data-record-filter="research"><option value="">全部状态</option></select></label>
+						<label>证据等级<select id="record-evidence-filter" data-record-filter="evidence"><option value="">全部等级</option></select></label>
+						<label>权利状态<select id="record-rights-filter" data-record-filter="rights"><option value="">全部状态</option></select></label>
+						<label>图片结构<select id="record-image-filter" data-record-filter="imageStatus" disabled><option value="">全部状态</option><option value="complete">结构完整</option><option value="warning">需要检查</option><option value="missing">没有发布图片</option></select></label>
+					</div>
+					<p id="record-query-state" role="status"></p>
+					<button class="text-button" id="record-query-refresh" type="button">刷新图片结构</button>
+				</details>
+				<div class="record-filter-summary"><div class="record-count" id="record-count" role="status" aria-live="polite" aria-atomic="true">正在读取档案…</div><button class="text-button" id="record-filters-clear" type="button" hidden>清除条件</button></div>
 				<nav class="record-list" id="record-list" aria-label="藏品列表"></nav>
 				<nav class="record-pagination" id="record-pagination" aria-label="档案列表分页" hidden></nav>
 				</div>

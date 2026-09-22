@@ -128,7 +128,7 @@ const serializedStructuredData = structuredData
 		--site-brand-font: 'LJM Brand Serif', 'Songti SC', 'STSong', 'Source Han Serif SC', 'Noto Serif SC', serif;
 		--site-text-font: 'LJM Brand Serif', 'Songti SC', 'STSong', 'Source Han Serif SC', 'Noto Serif SC', serif;
 		--site-ui-font: 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Source Han Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
-		/* 静室两层：更深的室色底，更亮的裱纸承物。朱红只留给印章。 */
+		/* 静室两层：更深的室色底，更亮的裱纸承物。朱红用于印章与少量展签。 */
 		--site-bg: #d9d1bd;
 		--site-paper: #f4efe1;
 		--site-mat: #ece6d6;
@@ -140,7 +140,7 @@ const serializedStructuredData = structuredData
 		--site-border-soft: #b6ad99;
 		--site-accent: #9a3f2e;
 		--site-muted: #55514a;
-		--site-subtle: #625c51;
+		--site-subtle: #55504a;
 		--site-focus-outline: #4a463e;
 		--site-text-micro: 0.72rem;
 		--site-text-small: 0.78rem;
@@ -164,19 +164,8 @@ const serializedStructuredData = structuredData
 		min-width: 0;
 		min-height: 100vh;
 		background-color: var(--site-bg);
-		background-image:
-			var(--site-paper-grain),
-			repeating-linear-gradient(
-				90deg,
-				rgba(72, 58, 36, 0.028) 0 1px,
-				transparent 1px 4px
-			),
-			repeating-linear-gradient(
-				0deg,
-				rgba(72, 58, 36, 0.02) 0 1px,
-				transparent 1px 5px
-			);
-		background-size: 256px 256px, 4px 100%, 100% 5px;
+		background-image: var(--site-paper-grain);
+		background-size: 256px 256px;
 		background-repeat: repeat;
 		color: var(--site-text);
 		text-rendering: optimizeLegibility;

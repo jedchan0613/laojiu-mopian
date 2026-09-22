@@ -2147,7 +2147,7 @@ body[data-workspace="query"] .editor-surface {
 
 .maintenance-summary-grid {
 	display: grid;
-	grid-template-columns: repeat(6, minmax(0, 1fr));
+	grid-template-columns: repeat(4, minmax(0, 1fr));
 	gap: 0.6rem;
 }
 
@@ -5699,6 +5699,83 @@ body.admin-v2 .record-tools option {
 	background: #fff;
 }
 
+body.admin-v2 .record-advanced {
+	margin-top: 0.55rem;
+	padding: 0.55rem 0.6rem;
+	background: #fff;
+	border: 1px solid var(--admin-line);
+	border-radius: var(--admin-radius-sm);
+}
+
+body.admin-v2 .record-advanced > summary {
+	display: flex;
+	gap: 0.45rem;
+	align-items: center;
+	justify-content: space-between;
+	color: var(--admin-ink);
+	font-size: 0.7rem;
+	font-weight: 650;
+	cursor: pointer;
+}
+
+body.admin-v2 .record-advanced > summary small,
+body.admin-v2 #record-query-state {
+	color: var(--admin-muted);
+	font-size: 0.62rem;
+	font-weight: 400;
+}
+
+body.admin-v2 .record-advanced-fields {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.45rem;
+	margin-top: 0.65rem;
+}
+
+body.admin-v2 .record-advanced-fields label {
+	display: grid;
+	gap: 0.22rem;
+	color: var(--admin-muted);
+	font-size: 0.62rem;
+}
+
+body.admin-v2 .record-advanced-fields select {
+	min-width: 0;
+	min-height: 2.15rem;
+	padding: 0.35rem 1.4rem 0.35rem 0.45rem;
+	color: var(--admin-ink);
+	background: #fff;
+	border: 1px solid var(--admin-line-strong);
+	border-radius: 0.5rem;
+	font-size: 0.65rem;
+}
+
+body.admin-v2 #record-query-state {
+	margin: 0.55rem 0 0.25rem;
+	line-height: 1.55;
+}
+
+body.admin-v2 #record-query-refresh {
+	padding: 0;
+	font-size: 0.64rem;
+}
+
+body.admin-v2 .record-filter-summary {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	justify-content: space-between;
+}
+
+body.admin-v2 .record-filter-summary .record-count {
+	margin-right: 0;
+}
+
+body.admin-v2 .record-filter-summary .text-button {
+	flex: 0 0 auto;
+	font-size: 0.64rem;
+}
+
 body.admin-v2 .record-count {
 	margin: 0.75rem 0.2rem 0.42rem;
 	color: var(--admin-muted);
@@ -6225,6 +6302,102 @@ body.admin-v2 .maintenance-summary-grid .is-alert {
 	color: var(--admin-danger);
 	background: var(--admin-danger-soft);
 	border-color: #fecdca;
+}
+
+body.admin-v2 .maintenance-guidance {
+	margin-top: 0.8rem;
+	color: var(--admin-muted);
+	font-size: 0.78rem;
+	line-height: 1.7;
+}
+
+body.admin-v2 .maintenance-guidance summary {
+	width: fit-content;
+	color: var(--admin-accent);
+	font-weight: 650;
+	cursor: pointer;
+}
+
+body.admin-v2 .maintenance-guidance p {
+	max-width: 58rem;
+	margin: 0.55rem 0 0;
+}
+
+body.admin-v2 .record-reference {
+	margin-top: 1rem;
+	padding-top: 0.8rem;
+	border-top: 1px solid var(--admin-line);
+}
+
+body.admin-v2 .record-reference > summary {
+	display: flex;
+	gap: 0.55rem;
+	align-items: baseline;
+	width: fit-content;
+	color: var(--admin-ink);
+	font-weight: 700;
+	cursor: pointer;
+}
+
+body.admin-v2 .record-reference > summary small {
+	color: var(--admin-muted);
+	font-size: 0.7rem;
+	font-weight: 400;
+}
+
+body.admin-v2 .record-reference .query-detail {
+	margin-top: 0.75rem;
+	padding: 0.9rem;
+	background: var(--admin-surface-soft);
+	border: 0;
+	box-shadow: none;
+}
+
+body.admin-v2 .recovery-workspace {
+	display: grid;
+	gap: 0.9rem;
+}
+
+body.admin-v2 .recovery-tabs {
+	display: flex;
+	gap: 0.35rem;
+	padding: 0.3rem;
+	background: #fff;
+	border: 1px solid var(--admin-line);
+	border-radius: var(--admin-radius);
+	box-shadow: var(--admin-shadow);
+}
+
+body.admin-v2 .recovery-tabs button {
+	display: inline-flex;
+	gap: 0.45rem;
+	align-items: center;
+	min-height: 2.4rem;
+	padding: 0.45rem 0.8rem;
+	color: var(--admin-muted);
+	background: transparent;
+	border: 0;
+	border-radius: var(--admin-radius-sm);
+	font: inherit;
+	font-size: 0.78rem;
+	cursor: pointer;
+}
+
+body.admin-v2 .recovery-tabs button.is-active {
+	color: var(--admin-accent);
+	background: var(--admin-accent-soft);
+	font-weight: 700;
+}
+
+body.admin-v2 .recovery-tabs small {
+	display: inline-grid;
+	place-items: center;
+	min-width: 1.35rem;
+	height: 1.35rem;
+	padding-inline: 0.25rem;
+	background: rgba(255, 255, 255, 0.72);
+	border-radius: 999px;
+	font-size: 0.65rem;
 }
 
 body.admin-v2 .maintenance-record-card,

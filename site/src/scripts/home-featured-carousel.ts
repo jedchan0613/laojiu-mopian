@@ -7,6 +7,7 @@ interface FeaturedCarouselItem {
 	itemId: string;
 	title: string;
 	dateDisplay: string;
+	recordInfo: string;
 	href: string;
 }
 
@@ -15,6 +16,7 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 	const recordLink = carousel.querySelector<HTMLAnchorElement>('[data-home-carousel-link]');
 	const recordDate = carousel.querySelector<HTMLElement>('[data-home-carousel-date]');
 	const recordTitle = carousel.querySelector<HTMLElement>('[data-home-carousel-title]');
+	const recordInfo = carousel.querySelector<HTMLElement>('[data-home-carousel-info]');
 	const likeButton = carousel.querySelector<HTMLButtonElement>('[data-archive-like]');
 	const previousButton = carousel.querySelector<HTMLButtonElement>('[data-home-carousel-previous]');
 	const nextButton = carousel.querySelector<HTMLButtonElement>('[data-home-carousel-next]');
@@ -75,6 +77,7 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 		recordLink.setAttribute('aria-label', `查看精选档案：${item.title}`);
 		if (recordDate) recordDate.textContent = item.dateDisplay;
 		if (recordTitle) recordTitle.textContent = item.title;
+		if (recordInfo) recordInfo.textContent = item.recordInfo;
 		if (likeButton) {
 			likeButton.dataset.itemId = item.itemId;
 			likeButton.setAttribute('aria-label', `为"${item.title}"点赞`);
