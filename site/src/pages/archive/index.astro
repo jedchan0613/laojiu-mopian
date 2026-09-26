@@ -97,15 +97,11 @@ const searchIndexJson = JSON.stringify(
     </header>
 
     {(decadeBrowseEntries.length > 0 || placeBrowseEntries.length > 0) && (
-      <section class="archive-paths" aria-labelledby="archive-paths-heading">
-        <header class="archive-paths-heading">
-          <div class="archive-paths-title">
-            <div>
-              <h2 id="archive-paths-heading">按线索浏览</h2>
-              <p>选择年代或地点，快速缩小浏览范围</p>
-            </div>
-          </div>
-        </header>
+      <details class="archive-paths" data-archive-paths open>
+        <summary class="archive-paths-heading">
+          <span class="archive-paths-title" id="archive-paths-heading">按年代与地点浏览</span>
+          <span class="archive-paths-toggle" aria-hidden="true">展开 / 收起</span>
+        </summary>
         <div class:list={{
           'archive-paths-grid': true,
           'is-single': decadeBrowseEntries.length === 0 || placeBrowseEntries.length === 0,
@@ -135,7 +131,7 @@ const searchIndexJson = JSON.stringify(
             </section>
           )}
         </div>
-      </section>
+      </details>
     )}
 
     <section
@@ -147,7 +143,6 @@ const searchIndexJson = JSON.stringify(
         <div class="archive-index-title">
           <div><h2>查找档案</h2></div>
         </div>
-        <span>按关键词、类型和整理线索缩小范围</span>
       </header>
       <div class="archive-controls" aria-label="档案搜索与筛选">
         <div class="archive-control">
@@ -155,7 +150,7 @@ const searchIndexJson = JSON.stringify(
           <input
             id="archive-search"
             type="search"
-            placeholder="搜索档案……"
+            placeholder="题名、地点或关键词"
             autocomplete="off"
             spellcheck={false}
             aria-controls="archive-list"
@@ -347,6 +342,11 @@ const searchIndexJson = JSON.stringify(
 
   const archiveIndex = document.querySelector<HTMLElement>('.archive-index');
   const searchInput = document.querySelector<HTMLInputElement>('#archive-search');
+  const browsePaths = document.querySelector<HTMLDetailsElement>('[data-archive-paths]');
+  const narrowScreen = window.matchMedia('(max-width: 700px)');
+  const syncBrowsePaths = () => { if (browsePaths) browsePaths.open = !narrowScreen.matches; };
+  syncBrowsePaths();
+  narrowScreen.addEventListener('change', syncBrowsePaths);
   const categorySelect = document.querySelector<HTMLSelectElement>('#archive-category');
   const sortSelect = document.querySelector<HTMLSelectElement>('#archive-sort');
   const decadeSelect = document.querySelector<HTMLSelectElement>('#archive-decade');
@@ -865,7 +865,13 @@ const searchIndexJson = JSON.stringify(
     align-items: baseline;
     justify-content: space-between;
     gap: 1rem;
+    cursor: pointer;
+    list-style: none;
+    min-height: 2rem;
   }
+
+  .archive-paths-heading::-webkit-details-marker { display: none; }
+  .archive-paths-toggle { color: var(--site-subtle); font: 0.68rem var(--site-ui-font); }
 
   .archive-paths-title,
   .archive-index-title {
@@ -883,7 +889,7 @@ const searchIndexJson = JSON.stringify(
   }
 
   .archive-paths-heading p,
-  .archive-paths-heading h2,
+  .archive-paths-heading #archive-paths-heading,
   .archive-path-group h3 {
     margin: 0;
   }
@@ -892,7 +898,7 @@ const searchIndexJson = JSON.stringify(
     display: none;
   }
 
-  .archive-paths-heading h2 {
+  .archive-paths-heading #archive-paths-heading {
     color: var(--site-subtle);
     font-family: var(--site-ui-font);
     font-size: 0.72rem;
@@ -1497,12 +1503,14 @@ const searchIndexJson = JSON.stringify(
     }
 
     .archive-controls {
-      grid-template-columns: 1fr;
-      gap: 0.7rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem 0.7rem;
     }
 
+    .archive-controls > .archive-control:first-child { grid-column: 1 / -1; }
+
     .archive-more-filters {
-      grid-column: auto;
+      grid-column: 1 / -1;
     }
 
     .archive-actions {

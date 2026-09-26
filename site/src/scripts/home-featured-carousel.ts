@@ -60,7 +60,7 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 
 	const syncDots = () => {
 		dots.forEach((dot, index) => {
-			dot.setAttribute('aria-selected', String(index === activeIndex));
+			dot.setAttribute('aria-current', String(index === activeIndex));
 		});
 	};
 
@@ -101,6 +101,16 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 
 	dots.forEach((dot, index) => {
 		dot.addEventListener('click', () => selectImage(index, true));
+	});
+	dotsContainer?.addEventListener('keydown', (event) => {
+		if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+		const index = dots.indexOf(document.activeElement as HTMLButtonElement);
+		if (index < 0) return;
+		event.preventDefault();
+		const target = event.key === 'Home' ? 0 : event.key === 'End' ? dots.length - 1
+			: (index + (event.key === 'ArrowRight' ? 1 : -1) + dots.length) % dots.length;
+		selectImage(target, true);
+		dots[target].focus();
 	});
 
 	carousel.dataset.carouselReady = '';

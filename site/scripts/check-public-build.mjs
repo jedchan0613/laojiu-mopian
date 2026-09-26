@@ -44,7 +44,8 @@ const htmlEntries = await Promise.all(htmlFiles.map(async (path) => ({
 // 公共页面正文统一使用本地宋体。直接读取字体文件的真实字形范围，避免
 // 子集缺字时浏览器悄悄回退到另一种宋体，造成同一标题内粗细不一致。
 const brandFontFiles = [
-	'noto-serif-sc-brand.woff2',
+	'noto-serif-sc-base.woff2',
+	'noto-serif-sc-extended.woff2',
 	'noto-serif-sc-brand-supplement.woff',
 ];
 const brandFontRanges = (await Promise.all(brandFontFiles.map(async (fileName) => {
