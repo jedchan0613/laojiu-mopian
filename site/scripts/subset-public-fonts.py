@@ -97,4 +97,16 @@ for name, points in [("base", base), ("extended", extended)]:
         "}\n"
     )
     print(f"{name}: {len(points)} 字形，{(font_root / filename).stat().st_size} 字节")
+# 服务器新增公开原文需要的同源补充字库也随项目维护；重新拆分不能丢掉接入。
+public_supplement = font_root / "noto-serif-sc-public-supplement.woff2"
+supplement_points = set(TTFont(public_supplement).getBestCmap()) - available
+styles.append(
+    "@font-face {\n"
+    "  font-family: 'LJM Brand Serif';\n"
+    "  src: url('./noto-serif-sc-public-supplement.woff2') format('woff2');\n"
+    "  font-style: normal;\n  font-weight: 200 900;\n  font-display: swap;\n"
+    f"  unicode-range: {unicode_range(supplement_points)};\n"
+    "}\n"
+)
+print(f"public supplement: {len(supplement_points)} 字形，{public_supplement.stat().st_size} 字节")
 (font_root / "brand-subsets.css").write_text("\n\n".join(styles) + "\n", encoding="utf-8")

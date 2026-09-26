@@ -46,6 +46,7 @@ const htmlEntries = await Promise.all(htmlFiles.map(async (path) => ({
 const brandFontFiles = [
 	'noto-serif-sc-base.woff2',
 	'noto-serif-sc-extended.woff2',
+	'noto-serif-sc-public-supplement.woff2',
 	'noto-serif-sc-brand-supplement.woff',
 ];
 const brandFontRanges = (await Promise.all(brandFontFiles.map(async (fileName) => {
@@ -78,6 +79,8 @@ const requiredBrandCharacters = new Set([
 	...(publicPageMarkup.match(/\p{Script=Han}/gu) ?? []),
 	// 来自已发布页面截图；即使本地样例数据暂未同步，也必须防止再次回退。
 	...'搞玩都困难暗室',
+	// 服务器正式公开原文的缺字回归；不能只验证本地六件样例。
+	...'啊哎唉矮傲爸吧佰半伴饱抱倍辈奔俾舶踩惭婵畅吵趁乘吃迟抽匆粗答诞蛋挡弟睇掂颠惦叮懂唞豆毒盾耳帆凡犯饭芳飞奋逢父妇负赶糕咯哥耕顾怪孩害咁憾豪恨厚乎诲慧伙棘几季嫁健奖骄叫颈竟敬举倔嘅颗苦愧啦篮懒牢唠涝叻励俩谅聆履虑乱啰妈吗嘛慢忙矛锚冇妹闷猛眠乜咩母耐男恼脑呢嗯溺廿嬲努哦怕盼抛跑陪碰疲辟贫企气弃歉倾球屈佢却扰森啥衫捎婶甚食叔蔬瞬虽岁碎嗦琐她踏坦讨厅痛偷透忘委胃喂慰吻揾握屋唔午吸媳暇卸兄眼药爷嘢遗椅饮勇忧又娱渔愉愚院责掌啫争侄衷嘱抓仔租阻尊琢坐做咗㗎',
 ]);
 const missingBrandCharacters = [...requiredBrandCharacters]
 	.filter((character) => !brandFontHasGlyph(character))
@@ -91,6 +94,8 @@ check(
 		baseLayoutSource.includes('U+56F0, U+5BA4, U+641E, U+6697, U+73A9'),
 	'补充字库没有正确接入公开页面。',
 );
+const brandSubsetStyles = await readFile(join(siteRoot, 'src', 'assets', 'fonts', 'brand-subsets.css'), 'utf8');
+check(brandSubsetStyles.includes('noto-serif-sc-public-supplement.woff2') && brandSubsetStyles.includes('U+35CE'), '服务器公开原文补充字库没有接入字体样式。');
 const scriptEntries = await Promise.all(
 	distFiles.filter((path) => path.endsWith('.js')).map(async (path) => ({
 		publicPath: `/${relative(distRoot, path).split(sep).join('/')}`,
