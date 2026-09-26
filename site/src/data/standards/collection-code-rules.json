@@ -219,6 +219,15 @@
           "code_fields": []
         },
         {
+          "dimension_code": "PC11",
+          "name": "通信关系/关联机构",
+          "fields": [
+            "correspondence_relationship",
+            { "field_code": "organizations", "scope": "core" }
+          ],
+          "code_fields": []
+        },
+        {
           "dimension_code": "PC12",
           "name": "图像主题",
           "fields": [
@@ -244,6 +253,17 @@
               "scope": "core"
             }
           ]
+        },
+        {
+          "dimension_code": "PC18",
+          "name": "邮票",
+          "fields": [
+            "stamp_country",
+            "stamp_issue",
+            "stamp_value",
+            "stamp_status"
+          ],
+          "code_fields": []
         },
         {
           "dimension_code": "PC19",

@@ -6,8 +6,7 @@ const itemIdPattern = /^LJM-\d{8}-[A-Z]{3}-\d{3}$/;
 
 const primaryCoreFields = [
 	'accession_date', 'object_type', 'title', 'batch_id', 'date_display',
-	'acquisition_method', 'source_name', 'source_place', 'provenance_notes', 'physical_location',
-	'notes',
+	'physical_location',
 ];
 
 const hiddenCommonFieldCodes = new Set([
@@ -34,6 +33,47 @@ const commonFieldSectionFor = (definition, { required = false, value } = {}) => 
 };
 
 const hiddenSpecificFieldCodes = new Set(['place_code', 'evidence_basis', 'dispatch_post_office', 'stamp_issue']);
+const referenceOnlyFieldCodes = new Set([
+	'sender_person_id', 'recipient_person_id', 'publisher_id', 'creator_id', 'creator_person_id',
+	'owner_person_ids', 'mentioned_person_ids', 'issuing_organization_id', 'issuer_id',
+	'holder_person_id', 'portrait_item_id', 'attachment_item_ids',
+	'image_place_code', 'issuing_place_code', 'issue_place_code',
+]);
+// 仅替换维护界面的显示名称，不更改规范字段名或代码。
+const fieldLabelOverrides = {
+	transcription: '公开原文转录', tags: '公开检索标签',
+	postcard_type: '明信片类别', postcard_function: '原始用途', postcard_use: '邮寄与使用状态',
+	postal_mark_types: '邮政标记类型', writing_date: '书写日期', writing_date_text: '书写时间说明',
+	issue_date: '签发／发行日期', issue_date_text: '发行时间说明',
+	dispatch_date: '寄出日期', transit_dates: '经转日期', arrival_date: '到达日期',
+	image_place_code: '图像地点关联代码', image_place_text: '图像中的地点',
+	dispatch_place: '寄出地点', destination_place: '收件地点', recipient_address: '收件地址（仅填脱敏内容）',
+	sender_person_id: '寄件人关联编号', sender_name: '寄件人姓名', sender_address: '寄件地址（仅填脱敏内容）',
+	recipient_person_id: '收件人关联编号', recipient_name: '收件人姓名', recipient_title: '收件人称谓',
+	correspondence_relationship: '通信双方关系', image_subject: '画面内容',
+	publisher: '出版／发行机构', publisher_place: '出版／发行地点', publisher_id: '发行机构关联编号',
+	printer: '印刷机构', manufacturer: '制造机构', printer_place: '印刷地点',
+	creator_name: '创作者姓名', creator_role: '创作者角色', creator_id: '创作者关联编号',
+	postcard_process: '印刷工艺', paper_stock: '纸张类型', postcard_format: '明信片版式', orientation: '横竖方向',
+	stamp_country: '邮票发行国家', stamp_issue: '邮票图案／版别', stamp_value: '邮票面值', stamp_status: '邮票状态',
+	postmark_transcription: '邮戳文字', message_transcription: '正文原文转录', postal_route: '邮寄路线',
+	return_reason: '退回原因', script: '文字种类',
+	valid_from: '有效期起始日期', valid_to: '有效期截止日期', validity_text: '有效期说明',
+	issuer_id: '发行机构关联编号', issuing_organization_id: '签发机构关联编号',
+	creator_person_id: '作者关联编号', owner_person_ids: '所有者关联编号', mentioned_person_ids: '涉及人物关联编号',
+	holder_person_id: '持证人关联编号', portrait_item_id: '肖像档案关联编号', attachment_item_ids: '附件档案关联编号',
+	content_date_start: '内容起始日期', content_date_end: '内容截止日期',
+	entry_frequency: '记录频率', original_pagination: '原有页码', transcript_path: '转录文件路径',
+	notebook_completeness: '册簿完整性', card_completeness: '卡片完整性', printed_handwritten: '印刷／手写情况',
+	holder_name_masked: '持卡人姓名（已遮盖）', card_number_masked: '卡号（已遮盖）',
+	document_number_masked: '证件号码（已遮盖）', address_masked: '地址（已遮盖）',
+	service_network: '服务网络', service_area: '适用地区', face_value: '面值', currency: '币种',
+	benefit_text: '权益说明', usage_evidence: '使用痕迹', usage_notes: '使用情况说明',
+	front_subject: '正面图像内容', back_subject: '背面图像内容',
+	front_transcription: '正面文字转录', back_transcription: '背面文字转录',
+	material_details: '材料说明', security_features: '防伪特征', other_attributes: '其他个人属性',
+	serial_pattern: '序列号形式', cancellation_marks: '注销痕迹', missing_parts: '缺失部分', section_titles: '章节标题',
+};
 const administrativeRegionListIds = {
 	province: 'administrative-province-options',
 	city: 'administrative-city-options',
@@ -120,6 +160,11 @@ const wordLabels = {
 	specific: '具体', stamp: '邮票', status: '状态', street: '街道', structure: '结构', studio: '摄影来源',
 	subject: '主题', themes: '主题', time: '时间', title: '称谓／题名', town: '乡镇', transcription: '转录',
 	transit: '经转', treatment: '处理', type: '类型', types: '类型', unit: '单位', use: '使用', used: '使用范围',
+	text: '文字说明', dates: '日期', relationship: '关系', stock: '类型', postmark: '邮戳', route: '路线',
+	completeness: '完整性', direction: '方向', frequency: '频率', gaps: '间断', sequence: '顺序',
+	places: '地点', genres: '体裁', topics: '主题', stage: '阶段', titles: '标题', count: '数量',
+	medium: '媒介', colors: '颜色', layers: '层次', additions: '增补', pages: '页码',
+	ranges: '范围', fields: '字段', technology: '技术', signature: '签名',
 	technologies: '技术', valid: '有效', validity: '有效期', value: '面值', verso: '背面', width: '宽度', work: '工作', writing: '书写',
 };
 
@@ -921,6 +966,16 @@ const loadQueryRecords = async () => {
 	}
 };
 
+// “本组至少一项”不等于每个候选字段必填。已由批次等字段满足的分组，
+// 不应再把空的相册号、系列号、关联号全部显示出来；未满足时仍保留填写入口。
+const requiredCoreFieldsForVisibility = () => new Set(
+	(currentCollectionRules()?.required_dimensions ?? []).flatMap((dimension) => {
+		const satisfied = (dimension.fields ?? []).some((field) =>
+			hasMeaningfulValue(collectionRuleFieldValue(dimension.dimension_code, field)));
+		return [...(dimension.code_fields ?? []), ...(!satisfied ? dimension.fields ?? [] : [])];
+	}).map(normalizeRuleField).filter((field) => field.scope === 'core').map((field) => field.field_code),
+);
+
 const renderRecordReference = () => {
 	if (state.query.loading) return '<p role="status">正在读取资料与图片结构…</p>';
 	if (state.query.error) return `<p role="status">${escapeHtml(state.query.error)}</p><button class="quiet-button" data-query-action="refresh" type="button">重新读取</button>`;
@@ -1644,8 +1699,8 @@ const dictionaryKeyFor = (definition, fieldCode) => {
 	const key = (definition?.dictionary_or_multi_value_rule ?? '').split('｜')[0];
 	return key && key !== '—' ? key : null;
 };
-const humanFieldLabel = (fieldCode) => commonDefinition(fieldCode)?.name ??
-	fieldCode.split('_').map((word) => wordLabels[word] ?? word).join(' · ');
+const humanFieldLabel = (fieldCode) => fieldLabelOverrides[fieldCode] ?? commonDefinition(fieldCode)?.name ??
+	fieldCode.split('_').map((word) => wordLabels[word] ?? word).join('');
 const fieldDataType = (definition, fieldCode) => {
 	if (definition?.data_type) return definition.data_type;
 	if (dateFields.has(fieldCode)) return '日期';
@@ -1793,7 +1848,7 @@ const renderField = ({
 	scope = 'core', dimension = '', fieldCode, definition, value, required = false, readonly = false,
 	context = '', dictionaryKey = null,
 }) => {
-	const label = fieldCode === 'object_type' ? '藏品分类' : definition?.name ?? humanFieldLabel(fieldCode);
+	const label = fieldCode === 'object_type' ? '藏品分类' : fieldLabelOverrides[fieldCode] ?? definition?.name ?? humanFieldLabel(fieldCode);
 	const type = fieldDataType(definition, fieldCode);
 	const options = state.dictionary.get(dictionaryKey ?? dictionaryKeyFor(definition, fieldCode)) ?? [];
 	const multi = Array.isArray(value) || arrayFields.has(fieldCode) ||
@@ -1887,15 +1942,14 @@ const renderBasic = () => {
 	const remainingBySection = new Map();
 	const coreCanonical = coreCanonicalFieldCodes();
 	const dimensionFields = dimensionFieldCodes();
-	const requiredCoreFields = new Set((currentCollectionRules()?.required_dimensions ?? [])
-		.flatMap((dimension) => [...(dimension.fields ?? []), ...(dimension.code_fields ?? [])])
-		.map(normalizeRuleField).filter((field) => field.scope === 'core').map((field) => field.field_code));
+	const requiredCoreFields = requiredCoreFieldsForVisibility();
 	for (const definition of state.standards.commonFields.fields) {
 		if (managedCoreFields.has(definition.field_code) ||
 			primaryCoreFields.includes(definition.field_code) || definition.data_type === '公式' ||
-			(dimensionFields.has(definition.field_code) && !coreCanonical.has(definition.field_code))) continue;
+			(dimensionFields.has(definition.field_code) && !coreCanonical.has(definition.field_code) &&
+				!(hiddenCommonFieldCodes.has(definition.field_code) && hasMeaningfulValue(state.current.core[definition.field_code])))) continue;
 		const section = commonFieldSectionFor(definition, {
-			required: basicFieldRule(definition.field_code).required || requiredCoreFields.has(definition.field_code),
+			required: basicFieldRule(definition.field_code).required || requiredCoreFields.has(definition.field_code) || activeFieldIssueMap.has(definition.field_code),
 			value: state.current.core[definition.field_code],
 		});
 		if (!section) continue;
@@ -1917,8 +1971,11 @@ const renderBasic = () => {
 		const sectionFieldCodes = new Set(definitions.map((definition) => definition.field_code));
 		const groupRequirements = (currentCollectionRules()?.required_dimensions ?? []).filter((dimension) => {
 			const dimensionFields = (dimension.fields ?? []).map(normalizeRuleField);
-			return dimensionFields.length > 1 &&
-				dimensionFields.every((field) => field.scope === 'core' && sectionFieldCodes.has(field.field_code)) &&
+			return dimensionFields.length > 0 &&
+				dimensionFields.every((field) => field.scope === 'core') &&
+				dimensionFields.some((field) => sectionFieldCodes.has(field.field_code)) &&
+				!dimensionFields.some((field) => !sectionFieldCodes.has(field.field_code) &&
+					hasMeaningfulValue(collectionRuleFieldValue(dimension.dimension_code, field))) &&
 				!(dimension.code_fields ?? []).length;
 		});
 		return { section, fields, requiredCount, groupRequirements, originalIndex };
@@ -1927,13 +1984,17 @@ const renderBasic = () => {
 			Number(left.requiredCount > 0 || left.groupRequirements.length > 0) ||
 		left.originalIndex - right.originalIndex);
 	const moreFields = moreFieldGroups.map(({ section, fields, requiredCount, groupRequirements }) => {
+		const filledCount = fields.filter(({ definition }) => hasMeaningfulValue(state.current.core[definition.field_code])).length;
+		const missingRequired = fields.some(({ definition, required }) => required && !hasMeaningfulValue(state.current.core[definition.field_code])) ||
+			groupRequirements.some((dimension) => !(dimension.fields ?? []).some((field) => hasMeaningfulValue(collectionRuleFieldValue(dimension.dimension_code, field))));
+		const hasIssues = fields.some(({ definition }) => activeFieldIssueMap.has(definition.field_code));
 		const requiredBadge = groupRequirements.length
-			? `<strong class="more-fields-required" title="${escapeHtml(groupRequirements.map((rule) => rule.name).join('；'))}">必填 · 至少一项</strong>`
+			? `<strong class="more-fields-required" title="${escapeHtml(groupRequirements.map((rule) => rule.name).join('；'))}">${missingRequired ? '必填 · 至少一项' : '必填 · 已完成'}</strong>`
 			: requiredCount
-			? `<strong class="more-fields-required">必填 ${requiredCount} 项</strong>`
+			? `<strong class="more-fields-required">${missingRequired ? `必填 ${requiredCount} 项` : '必填 · 已完成'}</strong>`
 			: '';
 		return `
-		<details class="more-fields ${groupRequirements.length ? 'is-required-group' : ''}"><summary><span class="more-fields-summary-title">${escapeHtml(section)} · ${fields.length} 个字段</span>${requiredBadge}</summary><div class="form-grid">
+		<details data-details-key="common-${escapeHtml(section)}" class="more-fields ${requiredCount || groupRequirements.length ? 'is-required-group' : ''}" ${missingRequired || hasIssues ? 'open' : ''}><summary><span class="more-fields-summary-title">${escapeHtml(section)}${filledCount ? ` · 已填 ${filledCount} 项` : ''}</span>${requiredBadge}</summary><div class="form-grid">
 		${fields.map(({ definition, rule, required }) => renderField({
 			fieldCode: definition.field_code,
 			definition,
@@ -1948,33 +2009,32 @@ const renderBasic = () => {
 			rule: '按原件逐字录入并保留称呼、段落、换行、落款和日期；无法辨认写〔不清〕，缺失文字写□。私人地址、电话、证件号码和清晰签名等敏感内容不得进入公开文字。',
 		}
 		: undefined;
+	const isLetter = state.current.core.object_type === 'LET';
+	const publicSupplementFields = [
+		...(!isLetter ? [{ fieldCode: 'transcription', definition: publicTranscriptionDefinition }] : []),
+		{ fieldCode: 'tags' },
+		...(!state.isNew || hasMeaningfulValue(state.current.public_view.revision_note) ? [{
+			fieldCode: 'revision_note',
+			definition: { name: '公开修订说明', rule: '只有公开内容发生实质变化时填写，一两句话说明改了什么。' },
+		}] : []),
+	];
+	const publicSupplementFilled = publicSupplementFields.filter(({ fieldCode }) => hasMeaningfulValue(state.current.public_view[fieldCode])).length;
 	return `<section class="form-section">
-		<div class="section-heading"><div><h3>常用档案信息</h3><p>必填项已排在前面；永久编号首次保存后固定，收藏品编码自动生成。</p></div></div>
-	<div class="form-grid common-info-grid"><label class="form-field is-item-id"><span class="field-label">永久编号 ${fieldVisibilityBadge('core', 'item_id')}</span>
-	<input type="text" value="${escapeHtml(state.current.core.item_id || '尚未分配')}" readonly /></label>
-	<label class="form-field is-code-output"><span class="field-label">收藏品编码 ${fieldVisibilityBadge('core', 'collection_code')}</span>
-		<input type="text" data-collection-code-output value="${escapeHtml(state.current.core.collection_code || '请先填写收藏品编码组成字段')}" readonly />
-		<span class="field-notes"><span class="field-help">系统自动生成，不需要手工填写。</span></span></label>
-		${objectTypeField}${primary}</div>
+		<div class="section-heading"><div><h3>常用档案信息</h3><p>先填写以下六项；来源、尺寸和研究记录可在补充信息中展开。</p></div></div>
+		<div class="record-identifiers"><div><span>永久编号</span><output>${escapeHtml(state.current.core.item_id || '首次保存后分配')}</output></div>
+		<div><span>收藏品编码 · 自动生成</span><output data-collection-code-output>${escapeHtml(state.current.core.collection_code || '待填写编码组成字段')}</output></div></div>
+	<div class="form-grid common-info-grid">${objectTypeField}${primary}</div>
 	</section>
 	<section class="basic-code-logic-panel" aria-label="编码生成逻辑">
 		<aside class="collection-code-logic is-inline" data-collection-code-logic>${renderCollectionCodeLogic()}</aside>
 	</section>
 	<section class="form-section"><div class="section-heading"><div><h3>访客看到的内容</h3><p>这些文字会进入公开页面，请不要填写敏感信息。</p></div></div>
 		<div class="form-grid">${renderField({ scope: 'public', fieldCode: 'description', value: state.current.public_view.description })}
-		${renderField({ scope: 'public', fieldCode: 'transcription', definition: publicTranscriptionDefinition, value: state.current.public_view.transcription })}
-		${renderField({
-			scope: 'public',
-			fieldCode: 'revision_note',
-			definition: {
-				name: '公开修订说明',
-				rule: '只有题名、判断、转录或来源说明发生实质变化时填写；一两句话说明改了什么，不记录内部操作过程。',
-			},
-			value: state.current.public_view.revision_note,
-		})}
-		${renderField({ scope: 'public', fieldCode: 'tags', value: state.current.public_view.tags })}</div>
+		${isLetter ? renderField({ scope: 'public', fieldCode: 'transcription', definition: publicTranscriptionDefinition, value: state.current.public_view.transcription }) : ''}</div>
+		<details class="more-fields" data-details-key="public-supplement"><summary><span class="more-fields-summary-title">公开文字补充${publicSupplementFilled ? ` · 已填 ${publicSupplementFilled} 项` : ''}</span></summary>
+		<div class="form-grid">${publicSupplementFields.map(({ fieldCode, definition }) => renderField({ scope: 'public', fieldCode, definition, value: state.current.public_view[fieldCode] })).join('')}</div></details>
 	</section>
-	<section class="form-section"><div class="section-heading"><div><h3>更多通用字段</h3><p>通用信息只填写一次；含必填项的分组已排在前面。</p></div></div>${moreFields}</section>`;
+	<section class="form-section"><div class="section-heading"><div><h3>补充档案信息</h3><p>通用信息只填写一次；尚未完成的必填组自动展开，其余按需填写。</p></div></div>${moreFields}</section>`;
 };
 
 const renderImages = () => {
@@ -2068,14 +2128,27 @@ const renderSpecific = () => {
 		const rightRequiredWithoutCode = Boolean(rightRule && !rightRule.code_fields?.length);
 		return Number(rightRequiredWithoutCode) - Number(leftRequiredWithoutCode);
 	});
+	const referenceFields = [];
 	const cards = orderedDimensions.map((dimension) => {
 		const values = state.current.metadata.dimensions[dimension.dimension_code] ?? {};
 		const requiredRule = requiredByCode.get(dimension.dimension_code);
 		const codeFieldNames = collectionCodeFieldNames.get(dimension.dimension_code) ?? new Set();
-		const visibleFieldCodes = dimension.fields.filter((fieldCode) =>
-			!['master_file_path', 'access_file_path', 'publication_file_path', 'signatures', 'fingerprints'].includes(fieldCode) &&
-			!hiddenSpecificFieldCodes.has(fieldCode) && !hiddenCommonFieldCodes.has(fieldCode) &&
-			!coreCanonical.has(fieldCode) && !codeFieldNames.has(fieldCode) && !globalCollectionCodeFieldNames.has(fieldCode));
+		const requiredFieldNames = new Set((requiredRule?.fields ?? []).map(normalizeRuleField).map((field) => field.field_code));
+		const dimensionFieldCodesWithHistory = [...new Set([...dimension.fields,
+			...Object.keys(values).filter((fieldCode) => hiddenSpecificFieldCodes.has(fieldCode) || hiddenCommonFieldCodes.has(fieldCode)),
+		])];
+		const visibleFieldCodes = dimensionFieldCodesWithHistory.filter((fieldCode) => {
+			if (['master_file_path', 'access_file_path', 'publication_file_path', 'signatures', 'fingerprints'].includes(fieldCode) ||
+				coreCanonical.has(fieldCode) || codeFieldNames.has(fieldCode) || globalCollectionCodeFieldNames.has(fieldCode)) return false;
+			const retainedValue = hasMeaningfulValue(values[fieldCode]);
+			if ((hiddenSpecificFieldCodes.has(fieldCode) || hiddenCommonFieldCodes.has(fieldCode)) &&
+				!retainedValue && !requiredFieldNames.has(fieldCode) && !activeFieldIssueMap.has(fieldCode)) return false;
+			if (referenceOnlyFieldCodes.has(fieldCode) && !requiredFieldNames.has(fieldCode) && !activeFieldIssueMap.has(fieldCode)) {
+				referenceFields.push({ dimension, fieldCode, value: values[fieldCode] });
+				return false;
+			}
+			return true;
+		});
 		const fields = visibleFieldCodes
 			.map((fieldCode) => {
 				const configuredField = (requiredRule?.fields ?? []).map(normalizeRuleField)
@@ -2099,14 +2172,17 @@ const renderSpecific = () => {
 		const localRequiredFields = (requiredRule?.fields ?? []).map(normalizeRuleField)
 			.filter((field) => field.scope !== 'core' && !coreCanonical.has(field.field_code) &&
 				!globalCollectionCodeFieldNames.has(field.field_code));
-		const requiresOneField = Boolean(requiredRule && !requiredRule.code_fields?.length && localRequiredFields.length);
+		const satisfiedByBasicField = Boolean(requiredRule &&
+			(requiredRule.fields ?? []).map(normalizeRuleField).some((field) =>
+				(field.scope === 'core' || coreCanonical.has(field.field_code)) &&
+				hasMeaningfulValue(collectionRuleFieldValue(dimension.dimension_code, field))));
+		const hasRequiredValue = Boolean(requiredRule && (requiredRule.fields ?? []).some((field) =>
+			hasMeaningfulValue(collectionRuleFieldValue(dimension.dimension_code, field))));
+		const requiresOneField = Boolean(requiredRule && !requiredRule.code_fields?.length && localRequiredFields.length && !satisfiedByBasicField);
 		const localCodeFieldCount = (requiredRule?.code_fields ?? []).map(normalizeRuleField)
 			.filter((field) => field.scope !== 'core' && !coreCanonical.has(field.field_code)).length;
-		const satisfiedByBasicField = Boolean(requiredRule &&
-			(requiredRule.fields ?? []).map(normalizeRuleField)
-				.some((field) => field.scope === 'core' || coreCanonical.has(field.field_code)));
 		const badge = requiresOneField
-			? '<span class="dimension-required">必填 · 至少一项</span>'
+			? `<span class="dimension-required">${hasRequiredValue ? '必填 · 已填' : '必填 · 至少一项'}</span>`
 			: localCodeFieldCount ? '<span class="dimension-code-moved">编码字段已前置</span>'
 				: satisfiedByBasicField ? '<span class="dimension-code-moved">必填 · 由基本信息满足</span>' : '';
 		const guidance = [dimension.rule, dimension.uncertainty_rule]
@@ -2114,14 +2190,21 @@ const renderSpecific = () => {
 			.filter((text, index, entries) => entries.findIndex((entry) =>
 				entry.replace(/[\s，。；：、]/g, '') === text.replace(/[\s，。；：、]/g, '')) === index)
 			.join('；');
-		return `<details class="dimension-card ${requiresOneField ? 'is-required' : ''}" ${requiresOneField || filled ? 'open' : ''}><summary><span>${escapeHtml(dimension.name)}${filled ? ` · 已填 ${filled} 项` : ''}</span>${badge}</summary>
+		const hasIssues = visibleFieldCodes.some((fieldCode) => activeFieldIssueMap.has(fieldCode));
+		return `<details data-details-key="dimension-${escapeHtml(dimension.dimension_code)}" class="dimension-card ${requiresOneField ? 'is-required' : ''}" ${requiresOneField && !hasRequiredValue || hasIssues ? 'open' : ''}><summary><span>${escapeHtml(dimension.name)}${filled ? ` · 已填 ${filled} 项` : ''}</span>${badge}</summary>
 		<div class="dimension-content">${guidance ? `<p class="field-help">${escapeHtml(guidance)}</p>` : ''}
 		<div class="form-grid">${fields}</div></div></details>`;
 	}).join('');
+	const referenceFilled = referenceFields.filter(({ value }) => hasMeaningfulValue(value)).length;
+	const referenceMarkup = referenceFields.length ? `<details class="more-fields" data-details-key="specific-references"><summary><span class="more-fields-summary-title">关联编号与地点代码（选填）${referenceFilled ? ` · 已填 ${referenceFilled} 项` : ''}</span></summary>
+		<div class="form-grid">${referenceFields.map(({ dimension, fieldCode, value }) => renderField({
+			scope: 'metadata', dimension: dimension.dimension_code, fieldCode, definition: commonDefinition(fieldCode), value,
+			context: `${dimension.name}；仅在已有对应关联记录时填写。`,
+		})).join('')}</div></details>` : '';
 	return `<section class="form-section"><div class="section-heading"><div><h3>${escapeHtml(specificSchemaLabels[schema] ?? standard.system)}</h3><p>这里只填写当前类型独有的信息，通用信息不再重复显示。</p></div></div>
 		<section class="collection-code-fields"><div class="collection-code-heading"><div><h4>收藏品编码组成字段</h4><p>以下字段全部必填，修改后会立即重新生成编码。</p></div><output data-collection-code-output>${escapeHtml(state.current.core.collection_code || '请先填写收藏品编码组成字段')}</output></div>
 		<div class="form-grid">${encodingFields}</div><aside class="collection-code-logic is-inline" data-collection-code-logic>${renderCollectionCodeLogic()}</aside></section>
-		<div class="section-heading secondary"><div><h4>其他属性字段</h4><p>含必填项的分组已排在前面；只填写有依据的内容。</p></div></div>${cards}</section>`;
+		<div class="section-heading secondary"><div><h4>其他属性字段</h4><p>待补的必填组自动展开；已填内容保留在分组中，关联编号集中在末尾。</p></div></div>${cards}${referenceMarkup}</section>`;
 };
 
 const renderPrivacy = () => {
@@ -2938,7 +3021,8 @@ elements.editorSurface.addEventListener('click', async (event) => {
 
 // 记录编辑器内所有折叠区（<details>）当前的展开状态。
 // 仅在同标签页内重新渲染时使用，避免切到其他标签页后把旧展开状态误恢复。
-const captureEditorDetailsOpenState = () => [...elements.editorSurface.querySelectorAll('details')].map((details) => details.open);
+const captureEditorDetailsOpenState = () => new Map([...elements.editorSurface.querySelectorAll('details')]
+	.map((details, index) => [details.dataset.detailsKey ?? `position-${index}`, details.open]));
 // 图片排序、移除等只影响局部内容的操作：重画编辑区后恢复页面滚动位置，
 // 并可通过 focusTarget 取回新的焦点元素，避免长列表里每次操作都要重新找回位置。
 const renderEditorPreservingViewport = (focusTarget) => {
@@ -2950,7 +3034,7 @@ const renderEditorPreservingViewport = (focusTarget) => {
 };
 const restoreEditorDetailsOpenState = (previousOpen) => {
 	elements.editorSurface.querySelectorAll('details').forEach((details, index) => {
-		if (previousOpen[index]) details.setAttribute('open', '');
+		if (previousOpen.get(details.dataset.detailsKey ?? `position-${index}`)) details.setAttribute('open', '');
 	});
 };
 
@@ -2972,7 +3056,7 @@ function renderEditor() {
 	updateTabCompletionBadges();
 	const previousTab = elements.editorSurface.dataset.renderedTab ?? '';
 	const preserveDetailsOpen = previousTab === state.activeTab;
-	const previousDetailsOpen = preserveDetailsOpen ? captureEditorDetailsOpenState() : [];
+	const previousDetailsOpen = preserveDetailsOpen ? captureEditorDetailsOpenState() : new Map();
 	if (isWithdrawn()) {
 		const reason = state.current._admin?.withdrawalReason;
 		const restoreMessage = state.current._admin?.canRestoreWithdrawn

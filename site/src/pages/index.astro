@@ -32,9 +32,15 @@ const compareViewsByCreatedDate = (left: (typeof publishedViews)[number], right:
 };
 const categoryViewGroups = archiveCategories.map((category) => ({
 	category,
-	views: publishedViews
-		.filter((view) => getArchiveCategorySlug(view.objectType) === category.slug && Boolean(view.images[0]))
-		.sort(compareViewsByCreatedDate),
+		views: publishedViews
+			.filter((view) => getArchiveCategorySlug(view.objectType) === category.slug && Boolean(view.images[0]))
+			.sort((left, right) => {
+				const completeness = (view: (typeof publishedViews)[number]) =>
+					Number(Boolean(view.item.public_view.description?.trim())) +
+					Number(view.item.public_view.image_descriptions?.length === view.images.length &&
+						view.item.public_view.image_descriptions.every((description) => Boolean(description.trim())));
+				return completeness(right) - completeness(left) || compareViewsByCreatedDate(left, right);
+			}),
 }));
 
 const getHomepagePlace = (view: (typeof publishedViews)[number]) => [
@@ -46,7 +52,7 @@ const getHomepagePlace = (view: (typeof publishedViews)[number]) => [
 	view.item.core.country,
 ].find((value) => value?.trim())?.trim();
 
-// 上方精选：每种访客分类取创建时间最新的一件，只展示首张图片，
+// 上方精选：每种访客分类优先取简介与图片说明完整的一件，同等完整时优先最新记录，只展示首张图片，
 // 按分类顺序排列，总数由实际符合条件的分类决定（最多 7 张）。
 const featuredSlides = categoryViewGroups.flatMap(({ category, views }) => {
 	const view = views[0];
@@ -66,15 +72,17 @@ const featuredImage = featuredSlides[0]?.image;
 const firstFeaturedSlide = featuredSlides[0];
 
 // 下方继续浏览：整件排除上方已经使用的藏品，避免其第二张、第三张图片
-// 以任何形式重复出现；再按分类取剩余藏品中创建时间最新的一件及其首图。
+// 以任何形式重复出现；再按同一完整度／时间排序取各分类剩余的一件及其首图。
 const featuredRecordIds = new Set(featuredSlides.map((slide) => slide.itemId));
 const recentViews = categoryViewGroups.flatMap(({ views }) => {
 	const newestRemainingView = views.find((view) => !featuredRecordIds.has(view.id));
 	return newestRemainingView ? [newestRemainingView] : [];
 });
 
-// 首页策展说明只组合已经公开的类型、年代与地点字段，不使用推测性叙述。
+// 优先使用已经公开的简介，缺少时只组合公开年代与地点，不使用推测性叙述。
 const createHomepageRecordNote = (view: (typeof publishedViews)[number]) => {
+	const description = view.item.public_view.description?.trim();
+	if (description) return description;
 	const place = getHomepagePlace(view);
 	const dateFact = view.dateDisplay === '年代未知'
 		? '年代尚待确认'
@@ -195,13 +203,12 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 							<button type="button" class="carousel-arrow carousel-arrow--prev" data-home-carousel-previous aria-label="查看上一张精选图片">
 								<span aria-hidden="true">←</span>
 							</button>
-							<div class="carousel-dots" data-home-carousel-dots role="tablist" aria-label="精选图片页码">
+							<div class="carousel-dots" data-home-carousel-dots role="group" aria-label="精选图片页码">
 								{featuredSlides.map((slide, index) => (
 									<button
 										type="button"
 										class="carousel-dot"
-										role="tab"
-										aria-selected={index === 0 ? 'true' : 'false'}
+										aria-current={index === 0 ? 'true' : 'false'}
 										aria-label={`第 ${index + 1} 张精选图片`}
 										data-home-carousel-dot={index}
 									/>
@@ -241,7 +248,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 					{pendingCategories.map((category, index) => (
 						<span class="category-pending-item">
 							{index > 0 && <span class="category-pending-sep" aria-hidden="true"> · </span>}
-							<a class="category-pending-link" href={`/archive/?category=${category.slug}`}>{category.label}</a>
+							<span class="category-pending-link">{category.label}</span>
 						</span>
 					))}
 				</p>
@@ -252,7 +259,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 			<section class="home-discovery" aria-labelledby="discovery-heading">
 				<header class="discovery-heading">
 					<div class="discovery-title">
-						<p class="discovery-kicker">馆藏选读</p>
 						<h2 id="discovery-heading">继续浏览</h2>
 					</div>
 					<a class="ui-text-link" href="/archive/">查看档案目录 →</a>
@@ -923,7 +929,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		transform: scale(1.2);
 	}
 
-	.carousel-dot[aria-selected='true']::before {
+	.carousel-dot[aria-current='true']::before {
 		width: 1.2rem;
 		background: var(--site-text);
 		border-radius: 0.2rem;
@@ -1103,17 +1109,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 	.category-pending-link {
 		color: var(--site-muted);
-		text-decoration: underline;
-		text-decoration-color: rgba(44, 40, 35, 0.28);
-		text-decoration-thickness: 1px;
-		text-underline-offset: 0.3em;
-		transition: color 160ms ease, text-decoration-color 160ms ease;
-	}
-
-	.category-pending-link:hover,
-	.category-pending-link:focus-visible {
-		color: var(--site-ink);
-		text-decoration-color: var(--site-ink);
 	}
 
 	/* 继续浏览区：编辑式版式——左侧横向主图版，右侧小件错落排列 */

@@ -37,7 +37,7 @@ export const archiveItems = [
 			"scan_date": "2026-08-21",
 			"scan_ppi": 600,
 			"created_date": "2026-09-01",
-			"updated_date": "2026-09-05",
+			"updated_date": "2026-09-26",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
 		},
@@ -69,6 +69,16 @@ export const archiveItems = [
 					"dispatch_place": [
 						"日本大阪"
 					]
+				},
+				"PC11": {
+					"correspondence_relationship": [
+						"未知"
+					]
+				},
+				"PC18": {
+					"stamp_status": [
+						"未知"
+					]
 				}
 			}
 		},
@@ -76,7 +86,11 @@ export const archiveItems = [
 			"description": "从富士山下  到一句新年快乐",
 			"transcription": "",
 			"revision_note": "",
-			"tags": []
+			"tags": [],
+			"image_descriptions": [
+				"照片明信片正面，照片与新年贺词并列。",
+				"照片明信片背面，手写文字与年份标记。"
+			]
 		}
 	},
 	{
@@ -125,7 +139,7 @@ export const archiveItems = [
 			"condition_grade": "C0",
 			"source_date": "2026-08-08",
 			"created_date": "2026-08-29",
-			"updated_date": "2026-09-05",
+			"updated_date": "2026-09-26",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。",
 			"themes": [
@@ -158,6 +172,9 @@ export const archiveItems = [
 			"transcription": "",
 			"tags": [
 				"生活"
+			],
+			"image_descriptions": [
+				"海滩上的人物与海面，照片保留原有色调。"
 			]
 		}
 	},
@@ -209,7 +226,7 @@ export const archiveItems = [
 			],
 			"scan_ppi": 600,
 			"created_date": "2026-08-30",
-			"updated_date": "2026-09-05",
+			"updated_date": "2026-09-26",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
 		},
@@ -238,10 +255,17 @@ export const archiveItems = [
 			}
 		},
 		"public_view": {
-			"description": "",
+			"description": "档案年代标注为1989年。五张照片呈现珠海的街道、建筑与远处景象。",
 			"transcription": "",
 			"tags": [
 				"珠海"
+			],
+			"image_descriptions": [
+				"第一张照片：道路、树木与远处的建筑。",
+				"第二张照片：道路两侧的楼房与路上行人。",
+				"第三张照片：地面、远处山地与天空。",
+				"第四张照片：街道旁的多层建筑。",
+				"第五张照片：街道、楼房与骑车行人。"
 			]
 		}
 	},
@@ -281,7 +305,7 @@ export const archiveItems = [
 			],
 			"use_status": "U3",
 			"created_date": "2026-08-27",
-			"updated_date": "2026-09-05",
+			"updated_date": "2026-09-26",
 			"next_action": "无；本次合并、正式构建和页面文件检查已完成。",
 			"notes": "原编号 LJM-20260827-LET-001 的信件实际为本件明信片的附属信件，现已连同两张发布图片并入本主档。用户此前已确认附属信件的收件称呼、落款和通信内容允许公开且无需遮盖。",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
@@ -361,6 +385,10 @@ export const archiveItems = [
 				"明信片",
 				"东北",
 				"1970年代"
+			],
+			"image_descriptions": [
+				"明信片正面，富士山与山下建筑的风景。",
+				"明信片背面，手写赠语与日期标记。"
 			]
 		}
 	},
@@ -397,7 +425,7 @@ export const archiveItems = [
 			"scan_date": "2026-08-21",
 			"scan_ppi": 600,
 			"created_date": "2026-09-01",
-			"updated_date": "2026-09-08",
+			"updated_date": "2026-09-26",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
 		},
@@ -429,14 +457,28 @@ export const archiveItems = [
 				"PC04": {
 					"writing_date": "2013-12-09",
 					"writing_date_text": "20131209"
+				},
+				"PC11": {
+					"correspondence_relationship": [
+						"未知"
+					]
+				},
+				"PC18": {
+					"stamp_status": [
+						"未知"
+					]
 				}
 			}
 		},
 		"public_view": {
-			"description": "",
+			"description": "一张标注为2013年的明信片，发布副本分别展示手写留言面与山地风景面。",
 			"transcription": "",
 			"revision_note": "",
-			"tags": []
+			"tags": [],
+			"image_descriptions": [
+				"明信片留言面，手写文字、邮政印记与条形码。",
+				"明信片风景面，山地与建筑景色。"
+			]
 		}
 	},
 	{
@@ -458,7 +500,7 @@ export const archiveItems = [
 			],
 			"physical_location": "佛山",
 			"created_date": "2026-08-28",
-			"updated_date": "2026-09-05",
+			"updated_date": "2026-09-26",
 			"batch_id": "FSA-202628-CCQ",
 			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
 			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。",
@@ -503,15 +545,28 @@ export const archiveItems = [
 					"image_place_code": [
 						"俄罗斯"
 					]
+				},
+				"PC11": {
+					"correspondence_relationship": [
+						"未知"
+					]
+				},
+				"PC18": {
+					"stamp_status": [
+						"未知"
+					]
 				}
 			}
 		},
 		"public_view": {
-			"description": "",
+			"description": "一张带有邮票和邮戳的照片卡片，画面为两位人物合影。档案年代标注为1992年。",
 			"transcription": "",
 			"tags": [
 				"历史",
 				"苏联"
+			],
+			"image_descriptions": [
+				"照片卡片正面，人物合影与邮票、邮戳。"
 			]
 		}
 	}

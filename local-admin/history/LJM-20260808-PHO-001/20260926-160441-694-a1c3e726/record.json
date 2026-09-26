@@ -1,0 +1,97 @@
+{
+  "core": {
+    "record_status": "ACT",
+    "item_id": "LJM-20260808-PHO-001",
+    "object_type": "PHO",
+    "title": "海滩嬉戏",
+    "privacy_level": "G",
+    "rights_status": "UNK",
+    "research_status": "R0",
+    "evidence_level": "D",
+    "digitization_status": "DG2",
+    "transcription_status": "TX0",
+    "use_status": "U3",
+    "publication_file_path": [
+      "/archive/LJM-20260808-PHO-001/front-public.jpg"
+    ],
+    "collection_code": "PHO_1990_MEM_MEM_NONE_C0+FAD_G",
+    "accession_date": "2026-08-08",
+    "batch_id": "FSA-20260808-CCQ",
+    "date_display": "1990",
+    "physical_location": "未知",
+    "acquisition_method": "PR-PUR",
+    "source_name": "旧货市场老板",
+    "source_place": "旧货市场",
+    "verso_types": [
+      "VS-NONE"
+    ],
+    "carrier": "MT-PPR",
+    "color": "CL-COL",
+    "process": "PC-AG",
+    "mark_types": [
+      "MK-NONE"
+    ],
+    "scan_date": "2026-08-20",
+    "scan_ppi": 600,
+    "backup_status": "BU0",
+    "event_scene": [
+      "EV-TRV"
+    ],
+    "photo_function": "FN-MEM",
+    "shot_form": "FM-GRP",
+    "photography_source": "PS-PER",
+    "condition_grade": "C0",
+    "source_date": "2026-08-08",
+    "created_date": "2026-08-29",
+    "updated_date": "2026-09-05",
+    "id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+    "required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+  },
+  "metadata": {
+    "schema": "photo",
+    "dimensions": {
+      "D06": {
+        "themes": [
+          "SU-MEM"
+        ]
+      },
+      "D16": {
+        "condition_details": [
+          "DM-FAD"
+        ]
+      },
+      "D07": {
+        "photo_function": "FN-MEM"
+      },
+      "D01": {
+        "date_start": "1998-02-01",
+        "date_end": "2004-01-01"
+      },
+      "D05": {
+        "event_scene": [
+          "EV-DLY"
+        ]
+      },
+      "D08": {
+        "shot_form": "FM-GRP"
+      },
+      "D10": {
+        "carrier": "MT-PPR"
+      },
+      "D09": {
+        "photography_source": "PS-PER"
+      },
+      "D02": {
+        "country": "中国",
+        "specific_place": "海滩"
+      }
+    }
+  },
+  "public_view": {
+    "description": "那年海风很轻，笑声还没有被时间带走。",
+    "transcription": "",
+    "tags": [
+      "生活"
+    ]
+  }
+}

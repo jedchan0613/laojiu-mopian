@@ -1212,6 +1212,32 @@ body[data-workspace="query"] .editor-surface {
 	grid-auto-flow: row;
 }
 
+.record-identifiers {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.8rem;
+	margin-bottom: 1rem;
+	padding: 0.6rem 0;
+	border-block: 1px solid #d5cfc3;
+	font-size: 0.72rem;
+}
+
+.record-identifiers > div {
+	display: flex;
+	min-width: 0;
+	flex-wrap: wrap;
+	gap: 0.3rem 0.65rem;
+}
+
+.record-identifiers span {
+	color: #777064;
+}
+
+.record-identifiers output {
+	color: #514b42;
+	overflow-wrap: anywhere;
+}
+
 .common-info-grid > .form-field {
 	align-self: start;
 }

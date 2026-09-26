@@ -106,11 +106,10 @@ const specificFacts = getSpecificMetadataFacts(item);
 const displayLabel = (code: string | undefined) => hasText(code) ? getCodeLabel(code) : '';
 const researchManagementFacts = compactFacts([
   { label: '来源地点', value: item.core.source_place ?? '' },
-  { label: '备份状态', value: displayLabel(item.core.backup_status) },
   { label: '保存等级', value: displayLabel(item.core.condition_grade) },
 ]);
 const getImageRole = (description: string, index: number) => {
-  const matchedRole = ['正面', '背面', '封面', '内页', '全景', '细节'].find((role) =>
+  const matchedRole = ['正面', '背面', '封面', '内页', '全景', '细节', '留言面', '风景面'].find((role) =>
     description.includes(role));
   return matchedRole ?? `图片 ${index + 1}`;
 };
@@ -147,17 +146,29 @@ const relatedRecordEntries = publishedViews
   .filter((candidate) => candidate.id !== view.id)
   .map((candidate) => {
     const sharedTags = candidate.tags.filter((tag) => view.tags.includes(tag));
-    const sharedPlaces = candidate.placeFilters.filter((place) => view.placeFilters.includes(place));
+    // 国家与省级区域太宽泛，不作为优先推荐的地点线索。
+    const specificPlaces = ['city', 'district', 'street_town', 'specific_place'] as const;
+    const sharedPlaces = specificPlaces.flatMap((field) => {
+      const place = item.core[field]?.trim();
+      const otherPlace = candidate.item.core[field]?.trim();
+      return place && otherPlace && !place.includes('未知') &&
+        normalizePlaceLabel(place) === normalizePlaceLabel(otherPlace) ? [place] : [];
+    }).filter((place, index, places) => places.indexOf(place) === index);
+    const explicitRelation = Boolean(item.core.related_item_ids?.includes(candidate.id) ||
+      candidate.item.core.related_item_ids?.includes(view.id) ||
+      item.core.album_id && item.core.album_id === candidate.item.core.album_id ||
+      item.core.series_id && item.core.series_id === candidate.item.core.series_id);
     const sameDecade = Boolean(view.decade && candidate.decade === view.decade);
     const candidateCategorySlug = getArchiveCategorySlug(candidate.objectType);
     const sameCategory = Boolean(currentCategorySlug && candidateCategorySlug === currentCategorySlug);
     const reasons = [
+      explicitRelation ? '来自同一组档案线索' : '',
       sharedTags.length ? `共同线索：${sharedTags.slice(0, 2).join('、')}` : '',
       sharedPlaces.length ? `关联地点：${sharedPlaces.slice(0, 2).join('、')}` : '',
       sameDecade ? `同属${view.decade}年代` : '',
       sameCategory ? `同属${currentCategory?.label ?? '相近类型'}` : '',
     ].filter(Boolean);
-    const score = sharedTags.length * 4 + sharedPlaces.length * 3 + Number(sameDecade) * 2
+    const score = Number(explicitRelation) * 12 + sharedTags.length * 4 + sharedPlaces.length * 6 + Number(sameDecade) * 2
       + Number(sameCategory) * 2 + Number(candidate.objectType !== view.objectType) * 0.25;
     return {
       view: candidate,
@@ -395,13 +406,19 @@ const breadcrumbStructuredData = {
             <dialog class="record-lightbox" data-gallery-lightbox aria-label="在暗室中查看档案图片">
               <div class="lightbox-shell">
                 <button class="lightbox-close" type="button" data-gallery-close aria-label="关闭放大图片">关闭</button>
+                <div class="lightbox-zoom" aria-label="图片大小">
+                  <button type="button" data-gallery-zoom-out aria-label="缩小图片">−</button>
+                  <output data-gallery-zoom-level aria-live="polite">100%</output>
+                  <button type="button" data-gallery-zoom-in aria-label="放大图片">＋</button>
+                  <button type="button" data-gallery-zoom-reset>适应窗口</button>
+                </div>
                 {galleryImages.length > 1 && (
                   <button class="lightbox-previous" type="button" data-gallery-previous aria-label="查看上一张图片">
                     <span aria-hidden="true">←</span>
                   </button>
                 )}
                 <figure class="lightbox-figure" data-gallery-swipe>
-                  <div class="lightbox-stage">
+                  <div class="lightbox-stage" data-gallery-zoom-stage tabindex="0" aria-label="图片区域，放大后可拖动；加减键调整大小，0键恢复">
                     <img
                       data-lightbox-main
                       src={galleryImages[0].src}
@@ -443,7 +460,7 @@ const breadcrumbStructuredData = {
                   {fact.href ? (
                     <a class="fact-filter-link" href={fact.href}>
                       {fact.value}
-                      <small>查看相关档案 →</small>
+                      <span aria-hidden="true"> ↗</span>
                     </a>
                   ) : fact.value}
                 </dd>
@@ -733,6 +750,10 @@ const breadcrumbStructuredData = {
     const lightboxCaption = gallery.querySelector<HTMLElement>('[data-lightbox-caption]');
     const lightboxRole = gallery.querySelector<HTMLElement>('[data-lightbox-role]');
     const lightboxCounter = gallery.querySelector<HTMLElement>('[data-lightbox-counter]');
+    const zoomStage = gallery.querySelector<HTMLElement>('[data-gallery-zoom-stage]');
+    const zoomLevel = gallery.querySelector<HTMLOutputElement>('[data-gallery-zoom-level]');
+    const zoomIn = gallery.querySelector<HTMLButtonElement>('[data-gallery-zoom-in]');
+    const zoomOut = gallery.querySelector<HTMLButtonElement>('[data-gallery-zoom-out]');
     const thumbnails = Array.from(
       gallery.querySelectorAll<HTMLButtonElement>('[data-gallery-thumbnail]'),
     );
@@ -747,7 +768,30 @@ const breadcrumbStructuredData = {
     if (!mainImage || !openButton || items.length === 0) return;
 
     let activeIndex = 0;
+    let zoom = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+    let pointer: { id: number; x: number; y: number; offsetX: number; offsetY: number } | undefined;
+    const paintZoom = () => {
+      if (!zoomStage || !lightboxImage) return;
+      const maxX = zoomStage.clientWidth * (zoom - 1) / 2;
+      const maxY = zoomStage.clientHeight * (zoom - 1) / 2;
+      offsetX = Math.min(maxX, Math.max(-maxX, offsetX));
+      offsetY = Math.min(maxY, Math.max(-maxY, offsetY));
+      lightboxImage.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
+      lightboxImage.sizes = `${Math.ceil(zoomStage.clientWidth * zoom)}px`;
+      zoomStage.dataset.zoomed = String(zoom > 1);
+      if (zoomLevel) zoomLevel.value = `${Math.round(zoom * 100)}%`;
+      if (zoomIn) zoomIn.disabled = zoom >= 4;
+      if (zoomOut) zoomOut.disabled = zoom <= 1;
+    };
+    const setZoom = (value: number) => {
+      zoom = Math.max(1, Math.min(4, value));
+      if (zoom === 1) { offsetX = 0; offsetY = 0; }
+      paintZoom();
+    };
     const selectImage = (index: number) => {
+      setZoom(1);
       activeIndex = (index + items.length) % items.length;
       const item = items[activeIndex];
       mainImage.src = item.src;
@@ -793,7 +837,38 @@ const breadcrumbStructuredData = {
       selectImage(targetIndex);
     });
 
-    openButton.addEventListener('click', () => lightbox?.showModal());
+    openButton.addEventListener('click', () => {
+      lightbox?.showModal();
+      setZoom(1);
+    });
+    zoomIn?.addEventListener('click', () => setZoom(zoom + 0.5));
+    zoomOut?.addEventListener('click', () => setZoom(zoom - 0.5));
+    gallery.querySelector<HTMLButtonElement>('[data-gallery-zoom-reset]')?.addEventListener('click', () => setZoom(1));
+    zoomStage?.addEventListener('dblclick', () => setZoom(zoom === 1 ? 2 : 1));
+    zoomStage?.addEventListener('wheel', (event) => {
+      if (zoom === 1 && event.deltaY >= 0) return;
+      event.preventDefault();
+      setZoom(zoom + (event.deltaY < 0 ? 0.25 : -0.25));
+    }, { passive: false });
+    zoomStage?.addEventListener('pointerdown', (event) => {
+      if (zoom <= 1 || event.button !== 0) return;
+      event.preventDefault();
+      pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, offsetX, offsetY };
+      zoomStage.setPointerCapture(event.pointerId);
+      zoomStage.dataset.dragging = 'true';
+    });
+    zoomStage?.addEventListener('pointermove', (event) => {
+      if (!pointer || event.pointerId !== pointer.id) return;
+      offsetX = pointer.offsetX + event.clientX - pointer.x;
+      offsetY = pointer.offsetY + event.clientY - pointer.y;
+      paintZoom();
+    });
+    const stopDrag = () => { pointer = undefined; if (zoomStage) delete zoomStage.dataset.dragging; };
+    zoomStage?.addEventListener('pointerup', stopDrag);
+    zoomStage?.addEventListener('pointercancel', stopDrag);
+    zoomStage?.addEventListener('lostpointercapture', stopDrag);
+    lightboxImage?.addEventListener('dragstart', (event) => event.preventDefault());
+    window.addEventListener('resize', paintZoom);
     gallery.querySelector<HTMLButtonElement>('[data-gallery-close]')?.addEventListener('click', () => lightbox?.close());
     gallery.querySelector<HTMLButtonElement>('[data-gallery-previous-inline]')?.addEventListener('click', () => selectImage(activeIndex - 1));
     gallery.querySelector<HTMLButtonElement>('[data-gallery-next-inline]')?.addEventListener('click', () => selectImage(activeIndex + 1));
@@ -803,7 +878,15 @@ const breadcrumbStructuredData = {
       if (event.target === lightbox) lightbox.close();
     });
     lightbox?.addEventListener('keydown', (event) => {
-      if (event.key === 'ArrowLeft') {
+      if (['+', '=', '-', '0'].includes(event.key)) {
+        event.preventDefault();
+        setZoom(event.key === '0' ? 1 : zoom + (event.key === '-' ? -0.5 : 0.5));
+      } else if (zoom > 1 && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && event.target === zoomStage) {
+        event.preventDefault();
+        offsetX += event.key === 'ArrowLeft' ? 40 : event.key === 'ArrowRight' ? -40 : 0;
+        offsetY += event.key === 'ArrowUp' ? 40 : event.key === 'ArrowDown' ? -40 : 0;
+        paintZoom();
+      } else if (event.key === 'ArrowLeft') {
         event.preventDefault();
         selectImage(activeIndex - 1);
       } else if (event.key === 'ArrowRight') {
@@ -824,7 +907,7 @@ const breadcrumbStructuredData = {
         startY = event.changedTouches[0]?.clientY ?? 0;
       }, { passive: true });
       surface.addEventListener('touchend', (event) => {
-        if (items.length < 2) return;
+        if (items.length < 2 || lightbox?.open && zoom > 1) return;
         const deltaX = (event.changedTouches[0]?.clientX ?? startX) - startX;
         const deltaY = (event.changedTouches[0]?.clientY ?? startY) - startY;
         if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
@@ -1547,9 +1630,17 @@ const breadcrumbStructuredData = {
     width: 100%;
     height: 100%;
     place-items: center;
+    overflow: hidden;
     background:
       radial-gradient(ellipse at center, rgba(255, 214, 168, 0.05), transparent 68%);
   }
+
+  .lightbox-stage[data-zoomed='true'] { cursor: grab; touch-action: none; }
+  .lightbox-stage[data-dragging='true'] { cursor: grabbing; }
+  .lightbox-zoom { position: absolute; top: 0.8rem; left: 1rem; display: flex; align-items: center; gap: 0.4rem; font: 0.75rem var(--site-ui-font); color: #eee7dc; }
+  .lightbox-zoom button { min-width: 2.4rem; min-height: 2.4rem; padding: 0.4rem 0.65rem; background: #27231d; color: inherit; border: 1px solid #665e51; border-radius: 3px; cursor: pointer; font: inherit; }
+  .lightbox-zoom button:disabled { opacity: 0.4; cursor: default; }
+  .lightbox-zoom output { min-width: 3.2rem; text-align: center; }
 
   .lightbox-figure img {
     display: block;
@@ -2139,6 +2230,7 @@ const breadcrumbStructuredData = {
   }
 
   @media (max-width: 760px) {
+    .lightbox-zoom { top: 3.6rem; left: 0.8rem; right: 0.8rem; justify-content: center; }
     .record-page {
       padding-top: 0.85rem;
     }
@@ -2240,7 +2332,7 @@ const breadcrumbStructuredData = {
 
     .lightbox-shell {
       grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
-      padding: 3.5rem 0.4rem 0.75rem;
+      padding: 6.8rem 0.4rem 0.75rem;
     }
 
     .lightbox-figure {

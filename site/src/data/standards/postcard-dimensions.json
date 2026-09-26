@@ -275,12 +275,13 @@
       "name": "邮票",
       "fields": [
         "stamp_country",
+        "stamp_issue",
         "stamp_value",
         "stamp_status"
       ],
-      "code_structure": "国家/面值/状态",
-      "rule": "逐枚记录国家、面值、位置和缺失状态",
-      "example": "中国｜20分｜在位",
+      "code_structure": "国家/版别/面值/状态",
+      "rule": "逐枚记录国家、图案或版别、面值、位置和缺失状态",
+      "example": "中国｜孙中山像｜20分｜在位",
       "multi_value_rule": ";（多枚）",
       "uncertainty_rule": "邮票缺失但有粘贴痕迹时标“曾有/缺失”",
       "register_mapping": "印章标记、保存问题",

@@ -1,0 +1,16 @@
+{
+  "type": "history",
+  "entry_id": "20260926-160441-694-a1c3e726",
+  "item_id": "LJM-20260808-PST-001",
+  "title": "一张从日本寄出的旧明信片照片",
+  "created_at": "2026-09-26T08:04:41.710Z",
+  "status": "complete",
+  "completed_at": "2026-09-26T08:32:34Z",
+  "images": [
+    "front-public.jpg",
+    "back-public.jpg"
+  ],
+  "snapshot_kind": "published-before-update",
+  "removed_images": [],
+  "withdrawal_reason": null
+}
