@@ -1,7 +1,7 @@
-"""按现有公开页面裁切同源字体；手动维护工具，不新增网站运行依赖。
+"""按首页拆分同源字体，同时保留原字库完整覆盖；不新增网站运行依赖。
 
 先生成 site/dist，再用已有的 FontTools 和 Node.js 执行本工具。
-原字体保留不改；生成首页常用字、其他页面扩展字两个 WOFF2 子集及 CSS。
+原字体保留不改；生成首页常用字、原字库剩余字两个 WOFF2 子集及 CSS。
 """
 
 import argparse
@@ -46,8 +46,8 @@ from fontTools.ttLib import TTFont
 site_root = Path(__file__).resolve().parent.parent
 font_root = site_root / "src" / "assets" / "fonts"
 source = font_root / "noto-serif-sc-brand.woff2"
-pages = list((site_root / "dist").rglob("*.html"))
-if not pages:
+homepage_path = site_root / "dist" / "index.html"
+if not homepage_path.is_file():
     raise SystemExit("请先生成公开页面，再裁切字体。")
 
 # 保留脚本中动态出现的中文文案，避免轮播、搜索、读图操作后缺字。
@@ -56,11 +56,14 @@ def characters(markup):
 
 
 available = set(TTFont(source).getBestCmap())
-homepage = (site_root / "dist" / "index.html").read_text(encoding="utf-8")
+homepage = homepage_path.read_text(encoding="utf-8")
 base = (characters(homepage) | set(range(32, 127))) & available
-public = (set().union(*(characters(page.read_text(encoding="utf-8")) for page in pages)) |
-          characters("搞玩都困难暗室")) & available
-extended = public - base
+# 程序部署接入服务器正式档案；它们不一定与本地样例相同。
+# 扩展字库不能只取本地页面文字，否则会删掉服务器仍在使用的字形。
+# 按需加载仍然保留，同时两份字体的并集完整继承原字库覆盖。
+extended = available - base
+if not base or base & extended or base | extended != available:
+    raise SystemExit("字体拆分必须完整保留原字库，且两份字符范围不得重叠。")
 
 
 def unicode_range(points):
