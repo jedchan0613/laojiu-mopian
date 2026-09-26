@@ -59,6 +59,16 @@ const brandFontHasGlyph = (character) => {
 	const codePoint = character.codePointAt(0);
 	return brandFontRanges.some(([start, end]) => codePoint >= start && codePoint <= end);
 };
+// 部署使用服务器正式档案，不应因本地样例较少而缩减既有字库覆盖。
+const originalBrandFont = fontace(await readFile(join(siteRoot, 'src', 'assets', 'fonts', 'noto-serif-sc-brand.woff2')));
+const originalGlyphsPreserved = originalBrandFont.unicodeRangeArray.every((range) => {
+	const [start, end = start] = range.slice(2).split('-').map((value) => Number.parseInt(value, 16));
+	for (let point = start; point <= end; point += 1) {
+		if (!brandFontHasGlyph(String.fromCodePoint(point))) return false;
+	}
+	return true;
+});
+check(originalGlyphsPreserved, '拆分字体遗漏原字库字形，可能导致服务器既有公开档案缺字。');
 const publicPageMarkup = htmlEntries
 	.map(({ html }) => html
 		.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
