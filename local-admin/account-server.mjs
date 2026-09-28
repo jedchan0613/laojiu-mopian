@@ -5,6 +5,7 @@
 // - 用户接口与管理接口使用不同的前缀、不同的请求标记、不同的来源校验；管理接口不接受会话 Cookie 鉴权。
 // - 公开反向代理只应转发 /api/account/ 前缀；本文件可作为独立进程启动，也可被本地服务直接挂载。
 
+import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -419,7 +420,16 @@ export function createAccountHandler({
 // ---------------------------------------------------------------------------
 
 const filePath = fileURLToPath(import.meta.url);
-const isDirectRun = Boolean(process.argv[1]) && path.resolve(process.argv[1]) === filePath;
+// 线上通过 app/current 这类软链启动，启动参数是软链路径而 import.meta.url 已是真实路径，
+// 因此必须比较真实路径，否则会误判为"被 import"而直接退出。
+const isDirectRun = (() => {
+	if (!process.argv[1]) return false;
+	try {
+		return fs.realpathSync(process.argv[1]) === filePath;
+	} catch {
+		return path.resolve(process.argv[1]) === filePath;
+	}
+})();
 
 if (isDirectRun) {
 	const projectRoot = path.resolve(path.dirname(filePath), '..');
