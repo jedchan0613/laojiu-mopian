@@ -1,0 +1,18 @@
+# 放在 laojiumopian.com 的公开站点块内、file_server 之前。
+#
+# 只代理账户与账户投稿接口。/api/account-admin/*（管理员接口）刻意不在此列：
+# 该前缀只允许从服务器本机访问，管理层读取账号信息走本机只读数据库，不经过公开反向代理。
+#
+# 注意：/api/account/* 不会匹配 /api/account-admin/*（前者要求 account 后有斜线），两者互不影响。
+
+@public_accounts path /api/account /api/account/*
+handle @public_accounts {
+	request_body {
+		max_size 28MB
+	}
+	reverse_proxy 127.0.0.1:4177 {
+		header_up X-LJM-Client-IP {client_ip}
+	}
+}
+
+# 现有的 root、file_server、其他 @public_* 路由继续保留。

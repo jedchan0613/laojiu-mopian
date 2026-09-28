@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>上传档案（原型）｜老旧默片</title>
+		<link rel="stylesheet" href="/admin/preview/preview.css" />
+	</head>
+	<body data-preview-page="contribute">
+		<div data-preview-toolbar></div>
+		<div class="pv-shell">
+			<header class="pv-siteheader">
+				<nav aria-label="主导航（原型模拟）">
+					<a class="pv-brand" href="/">
+						<span class="pv-seal" aria-hidden="true">默</span>
+						<strong>老旧默片</strong>
+					</a>
+					<div class="pv-sitelinks">
+						<a href="/archive/">档案</a>
+						<a href="/about/">关于</a>
+						<a href="/contribute/">我要投稿</a>
+						<a href="/admin/preview/login/" data-pv-nav-when="out">登录</a>
+						<a href="/admin/preview/me/submissions/" data-pv-nav-when="in" aria-current="page">我的</a>
+					</div>
+				</nav>
+			</header>
+
+			<main>
+				<nav class="pv-usernav" aria-label="用户中心">
+					<a href="/admin/preview/me/submissions/">我的投稿</a>
+					<a href="/admin/preview/me/favorites/">我的收藏</a>
+					<a href="/admin/preview/me/settings/">账户设置</a>
+				</nav>
+
+				<section class="pv-card pv-hidden" data-pv-gate>
+					<h2>这是登录后的上传版本（原型）</h2>
+					<p class="pv-note">未登录访客看到的仍然是现有免注册投稿页（规则相同，只是不关联账号）。正式实施时，登录后投稿会自动关联你的账号，不需要再重复填写私密联系方式。</p>
+					<div class="pv-actions">
+						<a class="pv-btn pv-btn--primary" href="/admin/preview/login/">前往登录页演示</a>
+						<button type="button" class="pv-btn" data-pv-gate-signin>直接模拟已登录</button>
+						<a class="pv-btn" href="/contribute/">查看现有免注册投稿页</a>
+					</div>
+				</section>
+
+				<div class="pv-hidden" data-pv-content>
+					<div class="pv-pagehead">
+						<p class="pv-eyebrow">上传档案 · 登录后的投稿（原型）</p>
+						<h1>把一件旧物交给这里整理。</h1>
+						<p class="pv-intro">三个简单步骤：选择资料 → 填写说明 → 预览并确认。请先自行保留原件，只提交筛选、压缩并完成必要脱敏的图片副本；每件投稿只代表一件对象，可以包含它的多张图片。</p>
+					</div>
+
+					<div data-pv-wizard>
+						<ol class="pv-steps">
+							<li><button type="button" data-pv-step-target="1" aria-current="step"><span class="pv-step-number">01</span><span>选择资料</span></button></li>
+							<li><button type="button" data-pv-step-target="2"><span class="pv-step-number">02</span><span>填写说明</span></button></li>
+							<li><button type="button" data-pv-step-target="3"><span class="pv-step-number">03</span><span>预览并确认</span></button></li>
+						</ol>
+
+						<!-- 第一步 -->
+						<section class="pv-step-panel" data-pv-step="1">
+							<h2>第一步 · 选择资料</h2>
+							<p class="pv-hint">JPG / PNG / WebP · 1–8 张 · 每张不超过 5 MB · 合计不超过 20 MB。不接收 TIFF、RAW、SVG、PDF、压缩包、动画和多页图片。</p>
+
+							<div class="pv-callout" data-tone="accent">
+								<strong>先只做本地预览：</strong>点击「保存草稿」或「提交审核」之后才会真正上传，不会一选文件就悄悄上传。请只提交经过筛选、压缩和必要脱敏的副本，网站不负责保存原始档案；遮盖完整号码、精确私人地址和清晰签名后再提交。
+							</div>
+
+							<ul class="pv-image-list" data-pv-image-list></ul>
+							<p class="pv-hint" data-pv-image-feedback role="status" aria-live="polite">尚未选择图片。</p>
+							<p class="pv-hint" data-pv-image-total></p>
+
+							<div class="pv-actions" style="margin-top: 14px">
+								<button type="button" class="pv-btn pv-btn--primary" data-pv-add-image>＋ 模拟添加一张示例图片</button>
+							</div>
+							<p class="pv-hint">手机上可以用「上移 / 下移」调整顺序，不强迫拖拽；第一张默认是封面，也可以用「设为封面」换成其他图片。</p>
+						</section>
+
+						<!-- 第二步 -->
+						<section class="pv-step-panel pv-hidden" data-pv-step="2">
+							<h2>第二步 · 填写说明</h2>
+							<p class="pv-hint">带 * 的为必填。不确定的年代和细节请如实写「不详」或选择「年代未知」，不要猜测；这里只写自然语言，正式的档案编码由站主整理。</p>
+
+							<div class="pv-field" data-pv-field="title">
+								<label for="pv-contribute-title">题名 <span class="pv-required" aria-hidden="true">*</span></label>
+								<input id="pv-contribute-title" data-pv-title maxlength="60" placeholder="例如：外婆留下的一本生活笔记" />
+								<div class="pv-field-bottom">
+									<p class="pv-hint">建议不超过 60 字，写清是什么就好。</p>
+									<p class="pv-hint" data-pv-title-count>0 / 60</p>
+								</div>
+								<p class="pv-error" aria-live="polite"></p>
+							</div>
+
+							<div class="pv-field-pair">
+								<div class="pv-field" data-pv-field="category">
+									<label for="pv-contribute-category">藏品分类 <span class="pv-required" aria-hidden="true">*</span></label>
+									<select id="pv-contribute-category" data-pv-category>
+										<option value="">请选择</option>
+										<option>老照片</option>
+										<option>明信片</option>
+										<option>信件</option>
+										<option>老证件</option>
+										<option>旧卡片</option>
+										<option>笔记与笔记本</option>
+										<option>其他旧物</option>
+									</select>
+									<p class="pv-hint">显示网站上已有的分类名称；站主会据此整理为正式档案类型。</p>
+									<p class="pv-error" aria-live="polite"></p>
+								</div>
+								<div class="pv-field" data-pv-field="era">
+									<label for="pv-contribute-era">大致年代（选填）</label>
+									<input id="pv-contribute-era" data-pv-era maxlength="40" placeholder="例如：约 20 世纪 80 年代" />
+									<label class="pv-choice" style="margin-top: 8px">
+										<input type="checkbox" data-pv-era-unknown />
+										<span>不知道，标记为「年代未知」</span>
+									</label>
+									<p class="pv-error" aria-live="polite"></p>
+								</div>
+							</div>
+
+							<div class="pv-field" data-pv-field="description">
+								<label for="pv-contribute-description">资料介绍 <span class="pv-required" aria-hidden="true">*</span></label>
+								<textarea id="pv-contribute-description" data-pv-description rows="6" maxlength="2000" placeholder="它从哪里来？记录了什么？你希望以后的人看到什么？请区分亲历的事实与自己的推测，不必写得很正式。"></textarea>
+								<div class="pv-field-bottom">
+									<p class="pv-hint">请勿填写完整号码、私人地址或其他人的联系方式。</p>
+									<p class="pv-hint" data-pv-desc-count>0 / 2000</p>
+								</div>
+								<p class="pv-error" aria-live="polite"></p>
+							</div>
+
+							<div class="pv-field" data-pv-field="place">
+								<label for="pv-contribute-place">大致地点（选填）</label>
+								<input id="pv-contribute-place" data-pv-place maxlength="60" placeholder="例如：广东省 珠海市" />
+								<p class="pv-hint">填大致的城市或区域即可；请不要填写精确私人住址。</p>
+								<p class="pv-error" aria-live="polite"></p>
+							</div>
+
+							<div class="pv-field" data-pv-field="source">
+								<label for="pv-contribute-source">来源与展示授权依据 <span class="pv-required" aria-hidden="true">*</span></label>
+								<textarea id="pv-contribute-source" data-pv-source rows="3" placeholder="例如：家中长辈留存；来源不清楚的地方请如实写明，站主会人工核实。"></textarea>
+								<p class="pv-hint">未知可以如实说明；核实不清楚的不会公开。持有实物不一定代表拥有照片或文字的著作权。</p>
+								<p class="pv-error" aria-live="polite"></p>
+							</div>
+
+							<div class="pv-field" data-pv-field="people">
+								<span class="pv-label">图片或文字是否涉及可以识别的真实人物？ <span class="pv-required" aria-hidden="true">*</span></span>
+								<label class="pv-choice"><input type="radio" name="pv-people" value="none" /><span>没有</span></label>
+								<label class="pv-choice"><input type="radio" name="pv-people" value="yes" /><span>有，需要人工确认<small>选择后会交由站主人工判断，不会自动公开。</small></span></label>
+								<label class="pv-choice"><input type="radio" name="pv-people" value="unsure" /><span>不确定，请协助判断<small>不确定也是重要的信息，请如实选择。</small></span></label>
+								<p class="pv-error" aria-live="polite"></p>
+							</div>
+
+							<div class="pv-field" data-pv-field="credit">
+								<span class="pv-label">公开署名</span>
+								<label class="pv-choice"><input type="radio" name="pv-credit" data-pv-credit-anonymous checked /><span>匿名投稿（默认）</span></label>
+								<label class="pv-choice"><input type="radio" name="pv-credit" data-pv-credit-named /><span>使用指定署名（只写这一件愿意公开的名字）</span></label>
+								<div class="pv-hidden" data-pv-credit-field>
+									<input data-pv-credit maxlength="40" placeholder="例如：青禾" aria-label="希望公开的署名" />
+								</div>
+								<p class="pv-hint">昵称、登录邮箱与投稿署名相互独立；以后修改昵称不会改写这里已经公开的署名。</p>
+								<p class="pv-error" aria-live="polite"></p>
+							</div>
+
+							<div class="pv-panel">
+								<h3>单张图片说明（选填）</h3>
+								<p>用于说明正面、背面或细节；没有需要说明的可以跳过。</p>
+								<div data-pv-image-notes></div>
+							</div>
+						</section>
+
+						<!-- 第三步 -->
+						<section class="pv-step-panel pv-hidden" data-pv-step="3">
+							<h2>第三步 · 预览并确认</h2>
+							<p class="pv-hint">下面分成两部分：会公开的内容，和只有站主能看到的内容。确认无误后再选择保存草稿或提交审核。</p>
+
+							<div data-pv-preview-public></div>
+							<div data-pv-preview-admin></div>
+
+							<div class="pv-callout" style="margin-top: 18px">请逐项阅读并主动勾选（默认不勾选）：</div>
+							<label class="pv-choice"><input type="checkbox" data-pv-confirm /><span>我提交的是经过筛选、压缩和必要遮盖的<strong>图片副本</strong>；原件与主档已自行保留，网站不负责保存原始档案。</span></label>
+							<label class="pv-choice"><input type="checkbox" data-pv-confirm /><span>我确认对这件资料有投稿与展示的<strong>授权依据</strong>，并同意本站进行必要的压缩、裁切与遮盖，用于本站整理和展示；这是一份非独家授权，不包含出售、转授权或其他商业用途。</span></label>
+							<label class="pv-choice"><input type="checkbox" data-pv-confirm /><span>我已检查过<strong>已知隐私风险</strong>，并如实说明了可识别真实人物情况；我理解勾选只代表投稿声明，正式公开前仍由站主逐项人工检查。</span></label>
+							<p class="pv-hint">重复点击、网络超时后的重试都不会生成第二份投稿；已提交的版本会作为只读记录保留。</p>
+
+							<div class="pv-actions" style="margin-top: 18px">
+								<button type="button" class="pv-btn pv-btn--primary" data-pv-save-draft>保存草稿</button>
+								<button type="button" class="pv-btn" data-pv-submit>提交审核</button>
+							</div>
+							<p class="pv-error" data-pv-submit-feedback role="status" aria-live="polite"></p>
+
+							<section class="pv-panel pv-hidden" data-pv-success style="margin-top: 20px">
+								<h2>投稿已收到，谢谢你的信任。</h2>
+								<p>投稿编号：<strong>TG-9C4E2A7D5B1F8364E0A2C9D7</strong>（示例编号）· 当前状态：<span class="pv-status" data-status="review">待审核</span></p>
+								<p>资料已进入私密审核区，站主会人工阅读并核对来源与隐私；未经确认不会公开。审核时间取决于资料数量和需要核实的内容，这里不承诺固定天数。</p>
+								<div class="pv-actions" style="margin-top: 12px">
+									<a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/">返回我的投稿</a>
+									<a class="pv-btn" href="/admin/preview/me/submissions/tg-demo/">查看投稿详情</a>
+									<button type="button" class="pv-btn" data-pv-success-close>继续修改（返回预览）</button>
+								</div>
+							</section>
+						</section>
+
+						<div class="pv-actions" data-pv-stepnav>
+							<button type="button" class="pv-btn" data-pv-back>上一步</button>
+							<button type="button" class="pv-btn pv-btn--primary" data-pv-next>下一步</button>
+						</div>
+					</div>
+				</div>
+
+				<details class="pv-demo">
+					<summary>原型演示控制（仅本地）</summary>
+					<div class="pv-demo-body">
+						<p>图片格式与容量提示（第一步）：</p>
+						<div class="pv-demo-actions">
+							<button type="button" class="pv-btn pv-btn--small" data-pv-image-demo="format">选择 TIFF 等原始格式</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-image-demo="size">单张超过 5 MB</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-image-demo="total">合计超过 20 MB</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-image-demo="duplicate">重复图片提示</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-image-demo="nine">一次选择 9 张</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-image-demo="partial">部分上传失败（可单独重试）</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-image-demo="cleaned">已去除内嵌信息（EXIF/GPS）</button>
+						</div>
+						<p style="margin-top: 12px">保存、提交与服务状态（第三步）：</p>
+						<div class="pv-demo-actions">
+							<button type="button" class="pv-btn pv-btn--small" data-pv-submit-demo="save-fail">保存失败（不得显示已保存）</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-submit-demo="quota">账号配额已满</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-submit-demo="session">登录状态已过期</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-submit-demo="maintenance">服务维护中</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-submit-demo="leave">离开页面前的提醒</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-submit-demo="duplicate">重复点击与超时重试保护</button>
+						</div>
+					</div>
+				</details>
+			</main>
+
+			<footer class="pv-sitefooter">
+				<p>老旧默片 · 普通人的生活档案</p>
+				<p class="pv-meta">注册模块阶段一原型 · 仅本机预览 · 不会上传任何文件</p>
+			</footer>
+		</div>
+		<script src="/admin/preview/preview.js"></script>
+	</body>
+</html>

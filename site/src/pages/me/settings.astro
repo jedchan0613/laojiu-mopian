@@ -1,0 +1,109 @@
+---
+import AccountShell from '../../components/AccountShell.astro';
+---
+
+<AccountShell
+	current="settings"
+	title="账户设置｜老旧默片"
+	description="管理昵称、已验证邮箱、通知偏好与登录设备，并提交数据导出或账号注销申请。"
+	heading="账户设置"
+	lede="一页完成，不收集多余资料。默认头像使用文字印记，不开放图片上传；更换邮箱、退出全部设备、申请导出与注销都在这里。"
+>
+	<div id="settings-loading" class="account-skeleton" role="status" aria-label="正在读取账号信息"></div>
+
+	<div id="settings-unauth" hidden>
+		<div class="account-panel">
+			<h2>需要先登录</h2>
+			<p>账户设置只对本人可见，请先用邮箱验证码登录。</p>
+			<div class="account-actions"><a class="ui-action ui-action--primary" href="/login/?next=/me/settings/">去登录</a></div>
+		</div>
+	</div>
+
+	<div id="settings-content" hidden>
+		<section class="account-panel" aria-labelledby="account-heading">
+			<h2 id="account-heading">账号</h2>
+			<dl class="account-dl">
+				<div class="account-row"><dt>昵称</dt><dd id="settings-nickname">—</dd></div>
+				<div class="account-row"><dt>已验证邮箱</dt><dd id="settings-email">—</dd></div>
+				<div class="account-row"><dt>账号状态</dt><dd id="settings-state">—</dd></div>
+				<div class="account-row"><dt>已收藏</dt><dd id="settings-favorites">—</dd></div>
+				<div class="account-row"><dt>已登录设备</dt><dd id="settings-sessions">—</dd></div>
+			</dl>
+		</section>
+
+		<section class="account-panel" aria-labelledby="profile-heading">
+			<h2 id="profile-heading">昵称与通知</h2>
+			<form id="profile-form" method="post" action="/api/account/profile" autocomplete="off">
+				<div class="account-field">
+					<label for="profile-nickname">昵称</label>
+					<input id="profile-nickname" name="nickname" type="text" maxlength="24" />
+					<small>昵称与登录邮箱互相独立；修改昵称不会改写已经发布的署名。</small>
+				</div>
+				<label class="account-choice">
+					<input id="profile-notify" type="checkbox" />
+					<span>重要处理进度通过邮件通知我。默认关闭；通知邮件只写结果，不附私密图片、完整投稿内容或联系方式。</span>
+				</label>
+				<div class="account-actions"><button class="ui-action ui-action--primary" type="submit">保存</button></div>
+			</form>
+			<p id="profile-status" class="account-status" role="status" aria-live="polite"></p>
+		</section>
+
+		<section class="account-panel" aria-labelledby="email-change-heading">
+			<h2 id="email-change-heading">更换邮箱</h2>
+			<p>需要同时验证原邮箱和新邮箱。完成后会退出全部已登录设备，并向原邮箱发送一封变更通知。</p>
+			<div id="email-step-1">
+				<div class="account-actions"><button id="email-start" class="ui-action ui-action--secondary" type="button">开始更换邮箱</button></div>
+			</div>
+			<div id="email-step-2" hidden>
+				<div class="account-field">
+					<label for="email-old-code">原邮箱收到的验证码</label>
+					<input id="email-old-code" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" />
+				</div>
+				<div class="account-actions"><button id="email-verify-old" class="ui-action ui-action--secondary" type="button">验证原邮箱</button></div>
+			</div>
+			<div id="email-step-3" hidden>
+				<div class="account-field">
+					<label for="email-new">新邮箱</label>
+					<input id="email-new" type="email" maxlength="160" inputmode="email" />
+					<small>如果新邮箱已经关联其他账号，这里会明确提示冲突。</small>
+				</div>
+				<div class="account-actions"><button id="email-send-new" class="ui-action ui-action--secondary" type="button">发送验证码到新邮箱</button></div>
+			</div>
+			<div id="email-step-4" hidden>
+				<div class="account-field">
+					<label for="email-new-code">新邮箱收到的验证码</label>
+					<input id="email-new-code" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" />
+				</div>
+				<div class="account-actions"><button id="email-confirm" class="ui-action ui-action--primary" type="button">完成更换</button></div>
+			</div>
+			<p id="email-status" class="account-status" role="status" aria-live="polite"></p>
+		</section>
+
+		<section class="account-panel" aria-labelledby="security-heading">
+			<h2 id="security-heading">登录与安全</h2>
+			<p>退出全部设备会立刻撤销所有已登录设备的凭证，包括当前这台设备。之后需要重新用邮箱验证码登录。</p>
+			<div class="account-actions"><button id="logout-all" class="ui-action ui-action--secondary" type="button">退出全部设备</button></div>
+			<p id="security-status" class="account-status" role="status" aria-live="polite"></p>
+		</section>
+
+		<section class="account-panel account-danger" aria-labelledby="rights-heading">
+			<h2 id="rights-heading">数据导出与注销</h2>
+			<p>申请由站主人工受理：收到后会给出回执编号，处理中与已完成是两种不同状态，不会把「已收到」显示成「已完成」。</p>
+			<details>
+				<summary>申请数据导出</summary>
+				<p>导出只包含你的账号信息、收藏和提交的发布副本，不包含管理员内部备注、其他用户资料或档案主库内容。确认是本人在操作后，会通过私密方式提供下载。</p>
+				<div class="account-actions"><button id="request-export" class="ui-action ui-action--secondary" type="button">提交导出申请</button></div>
+			</details>
+			<details>
+				<summary>申请注销账号</summary>
+				<p>注销不等于删除所有已公开档案。收到申请后会立即退出全部设备并停止新投稿；公开档案默认不随注销自动删除，公开署名可以单独申请处理。不可逆清理会先说明对象、原因和影响，再逐次确认。</p>
+				<label class="account-choice"><input id="deletion-confirm" type="checkbox" /> <span>我已了解上述处理方式，仍要提交注销申请。</span></label>
+				<div class="account-actions"><button id="request-deletion" class="ui-action ui-action--secondary" type="button">提交注销申请</button></div>
+			</details>
+			<ul id="request-list" class="account-dl" aria-label="我已提交的申请"></ul>
+			<p id="request-status" class="account-status" role="status" aria-live="polite"></p>
+		</section>
+	</div>
+
+	<script>import '../../scripts/account-settings';</script>
+</AccountShell>

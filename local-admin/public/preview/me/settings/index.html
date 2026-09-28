@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>账户设置（原型）｜老旧默片</title>
+		<link rel="stylesheet" href="/admin/preview/preview.css" />
+	</head>
+	<body data-preview-page="settings">
+		<div data-preview-toolbar></div>
+		<div class="pv-shell">
+			<header class="pv-siteheader">
+				<nav aria-label="主导航（原型模拟）">
+					<a class="pv-brand" href="/">
+						<span class="pv-seal" aria-hidden="true">默</span>
+						<strong>老旧默片</strong>
+					</a>
+					<div class="pv-sitelinks">
+						<a href="/archive/">档案</a>
+						<a href="/about/">关于</a>
+						<a href="/contribute/">我要投稿</a>
+						<a href="/admin/preview/login/" data-pv-nav-when="out">登录</a>
+						<a href="/admin/preview/me/submissions/" data-pv-nav-when="in" aria-current="page">我的</a>
+					</div>
+				</nav>
+			</header>
+
+			<main>
+				<nav class="pv-usernav" aria-label="用户中心">
+					<a href="/admin/preview/me/submissions/">我的投稿</a>
+					<a href="/admin/preview/me/favorites/">我的收藏</a>
+					<a href="/admin/preview/me/settings/" aria-current="page">账户设置</a>
+				</nav>
+
+				<section class="pv-card pv-hidden" data-pv-gate>
+					<h2>这个页面需要登录后才能查看</h2>
+					<p class="pv-note">账户、安全与权益操作只对本人开放；敏感操作还需要近期重新验证邮箱。</p>
+					<div class="pv-actions">
+						<a class="pv-btn pv-btn--primary" href="/admin/preview/login/">前往登录页演示</a>
+						<button type="button" class="pv-btn" data-pv-gate-signin>直接模拟已登录</button>
+					</div>
+				</section>
+
+				<div class="pv-hidden" data-pv-content>
+					<div class="pv-pagehead">
+						<p class="pv-eyebrow">用户中心 · 一页完成</p>
+						<h1>账户设置</h1>
+						<p class="pv-intro">这里只放必要的信息与操作，不收集多余资料：没有手机号、真实姓名、性别、生日、住址或身份证，也没有头像上传。</p>
+					</div>
+
+					<section class="pv-card" style="margin-bottom: 20px">
+						<h2>账户</h2>
+						<div class="pv-image-row" style="margin: 14px 0; background: transparent; border: 0; padding: 0; grid-template-columns: 72px minmax(0, 1fr)">
+							<div class="pv-thumb" style="aspect-ratio: 1 / 1"><span>青</span></div>
+							<div>
+								<p class="pv-note" style="margin-top: 0">默认头像是文字印记，不开放图片上传，也不会读取你的社交账号头像。</p>
+							</div>
+						</div>
+						<div class="pv-field">
+							<label for="pv-settings-nickname">昵称</label>
+							<input id="pv-settings-nickname" data-pv-nickname maxlength="24" value="青禾" />
+							<p class="pv-hint">昵称可以随时修改；修改昵称不会改写已公开内容的署名，署名在每件投稿里单独决定。</p>
+						</div>
+						<div class="pv-actions">
+							<button type="button" class="pv-btn pv-btn--primary" data-pv-save-nickname>保存昵称</button>
+						</div>
+						<hr class="pv-rule" />
+						<div class="pv-field" style="margin-bottom: 6px">
+							<span class="pv-label">已验证邮箱</span>
+							<p class="pv-note" style="margin: 0">qinghe@example.com（示例地址，不进入公开字段）</p>
+							<p class="pv-hint">邮箱始终私密，只用于登录、账户安全与你主动选择开启的进度通知；不会自动推导为公开昵称。</p>
+						</div>
+						<div class="pv-actions">
+							<button type="button" class="pv-btn" data-pv-demo-action="原型演示：更换邮箱会先验证原邮箱、再验证新邮箱，成功后撤销旧登录凭证并通知原邮箱。收不到原邮箱验证码时进入人工恢复流程，不凭昵称、公开资料或提交过的照片自动找回。">更换邮箱</button>
+						</div>
+					</section>
+
+					<section class="pv-card" style="margin-bottom: 20px">
+						<h2>安全</h2>
+						<p class="pv-note">登录状态由服务器判断：闲置 7 天后需要重新验证，最长 30 天到期。退出设备会真正撤销登录凭证，而不是只清掉本机浏览器。</p>
+						<div class="pv-actions" style="margin-top: 12px">
+							<button type="button" class="pv-btn" data-pv-demo-action="原型演示：已退出当前设备，这台设备需要重新验证邮箱才能登录。">退出当前设备</button>
+							<button type="button" class="pv-btn" data-pv-confirm-toggle="logout-all">退出全部设备</button>
+						</div>
+						<div class="pv-callout pv-hidden" data-pv-confirm-panel="logout-all">
+							<p>退出全部设备会撤销所有登录凭证，之后需要重新验证邮箱才能登录；已经保存的内容不会丢失。</p>
+							<div class="pv-actions">
+								<button type="button" class="pv-btn pv-btn--primary" data-pv-confirm-accept="logout-all" data-pv-confirm-message="已退出全部设备（原型演示）：服务端会真正撤销全部会话，而不是只清掉本机浏览器。">确认退出全部设备</button>
+								<button type="button" class="pv-btn" data-pv-confirm-cancel="logout-all">先不退出</button>
+							</div>
+						</div>
+						<hr class="pv-rule" />
+						<p class="pv-note" style="margin-top: 0">换邮箱、注销、导出等敏感操作需要近期重新验证邮箱。</p>
+						<div class="pv-actions">
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo-action="原型演示：这里会要求再收一次邮箱验证码，用来确认是本人操作；验证前不会开始处理。">演示：敏感操作重新验证</button>
+						</div>
+					</section>
+
+					<section class="pv-card" style="margin-bottom: 20px">
+						<h2>通知偏好</h2>
+						<label class="pv-choice">
+							<input type="checkbox" />
+							<span>重要进度邮件（默认不勾选）<small>待补充、处理结果、已公开、撤下结果可以发邮件提醒；验证码和账户安全通知不受此开关控制。</small></span>
+						</label>
+						<p class="pv-hint">提醒邮件不附带私密图片、完整投稿内容或联系方式，只提醒你登录查看。暂不提供短信、微信推送和营销邮件。</p>
+					</section>
+
+					<section class="pv-card" style="margin-bottom: 20px">
+						<h2>数据与账户</h2>
+						<p class="pv-note">数据导出初版由站主人工处理：先验证本人，再提供私密下载方式；内容只包含你的账户信息、收藏和提交的发布副本，不包含站主内部备注、其他用户资料或档案主库内容。收到申请不等于导出完成。</p>
+						<div class="pv-actions" style="margin-top: 12px">
+							<button type="button" class="pv-btn" data-pv-export>申请数据导出</button>
+							<button type="button" class="pv-btn" data-pv-confirm-toggle="cancel-account">申请注销账户</button>
+						</div>
+						<div class="pv-callout pv-hidden" data-pv-confirm-panel="cancel-account">
+							<p>注销会再次验证身份，并逐项说明账户、私密投稿、公开署名、已公开内容与备份的处理方式；收到申请后先撤销会话、停止新投稿，并给出回执。</p>
+							<div class="pv-actions">
+								<button type="button" class="pv-btn pv-btn--primary" data-pv-confirm-accept="cancel-account" data-pv-confirm-message="注销申请已收到（原型演示）：会先撤销会话、停止新投稿，并给出回执；由站主按流程人工处理。">确认申请注销</button>
+								<button type="button" class="pv-btn" data-pv-confirm-cancel="cancel-account">先不申请</button>
+							</div>
+						</div>
+						<p class="pv-hint">注销不自动等于删除所有已公开档案，也不能静默保留实名署名或把个人数据无限期留在回收区；撤下、删除和注销是三个不同的申请。</p>
+					</section>
+
+					<section class="pv-card">
+						<h2>帮助与权益</h2>
+						<ul class="pv-submission-list" style="gap: 8px">
+							<li><a class="pv-link" href="/contribute/">上传与投稿说明</a> —— 哪些资料适合投稿、怎么准备发布副本。</li>
+							<li><a class="pv-link" href="/about/">关于本站与授权说明</a> —— 整理方式、公开范围与授权边界。</li>
+							<li><a class="pv-link" href="/corrections/">纠错与撤下</a> —— 资料更正、隐私撤下、权利与使用请求。</li>
+							<li><a class="pv-link" href="/admin/preview/">注册模块原型说明</a> —— 本页所在的阶段一原型目录。</li>
+						</ul>
+					</section>
+				</div>
+
+				<details class="pv-demo">
+					<summary>原型演示控制（仅本地）</summary>
+					<div class="pv-demo-body">
+						<p>预看几条回执与处理状态提示。</p>
+						<div class="pv-demo-actions">
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo-action="原型演示：已收到注销申请，正在处理中；处理完成前会先给你回执，完成后再更新状态。这里会区分「处理中」和「已完成」。">注销处理中 / 已完成提示</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo-action="原型演示：导出会以私密方式交付，下载链接只给你本人，过期后自动失效。">导出交付方式说明</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo-action="原型演示：公开署名可以单独申请处理，不会因为修改昵称而自动变化。">公开署名处理说明</button>
+						</div>
+					</div>
+				</details>
+			</main>
+
+			<footer class="pv-sitefooter">
+				<p>老旧默片 · 普通人的生活档案</p>
+				<p class="pv-meta">注册模块阶段一原型 · 仅本机预览 · 假数据</p>
+			</footer>
+		</div>
+		<script src="/admin/preview/preview.js"></script>
+	</body>
+</html>

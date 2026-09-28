@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>投稿详情（原型）｜老旧默片</title>
+		<link rel="stylesheet" href="/admin/preview/preview.css" />
+	</head>
+	<body data-preview-page="detail">
+		<div data-preview-toolbar></div>
+		<div class="pv-shell">
+			<header class="pv-siteheader">
+				<nav aria-label="主导航（原型模拟）">
+					<a class="pv-brand" href="/">
+						<span class="pv-seal" aria-hidden="true">默</span>
+						<strong>老旧默片</strong>
+					</a>
+					<div class="pv-sitelinks">
+						<a href="/archive/">档案</a>
+						<a href="/about/">关于</a>
+						<a href="/contribute/">我要投稿</a>
+						<a href="/admin/preview/login/" data-pv-nav-when="out">登录</a>
+						<a href="/admin/preview/me/submissions/" data-pv-nav-when="in" aria-current="page">我的</a>
+					</div>
+				</nav>
+			</header>
+
+			<main>
+				<nav class="pv-usernav" aria-label="用户中心">
+					<a href="/admin/preview/me/submissions/" aria-current="page">我的投稿</a>
+					<a href="/admin/preview/me/favorites/">我的收藏</a>
+					<a href="/admin/preview/me/settings/">账户设置</a>
+				</nav>
+
+				<section class="pv-card pv-hidden" data-pv-gate>
+					<h2>这个页面需要登录后才能查看</h2>
+					<p class="pv-note">投稿详情只对本人和获授权的站主可见。正式实施时，别人即使猜到编号也无法打开。</p>
+					<div class="pv-actions">
+						<a class="pv-btn pv-btn--primary" href="/admin/preview/login/">前往登录页演示</a>
+						<button type="button" class="pv-btn" data-pv-gate-signin>直接模拟已登录</button>
+					</div>
+				</section>
+
+				<div class="pv-hidden" data-pv-content>
+					<div class="pv-pagehead">
+						<p class="pv-eyebrow">我的投稿 · 详情（样例编号 TG-4F2A9C7E1B6D8453A0C9E2F1）</p>
+						<h1>1987 年珠海海滨留影</h1>
+						<p class="pv-meta">老照片 · 3 张图片 · 下方可用「原型演示控制」切换三种代表性场景</p>
+					</div>
+
+					<!-- 场景一：待补充（默认） -->
+					<section data-pv-view="needs">
+						<div class="pv-panel">
+							<h2><span class="pv-status" data-status="needs">待补充</span> 站主给你留了说明</h2>
+							<p>「请补充照片背面文字的说明，并确认拍摄年份。可以通过下方“补充材料”直接说明，也可以重新选择图片后提交。」</p>
+							<p class="pv-hint">这条说明只有登录后的你（和站主）能看到；补充后重新提交会产生新版本。</p>
+						</div>
+						<div class="pv-actions" style="margin-bottom: 24px">
+							<button type="button" class="pv-btn pv-btn--primary" data-pv-demo-action="原型演示：已补充说明并重新提交。审核会针对新版本进行，原来的审核结果不会直接套用在新内容上。">补充材料并重新提交</button>
+							<button type="button" class="pv-btn" data-pv-demo-action="原型演示：已收到停止处理申请；已经转入档案整理的投稿不会简单退回，站主会先核查草稿或已公开内容。">申请停止处理</button>
+						</div>
+					</section>
+
+					<!-- 场景二：草稿 -->
+					<section data-pv-view="draft" class="pv-hidden">
+						<div class="pv-panel">
+							<h2><span class="pv-status" data-status="draft">草稿</span> 仅你和站主可见</h2>
+							<p>还不需要站主处理。可以继续编辑、保存、提交审核，或把草稿移入回收流程。</p>
+						</div>
+						<div class="pv-card" style="margin-bottom: 24px">
+							<div class="pv-field">
+								<label for="pv-draft-title">题名</label>
+								<input id="pv-draft-title" value="1987 年珠海海滨留影" maxlength="60" />
+							</div>
+							<div class="pv-field">
+								<label for="pv-draft-note">补充一句说明（选填）</label>
+								<textarea id="pv-draft-note" rows="3" placeholder="例如：照片背面写有“87 年夏，珠海”。"></textarea>
+							</div>
+							<div class="pv-actions">
+								<button type="button" class="pv-btn pv-btn--primary" data-pv-demo-action="原型演示：草稿已保存（2026-09-27 14:32）。保存成功的内容支持跨设备继续；未保存的修改只在本页面里。">保存草稿</button>
+								<button type="button" class="pv-btn" data-pv-demo-action="原型演示：已提交审核。提交后保留只读版本，审核针对确定的内容版本进行。">提交审核</button>
+								<button type="button" class="pv-btn" data-pv-demo-action="原型演示：草稿移入回收流程前会先说明对象与影响；已保存的图片不会被永久删除，恢复后只生成草稿。">移入回收流程</button>
+							</div>
+							<p class="pv-hint">保存成功会显示具体时间；保存失败时不会显示「已保存」。</p>
+						</div>
+					</section>
+
+					<!-- 场景三：已公开 -->
+					<section data-pv-view="public" class="pv-hidden">
+						<div class="pv-panel">
+							<h2><span class="pv-status" data-status="public">已公开</span> 正式发布成功</h2>
+							<p>只有发布完成并在公开网站构建成功后，才会显示这个状态。当前的公开版本会一直保留，直到修改通过重新审核并发布替换。</p>
+							<div class="pv-actions" style="margin-top: 10px">
+								<a class="pv-btn pv-btn--primary" href="/archive/">打开公开页面</a>
+								<span class="pv-hint" style="margin: 0">正式实施时会直接指向这件档案的公开页面。</span>
+							</div>
+						</div>
+						<div class="pv-actions" style="margin-bottom: 14px">
+							<button type="button" class="pv-btn" data-pv-demo-action="原型演示：修改申请会生成一份新草稿，经重新审核和构建后才替换公开版本；没有通过之前，现在的公开版本继续保留。">申请修改</button>
+							<button type="button" class="pv-btn" data-pv-demo-action="原型演示：已收到撤下申请。涉及隐私的撤下会优先处理并阻止再次发布；完成撤下后会检查详情、图片、缩略图、搜索数据与站点地图，同时保留私密历史，不修改档案主档。">申请撤下</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-show-hint="modifying">切换「修改审核中」提示</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-show-hint="withdrawing">切换「撤下处理中」提示</button>
+						</div>
+						<div class="pv-callout pv-hidden" data-pv-hint="modifying">修改审核中：当前公开版本保持不变；新的修改会在重新审核、构建和人工发布检查全部通过后才替换。</div>
+						<div class="pv-callout pv-hidden" data-pv-hint="withdrawing">撤下处理中：已经收到你的撤下申请，正在处理。在完成之前，页面不会显示成「已经撤下」。</div>
+					</section>
+
+					<!-- 公共部分：资料、图片与处理记录 -->
+					<section class="pv-card" style="margin-top: 24px">
+						<h2>资料与图片</h2>
+						<ul class="pv-preview-images" style="margin: 10px 0 16px">
+							<li class="pv-thumb"><span class="pv-thumb-tag">封面</span><span>示例图 1</span></li>
+							<li class="pv-thumb"><span>示例图 2</span></li>
+							<li class="pv-thumb"><span>示例图 3</span></li>
+						</ul>
+						<dl class="pv-preview-block" style="background: transparent; border: 0; padding: 0">
+							<dt>题名</dt><dd>1987 年珠海海滨留影</dd>
+							<dt>藏品分类</dt><dd>老照片</dd>
+							<dt>大致年代</dt><dd>约 20 世纪 80 年代</dd>
+							<dt>大致地点</dt><dd>广东省 珠海市（大致地点，非私人住址）</dd>
+							<dt>资料介绍</dt><dd>家中长辈留存的照片，拍摄于珠海海边。背面有手写文字，具体内容待补充说明。</dd>
+							<dt>图片说明</dt><dd>示例图 1：正面；示例图 2：背面手写留言；示例图 3：细节</dd>
+							<dt>公开署名</dt><dd>匿名投稿</dd>
+						</dl>
+						<p class="pv-hint">图片和联系方式只在私密审核区使用；未审核的图片不会进入公开网站，也不会被搜索引擎收录。</p>
+					</section>
+
+					<section class="pv-card" style="margin-top: 20px">
+						<h2>处理记录（只读）</h2>
+						<ol class="pv-timeline" style="margin-top: 12px">
+							<li><time>2026-09-26 17:02</time><strong>站主留言：需要补充材料</strong><p>请补充照片背面文字说明，并确认拍摄年份。</p></li>
+							<li><time>2026-09-26 10:15</time><strong>你提交了这份资料（版本 1）</strong><p>提交后内容作为只读版本保留，审核针对这个版本进行。</p></li>
+							<li><time>2026-09-26 09:58</time><strong>草稿保存</strong><p>首次保存时系统分配投稿编号。</p></li>
+						</ol>
+						<p class="pv-hint">处理记录保持只读，不会因为修改而消失；补充、换图和修改会生成新的版本。</p>
+					</section>
+
+					<section class="pv-panel" style="margin-top: 20px">
+						<h2>需要帮助？</h2>
+						<p>数据导出、注销账户、公开署名处理、错误更正与撤下申请，都可以通过<a href="/corrections/">纠错与撤下页面</a>联系站主；你也可以在<a href="/admin/preview/me/settings/">账户设置</a>里提交导出或注销申请。</p>
+					</section>
+				</div>
+
+				<details class="pv-demo">
+					<summary>原型演示控制（仅本地）</summary>
+					<div class="pv-demo-body">
+						<p>切换三种代表性场景（草稿 / 待补充 / 已公开），或预看几条附加操作提示。</p>
+						<div class="pv-demo-actions">
+							<button type="button" class="pv-btn pv-btn--small" data-pv-show-view="draft">查看「草稿」场景</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-show-view="needs">查看「待补充」场景</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-show-view="public">查看「已公开」场景</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo-action="原型演示：网络或服务失败时不会显示「已保存」；已填写内容保留在页面里，可以稍后重试。">保存失败时的提示</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo-action="原型演示：如果同一份投稿在另一个窗口被更新，这个旧页面不能覆盖新结果，会提示先刷新再核对。">并发编辑冲突提示</button>
+						</div>
+					</div>
+				</details>
+			</main>
+
+			<footer class="pv-sitefooter">
+				<p>老旧默片 · 普通人的生活档案</p>
+				<p class="pv-meta">注册模块阶段一原型 · 仅本机预览 · 假数据</p>
+			</footer>
+		</div>
+		<script src="/admin/preview/preview.js"></script>
+	</body>
+</html>

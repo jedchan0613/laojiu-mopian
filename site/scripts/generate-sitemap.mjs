@@ -32,9 +32,14 @@ const listFiles = async (directory) => {
 	return nested.flat();
 };
 
+// 账户页面（登录、用户中心）不进站点地图：它们是私密入口，不应被搜索引擎收录或收录进索引。
+const accountPagePattern = /^(?:login|me)(?:\/|\.html)/;
+const isAccountPage = (path) => accountPagePattern.test(relative(distRoot, path).split(sep).join('/'));
+
 const htmlFiles = (await listFiles(distRoot))
 	.filter((path) => path.endsWith('.html'))
-	.filter((path) => !path.endsWith(`${sep}404.html`));
+	.filter((path) => !path.endsWith(`${sep}404.html`))
+	.filter((path) => !isAccountPage(path));
 
 const toPublicPath = (path) => {
 	const relativePath = relative(distRoot, path).split(sep).join('/');

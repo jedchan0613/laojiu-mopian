@@ -160,5 +160,8 @@ outputs/
 # 投稿内容、联系方式、审核记录仅供私密管理，不能提交到代码仓库。
 local-admin/submissions/
 
+# 账号业务数据（账号、会话、收藏、导出与注销申请、邮件事件）同样是私密数据，不能提交到代码仓库。
+local-admin/accounts/
+
 # TRAE 本地 HTML 预览分享包属于生成产物（local-admin/public/ 源文件的打包副本），不入库；迭代直接修改源文件
 .trae-html-share-packages/
