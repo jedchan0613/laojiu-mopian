@@ -224,6 +224,9 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  const accountStatusLabels = { draft: '草稿', pending: '待审核', needs_info: '待补充', approved: '整理中', declined: '暂不采用', withdrawn: '已撤回' };
  const maximumVersions = 20;
  const accountIndexFile = '_account-index.json';
+ // 账号级配额（方案 K）：防止单个账号耗尽共享收件区，也不能靠反复删除重传绕过。
+ // 草稿、投稿与历史版本都计入占用；已停止处理（withdrawn）的记录不再计入件数与字节。
+ const accountQuota = { perDay: 10, maxDrafts: 20, maxBytes: 200 * 1024 * 1024 };
 
  const safeAccountId = (value) => {
   if (!accountIdPattern.test(String(value ?? ''))) fail('账号信息无效。', 403);
@@ -278,6 +281,46 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    return parsed && typeof parsed === 'object' ? parsed : {};
   } catch { return {}; }
  };
+ // 读取账号的全部投稿记录（配额与列表共用）。索引缺失时回退为完整扫描，保证不漏掉已认领的旧投稿。
+ const accountRecords = async (accountId) => {
+  const index = await readAccountIndex();
+  let ids = Array.isArray(index[accountId]) ? index[accountId] : [];
+  if (!ids.length) ids = (await all()).filter((record) => record.account_id === accountId).map((record) => record.id);
+  const records = [];
+  for (const candidate of ids) {
+   if (!idPattern.test(candidate ?? '')) continue;
+   try { records.push(await read(candidate)); } catch { /* 记录已不存在时跳过。 */ }
+  }
+  return records.filter((record) => record.account_id === accountId);
+ };
+ // 草稿数量上限（方案 K：同时保存不超过 20 件未提交草稿）。
+ const checkDraftLimit = async (accountId) => {
+  const records = await accountRecords(accountId);
+  const drafts = records.filter((record) => record.status === 'draft').length;
+  if (drafts >= accountQuota.maxDrafts) {
+   fail(`未提交的草稿已达上限（${accountQuota.maxDrafts} 件）。请先提交，或把不再需要的移入回收区。`, 429);
+  }
+ };
+ // 提交审核的每日次数上限（方案 K：每天提交不超过 10 件）。按今天"提交审核"的动作统计，创建草稿本身不计。
+ const checkSubmitLimit = async (accountId) => {
+  const records = await accountRecords(accountId);
+  const today = new Date().toISOString().slice(0, 10);
+  const submittedToday = records.filter((record) => (record.history ?? [])
+   .some((entry) => entry.action === 'submitted' && String(entry.at ?? '').startsWith(today))).length;
+  if (submittedToday >= accountQuota.perDay) {
+   fail(`今天提交审核的次数已达上限（${accountQuota.perDay} 件），请明天再试。`, 429);
+  }
+ };
+ // 字节配额（方案 K：账号未公开资料不超过 200 MB）。草稿、投稿与历史版本都计入；已停止处理的不计。
+ const checkStorageLimit = async (accountId, addedBytes) => {
+  const records = await accountRecords(accountId);
+  const usedBytes = records
+   .filter((record) => record.status !== 'withdrawn')
+   .reduce((sum, record) => sum + record.images.reduce((total, image) => total + image.bytes, 0), 0);
+  if (usedBytes + addedBytes > accountQuota.maxBytes) {
+   fail(`你的资料占用已达上限（约 200 MB）。请先整理现有草稿与投稿，或申请导出后清理。`, 429);
+  }
+ };
  const addToAccountIndex = async (accountId, id) => locked('account-index', async () => {
   const index = await readAccountIndex();
   const list = Array.isArray(index[accountId]) ? index[accountId] : [];
@@ -310,6 +353,11 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   const fields = accountFields(payload?.fields, submitting);
   if (submitting) requireAccountConsents(payload);
   const staged = await stageImages(payload?.images);
+  const addedBytes = staged.reduce((sum, image) => sum + image.buffer.length, 0);
+  // 直接提交审核计"每天提交次数"；保存草稿计"同时草稿数"。两者都计入占用。
+  if (submitting) await checkSubmitLimit(account);
+  else await checkDraftLimit(account);
+  await checkStorageLimit(account, addedBytes);
   const key = randomBytes(32).toString('hex');
   const id = submissionId(key);
   const now = new Date().toISOString();
@@ -360,6 +408,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    const incoming = Array.isArray(payload?.images) ? payload.images : [];
    if (kept.length + incoming.length > submissionLimits.images) fail(`一件投稿最多 ${submissionLimits.images} 张图片。`, 413);
    const staged = incoming.length ? await stageImages(incoming, submissionLimits.images - kept.length) : [];
+   if (staged.length) await checkStorageLimit(account, staged.reduce((sum, image) => sum + image.buffer.length, 0));
    const start = nextImageIndex(r);
    const processed = staged.length ? await processImages(staged, (index) => `copy-${String(start + index).padStart(2, '0')}.jpg`) : [];
    const notes = payload?.notes && typeof payload.notes === 'object' ? payload.notes : {};
@@ -389,6 +438,8 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  const submitAccountSubmission = async ({ id, accountId, revision, payload }) => {
   const account = safeAccountId(accountId);
   requireAccountConsents(payload);
+  // 提交审核计入"每天提交次数"（方案 K：每天提交不超过 10 件）。
+  await checkSubmitLimit(account);
   return locked(safeId(id), async () => {
    const r = await read(id);
    ownedBy(r, account);
@@ -418,17 +469,8 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  const getAccountSubmission = async ({ id, accountId }) => accountDetail(ownedBy(await read(id), safeAccountId(accountId)));
  const listAccountSubmissions = async ({ accountId }) => {
   const account = safeAccountId(accountId);
-  const index = await readAccountIndex();
-  let ids = Array.isArray(index[account]) ? index[account] : [];
-  // 索引缺失时回退为完整扫描，保证不会漏掉已经认领的旧投稿。
-  if (!ids.length) ids = (await all()).filter((record) => record.account_id === account).map((record) => record.id);
-  const records = [];
-  for (const candidate of ids) {
-   if (!idPattern.test(candidate ?? '')) continue;
-   try { records.push(await read(candidate)); } catch { /* 记录已不存在时跳过。 */ }
-  }
+  const records = await accountRecords(account);
   return records
-   .filter((record) => record.account_id === account)
    .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)))
    .map(accountSummary);
  };

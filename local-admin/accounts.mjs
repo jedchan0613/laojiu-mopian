@@ -389,7 +389,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 		if (!user) return null;
 		// 统一布尔类型，避免调用方拿到 SQLite 的 0/1 后判断不一致。
 		const normalized = { ...user, notify_progress: Boolean(user.notify_progress) };
-		return { session_id: row.id, token, user: normalized, public: publicUser(normalized) };
+		return { session_id: row.id, token, user: normalized, public: publicUser(normalized), session_created_at: row.created_at };
 	};
 
 	const revokeSession = (sessionId, reason) => run(`UPDATE sessions SET revoked_at = ?, revoked_reason = ? WHERE id = ? AND revoked_at = ''`, iso(now()), reason, sessionId);
@@ -598,6 +598,12 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 		// 导出与注销申请：人工受理，系统只负责可靠记录、回执与可见状态。
 		createRequest({ session, kind }) {
 			if (!Object.hasOwn(requestKinds, kind) || kind === 'unsuspend') fail('不支持这种申请类型。');
+			// 方案 D.7：注销、导出等敏感操作要求近期重新验证，防止被借用的长期会话被滥用。
+			const recentLimit = 30 * 60 * 1000;
+			const sessionAge = now().getTime() - new Date(session.session_created_at ?? 0).getTime();
+			if (!session.session_created_at || sessionAge > recentLimit) {
+				fail('为了账号安全，请先退出并重新登录，然后再提交这类申请。', 403);
+			}
 			requireAllowed(`request:user:${session.user.id}`, accountLimits.requestsPerUserPerDay, 24 * 3600, '今天提交的申请过多，请稍后再试。');
 			const pending = one(`SELECT * FROM requests WHERE user_id = ? AND kind = ? AND status IN ('received', 'processing')`, session.user.id, kind);
 			if (pending) {

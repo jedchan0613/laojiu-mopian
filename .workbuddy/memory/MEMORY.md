@@ -5,7 +5,10 @@
 - **开发成果只放 `feature/registration-preview` 分支**；`main` 只保留用户已预览确认的版本。
 - **只有 `main` 会触发服务器自动部署**（`laojiumopian-github-deploy.timer` 每 2 分钟检查一次 origin/main）。
 - **未获用户逐项确认，绝不推送到 main、绝不在服务器上做变更。**"授权开始某阶段"不等于"授权上线"。
-- 线上回退办法：`/srv/laojiumopian-admin/app/releases/` 与 `/srv/laojiumopian/releases/` 保留历史版本，`ln -sfn` 切回后重启服务即可；注意**不要动** `github-deploy/deployed-commit`，否则定时任务会重新部署新版。
+- 线上回退办法：`/srv/laojiumopian-admin/app/releases/` 与 `/srv/laojiumopian/releases/` 保留历史版本，`ln -sfn` 切回后重启服务即可。
+- **两个必须同步收尾的细节（2026-09-28 踩过）**：
+  1. `github-deploy/deployed-commit` **必须与线上实际版本一致**，否则定时器会"发现记录与主线不一致"而**每两分钟循环重新部署**（每次都会短暂停管理服务、重启点赞与投稿服务）。
+  2. 切换软链**不能用 root**——`/srv/laojiumopian/releases` 目录带粘滞位，自动部署脚本以 `ljmadmin` 身份替换 `live` 时，替换不了 root 属主的链接，会报 `EPERM: operation not permitted, rename .../live` 并恢复旧版。用 root 切过后务必 `chown -h ljmadmin:ljmpublish <链接>`。
 
 ## 公开构建（site/）的三条硬约束——改公开页面文案前必查
 
