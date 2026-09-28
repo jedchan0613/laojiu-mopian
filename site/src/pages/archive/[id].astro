@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveLikeButton from '../../components/ArchiveLikeButton.astro';
+import ArchiveFavoriteButton from '../../components/ArchiveFavoriteButton.astro';
 import { archiveItems, type ArchiveItem } from '../../data/archive';
 import {
   archiveCategories,
@@ -255,6 +256,7 @@ const breadcrumbStructuredData = {
         </div>
         <div class="record-heading-actions" aria-label="档案互动操作">
           <ArchiveLikeButton itemId={view.id} title={view.title} compact />
+          <ArchiveFavoriteButton itemId={view.id} title={view.title} />
         </div>
       </div>
       {hasText(view.description) && <p class="record-lead">{view.description}</p>}
@@ -664,6 +666,7 @@ const breadcrumbStructuredData = {
 
 <script>
   import '../../scripts/archive-likes';
+  import '../../scripts/archive-favorite';
   import { recordView } from '../../scripts/view-history';
 
   // 浏览足迹：把当前档案记入访客本地足迹，供首页「您最近看过」使用。
