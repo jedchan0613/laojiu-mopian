@@ -3816,9 +3816,9 @@ elements.backToLibraryButton.addEventListener('click', async () => {
 
 elements.similarRecordButton.addEventListener('click', () => { void startSimilarRecord(); });
 
-// “投稿审核”“联系收件箱”是站内其他管理页：有未保存修改时先确认再跳转，
+// “投稿审核”“联系收件箱”“注册模块预览”是站内其他管理页：有未保存修改时先确认再跳转，
 // 与切记录、刷新等入口的提醒保持一致。
-document.querySelectorAll('.desk-nav a[href$="/admin/submissions.html"], .desk-nav a[href$="/admin/contacts.html"]').forEach((link) => {
+document.querySelectorAll('.desk-nav a[href$="/admin/submissions.html"], .desk-nav a[href$="/admin/contacts.html"], .desk-nav a[href$="/admin/preview/"]').forEach((link) => {
 	link.addEventListener('click', async (event) => {
 		if (!state.dirty) return;
 		event.preventDefault();

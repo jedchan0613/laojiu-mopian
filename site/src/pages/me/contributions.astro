@@ -1,0 +1,63 @@
+---
+import AccountShell from '../../components/AccountShell.astro';
+---
+
+<AccountShell
+	current="contributions"
+	title="我的投稿｜老旧默片"
+	description="查看自己提交的资料、处理进度与站主说明，保存草稿、提交审核、补充材料或申请停止处理。"
+	heading="我的投稿"
+	lede="这里保存你自己提交的资料与处理进度。资料收到后会先由站主核对，未经确认不会公开；初审通过只代表进入整理，不等于已经发布。"
+>
+	<div id="contributions-loading" class="account-skeleton" role="status" aria-label="正在读取投稿"></div>
+
+	<div id="contributions-unauth" hidden>
+		<div class="account-panel">
+			<h2>需要先登录</h2>
+			<p>投稿与账号关联，请先用邮箱验证码登录，再回来查看。</p>
+			<div class="account-actions">
+				<a class="ui-action ui-action--primary" href="/login/?next=/me/contributions/">去登录</a>
+				<a class="ui-text-link" href="/contribute/">免注册投稿</a>
+			</div>
+		</div>
+	</div>
+
+	<div id="contributions-content" hidden>
+		<div class="account-toolbar">
+			<a class="ui-action ui-action--primary" href="/me/contribution/">上传档案</a>
+			<p class="account-hint" id="contributions-summary" role="status"></p>
+		</div>
+
+		<ul id="contributions-list" class="account-list account-list--wide" aria-label="我的投稿"></ul>
+
+		<div id="contributions-empty" class="account-empty" hidden>
+			还没有投稿。点击上方「上传档案」开始；不确定的内容可以先保存草稿，之后再补充。
+		</div>
+
+		<details class="account-panel" id="claim-panel">
+			<summary>关联我以前用编号提交的投稿</summary>
+			<p>以前免注册投稿时拿到过投稿编号和查询密钥，可以把那份投稿关联到当前账号。需要同时填写正确的编号与密钥，仅凭相同的邮箱或相似的图片不能认领。</p>
+			<div class="account-inline">
+				<div class="account-field">
+					<label for="claim-id">投稿编号</label>
+					<input id="claim-id" name="claim_id" type="text" spellcheck="false" placeholder="TG-…" />
+				</div>
+				<div class="account-field">
+					<label for="claim-key">查询密钥</label>
+					<input id="claim-key" name="claim_key" type="password" autocomplete="off" />
+				</div>
+			</div>
+			<label class="account-choice">
+				<input id="claim-confirm" type="checkbox" />
+				<span>我确认这份投稿由我本人提交，并同意把它关联到当前账号。关联后仍可用原编号与密钥查询。</span>
+			</label>
+			<div class="account-actions">
+				<button id="claim-submit" class="ui-action ui-action--secondary" type="button">确认关联</button>
+			</div>
+			<p id="claim-status" class="account-status" role="status" aria-live="polite"></p>
+		</details>
+	</div>
+
+	<p id="contributions-status" class="account-status" role="status" aria-live="polite"></p>
+	<script>import '../../scripts/account-contributions';</script>
+</AccountShell>

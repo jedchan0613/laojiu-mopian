@@ -11,6 +11,9 @@ import { createAccessAuthenticator } from './access-auth.mjs';
 import { createReleaseDeployer, readLiveRelease } from './release-deployer.mjs';
 import { createSubmissionStore, createPublicSubmissionHandler, readSubmissionJson, privacyChecks, submissionStates } from './submissions.mjs';
 import { createContactStore, createPublicContactHandler, contactCategories, contactStates } from './contacts.mjs';
+import { createAccountStore, accountLimits, createAccountReader } from './accounts.mjs';
+import { createAccountHandler } from './account-server.mjs';
+import { createMailer } from './mail.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
@@ -188,14 +191,65 @@ const validateRuntimeConfiguration = () => {
 
 validateRuntimeConfiguration();
 
+// 账户业务数据目录：账号、会话、收藏、申请与邮件事件全部保存在这里，与档案数据完全分开。
+const accountDataRoot = readEnvironmentPath('LJM_ACCOUNT_DATA_DIR', path.join(adminDataRoot, 'accounts'));
+
 for (const publicRoot of [siteDirectory, publicDirectory, path.join(projectRoot, 'public-assets')]) {
 	if (pathIsInside(publicRoot, submissionDirectory)) throw new Error('私密投稿目录不能位于网站、管理页面或公开素材目录内。');
 	if (pathIsInside(publicRoot, uploadStagingDirectory)) throw new Error('临时上传目录不能位于网站、管理页面或公开素材目录内。');
+	if (pathIsInside(publicRoot, accountDataRoot)) throw new Error('账户私密数据目录不能位于网站、管理页面或公开素材目录内。');
 }
-const submissionStore = createSubmissionStore({ root: submissionDirectory, siteDirectory });
+// 投稿进度通知：只有投稿人主动开启通知偏好时才发信；发送失败只记录，不回退审核或发布结果。
+const notifier = async ({ accountId, event, title }) => {
+	const service = accountService;
+	if (!service) return;
+	const recipient = service.store.notificationRecipient(accountId);
+	if (!recipient) return;
+	try {
+		await service.mailer.send({ to: recipient.email, template: 'submission-progress', variables: { event, title } });
+		service.store.recordNotification({ accountId, template: 'submission-progress', status: 'sent' });
+	} catch (error) {
+		service.store.recordNotification({ accountId, template: 'submission-progress', status: 'failed', error: error instanceof Error ? error.message : String(error) });
+	}
+};
+const submissionStore = createSubmissionStore({ root: submissionDirectory, siteDirectory, notifier });
 const publicSubmissions = createPublicSubmissionHandler({ store: submissionStore, origin: localAdminOrigin, local: true });
 const contactStore = createContactStore({ root: contactDirectory });
 const publicContacts = createPublicContactHandler({ store: contactStore, origin: localAdminOrigin, local: true });
+
+// 账户服务：本地模式在同一个本机服务里挂载账户处理器，账户数据仍只写入自己的私密目录。
+// 线上模式由独立的 account-server.mjs 进程提供，只转发 /api/account/ 前缀（阶段四接入部署）。
+const accountService = onlineMode ? null : (() => {
+	const mailer = createMailer({
+		// 本地默认走本机私密投递通道，便于端到端自测；线上必须由独立进程配置正式通道。
+		transport: (process.env.LJM_MAIL_TRANSPORT?.trim() || 'file').toLowerCase(),
+		environment: 'development',
+		directory: path.join(accountDataRoot, 'mail-outbox'),
+		endpoint: process.env.LJM_MAIL_API_ENDPOINT?.trim() || '',
+		apiKey: process.env.LJM_MAIL_API_KEY?.trim() || '',
+		from: process.env.LJM_MAIL_FROM?.trim() || '',
+	});
+	const store = createAccountStore({
+		directory: accountDataRoot,
+		mailer,
+		environment: 'development',
+		ipSalt: process.env.LJM_ACCOUNT_IP_SALT?.trim() || '',
+	});
+	const handler = createAccountHandler({
+		store,
+		submissionStore,
+		origin: localAdminOrigin,
+		adminOrigin: localAdminOrigin,
+		local: true,
+		trustProxy: false,
+		secureCookies: false,
+	});
+	return { store, handler, mailer };
+})();
+
+// 线上模式：管理端只读打开账户数据库，用于在投稿审核里显示投稿人昵称与账号状态。
+// 走只读连接而不是网络接口，避免把任何管理凭证交给公开进程。
+const accountReader = accountService ? null : createAccountReader({ directory: accountDataRoot });
 
 const accessAuthenticator = onlineMode
 	? createAccessAuthenticator({
@@ -2298,8 +2352,12 @@ const printConfigurationSummary = () => {
 	}
 };
 
-const publishDraft = (payload, options = {}) =>
-	submissionStore.guardPublication(payload.itemId, () => publishDraftUnlocked(payload, options));
+const publishDraft = async (payload, options = {}) => {
+	const result = await submissionStore.guardPublication(payload.itemId, () => publishDraftUnlocked(payload, options));
+	// 发布成功后才通知投稿人；通知失败不影响发布结果，也不会重复执行发布。
+	await submissionStore.notifyPublished(payload.itemId);
+	return result;
+};
 
 const adminServer = http.createServer(async (request, response) => {
 	try {
@@ -2307,13 +2365,26 @@ const adminServer = http.createServer(async (request, response) => {
 		if (!onlineMode && !new Set([`127.0.0.1:${adminPort}`, `localhost:${adminPort}`]).has(request.headers.host)) throw new RequestError('请从本机管理地址打开。', 403);
 		if (!onlineMode && await publicSubmissions(request, response, url.pathname)) return;
 		if (!onlineMode && await publicContacts(request, response, url.pathname)) return;
+		if (!onlineMode && accountService && await accountService.handler(request, response, url.pathname)) return;
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/healthz') {
 			sendJson(response, 200, { ok: true });
 			return;
 		}
 		if (onlineMode) await accessAuthenticator.verifyRequest(request);
 		if (url.pathname === '/api/admin/submissions' && request.method === 'GET') {
-			sendJson(response, 200, { submissions: await submissionStore.list(), states: submissionStates, privacy_checks: privacyChecks }, { request }); return;
+			// 列出账号投稿时附上投稿人账号状态，便于识别与核查；免注册投稿的 account 为 null。
+			const accounts = new Map();
+			const accountRows = accountService ? accountService.store.adminListUsers() : (accountReader?.listUsers() ?? []);
+			for (const row of accountRows) {
+				accounts.set(row.id, { nickname: row.nickname, status: row.status, status_label: row.status_label });
+			}
+			const submissions = (await submissionStore.list()).map((item) => ({
+				...item,
+				account: item.account_id
+					? accounts.get(item.account_id) ?? { nickname: '', status: 'missing', status_label: '账号不存在' }
+					: null,
+			}));
+			sendJson(response, 200, { submissions, states: submissionStates, privacy_checks: privacyChecks }, { request }); return;
 		}
 		const submissionRoute = /^\/api\/admin\/submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer|copy-\d{2}\.jpg))?$/.exec(url.pathname);
 		if (submissionRoute) {
@@ -2522,6 +2593,8 @@ if (process.argv.includes('--check-config')) {
 		}, 270_000);
 		adminServer.close(() => {
 			clearTimeout(forceTimer);
+			accountService?.store.close();
+			accountReader?.close();
 			console.log('当前操作已经完成，管理服务安全停止。');
 		});
 	};
@@ -2535,5 +2608,8 @@ if (process.argv.includes('--check-config')) {
 		}
 		console.log(`本地网站预览：${localAdminOrigin}/`);
 		console.log(`本地档案管理：${localAdminOrigin}/admin/`);
+		console.log(`本地账号与申请：${localAdminOrigin}/admin/accounts.html`);
+		console.log(`账户数据目录：${accountDataRoot}（邮件通道：${accountService?.mailer.describe().transport ?? '独立进程'}）`);
+		if (accountService && !accountService.mailer.available) console.log('提示：邮件通道尚未配置，登录会明确显示服务暂时不可用。');
 	});
 }
