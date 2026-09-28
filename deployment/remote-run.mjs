@@ -1,21 +1,28 @@
 // 通过腾讯云 TAT 在服务器上执行 shell 命令，并等待返回输出。
 //
 // 用法：node deployment/remote-run.mjs "<shell 命令>"
+//   或：node deployment/remote-run.mjs --file <本地脚本路径>
 //
 // 为什么需要它：TAT 接口的 Content 字段必须是 base64 编码，返回的 Output 也是 base64，
 // 手工拼接既容易出错也难以核对。这里统一处理编码与轮询。
 //
 // 可覆盖的环境变量：LJM_TCCLI（tccli 完整路径）、LJM_INSTANCE（实例编号）、LJM_REGION（地域）。
 
+import fs from 'node:fs';
 import { execFile } from 'node:child_process';
 
 const TCCLI = process.env.LJM_TCCLI ?? 'C:/Users/35171/.workbuddy/binaries/python/envs/default/Scripts/tccli.exe';
 const INSTANCE = process.env.LJM_INSTANCE ?? 'lhins-lhm4aokr';
 const REGION = process.env.LJM_REGION ?? 'ap-hongkong';
 
-const command = process.argv[2];
+// 多行脚本优先用 --file 传入本地文件，避免命令行转义问题。
+const fileIndex = process.argv.indexOf('--file');
+const command = fileIndex > 0
+	? fs.readFileSync(process.argv[fileIndex + 1], 'utf8')
+	: process.argv[2];
 if (!command) {
 	console.error('用法：node deployment/remote-run.mjs "<shell 命令>"');
+	console.error('  或：node deployment/remote-run.mjs --file <本地脚本路径>');
 	process.exit(1);
 }
 

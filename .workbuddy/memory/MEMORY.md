@@ -1,5 +1,12 @@
 # 项目长期约定（老旧默片）
 
+## 分支与部署约定（重要，2026-09-28 明确）
+
+- **开发成果只放 `feature/registration-preview` 分支**；`main` 只保留用户已预览确认的版本。
+- **只有 `main` 会触发服务器自动部署**（`laojiumopian-github-deploy.timer` 每 2 分钟检查一次 origin/main）。
+- **未获用户逐项确认，绝不推送到 main、绝不在服务器上做变更。**"授权开始某阶段"不等于"授权上线"。
+- 线上回退办法：`/srv/laojiumopian-admin/app/releases/` 与 `/srv/laojiumopian/releases/` 保留历史版本，`ln -sfn` 切回后重启服务即可；注意**不要动** `github-deploy/deployed-commit`，否则定时任务会重新部署新版。
+
 ## 公开构建（site/）的三条硬约束——改公开页面文案前必查
 
 1. **每个 HTML 页面都必须带联系挂件**。`site/scripts/check-public-build.mjs` 会遍历 `dist/**/*.html`，逐页要求 `data-contact-widget`、`data-contact-launcher`、隐私按钮默认选中、且能通过脚本树找到 `/api/contact/config`。**新页面一律用 `BaseLayout`**，否则必然失败。
