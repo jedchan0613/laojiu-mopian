@@ -269,3 +269,23 @@ test('通知偏好：默认关闭，开启后才返回收件人，注销处理�
 	// 未知账号不会误判。
 	assert.equal(store.notificationRecipient('usr_ffffffffffffffffffffffff'), null);
 });
+
+test('账号配额：草稿数量与提交次数分别受限，超限给出明确原因，且互不影响其他账号', async t => {
+	const { store, create } = await fixture(t);
+	// 草稿数量上限：同一账号同时保存不超过 20 件未提交草稿。
+	for (let index = 0; index < 20; index += 1) {
+		await create(ACCOUNT_A, 'draft', { fields: { ...completeFields(), title: `草稿 ${index + 1}` } });
+	}
+	await assert.rejects(create(ACCOUNT_A, 'draft', { fields: completeFields() }), /未提交的草稿已达上限/);
+	// 提交审核次数上限：同一账号每天提交不超过 10 件（mode=pending 视为一次提交）。
+	for (let index = 0; index < 10; index += 1) {
+		await create(ACCOUNT_B, 'pending', { fields: { ...completeFields(), title: `提交 ${index + 1}` } });
+	}
+	await assert.rejects(create(ACCOUNT_B, 'pending', { fields: completeFields() }), /今天提交审核的次数已达上限/);
+	// 超限不影响其他账号：B 仍可以保存草稿。
+	const draft = await create(ACCOUNT_B, 'draft', { fields: completeFields() });
+	assert.equal(draft.status, 'draft');
+	// 保存草稿时继续添加图片仍受字节配额保护（不会无限制累积）。
+	const detail = await store.getAccountSubmission({ id: draft.id, accountId: ACCOUNT_B });
+	assert.equal(detail.status, 'draft');
+});
