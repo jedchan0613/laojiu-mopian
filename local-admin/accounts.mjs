@@ -310,9 +310,8 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			const left = row.max_attempts - row.attempts - 1;
 			fail(left > 0 ? `验证码不正确，还可以尝试 ${left} 次。` : '验证码尝试次数过多，请重新获取。', left > 0 ? 400 : 429);
 		}
-		run('UPDATE verification_codes SET consumed_at = ?, attempts = attempts + 1 WHERE id = ? AND consumed_at = \'\'', iso(current), row.id);
-		const consumed = one('SELECT consumed_at FROM verification_codes WHERE id = ?', row.id);
-		if (!consumed?.consumed_at || consumed.consumed_at !== iso(current)) fail('验证码已使用，请重新获取。');
+		const consumed = run('UPDATE verification_codes SET consumed_at = ?, attempts = attempts + 1 WHERE id = ? AND consumed_at = \'\'', iso(current), row.id);
+		if (consumed.changes !== 1) fail('验证码已使用，请重新获取。');
 		return true;
 	};
 
@@ -324,14 +323,18 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			ticket, kind, userId, email, JSON.stringify(payload), iso(current), iso(addSeconds(current, ttlSeconds)));
 		return ticket;
 	};
-	const consumeTicket = ({ kind, ticket }) => {
+	const readTicket = ({ kind, ticket }) => {
 		const current = now();
 		const row = one('SELECT * FROM tickets WHERE id = ?', String(ticket ?? ''));
 		if (!row || row.kind !== kind || row.consumed_at) fail('本次验证已失效，请重新开始。');
 		if (new Date(row.expires_at).getTime() <= current.getTime()) fail('本次验证已超时，请重新开始。');
-		const changed = run(`UPDATE tickets SET consumed_at = ? WHERE id = ? AND consumed_at = ''`, iso(current), row.id).changes;
-		if (changed !== 1) fail('本次验证已失效，请重新开始。');
 		return { ...row, payload: JSON.parse(row.payload || '{}') };
+	};
+	const consumeTicket = ({ kind, ticket }) => {
+		const row = readTicket({ kind, ticket });
+		const changed = run(`UPDATE tickets SET consumed_at = ? WHERE id = ? AND consumed_at = ''`, iso(now()), row.id).changes;
+		if (changed !== 1) fail('本次验证已失效，请重新开始。');
+		return row;
 	};
 
 	const publicUser = (row) => ({
@@ -375,6 +378,10 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			u.notify_progress AS user_notify, u.agreement_version AS user_agreement, u.created_at AS user_created
 			FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?`, digest(String(token)));
 		if (!row || row.revoked_at) return null;
+		if (row.user_status !== 'active') {
+			revokeSession(row.id, 'account_inactive');
+			return null;
+		}
 		if (new Date(row.absolute_expires_at).getTime() <= current.getTime()) {
 			run(`UPDATE sessions SET revoked_at = ?, revoked_reason = 'absolute_expired' WHERE id = ?`, iso(current), row.id);
 			return null;
@@ -450,9 +457,11 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 				audit('system', 'onboarding_started', digest(normalized).slice(0, 12));
 				return { state: 'onboarding', onboarding_ticket: ticket, email: normalized };
 			}
-			if (user.status === 'suspended') {
+			if (user.status !== 'active') {
 				audit('system', 'login_blocked_suspended', user.id);
-				fail('该账号已暂停使用。你可以仍通过联系入口申请恢复或申请数据导出与注销。', 403);
+				fail(user.status === 'suspended'
+					? '该账号已暂停使用。你可以通过联系入口申请恢复或申请数据导出与注销。'
+					: '该账号正在处理注销，暂时无法登录。如需帮助，请通过联系入口告知站主。', 403);
 			}
 			const token = createSession({ userId: user.id, client });
 			run('UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?', iso(now()), iso(now()), user.id);
@@ -464,6 +473,8 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 		async completeOnboarding({ onboardingTicket, agreement, agreed, nickname, client, ip }) {
 			if (agreed !== true) fail('请先阅读并主动同意服务与隐私说明。');
 			if (agreement !== agreementVersion) fail('协议版本已更新，请刷新页面后重新阅读。');
+			const pending = readTicket({ kind: 'onboarding', ticket: onboardingTicket });
+			const chosenNickname = cleanNickname(nickname, defaultNickname(pending.email));
 			const ticket = consumeTicket({ kind: 'onboarding', ticket: onboardingTicket });
 			const email = normalizeEmail(ticket.email);
 			if (one('SELECT id FROM users WHERE email = ?', email)) fail('该邮箱已经开通账号，请直接登录。', 409);
@@ -471,7 +482,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			const user = {
 				id: `usr_${randomBytes(12).toString('hex')}`,
 				email,
-				nickname: cleanNickname(nickname, defaultNickname(email)),
+				nickname: chosenNickname,
 			};
 			run(`INSERT INTO users (id, email, nickname, status, agreement_version, agreement_accepted_at, notify_progress, created_at, updated_at, last_login_at, suspended_at, suspended_reason)
 				VALUES (?, ?, ?, 'active', ?, ?, 0, ?, ?, ?, '', '')`,
@@ -540,7 +551,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 		// 更换邮箱第二步：向新邮箱发码；新邮箱已被占用时明确提示冲突。
 		async requestEmailChangeConfirm({ changeTicket, userId, email, ip }) {
 			requireMailer();
-			const ticket = consumeTicket({ kind: 'email_change', ticket: changeTicket });
+			const ticket = readTicket({ kind: 'email_change', ticket: changeTicket });
 			// 换邮箱票据必须属于当前登录账号，避免凭证在账号之间串用。
 			if (!userId || ticket.user_id !== userId) fail('本次验证已失效，请重新开始。');
 			const normalized = normalizeEmail(email);
@@ -549,6 +560,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			if (one('SELECT id FROM users WHERE email = ?', normalized)) fail('该邮箱已经绑定其他账号，请更换另一个邮箱。', 409);
 			requireAllowed(`mail:site:${iso(now()).slice(0, 10)}`, accountLimits.siteMailPerDay, 24 * 3600, '今日邮件额度已用完，请稍后再试。');
 			const issued = await issueCode({ email: normalized, purpose: 'email_change_new', ip });
+			consumeTicket({ kind: 'email_change', ticket: changeTicket });
 			const nextTicket = createTicket({
 				kind: 'email_change_new',
 				userId: ticket.user_id,
@@ -559,17 +571,28 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			return { change_ticket: nextTicket, retry_after: issued.retry_after };
 		},
 		confirmEmailChange({ changeTicket, userId, code }) {
-			const ticket = consumeTicket({ kind: 'email_change_new', ticket: changeTicket });
+			const ticket = readTicket({ kind: 'email_change_new', ticket: changeTicket });
 			if (!userId || ticket.user_id !== userId) fail('本次验证已失效，请重新开始。');
 			const oldEmail = normalizeEmail(ticket.payload.old_email);
-			verifyCode({ email: normalizeEmail(ticket.email), purpose: 'email_change_new', ticket: ticket.payload.code_ticket, code });
+			const user = one('SELECT email FROM users WHERE id = ?', userId);
+			if (!user || normalizeEmail(user.email) !== oldEmail) fail('账号邮箱已变化，请重新开始更换流程。', 409);
 			if (one('SELECT id FROM users WHERE email = ?', normalizeEmail(ticket.email))) fail('该邮箱已经绑定其他账号，请更换另一个邮箱。', 409);
+			verifyCode({ email: normalizeEmail(ticket.email), purpose: 'email_change_new', ticket: ticket.payload.code_ticket, code });
+			consumeTicket({ kind: 'email_change_new', ticket: changeTicket });
 			const current = now();
 			run('UPDATE users SET email = ?, updated_at = ? WHERE id = ?', normalizeEmail(ticket.email), iso(current), ticket.user_id);
 			// 邮箱变更属于敏感操作：撤销全部旧会话，原邮箱收到通知。
 			revokeAllSessions(ticket.user_id, 'email_changed');
 			audit('user', 'email_changed', ticket.user_id);
 			return { ok: true, old_email: oldEmail, new_email: normalizeEmail(ticket.email) };
+		},
+		async notifyEmailChanged({ oldEmail, newEmail }) {
+			try {
+				const delivery = await mailer.send({ to: oldEmail, template: 'email-changed-notice', variables: { newEmail } });
+				recordMail(digest(oldEmail).slice(0, 32), 'email-changed-notice', 'sent', String(delivery?.id ?? '').slice(0, 120));
+			} catch (error) {
+				recordMail(digest(oldEmail).slice(0, 32), 'email-changed-notice', 'failed', '', String(error?.message ?? error).slice(0, 300));
+			}
 		},
 
 		listFavorites({ session }) {

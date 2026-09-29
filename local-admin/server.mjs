@@ -14,6 +14,7 @@ import { createContactStore, createPublicContactHandler, contactCategories, cont
 import { createAccountStore, accountLimits, createAccountReader } from './accounts.mjs';
 import { createAccountHandler } from './account-server.mjs';
 import { createMailer } from './mail.mjs';
+import { enqueueProgressNotification } from './notification-queue.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
@@ -202,7 +203,7 @@ for (const publicRoot of [siteDirectory, publicDirectory, path.join(projectRoot,
 // 投稿进度通知：只有投稿人主动开启通知偏好时才发信；发送失败只记录，不回退审核或发布结果。
 const notifier = async ({ accountId, event, title }) => {
 	const service = accountService;
-	if (!service) return;
+	if (!service) return enqueueProgressNotification(submissionDirectory, { accountId, event, title });
 	const recipient = service.store.notificationRecipient(accountId);
 	if (!recipient) return;
 	try {
@@ -249,7 +250,8 @@ const accountService = onlineMode ? null : (() => {
 
 // 线上模式：管理端只读打开账户数据库，用于在投稿审核里显示投稿人昵称与账号状态。
 // 走只读连接而不是网络接口，避免把任何管理凭证交给公开进程。
-const accountReader = accountService ? null : createAccountReader({ directory: accountDataRoot });
+// 首次部署时管理进程可能早于账户数据库启动；之后收到审核请求时再尝试连接。
+let accountReader = accountService ? null : createAccountReader({ directory: accountDataRoot });
 
 const accessAuthenticator = onlineMode
 	? createAccessAuthenticator({
@@ -2374,7 +2376,7 @@ const adminServer = http.createServer(async (request, response) => {
 		if (url.pathname === '/api/admin/submissions' && request.method === 'GET') {
 			// 列出账号投稿时附上投稿人账号状态，便于识别与核查；免注册投稿的 account 为 null。
 			const accounts = new Map();
-			const accountRows = accountService ? accountService.store.adminListUsers() : (accountReader?.listUsers() ?? []);
+			const accountRows = accountService ? accountService.store.adminListUsers() : ((accountReader ??= createAccountReader({ directory: accountDataRoot }))?.listUsers() ?? []);
 			for (const row of accountRows) {
 				accounts.set(row.id, { nickname: row.nickname, status: row.status, status_label: row.status_label });
 			}
@@ -2386,7 +2388,7 @@ const adminServer = http.createServer(async (request, response) => {
 			}));
 			sendJson(response, 200, { submissions, states: submissionStates, privacy_checks: privacyChecks }, { request }); return;
 		}
-		const submissionRoute = /^\/api\/admin\/submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer|copy-\d{2}\.jpg))?$/.exec(url.pathname);
+		const submissionRoute = /^\/api\/admin\/submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer|request-review|copy-\d{2}\.jpg))?$/.exec(url.pathname);
 		if (submissionRoute) {
 			const [, id, action] = submissionRoute;
 			if (!action && request.method === 'GET') { sendJson(response, 200, await submissionStore.detail(id), { request }); return; }
@@ -2394,10 +2396,15 @@ const adminServer = http.createServer(async (request, response) => {
 				const image = await submissionStore.getImage(id, action);
 				response.writeHead(200, { ...securityHeaders(), 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store', 'Cross-Origin-Resource-Policy': 'same-origin', 'X-Robots-Tag': 'noindex, nofollow' }); response.end(image); return;
 			}
-			if (request.method === 'POST' && ['review', 'transfer'].includes(action)) {
+			if (request.method === 'POST' && ['review', 'transfer', 'request-review'].includes(action)) {
 				requireSafeMutation(request);
 				const payload = await readSubmissionJson(request, 32 * 1024);
-				sendJson(response, 200, action === 'review' ? await submissionStore.review(id, payload) : await submissionStore.transfer(id, payload, submissionToDraft)); return;
+				const result = action === 'review'
+					? await submissionStore.review(id, payload)
+					: action === 'transfer'
+						? await submissionStore.transfer(id, payload, submissionToDraft)
+						: await submissionStore.reviewAccountChange({ id, revision: payload.revision, status: payload.status, publicMessage: payload.public_message });
+				sendJson(response, 200, result); return;
 			}
 			sendJson(response, 405, { error: '不支持此操作。' }); return;
 		}

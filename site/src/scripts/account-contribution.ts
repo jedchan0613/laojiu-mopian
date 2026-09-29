@@ -29,6 +29,8 @@ let detail: any = null;
 let items: Item[] = [];
 let dirty = false;
 let busy = false;
+// 网络超时后重试同一份新投稿，服务端会返回第一次保存的编号。
+const requestKey = Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, '0')).join('');
 
 const setFeedback = (message: string) => {
 	if (statusEl) {
@@ -66,7 +68,7 @@ const readFields = () => ({
 	era: field<HTMLInputElement>('era')?.value.trim() ?? '',
 	place: field<HTMLInputElement>('place')?.value.trim() ?? '',
 	source_note: field<HTMLTextAreaElement>('source_note')?.value.trim() ?? '',
-	people: field<HTMLSelectElement>('people')?.value ?? 'none',
+	people: field<HTMLSelectElement>('people')?.value ?? '',
 	attribution: form?.querySelector<HTMLInputElement>('input[name="attribution"]:checked')?.value ?? 'anonymous',
 	credit: field<HTMLInputElement>('credit')?.value.trim() ?? '',
 });
@@ -76,6 +78,7 @@ const buildFormData = () => {
 	const fresh = items.filter((item): item is NewItem => item.kind === 'new');
 	const fields = readFields();
 	const data = new FormData();
+	data.append('request_key', requestKey);
 	for (const [key, value] of Object.entries(fields)) if (key !== 'attribution') data.append(key, value);
 	data.append('attribution', fields.attribution);
 	data.append('keep', JSON.stringify(kept.map((item) => item.filename)));
@@ -227,7 +230,7 @@ const fill = (record: any) => {
 	if (field<HTMLInputElement>('era')) field<HTMLInputElement>('era')!.value = f.era ?? '';
 	if (field<HTMLInputElement>('place')) field<HTMLInputElement>('place')!.value = f.place ?? '';
 	if (field<HTMLTextAreaElement>('source_note')) field<HTMLTextAreaElement>('source_note')!.value = f.source_note ?? '';
-	if (field<HTMLSelectElement>('people')) field<HTMLSelectElement>('people')!.value = f.people ?? 'none';
+	if (field<HTMLSelectElement>('people')) field<HTMLSelectElement>('people')!.value = f.people ?? '';
 	const named = (f.attribution ?? 'anonymous') === 'named';
 	for (const input of form?.querySelectorAll<HTMLInputElement>('input[name="attribution"]') ?? []) input.checked = input.value === (named ? 'named' : 'anonymous');
 	if (field<HTMLInputElement>('credit')) field<HTMLInputElement>('credit')!.value = f.credit ?? '';
@@ -250,7 +253,7 @@ const renderState = (record: any) => {
 			['提交版本', `${(record.versions ?? []).length} 个`],
 		];
 		if (record.linked_item_id) rows.push(['关联档案', record.linked_item_id]);
-		if (record.change_request) rows.push(['修改或撤下申请', record.change_request.status === 'received' ? '已收到，等待站主处理' : '已处理']);
+		if (record.change_request) rows.push(['修改或撤下申请', ({ received: '已收到，等待站主处理', processing: '站主处理中', done: '已处理，请查看站主说明', rejected: '未通过，请查看站主说明' } as Record<string, string>)[record.change_request.status] ?? '状态待核实']);
 		list.replaceChildren();
 		for (const [label, value] of rows) {
 			const row = document.createElement('div');
@@ -272,15 +275,17 @@ const renderState = (record: any) => {
 		}
 	}
 	const editable = record.status === 'draft';
+	const withdrawButton = byId('wb-withdraw');
+	if (withdrawButton) withdrawButton.textContent = ['needs_info', 'declined'].includes(record.status) ? '撤回并修改这份投稿' : '撤回这份投稿';
 	toggle(byId('wb-withdraw'), !editable && !record.linked_item_id && record.status !== 'withdrawn' && !record.withdrawal_requested);
 	toggle(byId('wb-discard'), editable);
-	toggle(byId('wb-request-modify'), Boolean(record.linked_item_id) && !record.change_request);
-	toggle(byId('wb-request-remove'), Boolean(record.linked_item_id) && !record.withdrawal_requested);
+	toggle(byId('wb-request-modify'), Boolean(record.linked_item_id) && !['received', 'processing'].includes(record.change_request?.status) && !record.withdrawal_requested);
+	toggle(byId('wb-request-remove'), Boolean(record.linked_item_id) && !['received', 'processing'].includes(record.change_request?.status) && !record.withdrawal_requested);
 	renderPreview();
 };
 
 const validate = (strict: boolean) => {
-	if (!items.length) { setStatus(statusEl, '请先选择至少一张经过筛选的图片副本。', 'error'); return false; }
+	if (strict && !items.length) { setStatus(statusEl, '请先选择至少一张经过筛选的图片副本。', 'error'); return false; }
 	if (strict && form && !form.reportValidity()) { setStatus(statusEl, '请先补全标记为必填的内容。', 'error'); return false; }
 	const fields = readFields();
 	if (fields.title.length > 80 || fields.credit.length > 40) { setStatus(statusEl, '题名或署名过长，请适当精简。', 'error'); return false; }
@@ -292,12 +297,13 @@ const reload = async () => {
 	detail = await accountFetch(`/api/account/submissions/${submissionId}`);
 	fill(detail);
 	renderState(detail);
+	toggle(form, detail.status === 'draft');
 	dirty = false;
 };
 
 const saveDraft = async () => {
 	if (busy) return;
-	if (!validate(false) || !consentVersion) return;
+	if (!validate(false)) return;
 	busy = true;
 	setFeedback('正在保存草稿…');
 	try {
@@ -418,7 +424,13 @@ const load = async () => {
 				.then((response) => (response.ok ? response.json() : {}))
 				.catch(() => ({})),
 		]);
-		void accountConfig;
+		if (accountConfig.uploads_open === false) {
+			const save = byId<HTMLButtonElement>('wb-save');
+			const submit = byId<HTMLButtonElement>('wb-submit');
+			if (save) save.disabled = true;
+			if (submit) submit.disabled = true;
+			setFeedback('投稿暂时暂停接收。已保存的资料仍可查看；账户内的撤回与申请入口照常使用。');
+		}
 		consentVersion = String((submissionConfig as { consent_version?: string })?.consent_version ?? '');
 		if (editing) {
 			await reload();

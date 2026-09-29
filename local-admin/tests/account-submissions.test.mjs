@@ -55,6 +55,7 @@ async function fixture(t, options = {}) {
 		accountId,
 		mode,
 		payload: {
+			request_key: randomBytes(32).toString('hex'),
 			fields: completeFields(),
 			images: [{ name: 'screening-copy.jpg', buffer: image }],
 			consents: consents(),
@@ -100,6 +101,30 @@ test('草稿：允许不完整内容，跨设备可读，保存后图片与说�
 	const entries = await fs.readdir(recycleRoot);
 	assert.equal(entries.length, 1);
 	assert.equal((await fs.readdir(path.join(recycleRoot, entries[0]))).includes('copy-01.jpg'), true);
+});
+
+test('空图片草稿可保存；提交仍须图片与人物情况明确', async t => {
+	const { store, create } = await fixture(t);
+	const draft = await create(ACCOUNT_A, 'draft', { fields: { ...completeFields(), people: '' }, images: [] });
+	assert.equal(draft.image_count, undefined);
+	const opened = await store.getAccountSubmission({ id: draft.id, accountId: ACCOUNT_A });
+	assert.equal(opened.images.length, 0);
+	await assert.rejects(store.submitAccountSubmission({ id: draft.id, accountId: ACCOUNT_A, revision: opened.revision, payload: { consents: consents(), consent_version: consentVersion } }), /可以识别的真实人物/);
+	const saved = await store.saveAccountSubmission({ id: draft.id, accountId: ACCOUNT_A, revision: opened.revision, payload: { fields: completeFields(), keep: [], images: [], notes: {} } });
+	await assert.rejects(store.submitAccountSubmission({ id: draft.id, accountId: ACCOUNT_A, revision: saved.revision, payload: { consents: consents(), consent_version: consentVersion } }), /至少保留一张/);
+	await assert.rejects(store.review(draft.id, { revision: saved.revision, status: 'approved', rights_reviewed: true }), { statusCode: 409 });
+});
+
+test('新投稿网络重试只返回同一编号；相同凭证换内容被拒绝', async t => {
+	const { store } = await fixture(t);
+	const requestKey = randomBytes(32).toString('hex');
+	const payload = { request_key: requestKey, fields: completeFields(), images: [{ name: 'front.jpg', buffer: image }], consents: consents(), consent_version: consentVersion };
+	const first = await store.createAccountSubmission({ accountId: ACCOUNT_A, mode: 'pending', payload });
+	const repeated = await store.createAccountSubmission({ accountId: ACCOUNT_A, mode: 'pending', payload });
+	assert.equal(repeated.id, first.id);
+	assert.equal(repeated.repeated, true);
+	await assert.rejects(store.createAccountSubmission({ accountId: ACCOUNT_A, mode: 'pending', payload: { ...payload, fields: { ...payload.fields, title: '另一个题名' } } }), { statusCode: 409 });
+	assert.equal((await store.listAccountSubmissions({ accountId: ACCOUNT_A })).length, 1);
 });
 
 test('提交：字段必须完整、必须逐项确认，提交后生成只读版本并且不能再按草稿编辑', async t => {
@@ -184,8 +209,20 @@ test('进入整理流程后：撤回变成停止处理申请，修改与撤下�
 	assert.equal(requested.change_request.kind, 'modify');
 	assert.equal(requested.change_request.status, 'received');
 	await assert.rejects(store.requestAccountChange({ id: approved.id, accountId: ACCOUNT_A, kind: 'modify', note: '再来一次。' }), { statusCode: 409 });
+	const queueView = (await store.list()).find(item => item.id === approved.id);
+	assert.equal(queueView.change_request.status, 'received');
+	const processing = await store.reviewAccountChange({ id: approved.id, revision: requested.revision, status: 'processing', publicMessage: '正在核对原稿。' });
+	assert.equal(processing.change_request.status, 'processing');
+	await assert.rejects(store.requestAccountChange({ id: approved.id, accountId: ACCOUNT_A, kind: 'remove', note: '撤下。' }), { statusCode: 409 });
+	await assert.rejects(store.reviewAccountChange({ id: approved.id, revision: requested.revision, status: 'done', publicMessage: '已处理。' }), { statusCode: 409 });
+	const finished = await store.reviewAccountChange({ id: approved.id, revision: processing.revision, status: 'done', publicMessage: '已核对并完成更正。' });
+	assert.equal(finished.change_request.status, 'done');
+	const ownerView = await store.getAccountSubmission({ id: approved.id, accountId: ACCOUNT_A });
+	assert.ok(ownerView.history.some(entry => entry.action === 'change_request_review' && entry.public_message === '已核对并完成更正。'));
+	assert.ok(ownerView.history.every(entry => !Object.hasOwn(entry, 'private_note')));
 	// 审核过程中确实产生了进度通知。
 	assert.ok(notifications.some((notification) => notification.event === 'approved'));
+	assert.ok(notifications.some((notification) => notification.event === 'change_done'));
 });
 
 test('旧投稿关联：必须同时提供账号、原编号与原密钥', async t => {
@@ -227,7 +264,7 @@ test('进度通知：只在状态真正变化时触发，通知器失败也不�
 	t.after(async () => { await fs.rm(path.resolve(failingRoot), { recursive: true, force: true }); });
 	const draft = await failing.createAccountSubmission({
 		accountId: ACCOUNT_A, mode: 'pending',
-		payload: { fields: completeFields(), images: [{ name: 'a.jpg', buffer: image }], consents: consents(), consent_version: consentVersion },
+		payload: { request_key: randomBytes(32).toString('hex'), fields: completeFields(), images: [{ name: 'a.jpg', buffer: image }], consents: consents(), consent_version: consentVersion },
 	});
 	const reviewed = await failing.review(draft.id, { revision: 1, status: 'declined', public_message: '这次暂不采用。', private_note: '' });
 	assert.equal(reviewed.status, 'declined');
@@ -277,15 +314,29 @@ test('账号配额：草稿数量与提交次数分别受限，超限给出明�
 		await create(ACCOUNT_A, 'draft', { fields: { ...completeFields(), title: `草稿 ${index + 1}` } });
 	}
 	await assert.rejects(create(ACCOUNT_A, 'draft', { fields: completeFields() }), /未提交的草稿已达上限/);
+	assert.equal((await store.accountUsage(ACCOUNT_A)).drafts_left, 0);
 	// 提交审核次数上限：同一账号每天提交不超过 10 件（mode=pending 视为一次提交）。
 	for (let index = 0; index < 10; index += 1) {
 		await create(ACCOUNT_B, 'pending', { fields: { ...completeFields(), title: `提交 ${index + 1}` } });
 	}
 	await assert.rejects(create(ACCOUNT_B, 'pending', { fields: completeFields() }), /今天提交审核的次数已达上限/);
+	assert.equal((await store.accountUsage(ACCOUNT_B)).submissions_left_today, 0);
 	// 超限不影响其他账号：B 仍可以保存草稿。
 	const draft = await create(ACCOUNT_B, 'draft', { fields: completeFields() });
 	assert.equal(draft.status, 'draft');
 	// 保存草稿时继续添加图片仍受字节配额保护（不会无限制累积）。
 	const detail = await store.getAccountSubmission({ id: draft.id, accountId: ACCOUNT_B });
 	assert.equal(detail.status, 'draft');
+});
+
+test('同一账号同时提交临近每日上限时不会越过 10 次', async t => {
+	const { store, create } = await fixture(t);
+	for (let index = 0; index < 9; index += 1) await create(ACCOUNT_A, 'pending', { fields: { ...completeFields(), title: `并发前 ${index}` } });
+	const attempts = await Promise.allSettled([
+		create(ACCOUNT_A, 'pending', { fields: { ...completeFields(), title: '并发第一件' } }),
+		create(ACCOUNT_A, 'pending', { fields: { ...completeFields(), title: '并发第二件' } }),
+	]);
+	assert.equal(attempts.filter(result => result.status === 'fulfilled').length, 1);
+	assert.equal((await store.accountUsage(ACCOUNT_A)).submissions_left_today, 0);
+	assert.equal((await store.listAccountSubmissions({ accountId: ACCOUNT_A })).length, 10);
 });

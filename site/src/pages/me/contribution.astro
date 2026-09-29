@@ -93,6 +93,7 @@ import AccountShell from '../../components/AccountShell.astro';
 				<div class="account-field">
 					<label for="wb-people">可识别真实人物情况 <span aria-hidden="true">*</span></label>
 					<select id="wb-people" name="people" required>
+						<option value="" selected disabled>请选择是否涉及可识别人物</option>
 						<option value="none">没有可以识别的真实人物</option>
 						<option value="yes">有，需要人工确认</option>
 						<option value="unsure">不确定，请协助判断</option>
