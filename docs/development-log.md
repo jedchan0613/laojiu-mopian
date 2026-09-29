@@ -3793,3 +3793,9 @@
 - 登录页 200；首页、档案页 200；档案页含收藏按钮标记；点赞与免注册投稿接口无回归。
 
 当前状态：注册与上传仍关闭（仅有账号可登录）；回退办法见 `docs/user-accounts-phase4-merge-checklist.md`（Caddy 有备份、releases 保留历史版本）。待办：真实邮箱送达确认、备份恢复演练、应急开关演练，通过后再逐项打开开关。
+
+### 同日补充：正式开放注册与上传（用户明确选择）
+
+用户确认"直接正式开放"。已将服务器 `/etc/laojiumopian-accounts.env` 中 `LJM_ACCOUNT_REGISTRATION_OPEN` 与 `LJM_ACCOUNT_UPLOADS_OPEN` 改为 `true`（改前备份 `laojiumopian-accounts.env.bak-20260929`），重启账户服务后公开 `/api/account/config` 实测两个开关均为 `true`，服务健康检查正常。
+
+当前状态：任何访客可注册、登录、收藏与投稿；投稿仍走既有人工审核与发布门禁。阶段四待办余项：备份恢复演练、应急开关演练（关闭开关只需把两项改回 false 并重启服务，公开浏览不受影响）。
