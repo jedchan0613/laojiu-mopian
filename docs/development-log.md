@@ -3799,3 +3799,9 @@
 用户确认"直接正式开放"。已将服务器 `/etc/laojiumopian-accounts.env` 中 `LJM_ACCOUNT_REGISTRATION_OPEN` 与 `LJM_ACCOUNT_UPLOADS_OPEN` 改为 `true`（改前备份 `laojiumopian-accounts.env.bak-20260929`），重启账户服务后公开 `/api/account/config` 实测两个开关均为 `true`，服务健康检查正常。
 
 当前状态：任何访客可注册、登录、收藏与投稿；投稿仍走既有人工审核与发布门禁。阶段四待办余项：备份恢复演练、应急开关演练（关闭开关只需把两项改回 false 并重启服务，公开浏览不受影响）。
+
+### 同日补充：移除页脚声明文字（用户要求）
+
+用户要求去掉页面底部的"公开页只展示经过核对的发布副本。"。该句位于 `site/src/layouts/BaseLayout.astro` 的页脚，属全站共用元素，因此所有页面一并移除；同时清理只服务于它的 3 处样式规则（`.footer-statement`）。
+
+检查：`site/` 正式构建通过（17 页、公开回归检查通过）；合并 `bf2a9d7` 上线后实测线上首页与档案页均不再包含该句，页脚其余内容（站名、副标题、社交链接、纠错入口、联系挂件）保持完好，账户服务与接口正常。
