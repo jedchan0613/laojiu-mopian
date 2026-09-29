@@ -3773,3 +3773,23 @@
 - `site/src/pages/login.astro`：登录页说明由"投稿相关功能在下一阶段开放"改为"也可以上传档案、管理自己的投稿和账号"。
 - 全站复查确认不再有"下一阶段""即将开放"类残留文案。
 - 检查结果：`site/` 正式 `npm run build` 通过（17 页、6 个档案详情、公开回归检查通过，字体覆盖检查通过）；产物确认旧文案已消失、新文案已生效。
+
+## 2026-09-29：注册模块上线（阶段四·首次部署，有限开放）
+
+经用户逐项授权后执行。上线前发现另一会话的四阶段对照审查与安全补强（12 项）尚未提交，经用户确认由本会话核实后代为提交（`580e1c0`）：89 项测试 88 通过 1 跳过 0 失败，`site/` 正式构建 17 页通过。
+
+执行步骤与结果：
+
+1. 推送 `feature/registration-preview` 至远端（含审查补强）。
+2. 合并到 `main`（合并提交 `96eb893`）并推送；服务器自动部署成功：`deployed-commit` 与线上版本一致，管理、点赞、投稿三服务健康，无循环重部署。
+3. 邮件配置写入 `/etc/laojiumopian-accounts.env`（0600 root）：密钥复用本机 `local-admin/accounts/mail.env`（2026-09-28 已验证发送成功），按服务器直连要求去掉本机代理行；`LJM_ACCOUNT_REGISTRATION_OPEN=false`、`LJM_ACCOUNT_UPLOADS_OPEN=false` 保持有限开放。
+4. 执行 `install-account-service.sh`：`laojiumopian-accounts.service` 已 enabled + active，`127.0.0.1:4177/healthz` 返回正常，数据目录 0700 属 ljmadmin。
+5. Caddy 增加 `/api/account/*` 路由（备份 `Caddyfile.bak-20260929`，validate 通过后 reload）；`/api/account-admin/*` 不对外代理。
+
+线上验证（公开域名实测）：
+
+- `/api/account/config`：`available:true`、`environment:production`、`registration_open:false`、`uploads_open:false`，符合有限开放预期。
+- 未登录请求收藏接口返回 JSON 401；`/api/account/me` 返回 401；`/api/account-admin/users` 返回 404（未暴露）。
+- 登录页 200；首页、档案页 200；档案页含收藏按钮标记；点赞与免注册投稿接口无回归。
+
+当前状态：注册与上传仍关闭（仅有账号可登录）；回退办法见 `docs/user-accounts-phase4-merge-checklist.md`（Caddy 有备份、releases 保留历史版本）。待办：真实邮箱送达确认、备份恢复演练、应急开关演练，通过后再逐项打开开关。
