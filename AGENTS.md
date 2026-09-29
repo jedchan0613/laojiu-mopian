@@ -61,7 +61,8 @@
 - 不增加后台、CMS 或云服务；账号模块的线上部署（服务器服务、Caddy 路由、数据目录）仍须取得用户单独的线上操作授权。
 - 账号业务数据（账号、会话、收藏、投稿归属、导出与注销申请）必须与档案 `core`、`metadata`、`public_view` 及项目之外的原始档案主库完全分开；注销与数据保留按已确认规则执行：收到申请后 30 天内处理，公开档案默认不随注销自动删除，不可逆清理必须逐次取得用户授权。
 - 2026-09-27 已实施账号模块阶段二（注册登录、权限隔离、账户设置、收藏、退出、导出与注销申请受理、最小管理面板）。相关代码为 `local-admin/accounts.mjs`、`local-admin/mail.mjs`、`local-admin/account-server.mjs`，本地账户数据目录为 `local-admin/accounts/`（已在 `.gitignore` 中忽略），设计说明见 `docs/user-accounts-phase2-plan.md`，验收记录见 `docs/user-accounts-phase2-review.md`。
-- 2026-09-27 已实施账号模块阶段三（账户投稿与审核衔接：草稿、上传、只读版本、进度、补充、旧投稿关联、进度通知、审核端识别账号投稿）。账户投稿沿用同一个私密收件区与同一套人工隐私检查、转草稿与发布门禁，只增加 `account_id`、`draft` 状态、`versions` 与 `change_request` 字段；账户端详情不返回管理员内部备注。设计说明见 `docs/user-accounts-phase3-plan.md`，验收记录见 `docs/user-accounts-phase3-review.md`。线上部署与有限开放仍属阶段四，尚未开始。
+- 2026-09-27 已实施账号模块阶段三（账户投稿与审核衔接：草稿、上传、只读版本、进度、补充、旧投稿关联、进度通知、审核端识别账号投稿）。账户投稿沿用同一个私密收件区与同一套人工隐私检查、转草稿与发布门禁，只增加 `account_id`、`draft` 状态、`versions` 与 `change_request` 字段；账户端详情不返回管理员内部备注。设计说明见 `docs/user-accounts-phase3-plan.md`，验收记录见 `docs/user-accounts-phase3-review.md`。
+- 2026-09-29 已执行阶段四首次上线（经用户逐项授权）：合并提交 `96eb893` 进入 main 并自动部署成功；服务器已安装 `laojiumopian-accounts.service`（127.0.0.1:4177），`/etc/laojiumopian-accounts.env`（0600 root）已配置正式邮件通道；Caddy 已代理 `/api/account/*`（`/api/account-admin/*` 不对外）。当前为**有限开放**：`LJM_ACCOUNT_REGISTRATION_OPEN=false`、`LJM_ACCOUNT_UPLOADS_OPEN=false`，仅已有账号可登录。**打开开关、扩大开放及任何后续线上变更仍需用户逐项授权。** 待办：真实邮箱送达确认、备份恢复演练、应急开关演练。上线记录见 `docs/development-log.md` 与 `docs/user-accounts-phase4-merge-checklist.md`。
 - 用户已明确批准第一、第二、第三阶段纯本地档案管理入口。该入口只能位于 `local-admin/`、只监听本机 `127.0.0.1`，不得部署到公开网站或改为云端服务。
 - 本地网站预览与管理入口共用 `127.0.0.1:4173`：网站使用 `/`，管理入口使用 `/admin/`。可以在本地响应中提供往返导航，但管理页面、管理脚本、本地工具条、草稿、历史和回收区不得写入 `site/dist/` 或其他公开部署内容。
 - 本地管理草稿必须与已发布数据分开保存；草稿不得直接覆盖当前公开网站内容。
