@@ -97,7 +97,6 @@ const serializedStructuredData = structuredData
 						<a href="/corrections/">纠错与撤下</a>
 						<ContactWidget />
 					</div>
-					<p class="footer-statement">公开页只展示经过核对的发布副本。</p>
 				</div>
 			</footer>
 		</div>
@@ -418,8 +417,7 @@ const serializedStructuredData = structuredData
 	}
 
 	.footer-name,
-	.footer-subtitle,
-	.footer-statement {
+	.footer-subtitle {
 		margin: 0;
 	}
 
@@ -437,14 +435,6 @@ const serializedStructuredData = structuredData
 		font-size: 0.76rem;
 		line-height: 1.7;
 		letter-spacing: 0.2em;
-	}
-
-	.footer-statement {
-		color: var(--site-text);
-		font-size: clamp(0.95rem, 1.6vw, 1.08rem);
-		line-height: 1.8;
-		letter-spacing: 0.08em;
-		text-align: right;
 	}
 
 	.footer-end {
@@ -506,10 +496,6 @@ const serializedStructuredData = structuredData
 		.site-footer {
 			grid-template-columns: 1fr;
 			gap: 22px;
-		}
-
-		.footer-statement {
-			text-align: left;
 		}
 
 		.footer-end {
