@@ -1,0 +1,112 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import '../styles/account.css';
+---
+
+<BaseLayout
+	title="登录或开通账户｜老旧默片"
+	description="使用邮箱验证码登录或开通账户，用于保存中意的档案与查看自己的投稿。不需要密码，不收集多余资料。"
+	robots="noindex, nofollow"
+>
+	<div class="account-page" data-ljm-account-page="login">
+		<header class="account-hero">
+			<div>
+				<p class="eyebrow">登录 / 开通</p>
+				<h1>把一段记忆，<br class="mobile-break" />交给时间保存。</h1>
+				<p class="account-lede">用邮箱验证码登录，不需要密码。首次使用时先阅读并同意服务与隐私说明，再填写一个昵称即可。邮箱始终私密，不会自动变成公开昵称。</p>
+			</div>
+			<div class="account-seal" aria-hidden="true"><span>老旧默片</span><strong>登录</strong><span>邮箱验证</span></div>
+		</header>
+
+		<div class="login-grid">
+			<form id="login-form" class="account-panel" method="post" action="/api/account/code" autocomplete="off">
+				<h2>邮箱验证码</h2>
+				<p id="login-service" class="account-status" role="status">正在检查登录通道…</p>
+				<noscript><p class="account-notice">请在浏览器中开启 JavaScript 后再登录。未开启时页面不会提交任何内容。</p></noscript>
+
+				<div class="account-field">
+					<label for="login-email">邮箱</label>
+					<input id="login-email" name="email" type="email" required maxlength="160" inputmode="email" autocomplete="email" placeholder="name@example.com" aria-describedby="login-email-hint" />
+					<small id="login-email-hint">只用于接收验证码和必要的账号通知，不会公开。</small>
+				</div>
+
+				<div class="account-actions">
+					<button id="login-request" class="ui-action ui-action--primary" type="submit">获取验证码</button>
+				</div>
+
+				<div id="login-code-step" hidden>
+					<div class="account-field">
+						<label for="login-code">验证码</label>
+						<input id="login-code" name="code" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" placeholder="6 位数字" />
+						<small>6 位数字，10 分钟内有效，只能使用一次。可以直接粘贴。</small>
+					</div>
+					<div class="account-actions">
+						<button id="login-verify" class="ui-action ui-action--primary" type="button">验证并继续</button>
+						<button id="login-resend" class="ui-action ui-action--secondary" type="button">重新发送</button>
+					</div>
+				</div>
+
+				<section id="login-onboarding" class="account-onboarding" hidden aria-labelledby="onboarding-heading">
+					<h3 id="onboarding-heading">首次使用：完成开通</h3>
+					<div class="account-field">
+						<label for="login-nickname">昵称 <small>可以留空</small></label>
+						<input id="login-nickname" name="nickname" type="text" maxlength="24" placeholder="留空则使用系统生成的默认昵称" />
+						<small>昵称与登录邮箱互相独立；以后修改昵称不会改写已经发布的署名。</small>
+					</div>
+					<label class="account-choice">
+						<input id="login-agreement" type="checkbox" />
+						<span>我已阅读并主动同意 <a href="/about/">服务与隐私说明</a> 与 <a href="/corrections/">纠错与撤下说明</a>。我理解：账号只用于收藏与投稿，发布授权需要在每件投稿中另行确认。</span>
+					</label>
+					<div class="account-actions">
+						<button id="login-complete" class="ui-action ui-action--primary" type="button">完成开通</button>
+					</div>
+				</section>
+
+				<p id="login-status" class="account-status" role="status" aria-live="polite"></p>
+			</form>
+
+			<aside class="login-aside" aria-label="登录说明">
+				<div class="account-panel">
+					<h3>会收集哪些资料？</h3>
+					<p>只需要一个可以收信的邮箱，其余都可以留空。不要求手机号、真实姓名、身份证、头像或密码。</p>
+					<h3>登录后能做什么？</h3>
+					<p>保存中意的公开档案、查看自己的收藏，也可以上传档案、管理自己的投稿和账号。</p>
+					<h3>收不到验证码？</h3>
+					<p>先确认邮箱填写正确，也看看广告或推广邮件文件夹。一分钟内不能重复发送；连续多次输入错误需要重新获取。仍收不到时可以通过页脚的联系入口告知站主。</p>
+				</div>
+			</aside>
+		</div>
+	</div>
+	<script>import '../scripts/account-login';</script>
+</BaseLayout>
+
+<style>
+	.login-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 300px;
+		gap: 34px;
+		align-items: start;
+		margin-top: 30px;
+	}
+
+	.login-grid .account-panel:first-child {
+		margin-bottom: 0;
+	}
+
+	.login-aside .account-panel {
+		margin-bottom: 0;
+	}
+
+	.account-onboarding {
+		margin-top: 26px;
+		padding-top: 22px;
+		border-top: 1px solid #c8bead;
+	}
+
+	@media (max-width: 900px) {
+		.login-grid {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 22px;
+		}
+	}
+</style>

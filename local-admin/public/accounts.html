@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="robots" content="noindex,nofollow">
+	<title>账号与申请｜老旧默片</title>
+	<link rel="stylesheet" href="/admin/submissions.css">
+	<link rel="stylesheet" href="/admin/accounts.css">
+</head>
+<body class="review-v2">
+	<a class="skip-link" href="#account-panel">跳到账号面板</a>
+	<div class="desk">
+		<header class="desk-header">
+			<div>
+				<p class="eyebrow">档案工作台 · 内部管理</p>
+				<h1>账号与申请</h1>
+				<p>只处理账号状态与人工申请；不会在这里修改档案资料，也不能代替人工隐私检查。</p>
+			</div>
+			<nav>
+				<a href="/admin/">返回档案管理</a>
+				<a href="/admin/submissions.html">投稿审核</a>
+				<a href="/admin/contacts.html">联系收件箱</a>
+				<button type="button" id="refresh-accounts">刷新</button>
+			</nav>
+		</header>
+		<div class="stats" id="account-stats" aria-label="账号概览"></div>
+		<div id="desk-message" class="notice-line" role="status" aria-live="polite"></div>
+		<main class="account-admin-grid" id="account-panel">
+			<section class="account-admin-section" aria-labelledby="requests-heading">
+				<div class="account-admin-heading">
+					<h2 id="requests-heading">人工申请</h2>
+					<p class="hint">导出与注销由站主人工受理。「已收到申请」不等于「已处理完成」；不可逆清理需要另行确认对象、原因和影响。</p>
+				</div>
+				<div id="request-list" class="account-admin-list" role="list"></div>
+			</section>
+			<section class="account-admin-section" aria-labelledby="users-heading">
+				<div class="account-admin-heading">
+					<h2 id="users-heading">账号</h2>
+					<p class="hint">暂停账号会立刻撤销该账号的全部登录凭证并阻止重新登录；恢复后可以再次登录。暂停必须填写原因。</p>
+				</div>
+				<div id="user-list" class="account-admin-list" role="list"></div>
+			</section>
+		</main>
+	</div>
+	<script src="/admin/accounts.js" type="module"></script>
+</body>
+</html>

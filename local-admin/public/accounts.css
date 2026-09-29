@@ -1,0 +1,146 @@
+/* 账号与申请面板的补充样式：沿用管理端既有的纸色与展签风格。 */
+
+.notice-line {
+	min-height: 1.6em;
+	margin: 10px 0 4px;
+	color: #6b6255;
+	font-size: 13px;
+}
+
+.notice-line[data-tone='error'] {
+	color: #8d392c;
+}
+
+.account-admin-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 26px;
+	align-items: start;
+	margin-top: 18px;
+}
+
+.account-admin-section {
+	padding: 20px 22px;
+	border: 1px solid #bfb5a2;
+	background: #faf7ef;
+	min-width: 0;
+}
+
+.account-admin-heading h2 {
+	margin: 0 0 6px;
+	font-size: 19px;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+}
+
+.account-admin-heading p {
+	margin: 0 0 14px;
+	font-size: 12px;
+	line-height: 1.85;
+	color: #6f6757;
+}
+
+.account-admin-list {
+	display: grid;
+	gap: 12px;
+}
+
+.account-admin-card {
+	border: 1px solid #cdc3b0;
+	background: #fdfbf5;
+	padding: 14px 15px;
+	min-width: 0;
+}
+
+.account-admin-card[data-status='suspended'],
+.account-admin-card[data-status='pending_deletion'] {
+	border-color: #c09a8c;
+	background: #f8f1e8;
+}
+
+.account-admin-card h3 {
+	margin: 0 0 6px;
+	font-size: 14px;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.account-admin-meta {
+	margin: 0 0 8px;
+	font-size: 12px;
+	line-height: 1.8;
+	color: #6f6757;
+	overflow-wrap: anywhere;
+}
+
+.account-admin-badge {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 1px 7px;
+	border: 1px solid #a99a84;
+	border-radius: 999px;
+	font-size: 11px;
+	letter-spacing: 0.05em;
+}
+
+.account-admin-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: center;
+	margin-top: 10px;
+}
+
+.account-admin-actions button {
+	font: inherit;
+	font-size: 12px;
+	min-height: 34px;
+	padding: 5px 12px;
+	border: 1px solid #918a7d;
+	background: #f5f0e2;
+	color: #2c2823;
+	cursor: pointer;
+}
+
+.account-admin-actions button[data-danger] {
+	border-color: #a5735f;
+	background: #f6ece2;
+}
+
+.account-admin-actions button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.account-admin-field {
+	display: grid;
+	gap: 5px;
+	margin-top: 10px;
+	font-size: 12px;
+}
+
+.account-admin-field input,
+.account-admin-field select,
+.account-admin-field textarea {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 34px;
+	padding: 7px 9px;
+	border: 1px solid #b8ae9d;
+	background: #fffdf7;
+	color: #3b362f;
+	font: 12px/1.7 var(--site-ui-font, system-ui, sans-serif);
+}
+
+.account-admin-empty {
+	padding: 18px 0;
+	font-size: 12px;
+	line-height: 1.9;
+	color: #75695a;
+}
+
+@media (max-width: 980px) {
+	.account-admin-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}

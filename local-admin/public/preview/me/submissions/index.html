@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>我的投稿（原型）｜老旧默片</title>
+		<link rel="stylesheet" href="/admin/preview/preview.css" />
+	</head>
+	<body data-preview-page="submissions">
+		<div data-preview-toolbar></div>
+		<div class="pv-shell">
+			<header class="pv-siteheader">
+				<nav aria-label="主导航（原型模拟）">
+					<a class="pv-brand" href="/">
+						<span class="pv-seal" aria-hidden="true">默</span>
+						<strong>老旧默片</strong>
+					</a>
+					<div class="pv-sitelinks">
+						<a href="/archive/">档案</a>
+						<a href="/about/">关于</a>
+						<a href="/contribute/">我要投稿</a>
+						<a href="/admin/preview/login/" data-pv-nav-when="out">登录</a>
+						<a href="/admin/preview/me/submissions/" data-pv-nav-when="in" aria-current="page">我的</a>
+					</div>
+				</nav>
+			</header>
+
+			<main>
+				<nav class="pv-usernav" aria-label="用户中心">
+					<a href="/admin/preview/me/submissions/" aria-current="page">我的投稿</a>
+					<a href="/admin/preview/me/favorites/">我的收藏</a>
+					<a href="/admin/preview/me/settings/">账户设置</a>
+				</nav>
+
+				<section class="pv-card pv-hidden" data-pv-gate>
+					<h2>这个页面需要登录后才能查看</h2>
+					<p class="pv-note">正式实施时，未登录访客访问「我的投稿」会被引导去登录，登录成功后回到本页；并且只有本人能读取自己的投稿，别人改了网址也看不到。</p>
+					<div class="pv-actions">
+						<a class="pv-btn pv-btn--primary" href="/admin/preview/login/">前往登录页演示</a>
+						<button type="button" class="pv-btn" data-pv-gate-signin>直接模拟已登录</button>
+					</div>
+				</section>
+
+				<div class="pv-hidden" data-pv-content>
+					<div class="pv-pagehead">
+						<p class="pv-eyebrow">用户中心 · 登录后的默认页面</p>
+						<h1>我的投稿</h1>
+						<p class="pv-intro">这里只放你自己提交过的资料。上传成功只代表资料已收到；审核通过只代表进入整理；只有正式发布成功，才会显示「已公开」。</p>
+					</div>
+
+					<div class="pv-panel" data-pv-pending>
+						<h2>当前需要你处理的</h2>
+						<p>有 1 件投稿需要补充材料（「1987 年珠海海滨留影」）。处理结果和站主说明都会写进对应投稿里。</p>
+					</div>
+
+					<div class="pv-actions" style="margin: 0 0 20px">
+						<a class="pv-btn pv-btn--primary" href="/admin/preview/contribute/">上传档案</a>
+						<span class="pv-meta">每次只提交一件对象；一件可以包含多张图片。</span>
+					</div>
+
+					<div class="pv-skeleton pv-hidden" data-pv-skeleton aria-hidden="true">
+						<div class="pv-skeleton-row"></div>
+						<div class="pv-skeleton-row"></div>
+						<div class="pv-skeleton-row"></div>
+					</div>
+
+					<ul class="pv-submission-list" data-pv-list>
+						<li class="pv-submission-card">
+							<div class="pv-thumb"><span class="pv-thumb-tag">封面</span><span>示例图</span></div>
+							<div>
+								<span class="pv-status" data-status="draft">草稿</span>
+								<h3>外婆的缝纫机照片</h3>
+								<p class="pv-meta">TG-7B3E5D1A9C2F4E6B8A0D3C5E（样例编号）· 老照片 · 2 张图片 · 最近更新 2026-09-27 09:40</p>
+								<p class="pv-note">仅你和站主可见，可以继续编辑、保存、提交，或移入回收区。</p>
+							</div>
+							<div class="pv-card-side">
+								<a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/tg-demo/?view=draft">继续编辑并提交</a>
+								<a class="pv-link" href="/admin/preview/me/submissions/tg-demo/?view=draft">查看详情</a>
+							</div>
+						</li>
+
+						<li class="pv-submission-card">
+							<div class="pv-thumb"><span>示例图</span></div>
+							<div>
+								<span class="pv-status" data-status="needs">待补充</span>
+								<h3>1987 年珠海海滨留影</h3>
+								<p class="pv-meta">TG-4F2A9C7E1B6D8453A0C9E2F1（样例编号）· 老照片 · 3 张图片 · 最近更新 2026-09-26 17:02</p>
+								<p class="pv-note">站主留言：请补充照片背面文字的说明，并确认拍摄年份。补充后重新提交即可。</p>
+							</div>
+							<div class="pv-card-side">
+								<a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/tg-demo/">补充材料</a>
+								<a class="pv-link" href="/admin/preview/me/submissions/tg-demo/">查看详情</a>
+							</div>
+						</li>
+
+						<li class="pv-submission-card">
+							<div class="pv-thumb"><span>示例图</span></div>
+							<div>
+								<span class="pv-status" data-status="review">待审核</span>
+								<h3>一张 1990 年的明信片</h3>
+								<p class="pv-meta">TG-1D9C4B7A2E5F8C3B6A9D0E4F（样例编号）· 明信片 · 2 张图片 · 提交于 2026-09-26 11:20</p>
+								<p class="pv-note">资料已收到，正在等待人工阅读。可以查看回执与提交版本，也可以撤回后修改。</p>
+							</div>
+							<div class="pv-card-side">
+								<a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/tg-demo/">查看回执与进度</a>
+								<button type="button" class="pv-link" data-pv-demo-action="原型演示：已撤回这份投稿，可以重新编辑后再次提交；原提交版本会作为只读记录保留。">撤回后修改</button>
+							</div>
+						</li>
+
+						<li class="pv-submission-card">
+							<div class="pv-thumb"><span>示例图</span></div>
+							<div>
+								<span class="pv-status" data-status="organizing">整理中</span>
+								<h3>父亲的旧工作证（已遮盖）</h3>
+								<p class="pv-meta">TG-6A2F8C4E1D9B3A7F5C0E2B6D（样例编号）· 老证件 · 2 张图片 · 最近更新 2026-09-25 15:44</p>
+								<p class="pv-note">初审已通过，正在补齐正式档案，还没有公开。可以提交补充说明，或申请停止处理。</p>
+							</div>
+							<div class="pv-card-side">
+								<a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/tg-demo/">查看处理进度</a>
+								<button type="button" class="pv-link" data-pv-demo-action="原型演示：已收到停止处理申请。若这件事已经转入档案整理，站主会先核查草稿或已公开内容；已收到的停止处理申请会阻止后续发布。">申请停止处理</button>
+							</div>
+						</li>
+
+						<li class="pv-submission-card">
+							<div class="pv-thumb"><span>示例图</span></div>
+							<div>
+								<span class="pv-status" data-status="public">已公开</span>
+								<h3>老相册里的一张合影</h3>
+								<p class="pv-meta">TG-9E1B4D7A3C6F2B8E5A0C9D4F（样例编号）· 老照片 · 3 张图片 · 公开于 2026-09-20</p>
+								<p class="pv-note">只有正式发布成功后才会显示这个状态。可以提供公开链接，也可以申请修改或撤下。</p>
+							</div>
+							<div class="pv-card-side">
+								<a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/tg-demo/?view=public">查看公开链接</a>
+								<button type="button" class="pv-link" data-pv-demo-action="原型演示：修改申请会生成一份新的草稿，经重新审核和构建后才替换当前公开版本；没有通过之前，现在的公开版本继续保留。">申请修改</button>
+							</div>
+						</li>
+
+						<li class="pv-submission-card">
+							<div class="pv-thumb"><span>示例图</span></div>
+							<div>
+								<span class="pv-status" data-status="rejected">暂不采用</span>
+								<h3>一叠旧收据</h3>
+								<p class="pv-meta">TG-2C7E9A4D6B1F3C8E0A5D2B7F（样例编号）· 其他旧物 · 1 张图片 · 2026-09-22</p>
+								<p class="pv-note">站主理由：内容重复度较高，目前先不收录。补充新的说明后可以再次提交；文件继续私密留存。</p>
+							</div>
+							<div class="pv-card-side">
+								<a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/tg-demo/">查看理由</a>
+								<button type="button" class="pv-link" data-pv-demo-action="原型演示：修改后重新提交会作为新版本重新审核；上一次的结果保留在只读处理记录里。">修改后重投</button>
+							</div>
+						</li>
+
+						<li class="pv-submission-card">
+							<div class="pv-thumb"><span>示例图</span></div>
+							<div>
+								<span class="pv-status" data-status="withdrawn">已撤回 / 已停止处理</span>
+								<h3>旧名片一套</h3>
+								<p class="pv-meta">TG-8F4B1E6A9D2C5B7F3A0E4C8D（样例编号）· 旧卡片 · 2 张图片 · 2026-09-18</p>
+								<p class="pv-note">处理记录保留，不再进入发布。确需重投时会重新提交并重新审核，不沿用原来的结果。</p>
+							</div>
+							<div class="pv-card-side">
+								<a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/tg-demo/">查看处理记录</a>
+							</div>
+						</li>
+					</ul>
+
+					<div class="pv-empty pv-hidden" data-pv-empty>
+						<h3>还没有投稿</h3>
+						<p>第一件资料可以是一张照片、一封家书，或一页旧笔记。上传前请先自行保留原件，只提交筛选、压缩并完成必要脱敏的副本。</p>
+						<a class="pv-btn pv-btn--primary" href="/admin/preview/contribute/">上传档案</a>
+					</div>
+				</div>
+
+				<details class="pv-demo">
+					<summary>原型演示控制（仅本地）</summary>
+					<div class="pv-demo-body">
+						<p>用于预看空列表、加载中以及几条附加操作提示。</p>
+						<div class="pv-demo-actions">
+							<button type="button" class="pv-btn pv-btn--small" data-pv-toggle-empty>切换空列表状态</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo-loading>演示加载中（约 1 秒）</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo-action="原型演示：已收到撤下申请。涉及隐私的撤下会优先处理，并阻止再次发布；「已收到申请」不等于「已经撤下」，完成后会更新本件状态。">申请撤下（已公开件）</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo-action="原型演示：草稿移入回收流程前会先说明具体对象与影响；已保存的图片不会被永久删除，恢复后只生成草稿。">删除草稿（移入回收流程）</button>
+						</div>
+					</div>
+				</details>
+			</main>
+
+			<footer class="pv-sitefooter">
+				<p>老旧默片 · 普通人的生活档案</p>
+				<p class="pv-meta">注册模块阶段一原型 · 仅本机预览 · 假数据</p>
+			</footer>
+		</div>
+		<script src="/admin/preview/preview.js"></script>
+	</body>
+</html>

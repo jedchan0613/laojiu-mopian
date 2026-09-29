@@ -1,0 +1,37 @@
+[Unit]
+Description=老旧默片账户与账户投稿服务
+After=network.target
+
+[Service]
+Type=simple
+User=ljmadmin
+Group=ljmadmin
+WorkingDirectory=/srv/laojiumopian-admin/app/current
+EnvironmentFile=/etc/laojiumopian-accounts.env
+Environment=PATH=/snap/node/current/bin:/usr/bin:/bin
+ExecStart=/snap/node/current/bin/node /srv/laojiumopian-admin/app/current/local-admin/account-server.mjs
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=130
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+# 账户服务只写自己的数据目录与共用的私密收件区（账户投稿与免注册投稿共用）。
+ReadWritePaths=/srv/laojiumopian-admin/data/accounts /srv/laojiumopian-admin/data/submissions
+# 档案数据、草稿、历史、回收区、待入站图片对账户服务一律不可见。
+InaccessiblePaths=/srv/laojiumopian-admin/data/archive-data /srv/laojiumopian-admin/data/drafts /srv/laojiumopian-admin/data/history /srv/laojiumopian-admin/data/recycle-bin /srv/laojiumopian-admin/data/inbox
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=true
+# 图片处理（sharp）峰值内存较高，上限比投稿接收进程放宽一些；仍是上限而非预留。
+MemoryMax=768M
+CPUQuota=150%
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

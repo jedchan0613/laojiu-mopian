@@ -25,6 +25,7 @@ readonly ENVIRONMENT_FILE='/etc/laojiumopian-admin.env'
 readonly ADMIN_SERVICE='laojiumopian-admin.service'
 readonly LIKE_SERVICE='laojiumopian-likes.service'
 readonly SUBMISSION_SERVICE='laojiumopian-submissions.service'
+readonly ACCOUNT_SERVICE='laojiumopian-accounts.service'
 readonly NODE='/snap/node/current/bin/node'
 readonly NPM='/snap/node/current/bin/npm'
 readonly RUNUSER='/usr/sbin/runuser'
@@ -99,6 +100,7 @@ app_switched=false
 public_switched=false
 like_service_installed=false
 submission_service_installed=false
+account_service_installed=false
 
 cleanup() {
 	local status=$?
@@ -120,6 +122,9 @@ cleanup() {
 		fi
 		if [[ "$submission_service_installed" == true && "$app_switched" == true ]]; then
 			systemctl restart "$SUBMISSION_SERVICE"
+		fi
+		if [[ "$account_service_installed" == true && "$app_switched" == true ]]; then
+			systemctl restart "$ACCOUNT_SERVICE"
 		fi
 		if [[ -n "$staging_directory" && -e "$staging_directory" ]]; then
 			assert_staging_path
@@ -164,6 +169,9 @@ if systemctl cat "$LIKE_SERVICE" >/dev/null 2>&1; then
 fi
 if systemctl cat "$SUBMISSION_SERVICE" >/dev/null 2>&1; then
 	submission_service_installed=true
+fi
+if systemctl cat "$ACCOUNT_SERVICE" >/dev/null 2>&1; then
+	account_service_installed=true
 fi
 
 exec 9>"$LOCK_FILE"
@@ -344,6 +352,20 @@ if [[ "$submission_service_installed" == true ]]; then
 			break
 		fi
 		[[ "$attempt" -lt 60 ]] || fail '新私密投稿与联系接收服务健康检查没有通过。'
+		sleep 1
+	done
+fi
+
+if [[ "$account_service_installed" == true ]]; then
+	log '重启账户与账户投稿服务。'
+	systemctl restart "$ACCOUNT_SERVICE"
+	for attempt in {1..60}; do
+		if systemctl is-active --quiet "$ACCOUNT_SERVICE" && \
+			curl --fail --silent --max-time 2 \
+			http://127.0.0.1:4177/healthz >/dev/null; then
+			break
+		fi
+		[[ "$attempt" -lt 60 ]] || fail '新账户与账户投稿服务健康检查没有通过。'
 		sleep 1
 	done
 fi

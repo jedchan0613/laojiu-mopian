@@ -1,0 +1,133 @@
+---
+import AccountShell from '../../components/AccountShell.astro';
+---
+
+<AccountShell
+	current="contributions"
+	title="投稿档案｜老旧默片"
+	description="分三步提交一份资料：选择图片副本、填写说明、预览并确认。图片只在你点击保存或提交后才会上传。"
+	heading="投稿档案"
+	lede="先选择资料，再填写说明，最后预览并确认。图片只在你点击「保存草稿」或「提交审核」后才会上传；每件投稿只代表一件对象，可以包含它的多张图片。"
+>
+	<div id="workbench-loading" class="account-skeleton" role="status" aria-label="正在准备投稿页面"></div>
+
+	<div id="workbench-unauth" hidden>
+		<div class="account-panel">
+			<h2>需要先登录</h2>
+			<p>账号投稿需要先登录。如果你不想注册，也可以继续使用免注册投稿。</p>
+			<div class="account-actions">
+				<a class="ui-action ui-action--primary" href="/login/?next=/me/contributions/">去登录</a>
+				<a class="ui-text-link" href="/contribute/">免注册投稿</a>
+			</div>
+		</div>
+	</div>
+
+	<div id="workbench-missing" hidden>
+		<div class="account-panel">
+			<h2>找不到这份投稿</h2>
+			<p>它可能不属于当前账号，或者编号不正确。请回到「我的投稿」重新选择。</p>
+			<div class="account-actions"><a class="ui-text-link" href="/me/contributions/">返回我的投稿</a></div>
+		</div>
+	</div>
+
+	<div id="workbench-content" hidden>
+		<section id="workbench-state" class="account-panel" hidden aria-labelledby="workbench-state-heading">
+			<h2 id="workbench-state-heading">这份投稿的当前状态</h2>
+			<dl class="workbench-detail" id="workbench-state-list"></dl>
+			<p id="workbench-message" class="account-notice" hidden></p>
+			<div class="account-actions" id="workbench-actions">
+				<button id="wb-withdraw" class="ui-action ui-action--secondary" type="button" hidden>撤回这份投稿</button>
+				<button id="wb-discard" class="ui-action ui-action--secondary" type="button" hidden>把草稿移入回收区</button>
+				<button id="wb-request-modify" class="ui-action ui-action--secondary" type="button" hidden>申请修改已公开内容</button>
+				<button id="wb-request-remove" class="ui-action ui-action--secondary" type="button" hidden>申请撤下已公开内容</button>
+				<a class="ui-text-link" href="/me/contributions/">返回我的投稿</a>
+			</div>
+			<p id="workbench-state-status" class="account-status" role="status" aria-live="polite"></p>
+		</section>
+
+		<form id="workbench-form" autocomplete="off" novalidate>
+			<section class="account-panel" aria-labelledby="wb-images-heading">
+				<h2 id="wb-images-heading"><span class="account-hint">01</span> 选择资料</h2>
+				<p class="account-hint">1—8 张 · JPG、PNG、WebP · 每张不超过 5 MB · 合计不超过 20 MB。请提交经过筛选、压缩和必要遮盖的副本，原件请自行保留。</p>
+				<div class="account-field">
+					<label for="wb-images">选择图片副本</label>
+					<input id="wb-images" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+					<small>选择后先在本地预览；点击下方的保存或提交才会真正上传。</small>
+				</div>
+				<p id="wb-image-feedback" class="account-hint" role="status" aria-live="polite">尚未选择图片。</p>
+				<ul id="wb-previews" class="workbench-preview" aria-label="已选择的图片"></ul>
+			</section>
+
+			<section class="account-panel" aria-labelledby="wb-fields-heading">
+				<h2 id="wb-fields-heading"><span class="account-hint">02</span> 填写说明</h2>
+				<div class="account-field">
+					<label for="wb-title">题名 <span aria-hidden="true">*</span></label>
+					<input id="wb-title" name="title" type="text" required minlength="2" maxlength="80" placeholder="例如：外婆留下的一本生活笔记" />
+				</div>
+				<div class="account-inline">
+					<div class="account-field">
+						<label for="wb-category">藏品分类 <span aria-hidden="true">*</span></label>
+						<select id="wb-category" name="category" required>
+							<option value="">请选择</option>
+							{['照片', '明信片', '信件', '证件与卡片', '日记与笔记', '其他'].map((label) => <option value={label}>{label}</option>)}
+						</select>
+					</div>
+					<div class="account-field">
+						<label for="wb-era">大致年代 <small>选填</small></label>
+						<input id="wb-era" name="era" type="text" maxlength="80" placeholder="例如：约 20 世纪 80 年代 / 年代未知" />
+					</div>
+				</div>
+				<div class="account-field">
+					<label for="wb-place">大致地点 <small>选填</small></label>
+					<input id="wb-place" name="place" type="text" maxlength="80" placeholder="只要城市或乡镇即可，请不要填写精确私人住址" />
+				</div>
+				<div class="account-field">
+					<label for="wb-description">资料介绍 <span aria-hidden="true">*</span></label>
+					<textarea id="wb-description" name="description" rows="6" required minlength="10" maxlength="3000" placeholder="它从哪里来、记录了什么、你为什么会留下它。请把亲历的事实和自己的推测分开写。"></textarea>
+					<small id="wb-count" class="account-hint">0 / 3000</small>
+				</div>
+				<div class="account-field">
+					<label for="wb-source">来源与展示授权依据 <span aria-hidden="true">*</span></label>
+					<textarea id="wb-source" name="source_note" rows="3" required minlength="2" maxlength="500" placeholder="这份资料是怎么到你手上的？是否经过原主人或家人同意展示？不确定就如实写，交人工核实。"></textarea>
+				</div>
+				<div class="account-field">
+					<label for="wb-people">可识别真实人物情况 <span aria-hidden="true">*</span></label>
+					<select id="wb-people" name="people" required>
+						<option value="" selected disabled>请选择是否涉及可识别人物</option>
+						<option value="none">没有可以识别的真实人物</option>
+						<option value="yes">有，需要人工确认</option>
+						<option value="unsure">不确定，请协助判断</option>
+					</select>
+					<small>选择「有」或「不确定」的资料会交人工判断，不会被自动公开。</small>
+				</div>
+				<div class="account-field">
+					<span class="account-label">公开署名 <span aria-hidden="true">*</span></span>
+					<label class="account-choice"><input type="radio" name="attribution" value="anonymous" checked /> <span>匿名（默认）</span></label>
+					<label class="account-choice"><input type="radio" name="attribution" value="named" /> <span>使用我填写的署名</span></label>
+					<div class="account-field" id="wb-credit-field" hidden>
+						<label for="wb-credit">希望公开的署名</label>
+						<input id="wb-credit" name="credit" type="text" maxlength="40" placeholder="只填写你愿意公开的名字" />
+					</div>
+				</div>
+			</section>
+
+			<section class="account-panel" aria-labelledby="wb-consent-heading">
+				<h2 id="wb-consent-heading"><span class="account-hint">03</span> 预览并确认</h2>
+				<dl class="workbench-detail" id="wb-preview"></dl>
+				<p class="account-hint">上方只是你填写内容的摘要。提交后站主会人工核对来源与隐私；请逐项确认下面四点，它们不会被预先勾选。</p>
+				<label class="account-choice"><input type="checkbox" data-consent="copies" /> <span>我提交的是经过筛选并完成必要遮盖的图片副本，原件和唯一主档已自行保留。</span></label>
+				<label class="account-choice"><input type="checkbox" data-consent="rights" /> <span>我有权提供这些资料，并同意「老旧默片」在本站范围内整理与展示；该授权是非独家的，不包含出售或转授权。</span></label>
+				<label class="account-choice"><input type="checkbox" data-consent="privacy" /> <span>我已检查隐私，对涉及的真实人物和不确定之处如实说明，并接受进一步人工核实。</span></label>
+				<label class="account-choice"><input type="checkbox" data-consent="processing" /> <span>我同意为审核与沟通私密保存本次投稿，并了解查询、补充材料与停止处理的方式。</span></label>
+			</section>
+
+			<div class="account-actions">
+				<button id="wb-save" class="ui-action ui-action--secondary" type="button">保存草稿</button>
+				<button id="wb-submit" class="ui-action ui-action--primary" type="button">提交审核</button>
+			</div>
+			<p id="wb-status" class="account-status" role="status" aria-live="polite"></p>
+		</form>
+	</div>
+
+	<script>import '../../scripts/account-contribution';</script>
+</AccountShell>

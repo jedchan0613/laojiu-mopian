@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>注册模块原型目录｜老旧默片（本地预览）</title>
+		<link rel="stylesheet" href="/admin/preview/preview.css" />
+	</head>
+	<body data-preview-page="hub">
+		<div data-preview-toolbar></div>
+		<noscript><p class="pv-callout" style="margin: 12px 16px">本原型需要开启 JavaScript 才能查看交互演示；页面文字与版式仍可正常阅读。</p></noscript>
+		<div class="pv-shell">
+			<header class="pv-siteheader">
+				<nav aria-label="主导航（原型模拟）">
+					<a class="pv-brand" href="/">
+						<span class="pv-seal" aria-hidden="true">默</span>
+						<strong>老旧默片</strong>
+					</a>
+					<div class="pv-sitelinks">
+						<a href="/archive/">档案</a>
+						<a href="/about/">关于</a>
+						<a href="/contribute/">我要投稿</a>
+						<a href="/admin/preview/login/" data-pv-nav-when="out">登录</a>
+						<a href="/admin/preview/me/submissions/" data-pv-nav-when="in">我的</a>
+					</div>
+				</nav>
+			</header>
+
+			<main>
+				<div class="pv-pagehead">
+					<p class="pv-eyebrow">注册用户与自主投稿 · 阶段一原型（本地假数据）</p>
+					<h1>注册模块界面原型目录</h1>
+					<p class="pv-intro">这份原型用来核对注册登录、我的投稿、我的收藏、账户设置和上传流程的版式与文案，全部使用假数据，只在本机管理入口内查看。</p>
+				</div>
+
+				<div class="pv-panel">
+					<h2>边界说明（先看这里）</h2>
+					<p>· 不发送验证码、不发邮件、不接收真实投稿，所有操作只在浏览器里演示；</p>
+					<p>· 不读取真实档案、真实用户资料或私密收件区，页面里的题目、状态和图片都是示例；</p>
+					<p>· 只放在本机私有预览地址，不进入公开网站构建，也不会部署到线上；</p>
+					<p>· 「模拟登录」和学习用的演示按钮只改变本机浏览器里的一份假状态，可随时用「重置演示数据」清空。</p>
+				</div>
+
+				<p class="pv-meta" data-pv-hub-identity></p>
+
+				<h2 style="margin: 28px 0 14px">页面清单</h2>
+				<ul class="pv-submission-list">
+					<li class="pv-submission-card">
+						<div class="pv-thumb"><span>登录</span></div>
+						<div>
+							<h3>登录 / 注册合一</h3>
+							<p class="pv-meta">对应方案 D · 邮箱验证码 · 首次开通与直接登录 · 验证码过期、错误、频繁发送、邮件不可用等提示</p>
+							<p class="pv-note">看点：一个入口完成注册与登录；验证前不透露邮箱是否已注册；开通时主动勾选协议并记录版本；登录成功后返回原先位置。</p>
+						</div>
+						<div class="pv-card-side"><a class="pv-btn pv-btn--primary" href="/admin/preview/login/">打开登录页</a></div>
+					</li>
+					<li class="pv-submission-card">
+						<div class="pv-thumb"><span>我的投稿</span></div>
+						<div>
+							<h3>我的投稿（列表）</h3>
+							<p class="pv-meta">对应方案 C、F · 七个用户状态 · 每张卡只给一个当前操作 · 待处理数量 · 空列表与加载态</p>
+							<p class="pv-note">看点：草稿、待审核、待补充、整理中、已公开、暂不采用、已撤回/已停止处理；主按钮固定为“上传档案”。</p>
+						</div>
+						<div class="pv-card-side"><a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/">打开我的投稿</a></div>
+					</li>
+					<li class="pv-submission-card">
+						<div class="pv-thumb"><span>投稿详情</span></div>
+						<div>
+							<h3>投稿详情与处理记录</h3>
+							<p class="pv-meta">对应方案 C、F · 待补充 / 草稿 / 已公开三种场景 · 只读处理记录 · 撤回与撤下入口</p>
+							<p class="pv-note">看点：站主说明与用户操作分开；“修改审核中”“撤下处理中”作为本件附加提示；“已收到申请”不等于“已经撤下”。</p>
+						</div>
+						<div class="pv-card-side"><a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/tg-demo/">打开详情示例</a></div>
+					</li>
+					<li class="pv-submission-card">
+						<div class="pv-thumb"><span>我的收藏</span></div>
+						<div>
+							<h3>我的收藏</h3>
+							<p class="pv-meta">对应方案 G · 简单图片列表 · 取消收藏 · 已撤下“暂不可查看” · 空状态</p>
+							<p class="pv-note">看点：收藏默认私密、以永久编号关联；不做文件夹、公开收藏榜或批量整理；点赞与浏览足迹保持原样。</p>
+						</div>
+						<div class="pv-card-side"><a class="pv-btn pv-btn--primary" href="/admin/preview/me/favorites/">打开我的收藏</a></div>
+					</li>
+					<li class="pv-submission-card">
+						<div class="pv-thumb"><span>账户设置</span></div>
+						<div>
+							<h3>账户设置</h3>
+							<p class="pv-meta">对应方案 D、G · 昵称与邮箱 · 退出全部设备 · 通知默认不勾选 · 导出与注销申请 · 帮助入口</p>
+							<p class="pv-note">看点：一页完成、不收集多余资料；敏感操作需要近期重新验证；默认头像用文字印记、不开放图片上传。</p>
+						</div>
+						<div class="pv-card-side"><a class="pv-btn pv-btn--primary" href="/admin/preview/me/settings/">打开账户设置</a></div>
+					</li>
+					<li class="pv-submission-card">
+						<div class="pv-thumb"><span>上传三步</span></div>
+						<div>
+							<h3>上传档案（选择 → 填写 → 预览确认）</h3>
+							<p class="pv-meta">对应方案 E、F、K · 本地预览后才上传 · 顺序与封面（手机用上下移动）· 格式与容量提示 · 未预勾选的确认项</p>
+							<p class="pv-note">看点：只提交筛选、压缩、必要脱敏后的发布副本；保存草稿与提交审核分开；提交后只显示编号与状态，不承诺审核天数。</p>
+						</div>
+						<div class="pv-card-side"><a class="pv-btn pv-btn--primary" href="/admin/preview/contribute/">打开上传向导</a></div>
+					</li>
+					<li class="pv-submission-card">
+						<div class="pv-thumb"><span>对照</span></div>
+						<div>
+							<h3>现有免注册投稿（真实页面，未改动）</h3>
+							<p class="pv-meta">对应方案 J · 老投稿与现有功能保持可用 · 登录后只是多一个“归属账号”，投稿规则不变</p>
+							<p class="pv-note">原型里的投稿页是“登录后的版本”；访客未登录时看到的就是这个现有页面。</p>
+						</div>
+						<div class="pv-card-side"><a class="pv-btn" href="/contribute/">查看现有投稿页</a></div>
+					</li>
+				</ul>
+
+				<h2 style="margin: 30px 0 14px">异常与边界状态在哪里看</h2>
+				<div class="pv-panel">
+					<p>· 登录：验证码过期 / 输入错误 / 尝试次数过多 / 60 秒内重复发送 / 邮件服务不可用 / 已注册用户直接登录 —— 登录页底部「原型演示控制」。</p>
+					<p>· 我的投稿：加载中骨架屏、空列表、站主说明、已公开链接、暂不采用理由 —— 列表页底部「原型演示控制」。</p>
+					<p>· 投稿详情：待补充、草稿、已公开三种场景切换，含“修改审核中”“撤下处理中”附加提示 —— 详情页底部。</p>
+					<p>· 我的收藏：全部取消后的空状态、已撤下档案“暂不可查看”—— 收藏页内直接操作。</p>
+					<p>· 账户设置：退出全部设备确认、导出与注销申请回执说明、敏感操作重新验证提示 —— 设置页底部。</p>
+					<p>· 上传：格式不符 / 单张超 5 MB / 合计超 20 MB / 重复图片 / 一次选 9 张 / 部分上传失败可重试 / 保存失败 / 配额已满 / 登录状态过期 / 服务维护中 —— 上传页底部。</p>
+				</div>
+
+				<h2 style="margin: 30px 0 14px">怎么打开、怎么重置</h2>
+				<div class="pv-panel">
+					<p>1. 双击项目根目录的 <strong>启动档案管理.cmd</strong>，保持黑色窗口开启。</p>
+					<p>2. 管理页打开后，点击左侧「预览 → 注册模块预览」，或直接访问 <strong>http://127.0.0.1:4173/admin/preview/</strong>。</p>
+					<p>3. 页面上方的深色工具条可以「模拟登录 / 退出演示登录」「重置演示数据」「返回档案管理」。</p>
+					<p>4. 原型里的“保存草稿”等操作只演示反馈，不会写入任何真实数据；重置后一切回到初始假数据。</p>
+				</div>
+
+				<h2 style="margin: 30px 0 14px">本原型暂不包含</h2>
+				<div class="pv-panel">
+					<p>· 真实邮箱验证、真实会话与权限校验（需要先确认技术定案和新增依赖，见《注册模块阶段一：现状核对与技术定案》文档）；</p>
+					<p>· 站主管理端的账户相关功能（账号状态、邮箱恢复、导出与注销处理等，属于后续阶段）；</p>
+					<p>· 评论、私信、关注、公开个人主页、头像上传等方案明确排除的内容。</p>
+				</div>
+
+				<details class="pv-demo">
+					<summary>原型演示控制（仅本地）</summary>
+					<div class="pv-demo-body">
+						<p>重置会清空本机浏览器里的假登录状态、收藏与草稿时间，不影响任何真实档案或投稿数据。</p>
+						<div class="pv-demo-actions">
+							<button type="button" class="pv-btn" data-pv-hub-reset>重置演示数据</button>
+						</div>
+					</div>
+				</details>
+			</main>
+
+			<footer class="pv-sitefooter">
+				<p>老旧默片 · 普通人的生活档案</p>
+				<p class="pv-meta">注册模块阶段一原型 · 仅本机预览 · 不进入公开网站</p>
+			</footer>
+		</div>
+		<script src="/admin/preview/preview.js"></script>
+	</body>
+</html>

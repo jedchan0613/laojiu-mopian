@@ -11,6 +11,8 @@ interface Props {
 	image?: string;
 	pageType?: 'website' | 'article';
 	structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
+	/** 账户页面等私密入口使用；公开内容不设置，保持可以被搜索引擎正常收录。 */
+	robots?: string;
 }
 
 const {
@@ -19,12 +21,14 @@ const {
 	image,
 	pageType = 'website',
 	structuredData,
+	robots,
 } = Astro.props;
 const currentPath = Astro.url.pathname;
 const isHome = currentPath === '/';
 const isArchive = currentPath.startsWith('/archive');
 const isAbout = currentPath.startsWith('/about');
 const isContribute = currentPath.startsWith('/contribute');
+const isAccount = currentPath.startsWith('/login') || currentPath.startsWith('/me');
 const canonicalUrl = Astro.site ? new URL(currentPath, Astro.site) : undefined;
 const shareImageUrl = image && Astro.site ? new URL(image, Astro.site) : undefined;
 const serializedStructuredData = structuredData
@@ -41,6 +45,7 @@ const serializedStructuredData = structuredData
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
+		{robots && <meta name="robots" content={robots} />}
 		<meta name="theme-color" content="#eee9de" />
 		<meta property="og:locale" content="zh_CN" />
 		<meta property="og:site_name" content="老旧默片" />
@@ -72,6 +77,7 @@ const serializedStructuredData = structuredData
 						<a href="/archive/" aria-current={isArchive ? 'page' : undefined}>档案</a>
 						<a href="/about/" aria-current={isAbout ? 'page' : undefined}>关于</a>
 						<a href="/contribute/" aria-current={isContribute ? 'page' : undefined}>我要投稿</a>
+						<a href="/login/" data-account-nav aria-current={isAccount ? 'page' : undefined}>登录</a>
 					</div>
 				</nav>
 			</header>
@@ -95,6 +101,7 @@ const serializedStructuredData = structuredData
 				</div>
 			</footer>
 		</div>
+		<script>import '../scripts/account-nav';</script>
 	</body>
 </html>
 
