@@ -371,14 +371,31 @@ const publicCode = publicText + scriptEntries.map((entry) => entry.contents).joi
 for (const marker of ['/api/admin/submissions', '/api/admin/contacts', 'LJM_SUBMISSION_DATA_DIR', 'key_hash', 'source_submission_id', 'PRIVATE-NOTE-ONLY', 'synthetic@example.invalid', 'synthetic-contact@example.invalid']) {
 	check(!publicCode.includes(marker), `公开构建混入私密投稿信息或管理程序：${marker}。`);
 }
-for (const privateName of ['submissions', '_contacts', 'drafts', 'history', 'recycle-bin', 'local-admin']) {
+for (const privateName of ['submissions', '_contacts', 'drafts', 'history', 'recycle-bin', 'local-admin', 'accounts']) {
 	check(!distFiles.some((file) => relative(distRoot, file).split(sep).includes(privateName)), `公开构建混入私密目录：${privateName}。`);
+}
+
+// 账户页面（登录、用户中心）：必须禁止收录，且公开构建里不能出现任何账号私密信息。
+const accountPages = htmlEntries.filter((entry) => entry.relativePath === 'login/index.html' || entry.relativePath.startsWith('me/'));
+check(accountPages.length >= 4, '账户页面没有完整构建出来：应有登录、我的投稿、我的收藏、账户设置四个页面。');
+for (const page of accountPages) {
+	check(page.html.includes('name="robots"') && page.html.includes('noindex'), `${page.relativePath} 缺少禁止搜索引擎收录的设置。`);
+	check(page.html.includes('data-ljm-account-page'), `${page.relativePath} 缺少账户页面标记，无法与公开内容区分。`);
+}
+for (const marker of ['ljm_account_session', 'LJM_ACCOUNT_DATA_DIR', 'LJM_ACCOUNT_IP_SALT', '/api/account-admin/']) {
+	check(!publicCode.includes(marker), `公开构建混入账户私密信息：${marker}。`);
 }
 
 const configuredSiteUrl = process.env.PUBLIC_SITE_URL?.trim();
 const sitemapExists = await exists(join(distRoot, 'sitemap.xml'));
 if (configuredSiteUrl) {
 	check(sitemapExists, '配置正式域名后没有生成 sitemap.xml。');
+	if (sitemapExists) {
+		const sitemap = await readFile(join(distRoot, 'sitemap.xml'), 'utf8');
+		for (const privatePath of ['/login/', '/me/']) {
+			check(!sitemap.includes(privatePath), `站点地图不应收录账户页面：${privatePath}。`);
+		}
+	}
 	const robots = await readFile(join(distRoot, 'robots.txt'), 'utf8');
 	check(/^Sitemap:\s+https?:\/\//im.test(robots), '配置正式域名后 robots.txt 缺少站点地图地址。');
 } else {

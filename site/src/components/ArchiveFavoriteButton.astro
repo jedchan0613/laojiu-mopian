@@ -1,0 +1,102 @@
+---
+import SiteIcon from './SiteIcon.astro';
+
+interface Props {
+	itemId: string;
+	title: string;
+}
+
+const { itemId, title } = Astro.props;
+---
+
+<button
+	type="button"
+	class="archive-favorite-button"
+	data-archive-favorite
+	data-item-id={itemId}
+	aria-label={`收藏“${title}”`}
+	aria-pressed="false"
+	hidden
+	disabled
+>
+	<SiteIcon name="bookmark" class="archive-favorite-icon" />
+	<span data-favorite-label>收藏</span>
+</button>
+
+<style>
+	.archive-favorite-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+		min-height: 2.15rem;
+		padding: 0.32rem 0.62rem;
+		color: var(--site-muted);
+		background: transparent;
+		border: 1px solid var(--site-border-soft);
+		border-radius: 0;
+		font: inherit;
+		font-family: var(--site-ui-font);
+		font-size: 0.74rem;
+		line-height: 1.35;
+		letter-spacing: 0.06em;
+		cursor: pointer;
+		transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+	}
+
+	.archive-favorite-button[hidden] {
+		display: none;
+	}
+
+	.archive-favorite-button :global(.archive-favorite-icon) {
+		width: 1rem;
+		height: 1rem;
+		fill: transparent;
+		stroke-width: 1.6;
+	}
+
+	.archive-favorite-button:hover:not(:disabled),
+	.archive-favorite-button:focus-visible:not(:disabled) {
+		color: var(--site-ink);
+		background: var(--site-paper);
+		border-color: var(--site-ink);
+	}
+
+	.archive-favorite-button:active:not(:disabled) {
+		transform: translateY(1px);
+	}
+
+	.archive-favorite-button:focus-visible {
+		outline: 2px solid var(--site-focus-outline);
+		outline-offset: 3px;
+	}
+
+	.archive-favorite-button[aria-pressed='true'] {
+		color: var(--site-ink);
+		background: rgba(44, 40, 35, 0.06);
+		border-color: var(--site-ink);
+	}
+
+	.archive-favorite-button[aria-pressed='true'] :global(.archive-favorite-icon) {
+		fill: currentColor;
+	}
+
+	.archive-favorite-button:disabled {
+		cursor: wait;
+		opacity: 0.62;
+	}
+
+	/* 手机端保证触控区域不小于 44×44px */
+	@media (max-width: 760px) {
+		.archive-favorite-button {
+			min-height: 44px;
+			min-width: 44px;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.archive-favorite-button {
+			transition: none;
+		}
+	}
+</style>

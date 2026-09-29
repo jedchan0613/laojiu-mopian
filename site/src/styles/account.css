@@ -1,0 +1,544 @@
+/* 账户页面样式：沿用网站既有的暖纸底、深墨色、朱红与展签风格。
+   不新增 UI 组件库、字体服务或图标字体；所有颜色取自 BaseLayout 的站点变量。 */
+
+.account-page {
+	padding-top: 46px;
+}
+
+.account-page .eyebrow {
+	margin: 0 0 8px;
+	font-size: 12px;
+	letter-spacing: 0.16em;
+	color: var(--site-muted);
+}
+
+.account-hero {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-end;
+	gap: 28px;
+	padding-bottom: 26px;
+	border-bottom: 1px solid #b8afa0;
+}
+
+.account-hero h1 {
+	margin: 12px 0 14px;
+	font-size: clamp(26px, 3.2vw, 38px);
+	font-weight: 600;
+	line-height: 1.5;
+	letter-spacing: 0.04em;
+}
+
+.account-hero p {
+	margin: 0;
+	font-size: 15px;
+	line-height: 1.95;
+	color: #645e53;
+}
+
+.account-lede {
+	max-width: 62ch;
+}
+
+.account-seal {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 10px;
+	flex-shrink: 0;
+	width: 118px;
+	height: 118px;
+	border: 1px solid var(--site-ink);
+	outline: 1px solid var(--site-border);
+	outline-offset: 5px;
+	border-radius: 50%;
+	color: var(--site-ink);
+	transform: rotate(-6deg);
+}
+
+.account-seal span {
+	font-size: 10px;
+	letter-spacing: 0.14em;
+}
+
+.account-seal strong {
+	font-weight: 500;
+	font-size: 19px;
+	letter-spacing: 0.12em;
+}
+
+.account-nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: clamp(14px, 3vw, 30px);
+	margin: 22px 0 34px;
+	font-size: 14px;
+	color: var(--site-muted);
+}
+
+.account-nav a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	color: inherit;
+	text-underline-offset: 0.34em;
+}
+
+.account-nav a:hover,
+.account-nav a:focus-visible,
+.account-nav a[aria-current='page'] {
+	color: var(--site-ink);
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+}
+
+.account-nav small {
+	margin-left: 6px;
+	color: var(--site-subtle);
+	font-size: 11px;
+	letter-spacing: 0.06em;
+}
+
+.account-panel {
+	padding: 26px 28px;
+	border: 1px solid var(--site-border-soft);
+	background: var(--site-paper);
+	margin-bottom: 24px;
+}
+
+.account-panel h2 {
+	margin: 0 0 12px;
+	font-size: 21px;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+}
+
+.account-panel h3 {
+	margin: 22px 0 10px;
+	font-size: 16px;
+	font-weight: 500;
+}
+
+.account-panel p {
+	font-size: 13px;
+	line-height: 1.95;
+	color: #6b6255;
+	margin: 8px 0;
+}
+
+.account-field {
+	margin: 16px 0;
+}
+
+.account-field label,
+.account-label {
+	display: block;
+	font-size: 14px;
+	line-height: 1.8;
+	margin-bottom: 8px;
+}
+
+.account-field small,
+.account-hint {
+	font-size: 12px;
+	color: #7d7363;
+	line-height: 1.8;
+}
+
+.account-field input:not([type='checkbox']),
+.account-field select {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 46px;
+	padding: 11px 13px;
+	border: 1px solid #b8ae9d;
+	border-radius: 3px;
+	background: rgba(255, 253, 247, 0.45);
+	color: #3b362f;
+	font: 14px/1.8 var(--site-ui-font);
+}
+
+.account-field input:focus,
+.account-field select:focus {
+	border-color: var(--site-ink);
+	outline: 2px solid #2c282333;
+	outline-offset: 2px;
+}
+
+.account-inline {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 12px;
+}
+
+.account-inline .account-field {
+	flex: 1 1 240px;
+	margin: 0;
+}
+
+.account-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	margin-top: 20px;
+}
+
+.account-status {
+	margin: 16px 0 0;
+	font-size: 13px;
+	line-height: 1.9;
+	min-height: 1.9em;
+	color: #6b6255;
+}
+
+.account-status[data-tone='error'] {
+	color: #8d392c;
+}
+
+.account-status[data-tone='ok'] {
+	color: #3f6b4a;
+}
+
+.account-choice {
+	display: flex;
+	align-items: flex-start;
+	gap: 9px;
+	font-size: 12px;
+	line-height: 1.9;
+	color: #645b4e;
+	margin: 13px 0;
+}
+
+.account-choice input {
+	width: 17px;
+	height: 17px;
+	margin-top: 3px;
+	accent-color: #2c2823;
+	flex-shrink: 0;
+}
+
+.account-list {
+	list-style: none;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 16px;
+	padding: 0;
+	margin: 20px 0 0;
+}
+
+.account-card {
+	border: 1px solid #c6baa6;
+	background: #f9f4e8;
+	padding: 12px;
+	min-width: 0;
+}
+
+.account-card-image {
+	display: block;
+	width: 100%;
+	height: 130px;
+	object-fit: contain;
+	background: #e7dfd0;
+}
+
+.account-card-placeholder {
+	display: grid;
+	place-items: center;
+	width: 100%;
+	height: 130px;
+	background: #e7dfd0;
+	color: var(--site-subtle);
+	font-size: 12px;
+	letter-spacing: 0.1em;
+}
+
+.account-card h3 {
+	margin: 10px 0 4px;
+	font-size: 15px;
+	font-weight: 500;
+	line-height: 1.6;
+	overflow-wrap: anywhere;
+}
+
+.account-card p {
+	margin: 0 0 8px;
+	font-size: 11px;
+	color: #7d7363;
+	letter-spacing: 0.06em;
+}
+
+.account-card .account-card-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: center;
+}
+
+.account-card button,
+.account-card a {
+	font: inherit;
+	font-size: 12px;
+	min-height: 36px;
+	padding: 6px 0;
+	color: var(--site-ink);
+	background: none;
+	border: 0;
+	cursor: pointer;
+	text-underline-offset: 0.3em;
+}
+
+.account-empty {
+	padding: 30px 0;
+	border-top: 1px solid #c8bead;
+	font-size: 13px;
+	line-height: 2;
+	color: #75695a;
+}
+
+.account-row {
+	display: flex;
+	justify-content: space-between;
+	gap: 18px;
+	padding: 13px 0;
+	border-bottom: 1px solid #ded5c4;
+	font-size: 13px;
+	line-height: 1.9;
+}
+
+.account-row:last-child {
+	border-bottom: 0;
+}
+
+.account-row dt {
+	color: #7d7363;
+	flex-shrink: 0;
+}
+
+.account-row dd {
+	margin: 0;
+	overflow-wrap: anywhere;
+	text-align: right;
+}
+
+.account-dl {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	margin: 0;
+}
+
+.account-danger {
+	border-color: #c09a8c;
+	background: #f7efe6;
+}
+
+.account-danger summary {
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1.9;
+}
+
+.account-notice {
+	padding: 16px 18px;
+	border-left: 3px solid var(--site-ink);
+	background: #eee0ce66;
+	font-size: 13px;
+	line-height: 1.95;
+	color: #5f5749;
+	margin: 18px 0;
+}
+
+.account-skeleton {
+	height: 92px;
+	background: linear-gradient(90deg, #eee6d6 0%, #f6f1e6 50%, #eee6d6 100%);
+	margin-top: 16px;
+}
+
+.account-page [hidden] {
+	display: none !important;
+}
+
+/* 我的投稿：工具条、较宽的卡片与投稿工作台的图片区。 */
+.account-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 14px;
+	margin-bottom: 8px;
+}
+
+.account-toolbar .account-hint {
+	margin: 0;
+}
+
+.account-list--wide {
+	grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+.account-card-state {
+	display: inline-block;
+	margin-bottom: 6px;
+	padding: 1px 8px;
+	border: 1px solid #a99a84;
+	border-radius: 999px;
+	font-size: 11px;
+	letter-spacing: 0.06em;
+	color: #55504a;
+}
+
+.account-card-state[data-alert='1'] {
+	border-color: #a5735f;
+	color: #8d392c;
+}
+
+.workbench-preview {
+	list-style: none;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: 14px;
+	padding: 0;
+	margin: 16px 0 0;
+}
+
+.workbench-preview li {
+	min-width: 0;
+	border: 1px solid #c6baa6;
+	background: #f9f4e8;
+	padding: 10px;
+}
+
+.workbench-preview img {
+	width: 100%;
+	height: 110px;
+	object-fit: contain;
+	background: #e7dfd0;
+}
+
+.workbench-preview input {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 34px;
+	margin-top: 8px;
+	padding: 6px 8px;
+	border: 1px solid #b8ae9d;
+	background: #fffdf7;
+	font: 12px/1.6 var(--site-ui-font);
+}
+
+.workbench-preview .workbench-preview-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: center;
+	margin-top: 6px;
+}
+
+.workbench-preview button {
+	font: inherit;
+	font-size: 12px;
+	min-height: 34px;
+	padding: 4px 0;
+	border: 0;
+	background: none;
+	color: var(--site-ink);
+	cursor: pointer;
+}
+
+.workbench-preview p {
+	margin: 6px 0 0;
+	font-size: 11px;
+	line-height: 1.6;
+	color: #7d7363;
+	overflow-wrap: anywhere;
+}
+
+.workbench-detail {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+}
+
+.workbench-detail div {
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 10px 0;
+	border-bottom: 1px solid #ded5c4;
+	font-size: 13px;
+}
+
+.workbench-detail dt {
+	color: #7d7363;
+}
+
+.workbench-detail dd {
+	margin: 0;
+	text-align: right;
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+	.workbench-detail div {
+		flex-direction: column;
+		gap: 3px;
+	}
+
+	.workbench-detail dd {
+		text-align: left;
+	}
+}
+
+.account-page button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+	.account-page {
+		padding-top: 28px;
+	}
+
+	.account-hero {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 18px;
+	}
+
+	.account-seal {
+		width: 92px;
+		height: 92px;
+	}
+
+	.account-nav {
+		gap: 8px;
+		margin: 18px 0 26px;
+		padding-bottom: 6px;
+		border-bottom: 1px solid #c8bead;
+	}
+
+	.account-nav a {
+		min-height: 44px;
+		padding: 0 2px;
+	}
+
+	.account-panel {
+		padding: 20px 18px;
+	}
+
+	.account-list {
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	}
+
+	.account-row {
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.account-row dd {
+		text-align: left;
+	}
+}

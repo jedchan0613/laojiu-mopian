@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>我的收藏（原型）｜老旧默片</title>
+		<link rel="stylesheet" href="/admin/preview/preview.css" />
+	</head>
+	<body data-preview-page="favorites">
+		<div data-preview-toolbar></div>
+		<div class="pv-shell">
+			<header class="pv-siteheader">
+				<nav aria-label="主导航（原型模拟）">
+					<a class="pv-brand" href="/">
+						<span class="pv-seal" aria-hidden="true">默</span>
+						<strong>老旧默片</strong>
+					</a>
+					<div class="pv-sitelinks">
+						<a href="/archive/">档案</a>
+						<a href="/about/">关于</a>
+						<a href="/contribute/">我要投稿</a>
+						<a href="/admin/preview/login/" data-pv-nav-when="out">登录</a>
+						<a href="/admin/preview/me/submissions/" data-pv-nav-when="in" aria-current="page">我的</a>
+					</div>
+				</nav>
+			</header>
+
+			<main>
+				<nav class="pv-usernav" aria-label="用户中心">
+					<a href="/admin/preview/me/submissions/">我的投稿</a>
+					<a href="/admin/preview/me/favorites/" aria-current="page">我的收藏</a>
+					<a href="/admin/preview/me/settings/">账户设置</a>
+				</nav>
+
+				<section class="pv-card pv-hidden" data-pv-gate>
+					<h2>这个页面需要登录后才能查看</h2>
+					<p class="pv-note">收藏默认私密，只有本人登录后能看到自己的收藏；未登录访客在公开档案页点收藏时，会被引导登录并回到刚才那件档案。</p>
+					<div class="pv-actions">
+						<a class="pv-btn pv-btn--primary" href="/admin/preview/login/">前往登录页演示</a>
+						<button type="button" class="pv-btn" data-pv-gate-signin>直接模拟已登录</button>
+					</div>
+				</section>
+
+				<div class="pv-hidden" data-pv-content>
+					<div class="pv-pagehead">
+						<p class="pv-eyebrow">用户中心</p>
+						<h1>我的收藏</h1>
+						<p class="pv-intro">这里只放一个简单的图片列表，不设文件夹，也不做公开收藏榜。收藏以永久档案编号关联，重复点击不会产生重复记录。</p>
+					</div>
+
+					<ul class="pv-grid" data-pv-fav-grid>
+						<li class="pv-grid-card" data-pv-fav-id="demo-a01">
+							<div class="pv-thumb"><span>示例图</span></div>
+							<h3>海滩上的合影</h3>
+							<p class="pv-meta">老照片 · 约 1990 年代 · 示例编号 A-01</p>
+							<div class="pv-card-actions">
+								<a class="pv-link" href="/archive/">打开档案</a>
+								<button type="button" class="pv-link" data-pv-fav-remove>取消收藏</button>
+							</div>
+						</li>
+						<li class="pv-grid-card" data-pv-fav-id="demo-a02">
+							<div class="pv-thumb"><span>示例图</span></div>
+							<h3>从哈尔滨寄出的明信片</h3>
+							<p class="pv-meta">明信片 · 约 1980 年代 · 示例编号 A-02</p>
+							<div class="pv-card-actions">
+								<a class="pv-link" href="/archive/">打开档案</a>
+								<button type="button" class="pv-link" data-pv-fav-remove>取消收藏</button>
+							</div>
+						</li>
+						<li class="pv-grid-card" data-pv-fav-id="demo-a03">
+							<div class="pv-thumb"><span>示例图</span></div>
+							<h3>旧工作证（已遮盖）</h3>
+							<p class="pv-meta">老证件 · 年代未知 · 示例编号 A-03</p>
+							<div class="pv-card-actions">
+								<a class="pv-link" href="/archive/">打开档案</a>
+								<button type="button" class="pv-link" data-pv-fav-remove>取消收藏</button>
+							</div>
+						</li>
+						<li class="pv-grid-card" data-pv-fav-id="demo-a04">
+							<div class="pv-thumb"><span>暂不可查看</span></div>
+							<h3>旧名片一套（已撤下）</h3>
+							<p class="pv-meta">旧卡片 · 已撤下 · 示例编号 A-04</p>
+							<p class="pv-hint">这件档案已经撤下，不再保留敏感缓存图片；如以后重新整理并发布，会再次出现在这里。</p>
+							<div class="pv-card-actions">
+								<button type="button" class="pv-link" data-pv-fav-remove>取消收藏</button>
+							</div>
+						</li>
+					</ul>
+
+					<div class="pv-empty pv-hidden" data-pv-fav-empty>
+						<h3>还没有收藏</h3>
+						<p>在公开档案页点击「收藏」就会出现在这里；未登录时会先引导你登录，再回到刚才那件档案继续操作。</p>
+						<a class="pv-btn pv-btn--primary" href="/archive/">去档案目录看看</a>
+					</div>
+
+					<div class="pv-panel" style="margin-top: 24px">
+						<h2>和点赞、浏览足迹的关系</h2>
+						<p>· 点赞保持原有逻辑不变，收藏和点赞各有用途，本阶段不改造点赞计数；</p>
+						<p>· 浏览足迹仍然只保存在当前设备的浏览器里，不会自动同步到账号；</p>
+						<p>· 收藏与账号关联后可以在不同设备上看到，但只有登录本人能读取。</p>
+					</div>
+				</div>
+
+				<details class="pv-demo">
+					<summary>原型演示控制（仅本地）</summary>
+					<div class="pv-demo-body">
+						<p>取消收藏可以直接在卡片上操作；“清空”用于预看空状态。</p>
+						<div class="pv-demo-actions">
+							<button type="button" class="pv-btn pv-btn--small" data-pv-fav-clear>清空（演示空状态）</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-fav-restore>恢复示例收藏</button>
+						</div>
+					</div>
+				</details>
+			</main>
+
+			<footer class="pv-sitefooter">
+				<p>老旧默片 · 普通人的生活档案</p>
+				<p class="pv-meta">注册模块阶段一原型 · 仅本机预览 · 假数据</p>
+			</footer>
+		</div>
+		<script src="/admin/preview/preview.js"></script>
+	</body>
+</html>

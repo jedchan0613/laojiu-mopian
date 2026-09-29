@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<title>登录 / 注册（原型）｜老旧默片</title>
+		<link rel="stylesheet" href="/admin/preview/preview.css" />
+	</head>
+	<body data-preview-page="login">
+		<div data-preview-toolbar></div>
+		<div class="pv-shell">
+			<header class="pv-siteheader">
+				<nav aria-label="主导航（原型模拟）">
+					<a class="pv-brand" href="/">
+						<span class="pv-seal" aria-hidden="true">默</span>
+						<strong>老旧默片</strong>
+					</a>
+					<div class="pv-sitelinks">
+						<a href="/archive/">档案</a>
+						<a href="/about/">关于</a>
+						<a href="/contribute/">我要投稿</a>
+						<a href="/admin/preview/login/" data-pv-nav-when="out" aria-current="page">登录</a>
+						<a href="/admin/preview/me/submissions/" data-pv-nav-when="in">我的</a>
+					</div>
+				</nav>
+			</header>
+
+			<main>
+				<div class="pv-login-wrap">
+					<section class="pv-login-card">
+						<p class="pv-eyebrow">登录 / 注册 · 邮箱验证码</p>
+						<h1>用一个邮箱，进入你的档案夹。</h1>
+						<p class="pv-intro">不设密码，也不要手机号。首次验证后完成一次简短开通；已经注册过的邮箱会直接登录。邮箱始终私密，不会变成公开昵称。</p>
+
+						<div class="pv-callout pv-hidden" data-pv-already>当前处于演示登录状态（假账号）。可直接打开「我的投稿」查看登录后的页面，或用上方工具条退出演示登录。</div>
+
+						<form data-pv-login-form novalidate class="pv-login-step">
+							<div class="pv-field">
+								<label for="pv-login-email">邮箱</label>
+								<div class="pv-code-row">
+									<input id="pv-login-email" data-pv-email type="email" autocomplete="email" placeholder="name@example.com" />
+									<button type="button" class="pv-btn" data-pv-send>获取验证码</button>
+								</div>
+								<p class="pv-hint">只用于登录、账户安全与你自己选择的重要进度通知；不会公开展示。</p>
+								<p class="pv-hint pv-hidden" data-pv-send-result role="status" aria-live="polite"></p>
+							</div>
+							<div class="pv-field" style="margin-top: 20px">
+								<label for="pv-login-code">验证码</label>
+								<input id="pv-login-code" data-pv-code inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6 位数字，可直接粘贴" />
+								<p class="pv-hint">10 分钟内有效、只能使用一次；重复发送后旧验证码立即失效。</p>
+							</div>
+							<div class="pv-actions" style="margin-top: 6px">
+								<button type="submit" class="pv-btn pv-btn--primary" data-pv-verify>验证并继续</button>
+							</div>
+							<p class="pv-error" data-pv-login-error role="alert" aria-live="polite"></p>
+						</form>
+
+						<section class="pv-login-step pv-hidden" data-pv-onboard>
+							<p class="pv-eyebrow">首次开通 · 只需一次</p>
+							<h2>确认昵称与说明，就可以开始了。</h2>
+							<div class="pv-field" style="margin-top: 14px">
+								<label for="pv-login-nickname">昵称（选填）</label>
+								<input id="pv-login-nickname" data-pv-nickname maxlength="24" placeholder="留空也可以，会使用不含邮箱信息的默认昵称" />
+								<p class="pv-hint">例如默认昵称「默片访客 3721」。昵称、登录邮箱与投稿署名相互独立；邮箱不会自动推导成昵称。</p>
+							</div>
+							<label class="pv-choice">
+								<input type="checkbox" data-pv-agree />
+								<span>我已阅读并主动同意<a href="/about/" target="_blank" rel="noreferrer">服务说明</a>与<a href="/corrections/" target="_blank" rel="noreferrer">隐私说明</a>，了解邮箱只用于登录与账户安全。</span>
+							</label>
+							<p class="pv-hint">正式实施时会记录协议版本和同意时间。投稿的展示授权在每一件投稿里另行确认，不能用这里的开通协议代替。</p>
+							<div class="pv-actions" style="margin-top: 16px">
+								<button type="button" class="pv-btn pv-btn--primary" data-pv-complete>完成开通，进入我的档案夹</button>
+							</div>
+							<p class="pv-error" data-pv-onboard-error role="alert" aria-live="polite"></p>
+						</section>
+
+						<section class="pv-login-step pv-hidden" data-pv-login-done>
+							<p class="pv-eyebrow">已登录（原型演示）</p>
+							<h2>欢迎回来。</h2>
+							<p class="pv-note">登录成功后会回到你刚才所在的位置，并且只允许站内安全跳转；如果刚才是在收藏某个档案，会继续完成那一步。</p>
+							<div class="pv-actions" style="margin-top: 12px">
+								<a class="pv-btn pv-btn--primary" href="/admin/preview/me/submissions/">进入我的投稿</a>
+								<a class="pv-btn" href="/admin/preview/contribute/">上传档案</a>
+							</div>
+						</section>
+					</section>
+
+					<aside class="pv-login-aside" aria-label="登录说明">
+						<div class="pv-panel">
+							<h3>为什么用邮箱验证码</h3>
+							<p>· 不设密码，没有“找回密码”环节，也不会要求手机号、真实姓名或身份证；</p>
+							<p>· 验证码为 6 位数字、10 分钟内有效、一次使用；60 秒内不能重复发送，重发后旧验证码立即失效；</p>
+							<p>· 每个邮箱、来源地址和全站邮件额度都会限流；验证之前不会透露这个邮箱是否已经注册。</p>
+						</div>
+						<div class="pv-panel">
+							<h3>登录状态</h3>
+							<p>· 闲置 7 天后需要重新验证，最长 30 天到期，以服务器判断为准；</p>
+							<p>· 可以只退出当前设备，也可以一键退出全部设备（会真正撤销登录凭证）；</p>
+							<p>· 更换邮箱、申请注销等敏感操作需要重新验证邮箱。</p>
+						</div>
+						<div class="pv-panel">
+							<h3>遇到问题</h3>
+							<p>· 收不到邮件：检查垃圾邮件文件夹，或稍后重发；</p>
+							<p>· 提示“登录服务暂时不可用”时，说明邮件服务没有配置好，不会假装成功；</p>
+							<p>· 其他问题可以通过<a href="/corrections/">纠错与撤下页面</a>联系站主。</p>
+						</div>
+					</aside>
+				</div>
+
+				<details class="pv-demo">
+					<summary>原型演示控制（仅本地）</summary>
+					<div class="pv-demo-body">
+						<p>以下按钮只改变页面上的提示文字，用来预看各种错误与边界状态。</p>
+						<div class="pv-demo-actions">
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo="expired">验证码已过期</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo="wrong">验证码错误（还剩 4 次）</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo="too-many">尝试次数过多</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo="rate">60 秒内重复发送</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo="mail-down">邮件服务不可用</button>
+							<button type="button" class="pv-btn pv-btn--small" data-pv-demo="registered-login">已注册用户直接登录成功</button>
+						</div>
+					</div>
+				</details>
+			</main>
+
+			<footer class="pv-sitefooter">
+				<p>老旧默片 · 普通人的生活档案</p>
+				<p class="pv-meta">注册模块阶段一原型 · 仅本机预览 · 不发送真实验证码</p>
+			</footer>
+		</div>
+		<script src="/admin/preview/preview.js"></script>
+	</body>
+</html>
