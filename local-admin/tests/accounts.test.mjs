@@ -194,6 +194,29 @@ test('邮箱变更：原邮箱与新邮箱都要验证，完成后撤销全部�
 	assert.equal(store.resolveSession(account.token), null);
 });
 
+test('开通资料校验失败不消耗票据；新邮箱验证码输错后仍可重试', async t => {
+	const { store, readCode, register, mailDirectory } = await fixture(t);
+	const email = 'retry-onboarding@example.invalid';
+	const requested = await store.requestLoginCode({ email, ip: '10.0.8.1' });
+	const verified = await store.verifyLoginCode({ email, ticket: requested.ticket, code: await readCode(email), client: 'agent', ip: '10.0.8.1' });
+	await assert.rejects(store.completeOnboarding({ onboardingTicket: verified.onboarding_ticket, agreement: agreementVersion, agreed: true, nickname: '<坏昵称>', client: 'agent', ip: '10.0.8.1' }));
+	const opened = await store.completeOnboarding({ onboardingTicket: verified.onboarding_ticket, agreement: agreementVersion, agreed: true, nickname: '正常昵称', client: 'agent', ip: '10.0.8.1' });
+	assert.equal(opened.user.nickname, '正常昵称');
+	const account = await register('old-address@example.invalid', { ip: '10.0.8.2' });
+	const session = store.resolveSession(account.token);
+	const old = await store.requestEmailChange({ session, ip: '10.0.8.2' });
+	const changeTicket = store.verifyEmailChange({ session, ticket: old.ticket, code: await readCode(account.email, 'email_change_old') }).change_ticket;
+	await assert.rejects(store.requestEmailChangeConfirm({ changeTicket, userId: account.user.id, email: 'bad-address', ip: '10.0.8.2' }));
+	const pending = await store.requestEmailChangeConfirm({ changeTicket, userId: account.user.id, email: 'new-address@example.invalid', ip: '10.0.8.2' });
+	const actualCode = await readCode('new-address@example.invalid', 'email_change_new');
+	assert.throws(() => store.confirmEmailChange({ changeTicket: pending.change_ticket, userId: account.user.id, code: actualCode === '000000' ? '111111' : '000000' }));
+	const changed = store.confirmEmailChange({ changeTicket: pending.change_ticket, userId: account.user.id, code: actualCode });
+	await store.notifyEmailChanged({ oldEmail: changed.old_email, newEmail: changed.new_email });
+	assert.equal(changed.new_email, 'new-address@example.invalid');
+	const messages = await Promise.all((await fs.readdir(mailDirectory)).filter(name => name.endsWith('.json')).map(name => fs.readFile(path.join(mailDirectory, name), 'utf8').then(JSON.parse)));
+	assert.ok(messages.some(message => message.to === account.email && message.template === 'email-changed-notice'));
+});
+
 test('收藏：格式校验、重复点击不产生重复记录、取消后不残留', async t => {
 	const { store, register } = await fixture(t);
 	const account = await register('favorites@example.invalid');
@@ -209,7 +232,7 @@ test('收藏：格式校验、重复点击不产生重复记录、取消后不�
 });
 
 test('导出与注销申请：注销立即撤销会话并停止登录，“已收到”不等于“已完成”', async t => {
-	const { store, register } = await fixture(t);
+	const { store, register, reissue, readCode } = await fixture(t);
 	const account = await register('requests@example.invalid');
 	const session = store.resolveSession(account.token);
 	const exported = store.createRequest({ session, kind: 'export' });
@@ -223,6 +246,8 @@ test('导出与注销申请：注销立即撤销会话并停止登录，“已�
 	assert.equal(store.adminListRequests().length, 2);
 	// 处理完成前账号标记为注销处理中；公开档案不随注销自动删除。
 	assert.equal(store.adminListUsers().find((user) => user.id === account.user.id).status, 'pending_deletion');
+	const retry = await reissue(account.email, '10.0.5.8');
+	await assert.rejects(store.verifyLoginCode({ email: account.email, ticket: retry.ticket, code: await readCode(account.email), client: 'agent', ip: '10.0.5.8' }), { statusCode: 403 });
 	store.adminReviewRequest({ requestId: deletion.request.id, status: 'processing', publicMessage: '正在核实，请留意邮件。', adminNote: '内部备注不外泄', actor: 'admin' });
 	const reviewed = store.adminListRequests().find((item) => item.id === deletion.request.id);
 	assert.equal(reviewed.status, 'processing');
@@ -332,6 +357,28 @@ test('公开 HTTP：来源校验、登录态、Cookie 属性与管理接口隔�
 	assert.ok(String(configResponse.headers.get('x-robots-tag')).includes('noindex'));
 	// 不存在的地址不能被账户服务吞掉。
 	assert.equal((await fetch(`${origin}/api/account/unknown-route`)).status, 404);
+});
+
+test('有限开放开关只暂停新账号与投稿写入，不影响已有账号查看', async t => {
+	const { store, register } = await fixture(t);
+	const account = await register('existing@example.invalid');
+	let handler;
+	const server = http.createServer(async (request, response) => {
+		const pathname = new URL(request.url, 'http://test').pathname;
+		if (!await handler(request, response, pathname)) response.writeHead(404).end();
+	});
+	server.listen(0, '127.0.0.1');
+	await once(server, 'listening');
+	const origin = `http://127.0.0.1:${server.address().port}`;
+	handler = createAccountHandler({ store, origin, adminOrigin: origin, local: true, registrationOpen: false, uploadsOpen: false });
+	t.after(() => { server.closeAllConnections(); return new Promise(resolve => server.close(resolve)); });
+	const config = await (await fetch(`${origin}/api/account/config`)).json();
+	assert.equal(config.registration_open, false);
+	assert.equal(config.uploads_open, false);
+	assert.equal((await fetch(`${origin}/api/account/me`, { headers: { Cookie: `${sessionCookieName}=${account.token}` } })).status, 200);
+	const headers = { Origin: origin, 'X-LJM-Account-Request': '1', 'Content-Type': 'application/json' };
+	assert.equal((await fetch(`${origin}/api/account/onboarding`, { method: 'POST', headers, body: '{}' })).status, 503);
+	assert.equal((await fetch(`${origin}/api/account/submissions`, { method: 'POST', headers: { ...headers, Cookie: `${sessionCookieName}=${account.token}` }, body: '{}' })).status, 503);
 });
 
 test('限流：验证码按来源地址设限', async t => {

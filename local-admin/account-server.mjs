@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { createAccountStore, AccountError, accountLimits, agreementVersion, accountStates } from './accounts.mjs';
 import { createMailer, MailError } from './mail.mjs';
 import { createSubmissionStore, readSubmissionForm, SubmissionError } from './submissions.mjs';
+import { processProgressNotifications } from './notification-queue.mjs';
 
 export const sessionCookieName = 'ljm_account_session';
 const maximumBodyBytes = 16 * 1024;
@@ -51,6 +52,8 @@ export function createAccountHandler({
 	local = false,
 	trustProxy = false,
 	secureCookies = false,
+	registrationOpen = true,
+	uploadsOpen = true,
 	ipRateLimit = { maximum: 120, windowSeconds: 600 },
 }) {
 	if (!store) throw new Error('账户服务必须提供数据层。');
@@ -147,15 +150,21 @@ export function createAccountHandler({
 		send(response, status, value, cookies.length ? { 'Set-Cookie': cookies } : {});
 	};
 
-	// multipart 表单里，结构较复杂的字段用 JSON 字符串传递，解析失败时回退为安全默认值。
+	// multipart 表单里的保留图片清单必须可解析；错误清单不能被当成“移除全部图片”。
 	const accountPayloadFromForm = (form) => {
-		const asJson = (value, fallback) => {
+		const asJson = (value, fallback, valid) => {
+			if (value === undefined) return fallback;
 			try {
 				const parsed = JSON.parse(String(value ?? ''));
-				return parsed ?? fallback;
-			} catch { return fallback; }
+				if (!valid(parsed)) fail('图片清单或说明格式无效，请刷新后重试。');
+				return parsed;
+			} catch (error) {
+				if (error instanceof AccountError) throw error;
+				fail('图片清单或说明格式无效，请刷新后重试。');
+			}
 		};
-		const pendingNotes = asJson(form.pending_notes, []);
+		const stringArray = (value) => Array.isArray(value) && value.every((part) => typeof part === 'string');
+		const pendingNotes = asJson(form.pending_notes, [], stringArray);
 		return {
 			fields: {
 				title: form.title,
@@ -168,8 +177,8 @@ export function createAccountHandler({
 				attribution: form.attribution,
 				credit: form.credit,
 			},
-			keep: asJson(form.keep, []),
-			notes: asJson(form.notes, {}),
+			keep: asJson(form.keep, [], stringArray),
+			notes: asJson(form.notes, {}, (value) => value !== null && typeof value === 'object' && !Array.isArray(value)),
 			images: (Array.isArray(form.images) ? form.images : []).map((image, index) => ({
 				name: image?.name,
 				buffer: image?.buffer,
@@ -177,6 +186,7 @@ export function createAccountHandler({
 			})),
 			consents: form.consents ?? {},
 			consent_version: form.consent_version ?? '',
+			request_key: form.request_key ?? '',
 			website: form.website ?? '',
 		};
 	};
@@ -209,7 +219,7 @@ export function createAccountHandler({
 		if (pathname === '/api/account/config') {
 			if (method !== 'GET') fail('不支持此操作。', 405);
 			// 这里不读取会话：可用性检查不应产生会话副作用，登录态由 /api/account/me 判断。
-			return withCookies(response, [], 200, store.status()), true;
+			return withCookies(response, [], 200, { ...store.status(), registration_open: registrationOpen, uploads_open: uploadsOpen }), true;
 		}
 		requireAccountOrigin(request, mutation);
 		const address = clientAddress(request);
@@ -229,6 +239,7 @@ export function createAccountHandler({
 			return withCookies(response, [], 200, result), true;
 		}
 		if (pathname === '/api/account/onboarding' && method === 'POST') {
+			if (!registrationOpen) fail('新账号开通暂时关闭，已有账号仍可登录。', 503);
 			const payload = await readJson(request);
 			const result = await store.completeOnboarding({
 				onboardingTicket: payload.onboarding_ticket,
@@ -268,9 +279,11 @@ export function createAccountHandler({
 		if (pathname === '/api/account/email/change/confirm' && method === 'POST') {
 			const session = requireSession(request);
 			const payload = await readJson(request);
-			return withCookies(response, [clearedCookie(secureCookies)], 200, store.confirmEmailChange({
+			const result = store.confirmEmailChange({
 				changeTicket: payload.change_ticket, userId: session.user.id, code: payload.code,
-			})), true;
+			});
+			await store.notifyEmailChanged({ oldEmail: result.old_email, newEmail: result.new_email });
+			return withCookies(response, [clearedCookie(secureCookies)], 200, result), true;
 		}
 		if (pathname === '/api/account/logout' && method === 'POST') {
 			const session = requireSession(request);
@@ -307,9 +320,10 @@ export function createAccountHandler({
 		if (pathname === '/api/account/submissions' && method === 'GET') {
 			const session = requireSession(request);
 			const instances = requireSubmissionStore();
-			return withCookies(response, [], 200, { items: await instances.listAccountSubmissions({ accountId: session.user.id }) }), true;
+			return withCookies(response, [], 200, { items: await instances.listAccountSubmissions({ accountId: session.user.id }), quota: await instances.accountUsage(session.user.id) }), true;
 		}
 		if (pathname === '/api/account/submissions' && method === 'POST') {
+			if (!uploadsOpen) fail('新投稿暂时暂停接收，已有投稿仍可查看和撤回。', 503);
 			const session = requireSession(request);
 			const instances = requireSubmissionStore();
 			const form = await readSubmissionForm(request, maximumUploadBytes);
@@ -351,7 +365,9 @@ export function createAccountHandler({
 				return withCookies(response, [], 200, await instances.getAccountSubmission({ id: submissionId, accountId: session.user.id })), true;
 			}
 			if (action === 'save' && method === 'POST') {
+				if (!uploadsOpen) fail('投稿编辑暂时暂停，已保存的内容仍可查看。', 503);
 				const form = await readSubmissionForm(request, maximumUploadBytes);
+				if (form.keep === undefined) fail('缺少原有图片清单，请刷新后重试。');
 				return withCookies(response, [], 200, await instances.saveAccountSubmission({
 					id: submissionId, accountId: session.user.id,
 					revision: Number.parseInt(form.revision ?? '', 10),
@@ -359,6 +375,7 @@ export function createAccountHandler({
 				})), true;
 			}
 			if (method === 'POST' && ['submit', 'withdraw', 'discard', 'request'].includes(action)) {
+				if (action === 'submit' && !uploadsOpen) fail('提交审核暂时暂停，草稿仍会保存。', 503);
 				const payload = await readJson(request);
 				if (action === 'submit') {
 					return withCookies(response, [], 200, await instances.submitAccountSubmission({
@@ -452,6 +469,13 @@ if (isDirectRun) {
 	};
 	if (!origin) stop('必须显式配置 LJM_ACCOUNT_ORIGIN（公开网站来源地址）。');
 	if (!['development', 'production'].includes(environment)) stop('LJM_ACCOUNT_ENV 只能是 development 或 production。');
+	const switchValue = (name) => {
+		const value = (process.env[name] ?? (environment === 'production' ? 'false' : 'true')).trim().toLowerCase();
+		if (!['true', 'false'].includes(value)) stop(`${name} 只能是 true 或 false。`);
+		return value === 'true';
+	};
+	const registrationOpen = switchValue('LJM_ACCOUNT_REGISTRATION_OPEN');
+	const uploadsOpen = switchValue('LJM_ACCOUNT_UPLOADS_OPEN');
 	if (!Number.isInteger(port) || port < 1024 || port > 65535) stop('LJM_ACCOUNT_PORT 无效。');
 	if (!dataRoot || !path.isAbsolute(dataRoot)) stop('必须显式配置网站目录之外的 LJM_ACCOUNT_DATA_DIR 绝对路径。');
 	const resolvedDataRoot = path.resolve(dataRoot);
@@ -504,6 +528,8 @@ if (isDirectRun) {
 		local: environment !== 'production',
 		trustProxy: true,
 		secureCookies: environment === 'production',
+		registrationOpen,
+		uploadsOpen,
 	});
 	const server = http.createServer(async (request, response) => {
 		try {
@@ -523,10 +549,26 @@ if (isDirectRun) {
 	server.requestTimeout = 30_000;
 	server.headersTimeout = 15_000;
 	server.maxConnections = 60;
+	let processingNotifications = false;
+	const flushNotifications = async () => {
+		if (processingNotifications) return;
+		processingNotifications = true;
+		try {
+			await processProgressNotifications(submissionRoot, {
+				recipientFor: accountId => store.notificationRecipient(accountId),
+				send: payload => mailer.send(payload),
+				record: event => store.recordNotification(event),
+			});
+		} catch (error) { console.error('进度提醒队列处理失败：', error instanceof Error ? error.message : String(error)); }
+		finally { processingNotifications = false; }
+	};
+	const notificationTimer = setInterval(() => { void flushNotifications(); }, 30_000);
+	void flushNotifications();
 	server.listen(port, '127.0.0.1', () => {
 		console.log(`账户服务已启动：127.0.0.1:${port}（${environment}，邮件通道：${mailer.describe().transport}，协议版本：${agreementVersion}）`);
 	});
 	for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => {
+		clearInterval(notificationTimer);
 		server.close();
 		store.close();
 	});

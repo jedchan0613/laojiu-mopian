@@ -166,6 +166,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   const result = await locked(safeId(id), async () => {
    const r = await read(id);
    if (payload.revision !== r.revision) fail('投稿已被其他操作更新，请刷新后再保存。', 409);
+   if (r.status === 'draft') fail('投稿人尚未提交草稿，不能审核或通过初审。', 409);
    if (!Object.hasOwn(submissionStates, payload.status)) fail('审核状态无效。');
    if ((r.linked_item_id || r.status === 'withdrawn' || r.withdrawal_requested) && payload.status !== r.status) fail('此投稿已转入草稿或申请停止处理，不能直接更改审核状态。');
    const publicMessage = text(payload.public_message ?? '', '给投稿人的说明', 0, 1000);
@@ -185,7 +186,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   return result;
  };
  const detail = (r) => { const { key_hash, fingerprint, ...safe } = r; return safe; };
- const list = async () => (await all()).map((r) => ({ id: r.id, revision: r.revision, title: r.fields.title, category: r.fields.category, status: r.status, created_at: r.created_at, updated_at: r.updated_at, image_count: r.images.length, people: r.fields.people, linked_item_id: r.linked_item_id, withdrawal_requested: Boolean(r.withdrawal_requested), account_id: r.account_id ?? null }));
+ const list = async () => (await all()).map((r) => ({ id: r.id, revision: r.revision, title: r.fields.title, category: r.fields.category, status: r.status, created_at: r.created_at, updated_at: r.updated_at, image_count: r.images.length, people: r.fields.people, linked_item_id: r.linked_item_id, withdrawal_requested: Boolean(r.withdrawal_requested), change_request: r.change_request ?? null, account_id: r.account_id ?? null }));
  const getImage = async (id, filename) => {
   const r = await read(id);
   if (!r.images.some((image) => image.filename === filename)) fail('图片不存在。', 404);
@@ -223,9 +224,8 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  const accountCategories = ['照片', '明信片', '信件', '证件与卡片', '日记与笔记', '其他'];
  const accountStatusLabels = { draft: '草稿', pending: '待审核', needs_info: '待补充', approved: '整理中', declined: '暂不采用', withdrawn: '已撤回' };
  const maximumVersions = 20;
- const accountIndexFile = '_account-index.json';
  // 账号级配额（方案 K）：防止单个账号耗尽共享收件区，也不能靠反复删除重传绕过。
- // 草稿、投稿与历史版本都计入占用；已停止处理（withdrawn）的记录不再计入件数与字节。
+ // 草稿、投稿和私密回收区图片都计入占用；撤回不免除存储配额。
  const accountQuota = { perDay: 10, maxDrafts: 20, maxBytes: 200 * 1024 * 1024 };
 
  const safeAccountId = (value) => {
@@ -246,15 +246,16 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    era: text(raw?.era ?? '', '大致年代', 0, 80),
    place: text(raw?.place ?? '', '大致地点', 0, 80),
    source_note: text(raw?.source_note ?? '', '来源与展示授权依据', strict ? 2 : 0, 500),
-   people: raw?.people ?? 'none',
+   people: raw?.people ?? '',
    attribution: raw?.attribution ?? 'anonymous',
    credit: text(raw?.credit ?? '', '公开署名', 0, 40),
   };
-  if (!['none', 'yes', 'unsure'].includes(fields.people)) fail('请说明是否涉及可以识别的真实人物。');
+  if (fields.people && !['none', 'yes', 'unsure'].includes(fields.people)) fail('请说明是否涉及可以识别的真实人物。');
   if (!['anonymous', 'named'].includes(fields.attribution)) fail('请选择署名方式。');
   if (fields.category && !accountCategories.includes(fields.category)) fail('请选择资料类型。');
   if (strict) {
    if (!accountCategories.includes(fields.category)) fail('请选择资料类型。');
+   if (!fields.people) fail('请说明是否涉及可以识别的真实人物。');
    if (fields.attribution === 'named' && !fields.credit) fail('请填写希望公开的署名，或选择匿名。');
   }
   return fields;
@@ -269,29 +270,15 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   title: r.fields.title || '（未命名草稿）', category: r.fields.category,
   status: r.status, status_label: accountStatusLabels[r.status] ?? r.status,
   created_at: r.created_at, updated_at: r.updated_at, image_count: r.images.length,
-  people: r.fields.people ?? 'none', linked_item_id: r.linked_item_id ?? null,
+  people: r.fields.people ?? '', linked_item_id: r.linked_item_id ?? null,
   withdrawal_requested: Boolean(r.withdrawal_requested),
   change_request: r.change_request ?? null,
   version_count: Array.isArray(r.versions) ? r.versions.length : 0,
   public_message: r.public_message ?? '',
  });
- const readAccountIndex = async () => {
-  try {
-   const parsed = JSON.parse(await fs.readFile(path.join(root, accountIndexFile), 'utf8'));
-   return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch { return {}; }
- };
- // 读取账号的全部投稿记录（配额与列表共用）。索引缺失时回退为完整扫描，保证不漏掉已认领的旧投稿。
+ // 以投稿记录为真实来源。索引写入可能在服务异常退出时落后，不能用它决定权限或配额。
  const accountRecords = async (accountId) => {
-  const index = await readAccountIndex();
-  let ids = Array.isArray(index[accountId]) ? index[accountId] : [];
-  if (!ids.length) ids = (await all()).filter((record) => record.account_id === accountId).map((record) => record.id);
-  const records = [];
-  for (const candidate of ids) {
-   if (!idPattern.test(candidate ?? '')) continue;
-   try { records.push(await read(candidate)); } catch { /* 记录已不存在时跳过。 */ }
-  }
-  return records.filter((record) => record.account_id === accountId);
+  return (await all()).filter((record) => record.account_id === accountId);
  };
  // 草稿数量上限（方案 K：同时保存不超过 20 件未提交草稿）。
  const checkDraftLimit = async (accountId) => {
@@ -305,33 +292,65 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  const checkSubmitLimit = async (accountId) => {
   const records = await accountRecords(accountId);
   const today = new Date().toISOString().slice(0, 10);
-  const submittedToday = records.filter((record) => (record.history ?? [])
-   .some((entry) => entry.action === 'submitted' && String(entry.at ?? '').startsWith(today))).length;
+  const submittedToday = records.reduce((count, record) => count + (record.history ?? [])
+   .filter((entry) => entry.action === 'submitted' && String(entry.at ?? '').startsWith(today)).length, 0);
   if (submittedToday >= accountQuota.perDay) {
    fail(`今天提交审核的次数已达上限（${accountQuota.perDay} 件），请明天再试。`, 429);
   }
  };
- // 字节配额（方案 K：账号未公开资料不超过 200 MB）。草稿、投稿与历史版本都计入；已停止处理的不计。
+ // 已移入私密回收区的图片依然占用空间，不能通过移除/撤回绕过账号配额。
+ const storageUsage = async (accountId, suppliedRecords = null) => {
+  const records = suppliedRecords ?? await accountRecords(accountId);
+  let usedBytes = 0;
+  for (const record of records) {
+   // 直接统计私密目录中的真实文件，连异常中断留下的未引用图片也计入容量。
+   const folder = path.join(root, record.id);
+   const currentFiles = await fs.readdir(folder, { withFileTypes: true });
+   for (const file of currentFiles) {
+    if (file.isFile() && /^copy-\d+\.jpg$/.test(file.name)) {
+     try { usedBytes += (await fs.stat(path.join(folder, file.name))).size; }
+     catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
+   }
+   const recycle = path.join(root, '.recycle', record.id);
+   let batches;
+   try { batches = await fs.readdir(recycle, { withFileTypes: true }); }
+   catch (error) { if (error.code === 'ENOENT') continue; throw error; }
+   for (const batch of batches) {
+    if (!batch.isDirectory()) continue;
+    const files = await fs.readdir(path.join(recycle, batch.name), { withFileTypes: true });
+    for (const file of files) {
+     if (file.isFile() && /^copy-\d+\.jpg$/.test(file.name)) {
+      try { usedBytes += (await fs.stat(path.join(recycle, batch.name, file.name))).size; }
+      catch (error) { if (error.code !== 'ENOENT') throw error; }
+     }
+    }
+   }
+  }
+  return usedBytes;
+ };
  const checkStorageLimit = async (accountId, addedBytes) => {
-  const records = await accountRecords(accountId);
-  const usedBytes = records
-   .filter((record) => record.status !== 'withdrawn')
-   .reduce((sum, record) => sum + record.images.reduce((total, image) => total + image.bytes, 0), 0);
+  const usedBytes = await storageUsage(accountId);
   if (usedBytes + addedBytes > accountQuota.maxBytes) {
    fail(`你的资料占用已达上限（约 200 MB）。请先整理现有草稿与投稿，或申请导出后清理。`, 429);
   }
  };
- const addToAccountIndex = async (accountId, id) => locked('account-index', async () => {
-  const index = await readAccountIndex();
-  const list = Array.isArray(index[accountId]) ? index[accountId] : [];
-  if (!list.includes(id)) list.push(id);
-  index[accountId] = list;
-  await atomicJson(path.join(root, accountIndexFile), index);
- });
- const nextImageIndex = (record) => {
+ const accountUsage = async (accountId) => {
+  const account = safeAccountId(accountId);
+  const records = await accountRecords(account);
+  const today = new Date().toISOString().slice(0, 10);
+  return {
+   drafts_left: Math.max(0, accountQuota.maxDrafts - records.filter(record => record.status === 'draft').length),
+   submissions_left_today: Math.max(0, accountQuota.perDay - records.reduce((count, record) => count + (record.history ?? []).filter(entry => entry.action === 'submitted' && String(entry.at ?? '').startsWith(today)).length, 0)),
+   storage_left_bytes: Math.max(0, accountQuota.maxBytes - await storageUsage(account, records)),
+  };
+ };
+ const nextImageIndex = async (record) => {
   let maximum = 0;
-  for (const image of record.images) {
-   const match = /^copy-(\d+)\.jpg$/.exec(image.filename);
+  // 未完成写入留下的私密图片也占用文件名；下次保存不能被旧残留卡住。
+  const files = await fs.readdir(path.join(root, record.id));
+  for (const filename of files) {
+   const match = /^copy-(\d+)\.jpg$/.exec(filename);
    if (match) maximum = Math.max(maximum, Number(match[1]));
   }
   return maximum + 1;
@@ -349,27 +368,38 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  const createAccountSubmission = async ({ accountId, mode, payload }) => {
   const account = safeAccountId(accountId);
   if (payload?.website) fail('提交未通过，请稍后重试。');
+  if (!/^[a-f0-9]{64}$/.test(String(payload?.request_key ?? ''))) fail('本次提交凭证无效，请刷新页面后重试。');
   const submitting = mode === 'pending';
   const fields = accountFields(payload?.fields, submitting);
   if (submitting) requireAccountConsents(payload);
-  const staged = await stageImages(payload?.images);
-  const addedBytes = staged.reduce((sum, image) => sum + image.buffer.length, 0);
-  // 直接提交审核计"每天提交次数"；保存草稿计"同时草稿数"。两者都计入占用。
-  if (submitting) await checkSubmitLimit(account);
-  else await checkDraftLimit(account);
-  await checkStorageLimit(account, addedBytes);
-  const key = randomBytes(32).toString('hex');
+  const suppliedImages = Array.isArray(payload?.images) ? payload.images : [];
+  if (submitting && !suppliedImages.length) fail('请至少选择一张经过筛选的图片副本。');
+  const staged = suppliedImages.length ? await stageImages(suppliedImages) : [];
+  const fingerprint = hash(JSON.stringify({
+   account, submitting, fields, consent_version: payload.consent_version,
+   images: staged.map((image, index) => [image.name, hash(image.buffer), String(suppliedImages[index]?.note ?? '').trim().slice(0, 300)]),
+  }));
+  // 同一账号的一次提交使用稳定编号；网络超时后用同一凭证重试，只会找回原记录。
+  const key = hash(`${account}:${payload.request_key}`);
   const id = submissionId(key);
   const now = new Date().toISOString();
-  const created = await locked('intake', async () => locked(id, async () => {
-   if (await exists(recordPath(id))) fail('请重新提交一次。', 409);
+  return locked(`account-quota-${account}`, async () => locked('intake', async () => locked(id, async () => {
+   if (await exists(recordPath(id))) {
+    const existing = await read(id);
+    if (existing.account_id !== account || existing.fingerprint !== fingerprint) fail('这次提交已收到；内容若有改动，请刷新页面后重新提交。', 409);
+    return { id, created_at: existing.created_at, status: existing.status, revision: existing.revision, repeated: true };
+   }
+   // 账号配额检查与真正落盘在同一把锁内，两个同时提交的请求不能都按旧余额通过。
+   if (submitting) await checkSubmitLimit(account);
+   else await checkDraftLimit(account);
    const records = await all();
    if (records.length >= maxEntries || records.reduce((n, r) => n + r.images.reduce((s, i) => s + i.bytes, 0), 0) + submissionLimits.totalBytes > maxStorageBytes) fail('投稿收件区暂满，请稍后再试。', 503);
    const processed = await processImages(staged);
+   await checkStorageLimit(account, processed.reduce((sum, image) => sum + image.bytes, 0));
    const images = processed.map(({ buffer, ...image }, index) => ({ ...image, note: String(payload.images[index]?.note ?? '').trim().slice(0, 300) }));
    const record = {
     version: 1, revision: 1, id, created_at: now, updated_at: now,
-    key_hash: hash(key), fingerprint: hash(JSON.stringify({ fields, account })),
+    key_hash: hash(key), fingerprint,
     account_id: account, fields,
     consent: submitting
      ? { version: consentVersion, confirmed_at: now, copies: true, rights: true, privacy: true, processing: true }
@@ -385,14 +415,12 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    await atomicJson(path.join(staging, 'record.json'), record);
    await fs.rename(staging, path.join(root, id));
    return { id, created_at: now, status: record.status, revision: record.revision };
-  }));
-  await addToAccountIndex(account, id);
-  return created;
+  })));
  };
  const saveAccountSubmission = async ({ id, accountId, revision, payload }) => {
   const account = safeAccountId(accountId);
   if (payload?.website) fail('提交未通过，请稍后重试。');
-  return locked(safeId(id), async () => {
+  return locked(`account-quota-${account}`, async () => locked(safeId(id), async () => {
    const r = await read(id);
    ownedBy(r, account);
    if (r.status !== 'draft') fail('这份投稿已经提交，不能再作为草稿编辑；如需修改请先撤回。');
@@ -408,9 +436,9 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    const incoming = Array.isArray(payload?.images) ? payload.images : [];
    if (kept.length + incoming.length > submissionLimits.images) fail(`一件投稿最多 ${submissionLimits.images} 张图片。`, 413);
    const staged = incoming.length ? await stageImages(incoming, submissionLimits.images - kept.length) : [];
-   if (staged.length) await checkStorageLimit(account, staged.reduce((sum, image) => sum + image.buffer.length, 0));
-   const start = nextImageIndex(r);
+   const start = await nextImageIndex(r);
    const processed = staged.length ? await processImages(staged, (index) => `copy-${String(start + index).padStart(2, '0')}.jpg`) : [];
+   if (processed.length) await checkStorageLimit(account, processed.reduce((sum, image) => sum + image.bytes, 0));
    const notes = payload?.notes && typeof payload.notes === 'object' ? payload.notes : {};
    const images = [
     ...kept.map((image) => ({ ...image, note: typeof notes[image.filename] === 'string' ? notes[image.filename].trim().slice(0, 300) : (image.note ?? '') })),
@@ -419,8 +447,11 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    const now = new Date().toISOString();
    // 新图片直接写入投稿目录；文件名由序号保证不会覆盖已有图片。
    for (const image of processed) await fs.writeFile(path.join(root, id, image.filename), image.buffer, { mode: 0o600, flag: 'wx' });
-   // 被移除的图片移入私密回收区，不永久删除。
+   // 先保存新记录，再把不再引用的旧图片移入私密回收区；保存失败时旧记录仍指向原图片。
    const removed = r.images.filter((image) => !keep.includes(image.filename));
+   const next = { ...r, fields, images, revision: r.revision + 1, updated_at: now };
+   next.history = [...r.history, { at: now, action: 'draft_saved' }];
+   await atomicJson(recordPath(id), next);
    if (removed.length) {
     const entry = path.join(root, '.recycle', id, `${Date.now()}-${randomBytes(4).toString('hex')}`);
     await fs.mkdir(entry, { recursive: true, mode: 0o700 });
@@ -429,38 +460,35 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
     }
     await atomicJson(path.join(entry, 'manifest.json'), { at: now, reason: 'draft_image_removed', images: removed.map((image) => image.filename) });
    }
-   const next = { ...r, fields, images, revision: r.revision + 1, updated_at: now };
-   next.history = [...r.history, { at: now, action: 'draft_saved' }];
-   await atomicJson(recordPath(id), next);
    return accountSummary(next);
-  });
+  }));
  };
  const submitAccountSubmission = async ({ id, accountId, revision, payload }) => {
   const account = safeAccountId(accountId);
   requireAccountConsents(payload);
-  // 提交审核计入"每天提交次数"（方案 K：每天提交不超过 10 件）。
-  await checkSubmitLimit(account);
-  return locked(safeId(id), async () => {
+  return locked(`account-quota-${account}`, async () => locked(safeId(id), async () => {
    const r = await read(id);
    ownedBy(r, account);
    if (r.status !== 'draft') fail('只有草稿可以提交审核。');
    if (revision !== r.revision) fail('草稿已被其他操作更新，请刷新后再试。', 409);
+   await checkSubmitLimit(account);
    const fields = accountFields(r.fields, true);
    if (!r.images.length) fail('请至少保留一张经过筛选的图片副本。');
    const now = new Date().toISOString();
    const next = {
     ...r, fields, status: 'pending', revision: r.revision + 1, updated_at: now,
+    public_message: '', private_note: '',
     consent: { version: consentVersion, confirmed_at: now, copies: true, rights: true, privacy: true, processing: true },
    };
    next.history = [...r.history, { at: now, action: 'submitted' }];
    pushVersion(next, 'submitted', now);
    await atomicJson(recordPath(id), next);
    return accountSummary(next);
-  });
+  }));
  };
  // 投稿人只能看到自己的内容与公开处理说明；管理员的内部备注与内部记录绝不下发。
  const publicHistory = (history) => (Array.isArray(history) ? history : [])
-  .filter((entry) => entry && !entry.private_note)
+  .filter((entry) => entry)
   .map((entry) => ({ at: entry.at, action: entry.action, status: entry.status ?? '', public_message: entry.public_message ?? '' }));
  const accountDetail = (r) => {
   const { key_hash, fingerprint, private_note, history, ...rest } = r;
@@ -525,31 +553,48 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    const r = await read(id);
    ownedBy(r, account);
    if (!r.linked_item_id) fail('这份投稿还没有进入整理或公开流程，不需要提交这类申请。');
-   if (r.change_request?.status === 'received') fail('你已经提交过申请，站主处理后会更新状态。', 409);
+   if (['received', 'processing'].includes(r.change_request?.status)) fail('你已经提交过申请，站主处理后会更新状态。', 409);
    const now = new Date().toISOString();
    r.change_request = { at: now, kind, note: message, status: 'received' };
    if (kind === 'remove') r.withdrawal_requested = true;
    r.updated_at = now; r.revision++;
-   r.history = [...r.history, { at: now, action: kind === 'remove' ? 'removal_requested' : 'change_requested' }];
+   r.history = [...r.history, { at: now, action: kind === 'remove' ? 'removal_requested' : 'change_requested', kind, note: message }];
    await atomicJson(recordPath(id), r);
    return accountSummary(r);
   });
  };
+ const reviewAccountChange = async ({ id, revision, status, publicMessage }) => {
+  const result = await locked(safeId(id), async () => {
+   const r = await read(id);
+   if (r.revision !== revision) fail('投稿已发生变化，请刷新后再处理申请。', 409);
+   if (!r.account_id || !r.change_request || !['received', 'processing'].includes(r.change_request.status)) fail('当前没有待处理的修改或撤下申请。', 409);
+   if (!['processing', 'done', 'rejected'].includes(status)) fail('申请处理状态无效。');
+   const message = text(publicMessage ?? '', '给投稿人的处理说明', status === 'processing' ? 0 : 2, 1000);
+   const now = new Date().toISOString();
+   r.change_request = { ...r.change_request, status, reviewed_by: 'admin', reviewed_at: now, resolved_at: status === 'processing' ? '' : now, public_message: message };
+   r.public_message = message || r.public_message;
+   r.updated_at = now; r.revision++;
+   r.history = [...r.history, { at: now, action: 'change_request_review', status, actor: 'admin', public_message: message }];
+   await atomicJson(recordPath(id), r);
+   return detail(r);
+  });
+  if (['done', 'rejected'].includes(status)) await deliverNotification({ accountId: result.account_id, event: status === 'done' ? 'change_done' : 'change_rejected', title: result.fields.title, submission_id: result.id });
+  return result;
+ };
  // 关联旧投稿：必须同时提供已登录账号、原投稿编号与原查询密钥，三者缺一不可。
  const claimSubmission = async ({ id, key, accountId }) => {
   const account = safeAccountId(accountId);
-  const claimed = await locked(safeId(id), async () => {
+  return locked(`account-quota-${account}`, async () => locked(safeId(id), async () => {
    const r = await authenticate(id, key);
    if (r.account_id === account) return { id, claimed: true, repeated: true };
    if (r.account_id) fail('这份投稿已经关联其他账号，请通过联系入口告知站主核对。', 409);
+   await checkStorageLimit(account, r.images.reduce((sum, image) => sum + image.bytes, 0));
    const now = new Date().toISOString();
    r.account_id = account; r.updated_at = now; r.revision++;
    r.history = [...r.history, { at: now, action: 'claimed' }];
    await atomicJson(recordPath(id), r);
    return { id, claimed: true, repeated: false };
-  });
-  await addToAccountIndex(account, id);
-  return claimed;
+  }));
  };
  // 正式发布成功后按投稿人是否开启通知偏好决定是否发信（由调用方提供的通知器处理）。
  const notifyPublished = async (itemId) => {
@@ -561,7 +606,8 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  return {
   create, lookup, withdraw, review, list, detail: async (id) => detail(await read(id)), getImage, transfer, guardPublication,
   createAccountSubmission, saveAccountSubmission, submitAccountSubmission, getAccountSubmission, listAccountSubmissions,
-  getAccountImage, withdrawAccountSubmission, discardAccountSubmission, requestAccountChange, claimSubmission, notifyPublished,
+  getAccountImage, withdrawAccountSubmission, discardAccountSubmission, requestAccountChange, reviewAccountChange, claimSubmission, notifyPublished,
+  accountUsage,
  };
 }
 

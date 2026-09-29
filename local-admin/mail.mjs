@@ -31,6 +31,8 @@ const progressLabels = {
 	approved: '初审通过，已进入整理',
 	declined: '这次暂不采用',
 	published: '已经公开发布',
+	change_done: '修改或撤下申请已处理',
+	change_rejected: '修改或撤下申请未通过',
 };
 
 export const mailTemplates = {

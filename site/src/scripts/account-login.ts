@@ -19,13 +19,20 @@ const status = document.querySelector('#login-status');
 
 const nextPath = (() => {
 	const requested = new URLSearchParams(window.location.search).get('next') ?? '';
-	// 只允许站内安全跳转，防止被用于跳转到站外地址。
-	return requested.startsWith('/') && !requested.startsWith('//') ? requested : '/me/contributions/';
+	// 浏览器会把 /\example.com 解释成外站地址；必须用 URL 的实际来源再次确认。
+	if (requested.startsWith('/') && !requested.startsWith('//') && !requested.includes('\\')) {
+		try {
+			const target = new URL(requested, window.location.origin);
+			if (target.origin === window.location.origin) return `${target.pathname}${target.search}${target.hash}`;
+		} catch { /* 无效地址回到用户中心。 */ }
+	}
+	return '/me/contributions/';
 })();
 
 let ticket = '';
 let onboardingTicket = '';
 let agreementVersion = '';
+let registrationOpen = true;
 let countdown = 0;
 let timer = 0;
 
@@ -97,6 +104,10 @@ const verifyCode = async () => {
 			return;
 		}
 		onboardingTicket = String(result.onboarding_ticket ?? '');
+		if (!registrationOpen) {
+			setStatus(status, '邮箱已验证，但新账号开通暂时关闭。已有账号仍可登录。', 'error');
+			return;
+		}
 		agreementVersion = agreementVersion || '';
 		toggle(onboarding, true);
 		window.clearInterval(timer);
@@ -144,13 +155,14 @@ const loadConfiguration = async () => {
 	try {
 		const config = await accountFetch('/api/account/config');
 		agreementVersion = String(config.agreement_version ?? '');
+		registrationOpen = config.registration_open !== false;
 		if (!config.available) {
 			serviceNote?.setAttribute('data-unavailable', '1');
 			setStatus(serviceNote, '登录服务暂时不可用：邮件通道尚未配置完成。你仍然可以浏览公开档案，稍后再试。', 'error');
 			busy(requestButton, true, '暂时不可用');
 			return;
 		}
-		setStatus(serviceNote, '登录通道正常。验证前不会透露邮箱是否已经注册。', 'ok');
+		setStatus(serviceNote, registrationOpen ? '登录通道正常。验证前不会透露邮箱是否已经注册。' : '已有账号可以登录；新账号开通暂时关闭。', 'ok');
 	} catch {
 		setStatus(serviceNote, '无法连接登录服务，请稍后再试。', 'error');
 		busy(requestButton, true, '暂时不可用');

@@ -25,28 +25,37 @@ const content = document.querySelector('#contributions-content');
 const list = document.querySelector('#contributions-list');
 const empty = document.querySelector('#contributions-empty');
 const summary = document.querySelector('#contributions-summary');
+const quota = document.querySelector('#contributions-quota');
 const status = document.querySelector('#contributions-status');
 
 // 需要投稿人动手的状态：这些数量会显示在标题位置。
 const actionable = new Set(['draft', 'needs_info', 'declined']);
 
-const visibleState = (item: SubmissionSummary, publishedIds: Set<string>) => {
+const visibleState = (item: SubmissionSummary, publishedIds: Set<string>, publicListAvailable: boolean) => {
+	if (item.change_request?.kind === 'remove') {
+		const labels: Record<string, string> = { received: '撤下申请已收到', processing: '撤下处理中', done: '撤下申请已处理', rejected: '撤下申请未通过' };
+		return { label: labels[item.change_request.status] ?? '撤下申请', alert: item.change_request.status !== 'done' };
+	}
+	if (item.withdrawal_requested) return { label: '停止处理申请已收到', alert: true };
+	if (item.change_request) {
+		const labels: Record<string, string> = { received: '修改申请已收到', processing: '修改处理中', done: '修改申请已处理', rejected: '修改申请未通过' };
+		return { label: labels[item.change_request.status] ?? '修改申请', alert: ['received', 'processing'].includes(item.change_request.status) };
+	}
+	if (item.linked_item_id && !publicListAvailable) return { label: '公开状态暂不可核对', alert: true };
 	if (item.linked_item_id && publishedIds.has(item.linked_item_id)) return { label: '已公开', alert: false };
-	if (item.withdrawal_requested) return { label: '撤下处理中', alert: true };
-	if (item.change_request?.status === 'received') return { label: '修改审核中', alert: true };
 	return { label: item.status_label, alert: actionable.has(item.status) };
 };
 
 // 每张卡片只给一个当前最需要的操作，避免堆满按钮。
 const primaryAction = (item: SubmissionSummary) => {
 	if (item.status === 'draft') return { label: '继续编辑', href: `/me/contribution/?id=${item.id}` };
-	if (item.status === 'needs_info') return { label: '补充材料', href: `/me/contribution/?id=${item.id}` };
-	if (item.change_request?.status === 'received' || item.withdrawal_requested) return { label: '查看处理情况', href: `/me/contribution/?id=${item.id}` };
+	if (item.status === 'needs_info') return { label: '查看补充要求', href: `/me/contribution/?id=${item.id}` };
+	if (item.change_request || item.withdrawal_requested) return { label: '查看处理情况', href: `/me/contribution/?id=${item.id}` };
 	return { label: '查看详情', href: `/me/contribution/?id=${item.id}` };
 };
 
-const card = (item: SubmissionSummary, publishedIds: Set<string>) => {
-	const state = visibleState(item, publishedIds);
+const card = (item: SubmissionSummary, publishedIds: Set<string>, publicListAvailable: boolean) => {
+	const state = visibleState(item, publishedIds, publicListAvailable);
 	const node = document.createElement('li');
 	node.className = 'account-card';
 
@@ -100,8 +109,8 @@ const load = async () => {
 		const [result, publicRecords] = await Promise.all([
 			accountFetch('/api/account/submissions'),
 			fetch('/records.json', { headers: { Accept: 'application/json' } })
-				.then((response) => (response.ok ? response.json() : { records: [] }))
-				.catch(() => ({ records: [] })),
+				.then((response) => (response.ok ? response.json() : null))
+				.catch(() => null),
 		]);
 		const publishedIds = new Set<string>((publicRecords?.records ?? []).map((record: { id: string }) => record.id));
 		const items = (result.items ?? []) as SubmissionSummary[];
@@ -109,8 +118,9 @@ const load = async () => {
 		toggle(content, true);
 		const pending = items.filter((item) => actionable.has(item.status) || item.withdrawal_requested).length;
 		if (summary) summary.textContent = pending ? `有 ${pending} 件需要你处理` : '目前没有待你处理的事项。';
+		if (quota && result.quota) quota.textContent = `今日还可提交 ${result.quota.submissions_left_today} 件 · 草稿还能保存 ${result.quota.drafts_left} 件 · 私密空间剩余约 ${Math.floor(result.quota.storage_left_bytes / 1024 / 1024)} MB`;
 		toggle(empty, items.length === 0);
-		if (list) for (const item of items) list.append(card(item, publishedIds));
+		if (list) for (const item of items) list.append(card(item, publishedIds, publicRecords !== null));
 	} catch (error) {
 		toggle(loading, false);
 		if ((error as Error & { status?: number }).status === 401) {
