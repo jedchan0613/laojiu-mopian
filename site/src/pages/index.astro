@@ -426,10 +426,14 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		display: grid;
 		grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
 		align-items: center;
-		gap: clamp(32px, 5vw, 56px);
-		padding: clamp(40px, 5vw, 56px) clamp(1.25rem, 3vw, 2.25rem) clamp(44px, 5vw, 60px);
-		background: var(--site-paper);
-	}
+	gap: clamp(32px, 5vw, 56px);
+	padding: clamp(40px, 5vw, 56px) clamp(1.25rem, 3vw, 2.25rem) clamp(44px, 5vw, 60px);
+	/* 静室聚光：极淡的径向暗角，边缘略沉、中心保持裱纸本色，让视线落向藏品。 */
+	background:
+		radial-gradient(140% 105% at 68% 36%, rgba(250, 247, 239, 0) 56%, rgba(80, 68, 48, 0.05) 100%),
+		linear-gradient(180deg, rgba(250, 247, 239, 0) 80%, rgba(80, 68, 48, 0.03) 100%),
+		var(--site-paper);
+}
 
 	.hero-copy {
 		display: flex;
@@ -441,6 +445,9 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	.masthead {
 		--masthead-mark-size: clamp(44px, 4vw, 48px);
 		--masthead-gap: clamp(12px, 1.4vw, 16px);
+		/* 报头下的一道细墨线，强化刊头仪式感（朱红仍只留给印章，不用在这里）。 */
+		padding-bottom: clamp(0.85rem, 1.6vw, 1.1rem);
+		border-bottom: 1px solid rgba(44, 40, 35, 0.28);
 	}
 
 	.masthead h1,
@@ -744,12 +751,21 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		background: var(--site-mat-deep);
 	}
 
+	/* 极缓慢的呼吸式缩放：从原始大小起步，幅度控制在 3.5%，避免生硬跳变。 */
+	@keyframes hero-kenburns {
+		from { transform: scale(1); }
+		to { transform: scale(1.035); }
+	}
+
 	.hero-record img {
 		display: block;
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
-		transition: transform 320ms ease;
+		/* 内沿一道极淡的墨线，让不同比例图片的裱边留空读起来是刻意的装裱。 */
+		box-shadow: inset 0 0 0 1px rgba(44, 40, 35, 0.07);
+		/* 先随全站规则淡入，再进入呼吸缩放；reduced-motion 下整段关闭。 */
+		animation: ljm-fade-in 0.7s ease both, hero-kenburns 18s ease-in-out 0.9s infinite alternate;
 	}
 
 	.hero-record figcaption {
@@ -804,11 +820,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		overflow-wrap: anywhere;
 	}
 
-	.hero-record:hover img,
-	.hero-record:focus-visible img {
-		transform: scale(1.012);
-	}
-
+	/* hover 的图片缩放已由持续的呼吸缩放取代，hover 反馈保留在裱框与标题上。 */
 	.hero-record:hover figure,
 	.hero-record:focus-visible figure {
 		border-color: rgba(44, 40, 35, 0.45);
@@ -997,9 +1009,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		letter-spacing: var(--ls-wide);
 	}
 
-	.category-active-list li:nth-child(odd) {
-		border-right: 1px solid rgba(188, 181, 164, 0.5);
-	}
+	/* 两栏之间不再用竖线分隔，靠留白分栏，去掉表格感。 */
 
 	.category-active-list a {
 		display: grid;
@@ -1008,7 +1018,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		gap: 0.62rem;
 		padding: 1.1rem 1rem 1.1rem 0.85rem;
 		text-decoration: none;
-		transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+		transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 	}
 
 	.category-active-list strong {
@@ -1059,6 +1069,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	.category-active-list a:focus-visible {
 		color: var(--site-text);
 		background: rgba(44, 40, 35, 0.04);
+		/* 目录式轻微右移；细线保持不动，像指尖划过目录。 */
+		transform: translateX(3px);
 	}
 
 	.category-active-list a:hover .category-index,
@@ -1211,6 +1223,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	.recent-lead-image {
 		position: relative;
 		display: block;
+		/* 与首屏裱框一致：主图也固定在 3:2 裱框内完整呈现，不再随图片比例忽高忽矮。 */
+		aspect-ratio: 3 / 2;
 		padding: 0.55rem;
 		background: var(--site-mat);
 		border: 1px solid var(--site-border-soft);
@@ -1222,9 +1236,10 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	.recent-lead-image img {
 		display: block;
 		width: 100%;
-		height: auto;
+		height: 100%;
 		object-fit: contain;
 		background: var(--site-mat-deep);
+		box-shadow: inset 0 0 0 1px rgba(44, 40, 35, 0.07);
 		transition: transform 260ms ease;
 	}
 
@@ -1349,6 +1364,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		height: 6.25rem;
 		object-fit: contain;
 		background: var(--site-mat-deep);
+		box-shadow: inset 0 0 0 1px rgba(44, 40, 35, 0.07);
 		transition: transform 260ms ease;
 	}
 
@@ -1516,13 +1532,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 			box-shadow: 0 5px 16px rgba(90, 79, 61, 0.07), 0 1px 4px rgba(90, 79, 61, 0.04);
 		}
 
-		.hero-record-image {
-			aspect-ratio: auto;
-		}
-
-		.hero-record img {
-			height: auto;
-		}
+		/* 移动端同样保持 4:3 裱框：切换轮播时外框不再随图片比例上下跳动。 */
 
 		.introduction-actions {
 			margin-top: 16px;
@@ -1566,10 +1576,6 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 		.category-active-list {
 			grid-template-columns: 1fr;
-		}
-
-		.category-active-list li:nth-child(odd) {
-			border-right: 0;
 		}
 
 		.category-active-list a {
@@ -1721,6 +1727,11 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		.category-arrow,
 		.category-pending-link {
 			transition: none;
+		}
+
+		/* 减少动态偏好下关闭呼吸缩放与淡入，图片直接静止呈现。 */
+		.hero-record img {
+			animation: none;
 		}
 	}
 </style>
