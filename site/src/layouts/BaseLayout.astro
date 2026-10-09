@@ -139,7 +139,9 @@ const serializedStructuredData = structuredData
 		--site-border-soft: #b6ad99;
 		--site-accent: #9a3f2e;
 		--site-muted: #55514a;
-		--site-subtle: #55504a;
+		/* 原 --site-subtle（#55504a）与 --site-muted 仅差 1/255，视觉上是同一个灰，
+		   合并为同一色值避免"假层次"；保留两个语义名以区分用途（次级文字 / 展签小字）。 */
+		--site-subtle: var(--site-muted);
 		--site-focus-outline: #4a463e;
 		--site-text-micro: 0.72rem;
 		--site-text-small: 0.78rem;
