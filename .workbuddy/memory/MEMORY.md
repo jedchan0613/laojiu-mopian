@@ -39,4 +39,13 @@
 
 ## 阶段划分（总方案）
 
-阶段一（原型与技术定案，Trae 完成）→ 阶段二（账户、收藏、基础权益，已完成）→ 阶段三（账户投稿与审核衔接，已完成）→ 阶段四（上线前验收与有限开放，未开始）。一次只做用户明确指定的阶段。
+阶段一（原型与技术定案，Trae 完成）→ 阶段二（账户、收藏、基础权益，已完成）→ 阶段三（账户投稿与审核衔接，已完成）→ 阶段四（上线前验收与有限开放，**2026-09-29 首次部署完成，有限开放中**）。一次只做用户明确指定的阶段。
+
+## 线上账户服务（2026-09-29 上线，改线上前必读）
+
+- main 合并提交 `96eb893`，自动部署成功；`deployed-commit` 与线上版本一致。
+- 服务器：`laojiumopian-accounts.service`（127.0.0.1:4177，enabled）；环境文件 `/etc/laojiumopian-accounts.env`（0600 root，含正式 Resend 密钥——从本机 `local-admin/accounts/mail.env` 复制并去掉 `LJM_MAIL_PROXY` 行）。
+- Caddy 已代理 `/api/account/*`（仅限 laojiumopian.com，不含 `/api/account-admin/*`）；改前备份在 `/etc/caddy/Caddyfile.bak-20260929`。
+- **开放开关**在 `/etc/laojiumopian-accounts.env`：`LJM_ACCOUNT_REGISTRATION_OPEN` 与 `LJM_ACCOUNT_UPLOADS_OPEN` **已于 2026-09-29 14:32 经用户授权改为 true（正式开放）**；改前备份 `laojiumopian-accounts.env.bak-20260929`。关闭应急：两项改回 false + `systemctl restart laojiumopian-accounts`，公开浏览不受影响。后续线上变更仍需用户逐项授权。
+- 通知队列：管理进程往 `submissions/.notification-queue/` 写文件，账户服务按用户偏好投递、失败重试；账户服务与投稿服务共用 submissions 数据目录（同 ljmadmin 用户）。
+- 阶段四待办：真实邮箱送达确认、备份恢复演练、应急开关演练。
