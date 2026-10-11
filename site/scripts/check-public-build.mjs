@@ -2,6 +2,7 @@ import { access, readdir, readFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fontace } from 'fontace';
+import { pointsInRanges, readCompleteFontCoverage } from './complete-font-coverage.mjs';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
@@ -56,10 +57,13 @@ const brandFontRanges = (await Promise.all(brandFontFiles.map(async (fileName) =
 		return [start, end];
 	});
 }))).flat();
-const brandFontHasGlyph = (character) => {
-	const codePoint = character.codePointAt(0);
-	return brandFontRanges.some(([start, end]) => codePoint >= start && codePoint <= end);
-};
+const brandFontPoints = await readCompleteFontCoverage(
+	join(siteRoot, 'src', 'assets', 'fonts', 'complete'),
+	pointsInRanges(brandFontRanges),
+	check,
+);
+check(baseLayoutSource.includes("import '../assets/fonts/complete/complete.css'"), '完整字库没有接入公开页面。');
+const brandFontHasGlyph = (character) => brandFontPoints.has(character.codePointAt(0));
 // 部署使用服务器正式档案，不应因本地样例较少而缩减既有字库覆盖。
 const originalBrandFont = fontace(await readFile(join(siteRoot, 'src', 'assets', 'fonts', 'noto-serif-sc-brand.woff2')));
 const originalGlyphsPreserved = originalBrandFont.unicodeRangeArray.every((range) => {
@@ -79,6 +83,10 @@ const requiredBrandCharacters = new Set([
 	...(publicPageMarkup.match(/\p{Script=Han}/gu) ?? []),
 	// 来自已发布页面截图；即使本地样例数据暂未同步，也必须防止再次回退。
 	...'搞玩都困难暗室',
+	// 2026-10-11：服务器草稿发布曾因这四字缺失而回滚，字体更新不能再次遗漏。
+	...'杯闹胸桌',
+	// 完整字库保留常用繁体和基本区生僻字，新增内容不再逐字补字体。
+	...'繁體龘',
 	// 服务器正式公开原文的缺字回归；不能只验证本地六件样例。
 	...'啊哎唉矮傲爸吧佰半伴饱抱倍辈奔俾舶踩惭婵畅吵趁乘吃迟抽匆粗答诞蛋挡弟睇掂颠惦叮懂唞豆毒盾耳帆凡犯饭芳飞奋逢父妇负赶糕咯哥耕顾怪孩害咁憾豪恨厚乎诲慧伙棘几季嫁健奖骄叫颈竟敬举倔嘅颗苦愧啦篮懒牢唠涝叻励俩谅聆履虑乱啰妈吗嘛慢忙矛锚冇妹闷猛眠乜咩母耐男恼脑呢嗯溺廿嬲努哦怕盼抛跑陪碰疲辟贫企气弃歉倾球屈佢却扰森啥衫捎婶甚食叔蔬瞬虽岁碎嗦琐她踏坦讨厅痛偷透忘委胃喂慰吻揾握屋唔午吸媳暇卸兄眼药爷嘢遗椅饮勇忧又娱渔愉愚院责掌啫争侄衷嘱抓仔租阻尊琢坐做咗㗎',
 ]);
@@ -87,7 +95,7 @@ const missingBrandCharacters = [...requiredBrandCharacters]
 	.sort((left, right) => left.localeCompare(right, 'zh-CN'));
 check(
 	missingBrandCharacters.length === 0,
-	`本地宋体缺少公开页面用字：${missingBrandCharacters.join('、')}。请先扩充字体子集。`,
+	`完整宋体仍未收录公开页面用字：${missingBrandCharacters.join('、')}。这些罕见字需另行处理。`,
 );
 check(
 	baseLayoutSource.includes("noto-serif-sc-brand-supplement.woff") &&
@@ -96,6 +104,11 @@ check(
 );
 const brandSubsetStyles = await readFile(join(siteRoot, 'src', 'assets', 'fonts', 'brand-subsets.css'), 'utf8');
 check(brandSubsetStyles.includes('noto-serif-sc-public-supplement.woff2') && brandSubsetStyles.includes('U+35CE'), '服务器公开原文补充字库没有接入字体样式。');
+const completeFontManifest = JSON.parse(await readFile(join(siteRoot, 'src', 'assets', 'fonts', 'complete', 'manifest.json'), 'utf8'));
+const emittedCompleteFonts = distFiles.filter((file) => /noto-serif-sc-full-[\da-f]+\.[^/\\]+\.woff2$/.test(file));
+check(emittedCompleteFonts.length === completeFontManifest.shards.length, '完整字体分片必须全部独立输出，不能内嵌到全站样式中。');
+const builtStyles = (await Promise.all(distFiles.filter((file) => file.endsWith('.css')).map((file) => readFile(file, 'utf8')))).join('\n');
+check(!builtStyles.includes('data:font/woff2') && !builtStyles.includes('fonts.googleapis.com') && !builtStyles.includes('fonts.gstatic.com'), '公开字体必须本地按需加载，不得内嵌完整分片或请求外部字体服务。');
 const scriptEntries = await Promise.all(
 	distFiles.filter((path) => path.endsWith('.js')).map(async (path) => ({
 		publicPath: `/${relative(distRoot, path).split(sep).join('/')}`,
