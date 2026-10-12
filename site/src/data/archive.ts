@@ -750,306 +750,6 @@ export const archiveItems = [
 	},
 	{
 		"core": {
-			"title": "靠近一点，就够了",
-			"accession_date": "2026-10-11",
-			"object_type": "PHO",
-			"date_display": "年代未知",
-			"record_status": "ACT",
-			"privacy_level": "G",
-			"rights_status": "UNK",
-			"research_status": "R0",
-			"evidence_level": "D",
-			"digitization_status": "DG0",
-			"transcription_status": "TX0",
-			"use_status": "U3",
-			"publication_file_path": [
-				"/archive/LJM-20261011-PHO-001/front-public.jpg"
-			],
-			"batch_id": "FSA-20261011-B01",
-			"physical_location": "家中",
-			"acquisition_method": "PR-PUR",
-			"source_name": "旧货市场摊主",
-			"source_date": "2026-10-11",
-			"source_place": "旧货市场",
-			"item_id": "LJM-20261011-PHO-001",
-			"created_date": "2026-10-12",
-			"updated_date": "2026-10-12",
-			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
-			"country": "中国",
-			"themes": [
-				"SU-MEM"
-			],
-			"condition_grade": "C2",
-			"condition_details": [
-				"DM-YEL"
-			],
-			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
-			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
-		},
-		"metadata": {
-			"schema": "photo",
-			"dimensions": {
-				"D07": {
-					"photo_function": "FN-MEM"
-				},
-				"D12": {
-					"verso_types": [
-						"VS-NONE"
-					]
-				}
-			}
-		},
-		"public_view": {
-			"description": "两个人站得很近，粉色的墙在身后。照片没有解释关系，只把这一瞬留得暖暖的。",
-			"transcription": "",
-			"tags": [],
-			"image_descriptions": [
-				"粉色墙边双人合影，正面。"
-			]
-		}
-	},
-	{
-		"core": {
-			"title": "扶梯往前，照片留下",
-			"accession_date": "2026-10-11",
-			"object_type": "PHO",
-			"date_display": "年代未知",
-			"record_status": "ACT",
-			"privacy_level": "G",
-			"rights_status": "UNK",
-			"research_status": "R0",
-			"evidence_level": "D",
-			"digitization_status": "DG0",
-			"transcription_status": "TX0",
-			"use_status": "U3",
-			"publication_file_path": [
-				"/archive/LJM-20261011-PHO-002/front-public.jpg"
-			],
-			"batch_id": "FSA-20261011-B01",
-			"physical_location": "家中",
-			"acquisition_method": "PR-PUR",
-			"source_name": "旧货市场摊主",
-			"source_date": "2026-10-11",
-			"source_place": "旧货市场",
-			"item_id": "LJM-20261011-PHO-002",
-			"created_date": "2026-10-12",
-			"updated_date": "2026-10-12",
-			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
-			"country": "中国",
-			"themes": [
-				"SU-MEM"
-			],
-			"condition_grade": "C2",
-			"condition_details": [
-				"DM-YEL"
-			],
-			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
-			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
-		},
-		"metadata": {
-			"schema": "photo",
-			"dimensions": {
-				"D07": {
-					"photo_function": "FN-MEM"
-				},
-				"D12": {
-					"verso_types": [
-						"VS-NONE"
-					]
-				}
-			}
-		},
-		"public_view": {
-			"description": "红衣的人站在前面，身后还有几个目光。一次路上的合影，把移动的日子停了一秒。",
-			"transcription": "",
-			"tags": [],
-			"image_descriptions": [
-				"扶梯上的多人合影，正面。"
-			]
-		}
-	},
-	{
-		"core": {
-			"title": "这身行头，很有自己的主意",
-			"accession_date": "2026-10-11",
-			"object_type": "PHO",
-			"date_display": "年代未知",
-			"record_status": "ACT",
-			"privacy_level": "G",
-			"rights_status": "UNK",
-			"research_status": "R0",
-			"evidence_level": "D",
-			"digitization_status": "DG0",
-			"transcription_status": "TX0",
-			"use_status": "U3",
-			"publication_file_path": [
-				"/archive/LJM-20261011-PHO-003/front-public.jpg"
-			],
-			"batch_id": "FSA-20261011-B01",
-			"physical_location": "家中",
-			"acquisition_method": "PR-PUR",
-			"source_name": "旧货市场摊主",
-			"source_date": "2026-10-11",
-			"source_place": "旧货市场",
-			"item_id": "LJM-20261011-PHO-003",
-			"created_date": "2026-10-12",
-			"updated_date": "2026-10-12",
-			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
-			"country": "中国",
-			"themes": [
-				"SU-MEM"
-			],
-			"condition_grade": "C2",
-			"condition_details": [
-				"DM-YEL"
-			],
-			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
-			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
-		},
-		"metadata": {
-			"schema": "photo",
-			"dimensions": {
-				"D07": {
-					"photo_function": "FN-MEM"
-				},
-				"D12": {
-					"verso_types": [
-						"VS-NONE"
-					]
-				}
-			}
-		},
-		"public_view": {
-			"description": "帽子、眼镜、格纹西装，连领口都收拾得讲究。旧照片里的时髦，今天也不怯场。",
-			"transcription": "",
-			"tags": [],
-			"image_descriptions": [
-				"格纹西装与帽子肖像，正面。"
-			]
-		}
-	},
-	{
-		"core": {
-			"title": "海很大，这一秒很小",
-			"accession_date": "2026-10-11",
-			"object_type": "PHO",
-			"date_display": "年代未知",
-			"record_status": "ACT",
-			"privacy_level": "G",
-			"rights_status": "UNK",
-			"research_status": "R0",
-			"evidence_level": "D",
-			"digitization_status": "DG0",
-			"transcription_status": "TX0",
-			"use_status": "U3",
-			"publication_file_path": [
-				"/archive/LJM-20261011-PHO-004/front-public.jpg"
-			],
-			"batch_id": "FSA-20261011-B01",
-			"physical_location": "家中",
-			"acquisition_method": "PR-PUR",
-			"source_name": "旧货市场摊主",
-			"source_date": "2026-10-11",
-			"source_place": "旧货市场",
-			"item_id": "LJM-20261011-PHO-004",
-			"created_date": "2026-10-12",
-			"updated_date": "2026-10-12",
-			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
-			"country": "中国",
-			"themes": [
-				"SU-MEM"
-			],
-			"condition_grade": "C2",
-			"condition_details": [
-				"DM-YEL"
-			],
-			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
-			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
-		},
-		"metadata": {
-			"schema": "photo",
-			"dimensions": {
-				"D07": {
-					"photo_function": "FN-MEM"
-				},
-				"D12": {
-					"verso_types": [
-						"VS-NONE"
-					]
-				}
-			}
-		},
-		"public_view": {
-			"description": "浪花推到身边，一只手举向天空。照片只留一瞬，辽阔却留得很久。",
-			"transcription": "",
-			"tags": [],
-			"image_descriptions": [
-				"海浪中的举手留影，正面。"
-			]
-		}
-	},
-	{
-		"core": {
-			"title": "衣服很红，快乐很小",
-			"accession_date": "2026-10-11",
-			"object_type": "PHO",
-			"date_display": "年代未知",
-			"record_status": "ACT",
-			"privacy_level": "G",
-			"rights_status": "UNK",
-			"research_status": "R0",
-			"evidence_level": "D",
-			"digitization_status": "DG0",
-			"transcription_status": "TX0",
-			"use_status": "U3",
-			"publication_file_path": [
-				"/archive/LJM-20261011-PHO-005/front-public.jpg"
-			],
-			"batch_id": "FSA-20261011-B01",
-			"physical_location": "家中",
-			"acquisition_method": "PR-PUR",
-			"source_name": "旧货市场摊主",
-			"source_date": "2026-10-11",
-			"source_place": "旧货市场",
-			"item_id": "LJM-20261011-PHO-005",
-			"created_date": "2026-10-12",
-			"updated_date": "2026-10-12",
-			"collection_code": "PHO_年代未知_MEM_FAM_NONE_C2+YEL_G",
-			"country": "中国",
-			"themes": [
-				"SU-MEM"
-			],
-			"condition_grade": "C2",
-			"condition_details": [
-				"DM-YEL"
-			],
-			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
-			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
-		},
-		"metadata": {
-			"schema": "photo",
-			"dimensions": {
-				"D07": {
-					"photo_function": "FN-FAM"
-				},
-				"D12": {
-					"verso_types": [
-						"VS-NONE"
-					]
-				}
-			}
-		},
-		"public_view": {
-			"description": "小椅子上的孩子，穿着一圈白色毛边。小小的姿势，让整张旧照片都变得可爱。",
-			"transcription": "",
-			"tags": [],
-			"image_descriptions": [
-				"红色毛边衣装儿童留影，正面。"
-			]
-		}
-	},
-	{
-		"core": {
 			"title": "蝴蝶结比烦恼大",
 			"accession_date": "2026-10-11",
 			"object_type": "PHO",
@@ -2860,6 +2560,306 @@ export const archiveItems = [
 			"tags": [],
 			"image_descriptions": [
 				"棕榈与花坛风景，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "靠近一点，就够了",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-036/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-036",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "两个人站得很近，粉色的墙在身后。照片没有解释关系，只把这一瞬留得暖暖的。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"粉色墙边双人合影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "扶梯往前，照片留下",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-037/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-037",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "红衣的人站在前面，身后还有几个目光。一次路上的合影，把移动的日子停了一秒。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"扶梯上的多人合影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "这身行头，很有自己的主意",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-038/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-038",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "帽子、眼镜、格纹西装，连领口都收拾得讲究。旧照片里的时髦，今天也不怯场。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"格纹西装与帽子肖像，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "海很大，这一秒很小",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-039/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-039",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "浪花推到身边，一只手举向天空。照片只留一瞬，辽阔却留得很久。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"海浪中的举手留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "衣服很红，快乐很小",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-040/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-040",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_FAM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-FAM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "小椅子上的孩子，穿着一圈白色毛边。小小的姿势，让整张旧照片都变得可爱。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"红色毛边衣装儿童留影，正面。"
 			]
 		}
 	},
