@@ -100,6 +100,16 @@ test('档案管理可按藏品时间从新到旧排序，并将未知年代放�
 	);
 });
 
+test('年代筛选提供“年代未知”选项，覆盖未填写与填写为年代未知', async () => {
+	const script = await readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8');
+
+	assert.match(script, /<option value="unknown"[^>]*>年代未知<\/option>/);
+	const filterStart = script.indexOf('if (state.recordDecadeFilter) {');
+	const filterEnd = script.indexOf("if (state.recordQuickStatus) {");
+	assert.ok(filterStart >= 0 && filterEnd > filterStart, '应能读取年代筛选逻辑');
+	assert.match(script.slice(filterStart, filterEnd), /!recordDecade\(record\)/);
+});
+
 test('保存发布支持取消，并使用轻量图片与按需巡检', async () => {
 	const [html, script, server] = await Promise.all([
 		readFile(new URL('local-admin/public/index.html', projectRoot), 'utf8'),

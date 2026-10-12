@@ -10,6 +10,13 @@
   1. `github-deploy/deployed-commit` **必须与线上实际版本一致**，否则定时器会"发现记录与主线不一致"而**每两分钟循环重新部署**（每次都会短暂停管理服务、重启点赞与投稿服务）。
   2. 切换软链**不能用 root**——`/srv/laojiumopian/releases` 目录带粘滞位，自动部署脚本以 `ljmadmin` 身份替换 `live` 时，替换不了 root 属主的链接，会报 `EPERM: operation not permitted, rename .../live` 并恢复旧版。用 root 切过后务必 `chown -h ljmadmin:ljmpublish <链接>`。
 
+## 仓库不承载图片与私密数据（2026-10-12 起，重要）
+
+- **GitHub 仓库 jedchan0613/laojiu-mopian 是 Public**，任何入库内容都按"全网公开"对待。
+- **公开图片（site/public/archive、archive-responsive）不进仓库**：部署脚本 git archive 本就排除这两处，线上图片由服务器上一版应用目录继承 + 远程写入维护，仓库从不参与图片分发。新发布图片照样走"本地发布→服务器写入"，不要往仓库提交图片。
+- **local-admin 的 history/drafts/recycle-bin/submissions/upload-staging 与 public-assets/inbox 永远不入仓库**（.gitignore 已有）；gitignore 只防新增，历史上的残留要靠 filter-branch 清洗（2026-10-12 已清洗全部历史并强推，见当日日志）。
+- 改 git 历史前必做：镜像备份到同步目录之外（如 C:\Users\35171\laojiu-mopian-mirror-backup-*.git）；工作区先干净（别的会话的未提交修改先备份再放回，不替人提交）；reflog expire 会清掉 stash；GitHub 对不可达旧提交有缓存，强推后旧提交直链仍会短暂 200。
+
 ## 公开构建（site/）的三条硬约束——改公开页面文案前必查
 
 1. **每个 HTML 页面都必须带联系挂件**。`site/scripts/check-public-build.mjs` 会遍历 `dist/**/*.html`，逐页要求 `data-contact-widget`、`data-contact-launcher`、隐私按钮默认选中、且能通过脚本树找到 `/api/contact/config`。**新页面一律用 `BaseLayout`**，否则必然失败。

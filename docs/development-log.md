@@ -3986,3 +3986,25 @@
 - 规则修订与授权范围已同步入库（AGENTS.md 第9条、privacy-checklist 特别授权节），仅适用 LJM-20261011 批次。
 
 当前状态：线上=本地一致；25件撤下保留历史快照可恢复；29件按用户特别授权未遮盖公开。
+
+## 2026-10-12（深夜）：档案管理列表年代筛选新增“年代未知”选项
+
+用户要求在档案工作台“档案管理”的年代筛选下拉中增加“年代未知”，用于筛出未填写年代、或填写为“年代未知”的档案。
+
+- 实现：`local-admin/public/app.js` 两处修改。①筛选逻辑：选择“年代未知”（值 `unknown`）时保留 `recordDecade()` 提取不到四位年份的档案，即“未填写”与“年代未知”一并命中；②下拉选项：在全部具体年代之后固定追加 `<option value="unknown">年代未知</option>`，选中状态在重新渲染时可保持。
+- 边界验证：空值、“年代未知”、“民国三十八年”等无可识别四位年份的写法均归入“年代未知”；“1993年”“约1905年”“2010年代”“1980-12-31”正常归入对应年代，不影响原有年代筛选与“按藏品时间”排序（未知仍排最后）。
+- 测试：`local-admin/tests/record-library-ui.test.mjs` 新增“年代筛选提供‘年代未知’选项”用例，10/10 通过。仅改本地管理端，未动 `site/` 与服务端，无需重新构建。
+
+当前状态：本地管理端功能完成（刷新 127.0.0.1:4173 管理页即生效），等待用户验证。
+
+## 2026-10-12（深夜）：公开图片与本地私密数据目录移出 git 并清洗全部历史（用户授权）
+
+背景：GitHub 仓库为 Public，已发布公开图片（site/public/archive、archive-responsive，含 LET-004 未遮盖版）与本地私密目录的历史残留（local-admin/history 发布前快照等）在公开仓库形成网站之外的第二曝光面。经用户确认"不影响线上则执行选项1"。
+
+- 不影响线上的依据：自动部署脚本 git archive 明确排除这两处目录，公开图片由服务器从上一版应用目录继承、经远程写入维护，仓库从不参与图片分发（已核对 deployment/laojiumopian-github-deploy.sh 第 218-228、268-282 行）。
+- 执行：.gitignore 增加 site/public/archive 与 archive-responsive；git filter-branch 两轮清洗全部历史（公开图片目录；local-admin/history、drafts、recycle-bin、submissions、upload-staging、public-assets/inbox），删除 refs/original、refs/codex 检查点引用，gc --prune=now。验证：全部历史对象中敏感路径对象数为 0；.git 197M→76M；本地镜像备份留存于 C:/Users/35171/laojiu-mopian-mirror-backup-20261012.git。
+- 推送：main 与 feature/registration-preview 均强推改写（新头 9196abc / df7c7f5）。匿名验证 main 分支 raw 图片 404；新提交页面 200 正常。
+- 已知残留：GitHub 对不可达旧提交有服务端缓存，旧提交直链（如 db54b2c）仍短暂返回 200，其历史视图理论上仍可见图片，需等 GitHub GC 或本人联系 GitHub Support 清除；彻底即时手段是把仓库临时改私有再公开。
+- 附带清理：另一会话当晚未提交的"年代未知筛选"三处工作区修改已先备份后原样保留，未替其提交。
+
+当前状态：仓库不再分发图片；服务器自动部署将在 2 分钟内发现 main 变化并重部署一次（内容不变，图片继承服务器现有版本）。

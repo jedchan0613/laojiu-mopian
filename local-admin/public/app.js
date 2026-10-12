@@ -807,7 +807,9 @@ const filteredRecords = () => {
 		records = records.filter((record) => record.core.object_type === state.recordTypeFilter);
 	}
 	if (state.recordDecadeFilter) {
-		records = records.filter((record) => recordDecade(record) === state.recordDecadeFilter);
+		records = state.recordDecadeFilter === 'unknown'
+			? records.filter((record) => !recordDecade(record))
+			: records.filter((record) => recordDecade(record) === state.recordDecadeFilter);
 	}
 	if (state.recordQuickStatus) {
 		records = records.filter((record) => statusLabel(record) === state.recordQuickStatus);
@@ -1148,7 +1150,7 @@ const syncRecordToolOptions = (tabRecords) => {
 		.sort((left, right) => right.localeCompare(left));
 	elements.recordDecadeFilter.innerHTML = `<option value="">全部年代</option>${decades
 		.map((value) => `<option value="${escapeHtml(value)}" ${value === state.recordDecadeFilter ? 'selected' : ''}>${escapeHtml(value)}年代</option>`)
-		.join('')}`;
+		.join('')}<option value="unknown" ${state.recordDecadeFilter === 'unknown' ? 'selected' : ''}>年代未知</option>`;
 	const statusOrder = ['草稿', '恢复草稿', '有未发布修改', '未发布', '候选', '已发布', '已撤销'];
 	const statuses = [...new Set(tabRecords.map(statusLabel))]
 		.sort((left, right) => (statusOrder.indexOf(left) + statusOrder.length) % statusOrder.length
