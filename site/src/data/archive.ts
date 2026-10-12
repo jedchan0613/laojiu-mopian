@@ -569,6 +569,7011 @@ export const archiveItems = [
 				"照片卡片正面，人物合影与邮票、邮戳。"
 			]
 		}
+	},
+	{
+		"core": {
+			"title": "“爸爸您好”，比新年快乐更久",
+			"accession_date": "2026-10-11",
+			"object_type": "LET",
+			"date_display": "1993年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-LET-001/front-public.jpg",
+				"/archive/LJM-20261011-LET-001/back-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-LET-001",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "LET_1993年",
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "common",
+			"dimensions": {}
+		},
+		"public_view": {
+			"description": "1993 年的一张贺卡。祝词都很普通，开头那个称呼，让纸忽然有了温度。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"1993年写给父亲的新年贺卡，背面。",
+				"1993年写给父亲的新年贺卡，封面/正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "信里没有远方，只有惦记",
+			"accession_date": "2026-10-11",
+			"object_type": "LET",
+			"date_display": "1993年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-LET-002/front-public.jpg",
+				"/archive/LJM-20261011-LET-002/back-public.jpg",
+				"/archive/LJM-20261011-LET-002/detail-01-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-LET-002",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "LET_1993年",
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "common",
+			"dimensions": {}
+		},
+		"public_view": {
+			"description": "家人的近况、替我问个好。一封旧信，把牵挂写得像日常一样轻。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"1993年友人来信与款项附记，封面/正面。",
+				"1993年友人来信与款项附记，细节图。",
+				"1993年友人来信与款项附记，细节图。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "风浪之外，还有一张英语试卷",
+			"accession_date": "2026-10-11",
+			"object_type": "LET",
+			"date_display": "1996年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-LET-003/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-LET-003",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "LET_1996年",
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "common",
+			"dimensions": {}
+		},
+		"public_view": {
+			"description": "1996 年的船员英语考试通知。出海这件事，连单词也要一起准备。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"1996年船员英语适岗考试通知，封面/正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "退休以后，仍有一张表等着填",
+			"accession_date": "2026-10-11",
+			"object_type": "LET",
+			"date_display": "2007年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-LET-004/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-LET-004",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "LET_2007年",
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "common",
+			"dimensions": {}
+		},
+		"public_view": {
+			"description": "2007 年的一张住房补贴申请表。勾选很轻，纸上的折痕很重。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"2007年住房货币补贴支取申请表，封面/正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "靠近一点，就够了",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-001/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-001",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "两个人站得很近，粉色的墙在身后。照片没有解释关系，只把这一瞬留得暖暖的。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"粉色墙边双人合影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "扶梯往前，照片留下",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-002/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-002",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "红衣的人站在前面，身后还有几个目光。一次路上的合影，把移动的日子停了一秒。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"扶梯上的多人合影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "这身行头，很有自己的主意",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-003/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-003",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "帽子、眼镜、格纹西装，连领口都收拾得讲究。旧照片里的时髦，今天也不怯场。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"格纹西装与帽子肖像，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "海很大，这一秒很小",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-004/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-004",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "浪花推到身边，一只手举向天空。照片只留一瞬，辽阔却留得很久。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"海浪中的举手留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "衣服很红，快乐很小",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-005/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-005",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_FAM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-FAM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "小椅子上的孩子，穿着一圈白色毛边。小小的姿势，让整张旧照片都变得可爱。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"红色毛边衣装儿童留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "蝴蝶结比烦恼大",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-006/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-006",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_FAM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-FAM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "小小的脸，轻轻的笑。黑白照片里，童年的亮一点也没被收走。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"蝴蝶结幼儿黑白肖像，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "别摆了，这样就很好",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-007/front-public.jpg",
+				"/archive/LJM-20261011-PHO-007/back-public.jpg",
+				"/archive/LJM-20261011-PHO-007/detail-01-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-007",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NOTE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NOTE"
+					],
+					"verso_transcription": "背面已扫描，文字内容待发布前人工确认。"
+				}
+			}
+		},
+		"public_view": {
+			"description": "几张连续的合影里，有人举相机，有人回头，笑还没来得及收好。最动人的一张，常常不那么标准。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"户外栏杆旁的连续合影，正面。",
+				"户外栏杆旁的连续合影，细节图。",
+				"户外栏杆旁的连续合影，细节图。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "花挡住了一点话",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-008/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-008",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "花束挨着脸，笑意藏在后面。旧照片有点含蓄，刚好让人想多看一眼。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"花束旁女子室内留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "沿这条路，慢慢走",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-009/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-009",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_OTH_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-OTH"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "树影把道路围起来，城市留在远处。旧照片没说目的地，却很会让人停留。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"绿树道路与远城风景，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "站近一点，照片才装得下",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-010/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-010",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "几个人挨在镜头前，笑容各有各的样子。绿树只做背景，热闹都在前面。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"绿树前多人合影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "仰起头的这一秒",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-011/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-011",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_FAM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-FAM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "孩子把脸抬了起来，旁边的人笑着。照片里的动作很小，心里却跟着动了一下。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"木椅上成人与幼儿合影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "琴键停了，笑还在",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-012/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-012",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "手留在琴键上，目光转向镜头。这一张无声的照片，偏偏有点像音乐。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"琴键边的黑白留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "一只手，把画面拉近了",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-013/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-013",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "猴子伸来手，人也笑了。山石边的这一瞬，像旧日留下的一点轻巧玩笑。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"山石边喂猴留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "桥过去，楼还在",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-014/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-014",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_CITY_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"city": "上海",
+			"themes": [
+				"SU-CITY"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "一座钢桥、一栋高楼，被同一张旧影连起来。路有来处，照片有余温。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"上海大厦旧影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "大世界，小照片",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-015/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-015",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_CITY_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"city": "上海",
+			"themes": [
+				"SU-CITY"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "高塔、街口和路人，都装进一张不大的旧影。世界很大，留住它的纸很薄。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"上海大世界旧影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "拐角那栋楼",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-016/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-016",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_CITY_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"city": "上海",
+			"themes": [
+				"SU-CITY"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "工人文化宫立在街角，窗格、电线和行人仍然清楚。日子远了，街角没有。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"上海工人文化宫旧影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "高楼把旧日撑了起来",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-017/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-017",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_CITY_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"city": "上海",
+			"themes": [
+				"SU-CITY"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "国际饭店立在街景中央。车辆很小，天空很高，一座城的气势还在。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"上海国际饭店旧影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "江边的风，吹进了纸里",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-018/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-018",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_CITY_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"city": "上海",
+			"themes": [
+				"SU-CITY"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "黄浦江畔的楼、车和船，沿着画面排开。黑白很静，江边应该很热闹。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"上海黄浦江畔旧影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "塔很高，日子很轻",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-019/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-019",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_CITY_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"city": "上海",
+			"themes": [
+				"SU-CITY"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "龙华塔下有人缓缓走过。远处的时间，被这一张照片放低了声音。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"上海龙华塔旧影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "路很宽，旧日很近",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-020/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-020",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_CITY_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"city": "上海",
+			"themes": [
+				"SU-CITY"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "照片题名上海闵行一号路。车和人都在各自的方向里，时间却停在同一张纸上。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"上海闵行一号路旧影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "门前的树还那么圆",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-021/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-021",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_CITY_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"city": "上海",
+			"themes": [
+				"SU-CITY"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "少年宫前的树被修得整齐，台阶向屋里延伸。旧影安静，想象却很热闹。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"上海少年宫旧影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "桥绕几回，心事少一句",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-022/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-022",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_CITY_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"city": "上海",
+			"themes": [
+				"SU-CITY"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "九曲桥弯进亭阁与水面。照片里没有对白，倒很适合把话藏一会儿。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"上海豫园九曲桥旧影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "街角把时间站住了",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-023/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-023",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_CITY_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"city": "上海",
+			"themes": [
+				"SU-CITY"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "中百公司的楼影、电车和行人，一起停在这张旧照片里。城市继续往前，它没有。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"上海中百公司旧影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "站在一起就行",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-024/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-024",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "石栏旁的一次合影，姿势并不刻意。照片里留住的，是两个人刚好站在一起。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"石栏旁双人合影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "怀里有个小小的世界",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-025/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-025",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_FAM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-FAM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "藤椅、花裙和怀里的孩子，都留在这一瞬。看着看着，心就软了一点。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"室内抱幼儿留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "日常里，笑一下",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-026/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-026",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "桌椅、电视和一个站姿都很普通。笑留在镜头里，就有了值得回看的理由。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"室内微笑站姿留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "筷子没放下，笑先到了",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-027/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-027",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_FAM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-FAM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "一桌人围着饭菜，镜头赶上了吃饭的瞬间。没有特别整齐，却特别让人想多看一眼。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"室内围桌吃饭留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "辫子编得整齐，目光很直",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-028/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-028",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "一张小小的黑白肖像，把童年的认真留了下来。看着那双眼睛，忽然不想急着长大。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"双辫女孩黑白肖像，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "在院子里，留住一点明亮",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-029/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-029",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "两个人站在雕塑边，枝叶落进画面。旧颜色里藏着一个让人愿意慢看的瞬间。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"庭院双人与动物雕塑合影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "台上的人，台下的目光",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-030/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-030",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "两个人站在灯下，一排观众看着。照片没录下声音，却留下了大家同在的那一刻。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"舞台上的双人留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "这一曲，留在照片里",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-031/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-031",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "舞厅的灯在头顶，两个人站得很近。旧影没有音乐，动作却让人想多停一拍。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"舞厅双人共舞留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "这一吻，留在相纸上",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-032/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-032",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_FAM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-FAM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "婚纱、礼服和轻轻闭上的眼睛，都停在同一瞬。照片有些旧，亲近却很清楚。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"影楼婚纱亲吻留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "举杯的时候，日子很满",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-033/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-033",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_FAM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-FAM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "菜还在桌上，杯子已经举了起来。旧照片没有声音，热闹却一眼就能看见。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"圆桌举杯聚餐留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "把好看藏在日常里",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-034/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-034",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "一件针织衫，几盆绿植，一个站姿。没有盛大的场面，这一张却很耐看。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"针织衫女子室内留影，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "风把树梢吹得很好看",
+			"accession_date": "2026-10-11",
+			"object_type": "PHO",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PHO-035/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PHO-035",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PHO_年代未知_OTH_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"themes": [
+				"SU-OTH"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "棕榈、草坪和一小圈花坛，留在旧照片里。没有人站在前面，风景也很有表情。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"棕榈与花坛风景，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "想你这件事，有一点安静",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-001/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-001",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "沉思鹦鹉夕照明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "鹦鹉挨着，夕照铺在另一边。旧卡把沉思印得很大，把情绪藏进颜色里。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"沉思鹦鹉夕照明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "早一点，也轻一点",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-002/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-002",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_GRT_OTH+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "晨字麦田道路祝福明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "麦田与道路伸向云下，卡面印着晨。一天还没走远，心可以慢慢醒。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"晨字麦田道路祝福明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "石头也有没说完的话",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-003/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-003",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_UNK_OTH+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "赤色岩壁缝隙明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "赤色岩壁之间留着一道深缝。越靠近，越觉得沉默有自己的重量。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"赤色岩壁缝隙明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "来玩，好吗",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-004/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-004",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_COM_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "春节邀约明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "新年祝福写到一半，变成了一个轻轻的邀请。最动人的词，有时只是好吗。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"春节邀约明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "隔着大学的路，还是想见你",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-005/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-005",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_UNK_COM_MEM+SCH_UNK_UNK",
+			"event_scene": [
+				"EV-SCH"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-UNK"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "大学近况与盼相聚明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "旧卡写着学习与近况，也盼有机会相聚。前程很忙，问候没有缺席。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"大学近况与盼相聚明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "那时，画一个世界只需几笔",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-006/front-public.jpg",
+				"/archive/LJM-20261011-PST-006/back-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-006",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_UNK_UNK_CHD+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-CHD"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-UNK"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "儿童彩绘书信节明信片_正背"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "手绘人物、颜色和歪歪的线条留在书信节明信片上。认真很满，技巧可以慢慢长。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"儿童彩绘书信节明信片_正背，正面。",
+				"儿童彩绘书信节明信片_正背，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "花开在这里，话藏在后面",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-007/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-007",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_UNK_OTH+TRV_UNK_UNK",
+			"event_scene": [
+				"EV-TRV"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "鼓浪屿三角梅明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "紫红三角梅映着浅色墙面。旧明信片的颜色很轻，余味却有一点深。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"鼓浪屿三角梅明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "把祝福种得密一点",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-008/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-008",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_GRT_OTH+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "红黄花海祝福明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "红黄小花铺满绿色的纸面。旧明信片把好意，开成了一片。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"红黄花海祝福明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "暗处，也有一点红",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-009/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-009",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "红掌与银叶插花明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "深色背景里，两抹红格外明亮。这张插花明信片，把热烈藏得不吵。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"红掌与银叶插花明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "山很远，想念有点近",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-010/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-010",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_UNK_OTH+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "怀念你雪山小猪明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "雪山占满画面，小猪缩在一角。怀念你几个字，把冷色轻轻暖了一下。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"怀念你雪山小猪明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "石头中间，也会开花",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-011/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-011",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "黄郁金香与卵石插花明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "黄郁金香从卵石之间亮起来。坚硬的周围，偏偏留着一点温柔。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"黄郁金香与卵石插花明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "寄一份思念，邮资已经付了",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-012/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-012",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_GRT_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "寄一份思念寄一份祝福明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "旧明信片上的几句话很短。想念没有展开讲，也已经到了纸上。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"寄一份思念寄一份祝福明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "飞行之前，先静一静",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-013/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-013",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "静观自得花鸟画航空明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "花鸟画与航空邀请并排留在旧卡上。路可以走得很远，心不必一直赶。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"静观自得花鸟画航空明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "好久不见，寒假来找我吧",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-014/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-014",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_COM_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "久别同窗与寒假邀约明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "问近况、谈学习，再约假期见面。明信片上的距离，被一句邀约拉近了。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"久别同窗与寒假邀约明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "回信迟了，惦记还在",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-015/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-015",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_COM_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "久未回信的致歉与邀约明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "几行字先道歉，再问近况，最后说有空来坐坐。笨拙的认真，也很动人。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"久未回信的致歉与邀约明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "热闹散了，还想再聚",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-016/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-016",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_COM_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "剧团相聚与春节邀约邮政明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "手写字提起一次相聚，也邀请节日里再来。人群散开以后，问候接着。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"剧团相聚与春节邀约邮政明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "江很静，信有一点着急",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-017/front-public.jpg",
+				"/archive/LJM-20261011-PST-017/back-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-017",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_UNK_OTH+TRV_UNK_UNK",
+			"event_scene": [
+				"EV-TRV"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "漓江鸬鹚明信片_正背"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "正面是漓江，背面问寄出的信是否收到。山水慢慢的，惦记却等不住。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"漓江鸬鹚明信片_正背，正面。",
+				"漓江鸬鹚明信片_正背，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "车留在纸上，祝福已经上路",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-018/front-public.jpg",
+				"/archive/LJM-20261011-PST-018/back-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-018",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_OTH_UNK_TRN+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-TRN"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-OTH"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "铃木VS1400GLJ摩托明信片_正背"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "正面是铃木摩托，背面是几句祝愿。机器很硬，寄来的人情很软。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"铃木VS1400GLJ摩托明信片_正背，正面。",
+				"铃木VS1400GLJ摩托明信片_正背，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "把冬天读成一首诗",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-019/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-019",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_UNK_OTH+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "洛桥晚望诗文与冰景明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "洛桥晚望印在卡面上，下面是冰景。纸上的冷，有一层读得出的温度。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"洛桥晚望诗文与冰景明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "猫很会睡，字很会暖",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-020/front-public.jpg",
+				"/archive/LJM-20261011-PST-020/back-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-020",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_GRT_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "猫岛拼贴与同行寄语明信片_正背"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "猫岛拼贴在正面，感谢陪伴的寄语在背面。可爱的外壳里，装着认真的话。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"猫岛拼贴与同行寄语明信片_正背，正面。",
+				"猫岛拼贴与同行寄语明信片_正背，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "树很高，心事可以很轻",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-021/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-021",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_GRT_OTH+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "嫩绿树林祝福明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "嫩绿枝叶在树干之间铺开。一张树林明信片，给目光留了一处缓冲。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"嫩绿树林祝福明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "去努力吧，我在字里陪你",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-022/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-022",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_GRT_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "努力与友情寄语明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "一段关于理想与努力的手写寄语，落在明信片上。鼓励后面，还藏着对友情的认真。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"努力与友情寄语明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "普通，也可以郑重",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-023/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-023",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_GRT_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "普通人不做平庸事新年寄语明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "新年寄语写在一张明信片背面。说自己普通，也说不愿把日子过得敷衍。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"普通人不做平庸事新年寄语明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "忙着考试，也没忘了你",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-024/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-024",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_COM_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "期末考试近况与圣诞祝福明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "字写得密，近况说得多。期末的忙碌里，仍留了一句节日问候。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"期末考试近况与圣诞祝福明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "给自己，也加一点爱",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-025/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-025",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_GRT_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "全新自我卡通祝福明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "卡面写着全新自我，旁边列了青春、知识和友情。旧祝福里，连爱也算了一份。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"全新自我卡通祝福明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "画里的人，比纸张靠得更近",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-026/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-026",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "日式人物春画明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "一张人物春画明信片。衣纹绕来绕去，距离却很直接。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"日式人物春画明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "字换了语言，牵挂没有",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "1997年10月4日",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-027/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-027",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_1997年10月4日_UNK_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-UNK"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "1997年10月4日"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "日文手写书信与信封_1997年10月4日"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "信封与两页日文手写信留在同一张扫描里。笔画不同，郑重相同。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"日文手写书信与信封_1997年10月4日，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "愿你美好，也愿你自在",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-028/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-028",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_GRT_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "容貌与内涵寄语新年明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "旧明信片把新年祝福与关于内涵的寄语写在一起。几行字，留下了一次认真劝慰。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"容貌与内涵寄语新年明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "空旷里，偏偏有一点绿",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-029/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-029",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_UNK_OTH+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "沙丘绿植元主题明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "沙丘很大，植物很小。影子拉得长长的，也像在认真活着。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"沙丘绿植元主题明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "走远一点，也没忘了你",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "2012年8月5日",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-030/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-030",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_2012年8月5日_VIEW_TRV_OTH+TRV_UNK_UNK",
+			"event_scene": [
+				"EV-TRV"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-TRV"
+				},
+				"PC04": {
+					"writing_date_text": "2012年8月5日"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "束河古镇旅途明信片背面_2012年8月5日"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "人在古镇，惦记却很近。明信片写了旅途，也写了记得照顾自己。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"束河古镇旅途明信片背面_2012年8月5日，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "把树写进信里",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-031/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-031",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_UNK_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-UNK"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "树与远方随笔明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "明信片背面留着几行随笔。树、画与远方，被笔尖放在同一张纸上。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"树与远方随笔明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "把态度穿在身上",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-032/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-032",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_UNK_UNK_FAS+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-FAS"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-UNK"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "双人帽装街景时装明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "帽子、格纹与长衣留在一张时装明信片上。人站得安静，风格很有分量。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"双人帽装街景时装明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "那时，远方还需要一张卡",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-033/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-033",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ADV_UNK_BIZ+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-BIZ"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ADV"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "通信与拍照手机宣传明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "手机宣传印在明信片上，通信与风景并排。两种联系人的方式，在旧纸上碰了面。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"通信与拍照手机宣传明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "借一片海，寄几句祝福",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-034/front-public.jpg",
+				"/archive/LJM-20261011-PST-034/back-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-034",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_GRT_OTH+TRV_UNK_UNK",
+			"event_scene": [
+				"EV-TRV"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "威基基海滩节日祝福明信片_正背"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "海滩在正面，节日问候在背面。风景很远，手写的几行字却很近。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"威基基海滩节日祝福明信片_正背，正面。",
+				"威基基海滩节日祝福明信片_正背，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "把这点温馨带在身边",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-035/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-035",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_GRT_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "温馨祝福随身相伴明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "旧明信片上的祝愿说得很直接。纸能放进口袋，心意也想跟着你走。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"温馨祝福随身相伴明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "把房间翻过去，是一句祝福",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-036/front-public.jpg",
+				"/archive/LJM-20261011-PST-036/back-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-036",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "我的房间装饰明信片_正背"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "蓝瓶、细花和小摆件在正面，英文圣诞问候在背面。私人角落也能成为寄出的温柔。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"我的房间装饰明信片_正背，正面。",
+				"我的房间装饰明信片_正背，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "我要告诉你，其实有点想你",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-037/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-037",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_GRT_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "我要告诉你娃娃友情明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "娃娃抱着花篮，卡面把友情说得很满。可爱的图案，替人壮了一次胆。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"我要告诉你娃娃友情明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "山不说话，雾替它留白",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-038/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-038",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_UNK_OTH+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "雾中山水画明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "一张雾中山水明信片，颜色很轻。看久一点，连急着说的话都慢下来。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"雾中山水画明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "天快暗了，还在往前走",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-039/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-039",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_GRT_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "夕照长颈鹿祝福明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "长颈鹿与倒影留在橙红的霞光里。明信片上的远行，安静得有一点倔强。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"夕照长颈鹿祝福明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "怕也没关系，还是可以往前",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-040/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-040",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_GRT_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "相信自己放手一搏寄语卡背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "旧卡上的寄语谈勇气与自信。手写字像站在身后，轻轻扶了一下。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"相信自己放手一搏寄语卡背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "祝福想敲一下你的窗",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-041/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-041",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_GRT_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "心灵之窗新年祝福明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "几行手写字，把新年问候比作敲窗。声音很小，来意很清楚。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"心灵之窗新年祝福明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "别哭，下一年也陪你",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-042/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-042",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_GRT_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "新年祝愿与别哭贴纸明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "新年祝愿旁边贴着小熊和别哭。卡片没有说很多，已经像轻轻抱了一下。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"新年祝愿与别哭贴纸明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "黄色的花，替人说新年好",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-043/front-public.jpg",
+				"/archive/LJM-20261011-PST-043/back-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-043",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_GRT_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "姚黄牡丹新年祝福明信片_正背"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "姚黄牡丹立在瓶中，背面是中英文新年问候。祝愿没有铺张，颜色已经够暖。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"姚黄牡丹新年祝福明信片_正背，正面。",
+				"姚黄牡丹新年祝福明信片_正背，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "又一年了，你呢",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-044/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-044",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_COM_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "宜昌近况与新年问候明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "旧明信片先交代自己的近况，再把问题交给远处的人。想知道你过得怎么样，仍很认真。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"宜昌近况与新年问候明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "把技术问题，也写得很认真",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-045/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-045",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_UNK_COM_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-UNK"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "移动通信技术询问邮政明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "一张邮政明信片上，密密写着通信与手机的问题。兴趣很具体，字也很投入。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"移动通信技术询问邮政明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "一张卡，也能问一件认真事",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-046/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-046",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_UNK_COM_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-UNK"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "邮政汇票图谱咨询明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "旧明信片上是一段对邮政资料的咨询。兴趣有多具体，字就写得多仔细。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"邮政汇票图谱咨询明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "把友情写得有一点笨",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-047/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-047",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_GRT_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "友情长存娃娃秋景明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "娃娃、秋景和大大的友情长存。旧明信片的认真，有时就是这样直白。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"友情长存娃娃秋景明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "祝福也照顾到你的家人",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-048/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-048",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_GRT_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "元旦与家人祝愿明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "几行竖写的问候，把朋友与家人一并放在心上。明信片很小，挂念很周全。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"元旦与家人祝愿明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "雪还没被踩过，明天还有位置",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-049/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-049",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_UNK_OTH+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "远方雪野与明天足迹明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "蓝紫雪野安静地铺着，旁边写着你我与明天。一张旧卡，把未走的路留好了。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"远方雪野与明天足迹明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "把计划，一点点变成现实",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-050/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-050",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_UNK_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-UNK"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "愿新一年把计划变现实明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "旧明信片先问近况，再谈新一年。祝福不飘在天上，落在了具体的生活里。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"愿新一年把计划变现实明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "学习要进步，也记得来玩",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-051/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-051",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_UNK_COM_MEM+SCH_UNK_UNK",
+			"event_scene": [
+				"EV-SCH"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-UNK"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "愿学业进步与来家玩明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "旧卡一边祝学业，一边邀见面。认真和亲近，被写在了同一处。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"愿学业进步与来家玩明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "风来时，算我问候过你",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-052/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-052",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_GRT_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "愿做远方风铃的祝福明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "一张旧贺卡，用风铃写远方的祝福。说得很轻，惦记并不轻。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"愿做远方风铃的祝福明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "月亮看着，谁也没解释",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-053/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-053",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "月下长舌人物插画明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "三个人物与夸张的长舌留在黑白卡面。古怪得很，也让人想再看一眼。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"月下长舌人物插画明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "你最近点样啊",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-054/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-054",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_GRT_COM_MEM+FST_UNK_UNK",
+			"event_scene": [
+				"EV-FST"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-GRT"
+				},
+				"PC02": {
+					"postcard_function": "PF-COM"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "粤语近况与圣诞祝福明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "手写问候带着口语的亲近。明信片不大，熟悉的语气刚好装得下。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"粤语近况与圣诞祝福明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "风没响，心先动了",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-055/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-055",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_OTH_UNK_TRN+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-TRN"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-OTH"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "越野摩托骑手明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "黄衣骑手与摩托留在斜置的画面里。纸是静止的，速度感没有停。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"越野摩托骑手明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "这里很美，差一个你",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-056/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-056",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_UNK_TRV_MEM+TRV_UNK_UNK",
+			"event_scene": [
+				"EV-TRV"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-UNK"
+				},
+				"PC02": {
+					"postcard_function": "PF-TRV"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "这里很美快点来航空边框明信片背面"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "明信片只写了短短的邀约。再好的地方，也会让人想叫上一个人。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"这里很美快点来航空边框明信片背面，背面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "爱先张了张嘴",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-057/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-057",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_ART_UNK_MEM+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-MEM"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-ART"
+				},
+				"PC02": {
+					"postcard_function": "PF-UNK"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "枝头喂鸟爱主题明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "枝头的小鸟等着喂食，另一只正振翅靠近。一张旧明信片，把照顾印得很具体。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"枝头喂鸟爱主题明信片，正面。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "雪还在，春天已经写上去了",
+			"accession_date": "2026-10-11",
+			"object_type": "PST",
+			"date_display": "年代未知",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261011-PST-058/front-public.jpg"
+			],
+			"batch_id": "FSA-20261011-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-PUR",
+			"source_name": "旧货市场摊主",
+			"source_date": "2026-10-11",
+			"source_place": "旧货市场",
+			"item_id": "LJM-20261011-PST-058",
+			"created_date": "2026-10-12",
+			"updated_date": "2026-10-12",
+			"collection_code": "PST_年代未知_VIEW_GRT_OTH+UNK_UNK_UNK",
+			"event_scene": [
+				"EV-UNK"
+			],
+			"themes": [
+				"SU-OTH"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "postcard",
+			"dimensions": {
+				"PC01": {
+					"postcard_type": "PT-VIEW"
+				},
+				"PC02": {
+					"postcard_function": "PF-GRT"
+				},
+				"PC04": {
+					"writing_date_text": "年代未知"
+				},
+				"PC07": {
+					"dispatch_place": "寄出地点待确认"
+				},
+				"PC11": {
+					"correspondence_relationship": "通信关系待确认"
+				},
+				"PC12": {
+					"image_subject": "祝福春天雪山花束明信片"
+				},
+				"PC18": {
+					"stamp_status": "邮票情况待确认"
+				},
+				"PC19": {
+					"postal_mark_types": [
+						"PM-UNK"
+					]
+				},
+				"PC21": {
+					"postcard_use": [
+						"PU-UNK"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "雪山与花束放在同一张卡上。愿望有时，就是先给寒冷起一个暖的名字。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"祝福春天雪山花束明信片，正面。"
+			]
+		}
 	}
 ] satisfies ArchiveItem[];
 

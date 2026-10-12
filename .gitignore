@@ -165,3 +165,15 @@ local-admin/accounts/
 
 # TRAE 本地 HTML 预览分享包属于生成产物（local-admin/public/ 源文件的打包副本），不入库；迭代直接修改源文件
 .trae-html-share-packages/
+
+# 批量入站批次数据（图片副本、结果报告、对照表）仅本地使用，不入仓库
+local-admin/batch-import/
+
+# 待入站图片区为本地暂存数据，不入仓库（网站正式图片在 site/public/archive/）
+public-assets/inbox/
+
+# 草稿、历史版本、回收区与临时上传区均为本地私密数据，不入仓库
+local-admin/drafts/
+local-admin/history/
+local-admin/recycle-bin/
+local-admin/upload-staging/

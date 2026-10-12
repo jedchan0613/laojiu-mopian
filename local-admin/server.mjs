@@ -2169,10 +2169,12 @@ const withdrawOfficialRecord = async (payload) => {
 };
 
 const publishDraftUnlocked = async (payload, options = {}) => {
-	const { signal = null } = options;
+	const { signal = null, skipBuild = false, batchLock = false } = options;
 	throwIfOperationCancelled(signal);
-	if (publishInProgress) throw new Error('已有一项发布检查正在进行，请稍候。');
-	publishInProgress = true;
+	if (!batchLock) {
+		if (publishInProgress) throw new Error('已有一项发布检查正在进行，请稍候。');
+		publishInProgress = true;
+	}
 	const itemId = payload.itemId;
 	try {
 		if (!itemIdPattern.test(itemId ?? '')) throw new Error('永久编号无效。');
@@ -2245,9 +2247,11 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 			throwIfOperationCancelled(signal);
 			await fs.writeFile(officialPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 			await fs.writeFile(siteArchiveDataFile, await generateSiteArchiveSource(), 'utf8');
-			buildOutput = await runSiteBuild({ signal });
-			throwIfOperationCancelled(signal);
-			if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
+			if (!skipBuild) {
+				buildOutput = await runSiteBuild({ signal });
+				throwIfOperationCancelled(signal);
+				if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
+			}
 		} catch (error) {
 			const operationWasCancelled = signal?.aborted || error?.name === 'AbortError' || error?.name === 'OperationCancelledError';
 			if (previousOfficial) await fs.writeFile(officialPath, previousOfficial);
@@ -2266,10 +2270,12 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 				});
 			}
 			let rollbackBuildMessage = '';
-			try {
-				await runSiteBuild();
-			} catch (rollbackError) {
-				rollbackBuildMessage = `；恢复后的构建也未完成：${safeMessage(rollbackError)}`;
+			if (!skipBuild) {
+				try {
+					await runSiteBuild();
+				} catch (rollbackError) {
+					rollbackBuildMessage = `；恢复后的构建也未完成：${safeMessage(rollbackError)}`;
+				}
 			}
 			if (operationWasCancelled) {
 				throw new OperationCancelledError(`发布已取消，公开网站已恢复到操作前状态${rollbackBuildMessage}。`);
@@ -2298,7 +2304,7 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 		await fs.rm(draftPath, { force: true });
 		return { record, buildOutput, deployment, warnings };
 	} finally {
-		publishInProgress = false;
+		if (!batchLock) publishInProgress = false;
 	}
 };
 
@@ -2359,6 +2365,41 @@ const publishDraft = async (payload, options = {}) => {
 	// 发布成功后才通知投稿人；通知失败不影响发布结果，也不会重复执行发布。
 	await submissionStore.notifyPublished(payload.itemId);
 	return result;
+};
+
+// 批量发布：逐件沿用单件发布的全部校验、历史快照与回滚，整批结束后只构建一次。
+const publishDraftsBatch = async (payload, options = {}) => {
+	const { signal = null } = options;
+	const itemIds = Array.isArray(payload.itemIds) ? payload.itemIds : [];
+	if (!itemIds.length || itemIds.length > 200) throw new Error('请一次提交 1 至 200 件进行批量发布。');
+	if (publishInProgress) throw new Error('已有一项发布正在进行，请稍候。');
+	publishInProgress = true;
+	const results = [];
+	try {
+		for (const itemId of itemIds) {
+			throwIfOperationCancelled(signal);
+			try {
+				const result = await publishDraft(
+					{ itemId, confirmations: payload.confirmations },
+					{ signal, skipBuild: true, batchLock: true },
+				);
+				results.push({ itemId, ok: true, warnings: result.warnings ?? [] });
+			} catch (error) {
+				results.push({ itemId, ok: false, error: safeMessage(error) });
+			}
+		}
+		let buildOutput = '';
+		let deployment = null;
+		if (results.some((row) => row.ok)) {
+			await fs.writeFile(siteArchiveDataFile, await generateSiteArchiveSource(), 'utf8');
+			buildOutput = await runSiteBuild({ signal });
+			throwIfOperationCancelled(signal);
+			if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
+		}
+		return { results, buildOutput, deployment };
+	} finally {
+		publishInProgress = false;
+	}
 };
 
 const adminServer = http.createServer(async (request, response) => {
@@ -2512,6 +2553,13 @@ const adminServer = http.createServer(async (request, response) => {
 			requireSafeMutation(request);
 			const result = await runManagedOperation(request, 'publish', async ({ operationId, signal }) =>
 				publishDraft(await readRequestJson(request, signal), { operationId, signal }));
+			sendJson(response, 200, result);
+			return;
+		}
+		if (request.method === 'POST' && url.pathname === '/api/publish-batch') {
+			requireSafeMutation(request);
+			const result = await runManagedOperation(request, 'publish-batch', async ({ operationId, signal }) =>
+				publishDraftsBatch(await readRequestJson(request, signal), { signal }));
 			sendJson(response, 200, result);
 			return;
 		}
