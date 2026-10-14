@@ -159,6 +159,9 @@ const archiveIndex = htmlEntries.find((entry) => entry.relativePath === 'archive
 const notFoundPage = htmlEntries.find((entry) => entry.relativePath === '404.html');
 const correctionsPage = htmlEntries.find((entry) => entry.relativePath === 'corrections/index.html');
 const detailPages = htmlEntries.filter((entry) => /^archive\/[^/]+\/index\.html$/.test(entry.relativePath));
+const englishHome = htmlEntries.find((entry) => entry.relativePath === 'en/index.html');
+const englishArchiveIndex = htmlEntries.find((entry) => entry.relativePath === 'en/archive/index.html');
+const englishDetailPages = htmlEntries.filter((entry) => /^en\/archive\/[^/]+\/index\.html$/.test(entry.relativePath));
 const retiredBackgroundMusicPublicPaths = [
 	'/audio/lullaby-summer-cicadas.ogg',
 	'/audio/last-reunion.mp3',
@@ -169,6 +172,28 @@ check(Boolean(archiveIndex), '缺少档案列表页。');
 check(Boolean(notFoundPage), '缺少友好的 404 页面。');
 check(Boolean(correctionsPage), '缺少纠错与撤下说明页。');
 check(detailPages.length > 0, '没有生成任何公开档案详情页。');
+check(Boolean(englishHome), '缺少英语首页。');
+check(Boolean(englishArchiveIndex), '缺少英语档案列表。');
+check(englishDetailPages.length === detailPages.length, '中英文公开档案详情页数量不一致。');
+const chineseRecordIds = new Set(detailPages.map((page) => page.relativePath.split('/')[1]));
+for (const page of englishDetailPages) {
+	const itemId = page.relativePath.split('/')[2];
+	check(chineseRecordIds.has(itemId), `${page.relativePath} 没有对应中文档案，可能改变了档案身份。`);
+	check(page.html.includes('data-record-citation') && page.html.includes('data-record-usage'), `${page.relativePath} 缺少引用或权利政策。`);
+	check(page.html.includes('"@type":"CreativeWork"'), `${page.relativePath} 缺少结构化档案信息。`);
+	const likes = [...page.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
+	check(likes.length === 1 && likes[0] === itemId, `${page.relativePath} 的点赞身份与中文不一致。`);
+	check(pageLoadsScriptMarker(page, '/api/likes?items='), `${page.relativePath} 缺少点赞计数程序。`);
+	const usageSection = page.html.match(/<section\s+class="record-usage"[\s\S]*?<\/section>/)?.[0] ?? '';
+	check(usageSection.includes('data-download-available="true"') === usageSection.includes('data-download-publication-copy'), `${page.relativePath} 的下载入口与权利策略不一致。`);
+	check(!/<section[^>]*class="record-section"[^>]*>\s*<\/section>/s.test(page.html), `${page.relativePath} 出现空内容区块。`);
+}
+if (englishHome) check(extractRandomIndexIds(englishHome.html).length === detailPages.length, '英语首页随机索引改变了档案集合。');
+if (englishArchiveIndex) {
+	const ids = [...englishArchiveIndex.html.matchAll(/data-archive-id="([^"]+)"/g)].map((match) => match[1]);
+	check(ids.length === detailPages.length && ids.every((id) => chineseRecordIds.has(id)), '英语档案列表与中文公开集合不一致。');
+	check(englishArchiveIndex.html.includes('id="archive-search-index"'), '英语档案列表缺少搜索索引。');
+}
 check(homeSource.includes('const view = views[0];'), '首页精选没有固定为每种分类取一件藏品。');
 check(homeSource.includes('Boolean(view.images[0])'), '首页精选没有排除缺少图片的藏品。');
 check(homeSource.includes('const source = view?.images[0];'), '首页精选没有固定使用每件藏品的首张图片。');
@@ -333,6 +358,14 @@ for (const page of detailPages) {
 }
 
 for (const page of htmlEntries) {
+	const isEnglish = page.relativePath.startsWith('en/');
+	check(page.html.includes(`<html lang="${isEnglish ? 'en' : 'zh-CN'}"`), `${page.relativePath} 页面语言设置不正确。`);
+	if (isEnglish && process.env.PUBLIC_SITE_URL?.trim()) {
+		const pendingArchive = /^en\/(?:archive\/LJM-|albums\/)/.test(page.relativePath) && /name="robots" content="noindex/.test(page.html);
+		check(page.html.includes('hreflang="zh-CN"') && page.html.includes('hreflang="x-default"'), `${page.relativePath} 缺少对应中文页面标记。`);
+		check(pendingArchive ? !page.html.includes('hreflang="en"') : page.html.includes('hreflang="en"'), `${page.relativePath} 英文页面关联与译文审核状态不一致。`);
+		if (pendingArchive) check(page.html.includes('class="translation-notice"'), `${page.relativePath} 缺少英文译文待复核提示。`);
+	}
 	check(page.html.includes('<meta name="viewport"'), `${page.relativePath} 缺少手机端视口设置。`);
 	check(page.html.includes('data-contact-widget'), `${page.relativePath} 缺少联系挂件。`);
 	check(page.html.includes('data-contact-launcher'), `${page.relativePath} 缺少联系挂件入口。`);
@@ -381,17 +414,19 @@ if (contributionPage) {
 	check(pageLoadsScriptMarker(contributionPage, '/api/submissions/lookup'), '投稿页缺少私密回执查询程序。');
 }
 const publicCode = publicText + scriptEntries.map((entry) => entry.contents).join('\n');
-for (const marker of ['/api/admin/submissions', '/api/admin/contacts', 'LJM_SUBMISSION_DATA_DIR', 'key_hash', 'source_submission_id', 'PRIVATE-NOTE-ONLY', 'synthetic@example.invalid', 'synthetic-contact@example.invalid']) {
+for (const marker of ['/api/admin/submissions', '/api/admin/contacts', '/api/admin/translations', 'reviewed_by', 'confirmed_fields', 'LJM_SUBMISSION_DATA_DIR', 'key_hash', 'source_submission_id', 'PRIVATE-NOTE-ONLY', 'synthetic@example.invalid', 'synthetic-contact@example.invalid']) {
 	check(!publicCode.includes(marker), `公开构建混入私密投稿信息或管理程序：${marker}。`);
 }
-for (const privateName of ['submissions', '_contacts', 'drafts', 'history', 'recycle-bin', 'local-admin', 'accounts']) {
+for (const privateName of ['submissions', '_contacts', 'drafts', 'history', 'recycle-bin', 'local-admin', 'accounts', 'translations']) {
 	check(!distFiles.some((file) => relative(distRoot, file).split(sep).includes(privateName)), `公开构建混入私密目录：${privateName}。`);
 }
 
 // 账户页面（登录、用户中心）：必须禁止收录，且公开构建里不能出现任何账号私密信息。
 const accountPages = htmlEntries.filter((entry) => entry.relativePath === 'login/index.html' || entry.relativePath.startsWith('me/'));
+const englishAccountPages = htmlEntries.filter((entry) => entry.relativePath === 'en/login/index.html' || entry.relativePath.startsWith('en/me/'));
+check(englishAccountPages.length === accountPages.length, '英语账户页面没有完整对应中文账户入口。');
 check(accountPages.length >= 4, '账户页面没有完整构建出来：应有登录、我的投稿、我的收藏、账户设置四个页面。');
-for (const page of accountPages) {
+for (const page of [...accountPages, ...englishAccountPages]) {
 	check(page.html.includes('name="robots"') && page.html.includes('noindex'), `${page.relativePath} 缺少禁止搜索引擎收录的设置。`);
 	check(page.html.includes('data-ljm-account-page'), `${page.relativePath} 缺少账户页面标记，无法与公开内容区分。`);
 }
@@ -405,14 +440,37 @@ if (configuredSiteUrl) {
 	check(sitemapExists, '配置正式域名后没有生成 sitemap.xml。');
 	if (sitemapExists) {
 		const sitemap = await readFile(join(distRoot, 'sitemap.xml'), 'utf8');
-		for (const privatePath of ['/login/', '/me/']) {
+		for (const privatePath of ['/login/', '/me/', '/en/login/', '/en/me/']) {
 			check(!sitemap.includes(privatePath), `站点地图不应收录账户页面：${privatePath}。`);
 		}
+		check(sitemap.includes('hreflang="zh-CN"') && sitemap.includes('hreflang="en"') && sitemap.includes('hreflang="x-default"'), '站点地图缺少双语对应地址。');
 	}
 	const robots = await readFile(join(distRoot, 'robots.txt'), 'utf8');
 	check(/^Sitemap:\s+https?:\/\//im.test(robots), '配置正式域名后 robots.txt 缺少站点地图地址。');
 } else {
 	check(!sitemapExists, '未配置正式域名时不应生成可能错误的 sitemap.xml。');
+}
+
+// 相册入口必须指向本次实际生成的页面；仅“编号有值”不能证明链接可用。
+const builtPagePaths = new Set(htmlEntries.map((page) => page.relativePath));
+for (const page of htmlEntries) {
+	for (const match of page.html.matchAll(/<a\b[^>]*href="(\/(?:en\/)?albums\/[^"?#]+)"/g)) {
+		const target = decodeURIComponent(match[1]).replace(/^\//,'').replace(/\/$/,'') + '/index.html';
+		check(builtPagePaths.has(target), `${page.relativePath} 的相册入口没有对应页面：${match[1]}。`);
+	}
+	if (!/^(?:en\/)?albums\//.test(page.relativePath)) continue;
+	const photos = [...page.html.matchAll(/data-album-photo-id="([^"]+)"/g)].map((match) => match[1]);
+	const declaredCount = Number(page.html.match(/data-album-photo-count="(\d+)"/)?.[1]);
+	check(photos.length === declaredCount, `${page.relativePath} 的照片数量与目录不一致。`);
+	check(new Set(photos).size === photos.length, `${page.relativePath} 重复列出同一张照片。`);
+	check(page.html.includes('"@type":"CollectionPage"'), `${page.relativePath} 缺少相册结构化信息。`);
+	const localePrefix = page.relativePath.startsWith('en/') ? 'en/' : '';
+	for (const id of photos) check(builtPagePaths.has(`${localePrefix}archive/${id}/index.html`), `${page.relativePath} 列出不存在的照片：${id}。`);
+	if (localePrefix) {
+		const chinesePage = htmlEntries.find((entry) => entry.relativePath === page.relativePath.slice(3));
+		const chinesePhotos = [...(chinesePage?.html ?? '').matchAll(/data-album-photo-id="([^"]+)"/g)].map((match) => match[1]);
+		check(JSON.stringify(photos) === JSON.stringify(chinesePhotos), `${page.relativePath} 的照片数量或顺序与中文版不一致。`);
+	}
 }
 
 if (issues.length) {

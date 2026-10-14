@@ -1,3 +1,4 @@
+import { clientText as ct, clientLocale, clientPath, clientError } from '../i18n/client';
 // 投稿工作台：新建、保存草稿、提交审核、查看进度、补充、撤回与申请修改或撤下。
 // 图片只在点击「保存草稿」或「提交审核」时才上传；服务端以真实解码结果为准。
 
@@ -45,16 +46,17 @@ const upload = (url: string, data: FormData): Promise<any> => new Promise((resol
 	request.open('POST', url);
 	request.timeout = 120_000;
 	request.setRequestHeader('X-LJM-Account-Request', '1');
+	request.setRequestHeader('X-LJM-Language', clientLocale());
 	request.upload.onprogress = (event) => {
-		if (event.lengthComputable) setFeedback(`正在上传 ${Math.round((event.loaded / event.total) * 100)}%…`);
+		if (event.lengthComputable) setFeedback(ct("正在上传 {0}%…", {"0": (Math.round((event.loaded / event.total) * 100))}));
 	};
 	request.onload = () => {
 		let payload: any = {};
 		try { payload = JSON.parse(request.responseText); } catch { payload = {}; }
 		if (request.status >= 200 && request.status < 300) resolve(payload);
-		else reject(Object.assign(new Error(payload.error || '提交没有完成。'), { status: request.status }));
+		else reject(Object.assign(new Error(clientError(payload.error) || ct('提交没有完成。')), { status: request.status }));
 	};
-	request.onerror = request.ontimeout = () => reject(new Error('连接中断或等待超时，请稍后重试；已经保存的内容不会丢失。'));
+	request.onerror = request.ontimeout = () => reject(new Error(ct('连接中断或等待超时，请稍后重试；已经保存的内容不会丢失。')));
 	request.send(data);
 });
 
@@ -98,7 +100,7 @@ const applyConsents = (data: FormData) => {
 	data.append('consent_version', consentVersion);
 };
 
-const describeItems = (item: Item) => (item.kind === 'kept' ? item.filename : '新图片');
+const describeItems = (item: Item) => (item.kind === 'kept' ? item.filename : ct('新图片'));
 
 const renderItems = () => {
 	if (!previews) return;
@@ -107,21 +109,21 @@ const renderItems = () => {
 		const node = document.createElement('li');
 		const image = document.createElement('img');
 		image.src = item.kind === 'kept' && detail ? `/api/account/submissions/${detail.id}/images/${item.filename}` : (item as NewItem).url;
-		image.alt = `第 ${index + 1} 张图片副本`;
+		image.alt = ct("第 {0} 张图片副本", {"0": (index + 1)});
 		image.loading = 'lazy';
 		node.append(image);
 
 		const note = document.createElement('input');
 		note.type = 'text';
 		note.maxLength = 300;
-		note.placeholder = '这张图的说明（选填）';
+		note.placeholder = ct('这张图的说明（选填）');
 		note.value = item.note;
-		note.setAttribute('aria-label', `第 ${index + 1} 张图片的说明`);
+		note.setAttribute('aria-label', ct("第 {0} 张图片的说明", {"0": (index + 1)}));
 		note.addEventListener('input', () => { item.note = note.value; dirty = true; });
 		node.append(note);
 
 		const caption = document.createElement('p');
-		caption.textContent = item.kind === 'kept' ? `第 ${index + 1} 张 · 已保存` : `第 ${index + 1} 张 · 待上传`;
+		caption.textContent = item.kind === 'kept' ? ct("第 {0} 张 · 已保存", {"0": (index + 1)}) : ct("第 {0} 张 · 待上传", {"0": (index + 1)});
 		node.append(caption);
 
 		const actions = document.createElement('div');
@@ -141,14 +143,14 @@ const renderItems = () => {
 		};
 		const remove = document.createElement('button');
 		remove.type = 'button';
-		remove.textContent = '移除这张';
+		remove.textContent = ct('移除这张');
 		remove.addEventListener('click', () => {
 			const [removed] = items.splice(index, 1);
 			if (removed.kind === 'new') URL.revokeObjectURL(removed.url);
 			dirty = true;
 			renderItems();
 		});
-		actions.append(move('上移', -1), move('下移', 1), remove);
+		actions.append(move(ct('上移'), -1), move(ct('下移'), 1), remove);
 		node.append(actions);
 		previews.append(node);
 	}
@@ -156,8 +158,8 @@ const renderItems = () => {
 	const fresh = items.length - kept;
 	if (imageFeedback) {
 		imageFeedback.textContent = items.length
-			? `共 ${items.length} / 8 张（已保存 ${kept} 张，待上传 ${fresh} 张）。第一张会作为封面。`
-			: '尚未选择图片。';
+			? ct("共 {0} / 8 张（已保存 {1} 张，待上传 {2} 张）。第一张会作为封面。", {"0": (items.length), "1": (kept), "2": (fresh)})
+			: ct('尚未选择图片。');
 	}
 	renderPreview();
 };
@@ -168,18 +170,18 @@ const addFiles = async (files: File[]) => {
 	const errors: string[] = [];
 	for (const file of files) {
 		if (busy) return;
-		if (items.length >= 8) { errors.push('最多选择 8 张图片。'); break; }
+		if (items.length >= 8) { errors.push(ct('最多选择 8 张图片。')); break; }
 		if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || !/\.(jpe?g|png|webp)$/i.test(file.name) || /(master|original|raw|主档|原始)/i.test(file.name)) {
-			errors.push(`${file.name}：只接收 JPG、PNG、WebP 筛选副本。`);
+			errors.push(ct("{0}：只接收 JPG、PNG、WebP 筛选副本。", {"0": (file.name)}));
 			continue;
 		}
 		const freshSize = items.filter((item) => item.kind === 'new').reduce((sum, item) => sum + (item as NewItem).file.size, 0);
 		if (!file.size || file.size > 5 * 1024 ** 2 || freshSize + file.size > 20 * 1024 ** 2) {
-			errors.push(`${file.name}：每张最多 5 MB，每次合计最多 20 MB。`);
+			errors.push(ct("{0}：每张最多 5 MB，每次合计最多 20 MB。", {"0": (file.name)}));
 			continue;
 		}
 		const hash = await crypto.subtle.digest('SHA-256', await file.arrayBuffer()).then(hex);
-		if (items.some((item) => item.kind === 'new' && item.hash === hash)) { errors.push(`${file.name}：已经选过相同图片。`); continue; }
+		if (items.some((item) => item.kind === 'new' && item.hash === hash)) { errors.push(ct("{0}：已经选过相同图片。", {"0": (file.name)})); continue; }
 		const url = URL.createObjectURL(file);
 		try {
 			await new Promise<void>((resolve, reject) => {
@@ -192,7 +194,7 @@ const addFiles = async (files: File[]) => {
 			dirty = true;
 		} catch {
 			URL.revokeObjectURL(url);
-			errors.push(`${file.name}：无法预览或像素过大，请重新导出副本。`);
+			errors.push(ct("{0}：无法预览或像素过大，请重新导出副本。", {"0": (file.name)}));
 		}
 	}
 	renderItems();
@@ -203,12 +205,12 @@ const renderPreview = () => {
 	if (!previewList) return;
 	const fields = readFields();
 	const rows: Array<[string, string]> = [
-		['题名', fields.title || '未填写'],
-		['藏品分类', fields.category || '未选择'],
-		['大致年代', fields.era || '未填写'],
-		['大致地点', fields.place || '未填写'],
-		['公开署名', fields.attribution === 'named' ? (fields.credit || '未填写署名') : '匿名'],
-		['图片', items.length ? `${items.length} 张，第一张作为封面` : '尚未选择'],
+		[ct('题名'), fields.title || ct('未填写')],
+		[ct('藏品分类'), ct(fields.category) || ct('未选择')],
+		[ct('大致年代'), fields.era || ct('未填写')],
+		[ct('大致地点'), fields.place || ct('未填写')],
+		[ct('公开署名'), fields.attribution === 'named' ? (fields.credit || ct('未填写署名')) : ct('匿名')],
+		[ct('图片'), items.length ? ct("{0} 张，第一张作为封面", {"0": (items.length)}) : ct('尚未选择')],
 	];
 	previewList.replaceChildren();
 	for (const [label, value] of rows) {
@@ -240,20 +242,20 @@ const fill = (record: any) => {
 	renderItems();
 };
 
-const statusLabels: Record<string, string> = { draft: '草稿', pending: '待审核', needs_info: '待补充', approved: '整理中', declined: '暂不采用', withdrawn: '已撤回' };
+const statusLabels: Record<string, string> = { draft: ct('草稿'), pending: ct('待审核'), needs_info: ct('待补充'), approved: ct('整理中'), declined: ct('暂不采用'), withdrawn: ct('已撤回') };
 
 const renderState = (record: any) => {
 	const list = byId('workbench-state-list');
 	if (list) {
 		const rows: Array<[string, string]> = [
-			['投稿编号', record.id],
-			['当前状态', record.withdrawal_requested ? '撤下处理中' : statusLabels[record.status] ?? record.status],
-			['最近更新', new Date(record.updated_at).toLocaleString('zh-CN')],
-			['图片数量', `${(record.images ?? []).length} 张`],
-			['提交版本', `${(record.versions ?? []).length} 个`],
+			[ct('投稿编号'), record.id],
+			[ct('当前状态'), record.withdrawal_requested ? ct('撤下处理中') : statusLabels[record.status] ?? record.status],
+			[ct('最近更新'), new Date(record.updated_at).toLocaleString(clientLocale())],
+			[ct('图片数量'), ct("{0} 张", {"0": ((record.images ?? []).length)})],
+			[ct('提交版本'), ct("{0} 个", {"0": ((record.versions ?? []).length)})],
 		];
-		if (record.linked_item_id) rows.push(['关联档案', record.linked_item_id]);
-		if (record.change_request) rows.push(['修改或撤下申请', ({ received: '已收到，等待站主处理', processing: '站主处理中', done: '已处理，请查看站主说明', rejected: '未通过，请查看站主说明' } as Record<string, string>)[record.change_request.status] ?? '状态待核实']);
+		if (record.linked_item_id) rows.push([ct('关联档案'), record.linked_item_id]);
+		if (record.change_request) rows.push([ct('修改或撤下申请'), ({ received: ct('已收到，等待站主处理'), processing: ct('站主处理中'), done: ct('已处理，请查看站主说明'), rejected: ct('未通过，请查看站主说明') } as Record<string, string>)[record.change_request.status] ?? ct('状态待核实')]);
 		list.replaceChildren();
 		for (const [label, value] of rows) {
 			const row = document.createElement('div');
@@ -268,7 +270,7 @@ const renderState = (record: any) => {
 	const message = byId('workbench-message');
 	if (message) {
 		if (record.public_message) {
-			message.textContent = `站主的说明：${record.public_message}`;
+			message.textContent = ct("站主的说明：{0}", {"0": (record.public_message)});
 			message.hidden = false;
 		} else {
 			message.hidden = true;
@@ -276,7 +278,7 @@ const renderState = (record: any) => {
 	}
 	const editable = record.status === 'draft';
 	const withdrawButton = byId('wb-withdraw');
-	if (withdrawButton) withdrawButton.textContent = ['needs_info', 'declined'].includes(record.status) ? '撤回并修改这份投稿' : '撤回这份投稿';
+	if (withdrawButton) withdrawButton.textContent = ['needs_info', 'declined'].includes(record.status) ? ct('撤回并修改这份投稿') : ct('撤回这份投稿');
 	toggle(byId('wb-withdraw'), !editable && !record.linked_item_id && record.status !== 'withdrawn' && !record.withdrawal_requested);
 	toggle(byId('wb-discard'), editable);
 	toggle(byId('wb-request-modify'), Boolean(record.linked_item_id) && !['received', 'processing'].includes(record.change_request?.status) && !record.withdrawal_requested);
@@ -285,10 +287,10 @@ const renderState = (record: any) => {
 };
 
 const validate = (strict: boolean) => {
-	if (strict && !items.length) { setStatus(statusEl, '请先选择至少一张经过筛选的图片副本。', 'error'); return false; }
-	if (strict && form && !form.reportValidity()) { setStatus(statusEl, '请先补全标记为必填的内容。', 'error'); return false; }
+	if (strict && !items.length) { setStatus(statusEl, ct('请先选择至少一张经过筛选的图片副本。'), 'error'); return false; }
+	if (strict && form && !form.reportValidity()) { setStatus(statusEl, ct('请先补全标记为必填的内容。'), 'error'); return false; }
 	const fields = readFields();
-	if (fields.title.length > 80 || fields.credit.length > 40) { setStatus(statusEl, '题名或署名过长，请适当精简。', 'error'); return false; }
+	if (fields.title.length > 80 || fields.credit.length > 40) { setStatus(statusEl, ct('题名或署名过长，请适当精简。'), 'error'); return false; }
 	return true;
 };
 
@@ -305,7 +307,7 @@ const saveDraft = async () => {
 	if (busy) return;
 	if (!validate(false)) return;
 	busy = true;
-	setFeedback('正在保存草稿…');
+	setFeedback(ct('正在保存草稿…'));
 	try {
 		if (editing) {
 			const data = buildFormData();
@@ -313,17 +315,17 @@ const saveDraft = async () => {
 			data.append('mode', 'draft');
 			await upload(`/api/account/submissions/${submissionId}/save`, data);
 			await reload();
-			setFeedback('草稿已保存，可以稍后回来继续编辑。');
+			setFeedback(ct('草稿已保存，可以稍后回来继续编辑。'));
 		} else {
 			const data = buildFormData();
 			data.append('mode', 'draft');
 			data.append('consent_version', consentVersion);
 			const created = await upload('/api/account/submissions', data);
-			window.location.assign(`/me/contribution/?id=${created.id}`);
+			window.location.assign(clientPath(`/me/contribution/?id=${created.id}`));
 			return;
 		}
 	} catch (error) {
-		setStatus(statusEl, error instanceof Error ? error.message : '保存没有完成，请稍后重试。', 'error');
+		setStatus(statusEl, error instanceof Error ? clientError(error.message) : ct('保存没有完成，请稍后重试。'), 'error');
 	} finally {
 		busy = false;
 	}
@@ -331,11 +333,11 @@ const saveDraft = async () => {
 
 const submitForReview = async () => {
 	if (busy) return;
-	if (!consentVersion) { setStatus(statusEl, '页面信息尚未就绪，请刷新后重试。', 'error'); return; }
-	if (!validConsents()) { setStatus(statusEl, '请逐项确认第三步的四点说明，它们不会被预先勾选。', 'error'); return; }
+	if (!consentVersion) { setStatus(statusEl, ct('页面信息尚未就绪，请刷新后重试。'), 'error'); return; }
+	if (!validConsents()) { setStatus(statusEl, ct('请逐项确认第三步的四点说明，它们不会被预先勾选。'), 'error'); return; }
 	if (!validate(true)) return;
 	busy = true;
-	setFeedback('正在提交审核…');
+	setFeedback(ct('正在提交审核…'));
 	const consents = { copies: true, rights: true, privacy: true, processing: true };
 	try {
 		if (!editing) {
@@ -343,7 +345,7 @@ const submitForReview = async () => {
 			data.append('mode', 'pending');
 			applyConsents(data);
 			const created = await upload('/api/account/submissions', data);
-			window.location.assign(`/me/contribution/?id=${created.id}`);
+			window.location.assign(clientPath(`/me/contribution/?id=${created.id}`));
 			return;
 		}
 		const data = buildFormData();
@@ -355,9 +357,9 @@ const submitForReview = async () => {
 			body: { revision: saved.revision, consents, consent_version: consentVersion },
 		});
 		await reload();
-		setFeedback('已提交审核。资料收到后会先由站主核对，未经确认不会公开。');
+		setFeedback(ct('已提交审核。资料收到后会先由站主核对，未经确认不会公开。'));
 	} catch (error) {
-		setStatus(statusEl, error instanceof Error ? error.message : '提交没有完成，请稍后重试。', 'error');
+		setStatus(statusEl, error instanceof Error ? clientError(error.message) : ct('提交没有完成，请稍后重试。'), 'error');
 	} finally {
 		busy = false;
 	}
@@ -366,14 +368,14 @@ const submitForReview = async () => {
 const runAction = async (label: string, action: () => Promise<any>) => {
 	if (busy) return;
 	busy = true;
-	setFeedback(`正在${label}…`);
+	setFeedback(ct("正在{0}…", {"0": (label)}));
 	try {
 		await action();
 		await reload();
 		renderState(detail);
-		setFeedback(`${label}已完成。`);
+		setFeedback(ct("{0}已完成。", {"0": (label)}));
 	} catch (error) {
-		setStatus(byId('workbench-state-status'), error instanceof Error ? error.message : `${label}没有完成。`, 'error');
+		setStatus(byId('workbench-state-status'), error instanceof Error ? clientError(error.message) : ct("{0}没有完成。", {"0": (label)}), 'error');
 	} finally {
 		busy = false;
 	}
@@ -381,18 +383,18 @@ const runAction = async (label: string, action: () => Promise<any>) => {
 
 byId('wb-save')?.addEventListener('click', () => void saveDraft());
 byId('wb-submit')?.addEventListener('click', () => void submitForReview());
-byId('wb-withdraw')?.addEventListener('click', () => void runAction('撤回', () =>
+byId('wb-withdraw')?.addEventListener('click', () => void runAction(ct('撤回'), () =>
 	accountFetch(`/api/account/submissions/${submissionId}/withdraw`, { method: 'POST', body: {} })));
 byId('wb-discard')?.addEventListener('click', () => {
-	if (!window.confirm('草稿会移入回收区，不再出现在投稿列表里；已经保存的图片不会被永久删除。确定继续吗？')) return;
-	void runAction('移入回收区', () => accountFetch(`/api/account/submissions/${submissionId}/discard`, { method: 'POST', body: {} }));
+	if (!window.confirm(ct('草稿会移入回收区，不再出现在投稿列表里；已经保存的图片不会被永久删除。确定继续吗？'))) return;
+	void runAction(ct('移入回收区'), () => accountFetch(`/api/account/submissions/${submissionId}/discard`, { method: 'POST', body: {} }));
 });
 const requestChange = (kind: 'modify' | 'remove') => {
-	const prompt = kind === 'modify' ? '请说明需要修改哪些内容（站主会看到）：' : '请说明需要撤下的原因（站主会看到，涉及隐私的会优先处理）：';
+	const prompt = kind === 'modify' ? ct('请说明需要修改哪些内容（站主会看到）：') : ct('请说明需要撤下的原因（站主会看到，涉及隐私的会优先处理）：');
 	const note = window.prompt(prompt, '');
 	if (note === null) return;
-	if (!note.trim()) { setStatus(byId('workbench-state-status'), '请填写说明后再提交申请。', 'error'); return; }
-	void runAction(kind === 'modify' ? '提交修改申请' : '提交撤下申请', () =>
+	if (!note.trim()) { setStatus(byId('workbench-state-status'), ct('请填写说明后再提交申请。'), 'error'); return; }
+	void runAction(kind === 'modify' ? ct('提交修改申请') : ct('提交撤下申请'), () =>
 		accountFetch(`/api/account/submissions/${submissionId}/request`, { method: 'POST', body: { kind, note } }));
 };
 byId('wb-request-modify')?.addEventListener('click', () => requestChange('modify'));
@@ -429,7 +431,7 @@ const load = async () => {
 			const submit = byId<HTMLButtonElement>('wb-submit');
 			if (save) save.disabled = true;
 			if (submit) submit.disabled = true;
-			setFeedback('投稿暂时暂停接收。已保存的资料仍可查看；账户内的撤回与申请入口照常使用。');
+			setFeedback(ct('投稿暂时暂停接收。已保存的资料仍可查看；账户内的撤回与申请入口照常使用。'));
 		}
 		consentVersion = String((submissionConfig as { consent_version?: string })?.consent_version ?? '');
 		if (editing) {
@@ -443,14 +445,14 @@ const load = async () => {
 		}
 		toggle(loading, false);
 		toggle(content, true);
-		if (!consentVersion) setFeedback('投稿通道暂未开放，暂时只能保存草稿的文字内容。');
+		if (!consentVersion) setFeedback(ct('投稿通道暂未开放，暂时只能保存草稿的文字内容。'));
 	} catch (error) {
 		toggle(loading, false);
 		const code = (error as Error & { status?: number }).status;
 		if (code === 401) { toggle(unauthenticated, true); return; }
 		if (code === 404) { toggle(missing, true); return; }
 		toggle(content, true);
-		setStatus(statusEl, error instanceof Error ? error.message : '暂时无法打开投稿页面。', 'error');
+		setStatus(statusEl, error instanceof Error ? clientError(error.message) : ct('暂时无法打开投稿页面。'), 'error');
 	}
 };
 

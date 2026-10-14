@@ -47,7 +47,8 @@ test('原始组合已由批次满足时隐藏空关联项，未满足时保留�
 		standards: { collectionCodeRules: rules } };
 	const { requiredCoreFieldsForVisibility, commonFieldSectionFor } = new Function('state', [
 		'hiddenCommonFieldCodes', 'commonFieldSectionLabels', 'hasMeaningfulValue', 'normalizeRuleField',
-		'currentCollectionRules', 'collectionRuleFieldValue', 'requiredCoreFieldsForVisibility', 'commonFieldSectionFor',
+		'currentCollectionRules', 'collectionRuleFieldValue', 'requiredCoreFieldsForVisibility',
+		'albumRelationFieldCodes', 'albumAwareObjectTypes', 'commonFieldSectionFor',
 	].map(declaration).join('\n') + '\nreturn { requiredCoreFieldsForVisibility, commonFieldSectionFor };')(state);
 	const album = common.fields.find((field) => field.field_code === 'album_id');
 	assert.ok(album);
@@ -59,6 +60,35 @@ test('原始组合已由批次满足时隐藏空关联项，未满足时保留�
 	required = requiredCoreFieldsForVisibility();
 	assert.equal(required.has('album_id'), true);
 	assert.equal(commonFieldSectionFor(album, { required: required.has('album_id') }), '时间与来源');
+});
+
+test('照片与相册总档案的相册编号、原始位置空值也显示在时间与来源分组', async () => {
+	const script = (await readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8')).replaceAll('\r\n', '\n');
+	const common = JSON.parse(await readFile(new URL('site/src/data/standards/common-fields.json', projectRoot), 'utf8'));
+	const declaration = (name) => {
+		const start = script.indexOf(`const ${name} =`);
+		assert.notEqual(start, -1);
+		return script.slice(start, script.indexOf('\n\n', start));
+	};
+	const state = { current: { core: {}, metadata: { schema: 'photo', dimensions: {} } }, standards: {} };
+	const { commonFieldSectionFor } = new Function('state', [
+		'hiddenCommonFieldCodes', 'commonFieldSectionLabels', 'hasMeaningfulValue', 'normalizeRuleField',
+		'currentCollectionRules', 'collectionRuleFieldValue', 'requiredCoreFieldsForVisibility',
+		'albumRelationFieldCodes', 'albumAwareObjectTypes', 'commonFieldSectionFor',
+	].map(declaration).join('\n') + '\nreturn { commonFieldSectionFor };')(state);
+	const albumId = common.fields.find((field) => field.field_code === 'album_id');
+	const position = common.fields.find((field) => field.field_code === 'original_position');
+	const series = common.fields.find((field) => field.field_code === 'series_id');
+	for (const objectType of ['PHO', 'ALB']) {
+		assert.equal(commonFieldSectionFor(albumId, { objectType }), '时间与来源', `${objectType} 的相册编号`);
+		assert.equal(commonFieldSectionFor(position, { objectType }), '时间与来源', `${objectType} 的原始位置`);
+		assert.equal(commonFieldSectionFor(series, { objectType }), null, `${objectType} 的系列编号仍隐藏`);
+	}
+	for (const objectType of ['LET', 'CRD', undefined]) {
+		assert.equal(commonFieldSectionFor(albumId, { objectType }), null, `${objectType} 的相册编号仍隐藏`);
+		assert.equal(commonFieldSectionFor(position, { objectType }), null, `${objectType} 的原始位置仍隐藏`);
+	}
+	assert.equal(commonFieldSectionFor(albumId, { objectType: 'LET', value: '旧值' }), '已保存的扩展字段');
 });
 
 test('动态分组顺序改变后，展开状态仍跟随原分组而不串到其他字段', async () => {

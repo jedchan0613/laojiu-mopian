@@ -1,3 +1,4 @@
+import { clientText as ct, clientPath, clientError } from '../i18n/client';
 // 档案详情页的收藏按钮。
 // 已登录：进入页面时读取自己的收藏列表，显示当前状态，点击即收藏或取消收藏（接口幂等）。
 // 未登录：按钮仍显示，点击后引导到登录页，登录成功返回当前档案。
@@ -16,9 +17,9 @@ const render = (favorited: boolean) => {
 	button.hidden = false;
 	button.disabled = false;
 	button.setAttribute('aria-pressed', String(favorited));
-	button.title = favorited ? '已收藏，点击取消收藏' : '收藏这件档案，便于以后在“我的收藏”中查看';
+	button.title = favorited ? ct('已收藏，点击取消收藏') : ct('收藏这件档案，便于以后在“我的收藏”中查看');
 	const text = label();
-	if (text) text.textContent = favorited ? '已收藏' : '收藏';
+	if (text) text.textContent = favorited ? ct('已收藏') : ct('收藏');
 };
 
 const renderGuest = () => {
@@ -26,14 +27,14 @@ const renderGuest = () => {
 	button.hidden = false;
 	button.disabled = false;
 	button.setAttribute('aria-pressed', 'false');
-	button.title = '登录后可以收藏这件档案';
+	button.title = ct('登录后可以收藏这件档案');
 	const text = label();
-	if (text) text.textContent = '收藏';
+	if (text) text.textContent = ct('收藏');
 };
 
 const goLogin = () => {
 	const next = `${window.location.pathname}${window.location.search}`;
-	window.location.assign(`/login/?next=${encodeURIComponent(next)}`);
+	window.location.assign(clientPath(`/login/?next=${encodeURIComponent(next)}`));
 };
 
 const initialize = () => {
@@ -66,9 +67,9 @@ const initialize = () => {
 				return;
 			}
 			button.disabled = false;
-			button.title = error instanceof Error ? error.message : '收藏操作没有成功，请稍后再试';
+			button.title = error instanceof Error ? clientError(error.message) : ct('收藏操作没有成功，请稍后再试');
 			const text = label();
-			if (text) text.textContent = '重试';
+			if (text) text.textContent = ct('重试');
 		}
 	});
 

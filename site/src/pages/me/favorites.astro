@@ -1,30 +1,33 @@
 ---
+
+import { t, getLocale, localizePath, canonicalPath } from '../../i18n/ui';
+const locale = getLocale(Astro.url.pathname);
 import AccountShell from '../../components/AccountShell.astro';
 ---
 
 <AccountShell
 	current="favorites"
-	title="我的收藏｜老旧默片"
-	description="登录后查看自己收藏的公开档案。收藏默认私密，不会公开显示，也不会影响原有点赞与浏览足迹。"
+	title={t("我的收藏｜老旧默片", locale)}
+	description={t("登录后查看自己收藏的公开档案。收藏默认私密，不会公开显示，也不会影响原有点赞与浏览足迹。", locale)}
 	heading="我的收藏"
 	lede="收藏默认私密，只以永久档案编号关联，重复点击不会产生重复记录。这里不设文件夹、不做公开排行，也不改变原有的点赞与浏览足迹。"
 >
 	<div class="account-panel">
-		<div id="favorites-loading" class="account-skeleton" role="status" aria-label="正在读取收藏"></div>
+		<div id="favorites-loading" class="account-skeleton" role="status" aria-label={t("正在读取收藏", locale)}></div>
 		<div id="favorites-unauth" hidden>
-			<h2>需要先登录</h2>
-			<p>收藏与账号关联，请先用邮箱验证码登录，再回来查看。</p>
+			<h2>{t("需要先登录", locale)}</h2>
+			<p>{t("收藏与账号关联，请先用邮箱验证码登录，再回来查看。", locale)}</p>
 			<div class="account-actions">
-				<a class="ui-action ui-action--primary" href="/login/?next=/me/favorites/">去登录</a>
-				<a class="ui-text-link" href="/archive/">先看看档案</a>
+				<a class="ui-action ui-action--primary" href={localizePath("/login/?next=/me/favorites/", locale)}>{t("去登录", locale)}</a>
+				<a class="ui-text-link" href={localizePath("/archive/", locale)}>{t("先看看档案", locale)}</a>
 			</div>
 		</div>
 		<div id="favorites-content" hidden>
-			<h2>已收藏 <span id="favorites-count">0</span> 件</h2>
-			<p class="account-hint">档案被撤下后会显示「暂不可查看」，不会保留它的缓存图片。</p>
-			<ul id="favorites-list" class="account-list" aria-label="已收藏的公开档案"></ul>
+			<h2>{t("已收藏", locale)} <span id="favorites-count">0</span> {t("件", locale)}</h2>
+			<p class="account-hint">{t("档案被撤下后会显示「暂不可查看」，不会保留它的缓存图片。", locale)}</p>
+			<ul id="favorites-list" class="account-list" aria-label={t("已收藏的公开档案", locale)}></ul>
 			<div id="favorites-empty" class="account-empty" hidden>
-				还没有收藏任何档案。在公开档案详情页点击「收藏」即可加入这里；收藏只对自己可见。
+				{t("还没有收藏任何档案。在公开档案详情页点击「收藏」即可加入这里；收藏只对自己可见。", locale)}
 			</div>
 		</div>
 		<p id="favorites-status" class="account-status" role="status" aria-live="polite"></p>

@@ -1,3 +1,4 @@
+import { clientText as ct, clientLocale, clientPath, clientError } from '../i18n/client';
 // 我的收藏：读取自己的收藏编号，与公开档案摘要合并展示。
 // 摘要来自公开数据；不在摘要里的编号（例如已经撤下）显示为「暂不可查看」，不展示任何缓存图片。
 
@@ -29,14 +30,14 @@ const renderCard = (itemId: string, record: PublicRecord | undefined, createdAt:
 		const image = document.createElement('img');
 		image.className = 'account-card-image';
 		image.src = record.cover;
-		image.alt = record.title ? `${record.title} 的封面` : '档案封面';
+		image.alt = record.title ? ct("{0} 的封面", {"0": (record.title)}) : ct('档案封面');
 		image.loading = 'lazy';
 		image.decoding = 'async';
 		card.append(image);
 	} else {
 		const placeholder = document.createElement('span');
 		placeholder.className = 'account-card-placeholder';
-		placeholder.textContent = record ? '暂无封面' : '暂不可查看';
+		placeholder.textContent = record ? ct('暂无封面') : ct('暂不可查看');
 		card.append(placeholder);
 	}
 
@@ -47,26 +48,26 @@ const renderCard = (itemId: string, record: PublicRecord | undefined, createdAt:
 		link.textContent = record.title;
 		title.append(link);
 	} else {
-		title.textContent = '暂不可查看';
+		title.textContent = ct('暂不可查看');
 	}
 	card.append(title);
 
 	const meta = document.createElement('p');
 	meta.textContent = record
 		? [record.type_label, record.date_display].filter(Boolean).join(' · ')
-		: '这份档案当前不在公开列表中';
+		: ct('这份档案当前不在公开列表中');
 	card.append(meta);
 
 	const hint = document.createElement('p');
 	hint.className = 'account-hint';
-	hint.textContent = `收藏于 ${new Date(createdAt).toLocaleDateString('zh-CN')}`;
+	hint.textContent = ct("收藏于 {0}", {"0": (new Date(createdAt).toLocaleDateString(clientLocale()))});
 	card.append(hint);
 
 	const actions = document.createElement('div');
 	actions.className = 'account-card-actions';
 	const remove = document.createElement('button');
 	remove.type = 'button';
-	remove.textContent = '取消收藏';
+	remove.textContent = ct('取消收藏');
 	remove.addEventListener('click', async () => {
 		remove.disabled = true;
 		try {
@@ -75,10 +76,10 @@ const renderCard = (itemId: string, record: PublicRecord | undefined, createdAt:
 			const remaining = list ? list.children.length : 0;
 			if (counter) counter.textContent = String(remaining);
 			toggle(empty, remaining === 0);
-			setStatus(status, '已取消收藏。', 'ok');
+			setStatus(status, ct('已取消收藏。'), 'ok');
 		} catch (error) {
 			remove.disabled = false;
-			setStatus(status, error instanceof Error ? error.message : '暂时无法取消收藏。', 'error');
+			setStatus(status, error instanceof Error ? clientError(error.message) : ct('暂时无法取消收藏。'), 'error');
 		}
 	});
 	actions.append(remove);
@@ -90,7 +91,7 @@ const load = async () => {
 	try {
 		const [favorites, summary] = await Promise.all([
 			accountFetch('/api/account/favorites'),
-			fetch('/records.json', { headers: { Accept: 'application/json' } })
+			fetch(clientPath('/records.json'), { headers: { Accept: 'application/json' } })
 				.then((response) => (response.ok ? response.json() : { records: [] }))
 				.catch(() => ({ records: [] })),
 		]);
@@ -110,7 +111,7 @@ const load = async () => {
 			toggle(unauthenticated, true);
 			return;
 		}
-		setStatus(status, error instanceof Error ? error.message : '暂时无法读取收藏。', 'error');
+		setStatus(status, error instanceof Error ? clientError(error.message) : ct('暂时无法读取收藏。'), 'error');
 	}
 };
 

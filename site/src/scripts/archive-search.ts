@@ -1,3 +1,4 @@
+import { clientText as ct, clientLocale } from '../i18n/client';
 import type { ArchiveSearchFields } from '../data/archive-view';
 
 // 档案列表搜索：不引入外部分词库。
@@ -23,17 +24,17 @@ const FIELD_WEIGHTS: Array<[keyof ArchiveSearchFields, number]> = [
 ];
 
 export const SEARCH_FIELD_LABELS: Record<keyof ArchiveSearchFields, string> = {
-	title: '题名',
-	identifiers: '编号',
-	tags: '标签',
-	place: '地点',
-	typeLabel: '类型',
-	dateDisplay: '年代',
-	description: '简介',
-	transcription: '原文',
+	title: ct('题名'),
+	identifiers: ct('编号'),
+	tags: ct('标签'),
+	place: ct('地点'),
+	typeLabel: ct('类型'),
+	dateDisplay: ct('年代'),
+	description: ct('简介'),
+	transcription: ct('原文'),
 };
 
-export const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase('zh-CN');
+export const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase(clientLocale());
 
 export const searchTermsFrom = (value: string) =>
 	normalizeSearchText(value).split(/\s+/).filter(Boolean);

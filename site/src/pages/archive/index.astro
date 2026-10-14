@@ -1,4 +1,7 @@
 ---
+
+import { t, getLocale, localizePath, canonicalPath } from '../../i18n/ui';
+const locale = getLocale(Astro.url.pathname);
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { archiveItems } from '../../data/archive';
 import {
@@ -13,7 +16,7 @@ import { getResponsiveImage } from '../../data/responsive-images';
 
 const publishedViews = archiveItems
   .filter(isPublishedArchiveItem)
-  .map(createArchiveRecordView);
+  .map(item => createArchiveRecordView(item, locale));
 
 // 目前只读取显示年代中出现的首个四位年份。将来遇到年份不明确的资料时，
 // 它仍会显示在“全部年代”中，但不会被错误归入某个具体年代。
@@ -26,14 +29,16 @@ const availableDecades = [
 ].sort((a, b) => Number(a) - Number(b));
 
 const availablePlaces = [...new Set(publishedViews.flatMap((view) => view.placeFilters))];
-const availableTags = [...new Set(publishedViews.flatMap((view) => view.tags))];
+const placeLabels = Object.assign({}, ...publishedViews.map(view => view.placeFilterLabels));
+const tagLabels = Object.assign({}, ...publishedViews.map(view => view.tagLabels));
+const availableTags = [...new Set(publishedViews.flatMap((view) => view.canonicalTags))];
 
 // 列表卡片展示用标签：去掉与地点重复的标签，避免「珠海」同时出现在地点和标签里。
 // 过滤规则：标签与 placeFilters 精确匹配，或标签是 placeDisplay 的子串，均视为重复。
 const filterDisplayTags = (tags: string[], placeDisplay: string, placeFilters: string[]) =>
   tags.filter((tag) => !placeFilters.includes(tag) && !placeDisplay.includes(tag));
 const decadeBrowseEntries = availableDecades.map((decade) => ({
-  label: `${decade}年代`,
+  label: t("{0}年代", locale, {0: (decade)}),
   value: decade,
   count: publishedViews.filter((view) => view.decade === decade).length,
 }));
@@ -52,7 +57,7 @@ for (const view of publishedViews) {
   if (!filterValue) continue;
   const existing = browsePlaceMap.get(filterValue);
   browsePlaceMap.set(filterValue, {
-    label: preferred,
+    label: view.placeFilterLabels[filterValue] ?? preferred,
     value: filterValue,
     count: (existing?.count ?? 0) + 1,
   });
@@ -86,21 +91,21 @@ const searchIndexJson = JSON.stringify(
 ---
 
 <BaseLayout
-  title="档案｜老旧默片"
-  description="浏览老旧默片收录的照片、纸张、卡片与普通生活痕迹。"
+  title={t("档案｜老旧默片", locale)}
+  description={t("浏览老旧默片收录的照片、纸张、卡片与普通生活痕迹。", locale)}
   image={publishedEntries[0]?.coverImage?.src}
 >
   <div class="archive-page">
     <header class="archive-heading">
-      <h1>档案</h1>
-      <p class="introduction">被时间留下来的照片、纸张、卡片与普通生活痕迹。</p>
+      <h1>{t("档案", locale)}</h1>
+      <p class="introduction">{t("被时间留下来的照片、纸张、卡片与普通生活痕迹。", locale)}</p>
     </header>
 
     {(decadeBrowseEntries.length > 0 || placeBrowseEntries.length > 0) && (
       <details class="archive-paths" data-archive-paths open>
         <summary class="archive-paths-heading">
-          <span class="archive-paths-title" id="archive-paths-heading">按年代与地点浏览</span>
-          <span class="archive-paths-toggle" aria-hidden="true">展开 / 收起</span>
+          <span class="archive-paths-title" id="archive-paths-heading">{t("按年代与地点浏览", locale)}</span>
+          <span class="archive-paths-toggle" aria-hidden="true">{t("展开 / 收起", locale)}</span>
         </summary>
         <div class:list={{
           'archive-paths-grid': true,
@@ -108,11 +113,11 @@ const searchIndexJson = JSON.stringify(
         }}>
           {decadeBrowseEntries.length > 0 && (
             <section class="archive-path-group" aria-labelledby="archive-decade-path-heading">
-              <h3 id="archive-decade-path-heading">按年代浏览</h3>
+              <h3 id="archive-decade-path-heading">{t("按年代浏览", locale)}</h3>
               <div class="archive-path-links">
                 {decadeBrowseEntries.map((entry) => (
-                  <a href={`/archive/?decade=${entry.value}&sort=date-asc`}>
-                    <span>{entry.label}</span><small>{entry.count}</small>
+                  <a href={localizePath(`/archive/?decade=${entry.value}&sort=date-asc`, locale)}>
+                    <span>{t(entry.label, locale)}</span><small>{entry.count}</small>
                   </a>
                 ))}
               </div>
@@ -120,11 +125,11 @@ const searchIndexJson = JSON.stringify(
           )}
           {placeBrowseEntries.length > 0 && (
             <section class="archive-path-group" aria-labelledby="archive-place-path-heading">
-              <h3 id="archive-place-path-heading">按地点浏览</h3>
+              <h3 id="archive-place-path-heading">{t("按地点浏览", locale)}</h3>
               <div class="archive-path-links">
                 {placeBrowseEntries.map((entry) => (
-                  <a href={`/archive/?place=${encodeURIComponent(entry.value)}`}>
-                    <span>{entry.label}</span><small>{entry.count}</small>
+                  <a href={localizePath(`/archive/?place=${encodeURIComponent(entry.value)}`, locale)}>
+                    <span>{t(entry.label, locale)}</span><small>{entry.count}</small>
                   </a>
                 ))}
               </div>
@@ -136,82 +141,82 @@ const searchIndexJson = JSON.stringify(
 
     <section
       class="archive-index"
-      aria-label="档案目录"
+      aria-label={t("档案目录", locale)}
       data-archive-page-size="12"
     >
       <header class="archive-index-heading">
         <div class="archive-index-title">
-          <div><h2>查找档案</h2></div>
+          <div><h2>{t("查找档案", locale)}</h2></div>
         </div>
       </header>
-      <div class="archive-controls" aria-label="档案搜索与筛选">
+      <div class="archive-controls" aria-label={t("档案搜索与筛选", locale)}>
         <div class="archive-control">
-          <label for="archive-search">关键词搜索</label>
+          <label for="archive-search">{t("关键词搜索", locale)}</label>
           <input
             id="archive-search"
             type="search"
-            placeholder="题名、地点或关键词"
+            placeholder={t("题名、地点或关键词", locale)}
             autocomplete="off"
             spellcheck={false}
             aria-controls="archive-list"
           />
           <div class="archive-search-assist" id="archive-search-assist" hidden>
-            <span>相关线索</span>
+            <span>{t("相关线索", locale)}</span>
             <div id="archive-search-suggestions"></div>
           </div>
         </div>
 
         <div class="archive-control">
-          <label for="archive-category">藏品分类</label>
+          <label for="archive-category">{t("藏品分类", locale)}</label>
           <select id="archive-category" aria-controls="archive-list">
-            <option value="">全部分类</option>
+            <option value="">{t("全部分类", locale)}</option>
             {archiveCategories.map((category) => (
               <option
                 value={category.slug}
                 data-object-types={category.objectTypes.join('|')}
               >
-                {category.label}
+                {t(category.label, locale)}
               </option>
             ))}
           </select>
         </div>
 
         <div class="archive-control">
-          <label for="archive-sort">排序方式</label>
+          <label for="archive-sort">{t("排序方式", locale)}</label>
           <select id="archive-sort" aria-controls="archive-list">
-            <option value="relevance" disabled>按相关度</option>
-            <option value="recent">最近收录</option>
-            <option value="likes">最多点赞</option>
-            <option value="date-asc">年代从早到晚</option>
-            <option value="date-desc">年代从晚到早</option>
-            <option value="type">按藏品类型</option>
+            <option value="relevance" disabled>{t("按相关度", locale)}</option>
+            <option value="recent">{t("最近收录", locale)}</option>
+            <option value="likes">{t("最多点赞", locale)}</option>
+            <option value="date-asc">{t("年代从早到晚", locale)}</option>
+            <option value="date-desc">{t("年代从晚到早", locale)}</option>
+            <option value="type">{t("按藏品类型", locale)}</option>
           </select>
         </div>
 
         <details class="archive-more-filters" id="archive-more-filters">
-          <summary><span>更多筛选</span><small id="archive-more-summary">年代、地点、标签</small></summary>
+          <summary><span>{t("更多筛选", locale)}</span><small id="archive-more-summary">{t("年代、地点、标签", locale)}</small></summary>
           <div class="archive-secondary-controls">
             <div class="archive-control">
-              <label for="archive-decade">年代</label>
+              <label for="archive-decade">{t("年代", locale)}</label>
               <select id="archive-decade" aria-controls="archive-list">
-                <option value="">全部年代</option>
-                {availableDecades.map((decade) => <option value={decade}>{decade}年代</option>)}
+                <option value="">{t("全部年代", locale)}</option>
+                {availableDecades.map((decade) => <option value={decade}>{locale === 'en' ? `${decade}s` : `${decade}年代`}</option>)}
               </select>
             </div>
 
             <div class="archive-control">
-              <label for="archive-place">地点</label>
+              <label for="archive-place">{t("地点", locale)}</label>
               <select id="archive-place" aria-controls="archive-list">
-                <option value="">全部地点</option>
-                {availablePlaces.map((place) => <option value={place}>{place}</option>)}
+                <option value="">{t("全部地点", locale)}</option>
+                {availablePlaces.map((place) => <option value={place}>{placeLabels[place] ?? place}</option>)}
               </select>
             </div>
 
             <div class="archive-control">
-              <label for="archive-tag">标签</label>
+              <label for="archive-tag">{t("标签", locale)}</label>
               <select id="archive-tag" aria-controls="archive-list">
-                <option value="">全部标签</option>
-                {availableTags.map((tag) => <option value={tag}>{tag}</option>)}
+                <option value="">{t("全部标签", locale)}</option>
+                {availableTags.map((tag) => <option value={tag}>{tagLabels[tag] ?? tag}</option>)}
               </select>
             </div>
           </div>
@@ -219,12 +224,12 @@ const searchIndexJson = JSON.stringify(
       </div>
 
       <div class="archive-actions" id="archive-actions" hidden>
-        <div class="active-filters" aria-label="当前筛选条件">
-          <span>当前筛选</span>
+        <div class="active-filters" aria-label={t("当前筛选条件", locale)}>
+          <span>{t("当前筛选", locale)}</span>
           <div id="archive-filter-chips"></div>
         </div>
         <button class="clear-filters ui-text-link" id="archive-clear" type="button" aria-controls="archive-list">
-          清除全部
+          {t("清除全部", locale)}
         </button>
       </div>
 
@@ -235,13 +240,13 @@ const searchIndexJson = JSON.stringify(
         aria-live="polite"
         aria-atomic="true"
       >
-        共 {publishedViews.length} 件档案
+        {t("共", locale)} {publishedViews.length} {t("件档案", locale)}
       </p>
 
       <div class="archive-empty-state" id="archive-empty-state" hidden>
-        <h2 id="archive-empty-title">没有找到符合条件的档案</h2>
-        <span id="archive-empty-description">可以减少筛选条件，或清除后浏览全部档案。</span>
-        <button class="ui-action ui-action--secondary" id="archive-empty-clear" type="button">清除全部筛选</button>
+        <h2 id="archive-empty-title">{t("没有找到符合条件的档案", locale)}</h2>
+        <span id="archive-empty-description">{t("可以减少筛选条件，或清除后浏览全部档案。", locale)}</span>
+        <button class="ui-action ui-action--secondary" id="archive-empty-clear" type="button">{t("清除全部筛选", locale)}</button>
       </div>
 
       <ul class="archive-list" id="archive-list">
@@ -252,18 +257,18 @@ const searchIndexJson = JSON.stringify(
               data-archive-category={getArchiveCategorySlug(view.objectType)}
               data-archive-decade={view.decade}
               data-archive-places={`|${view.placeFilters.join('|')}|`}
-              data-archive-tags={`|${view.tags.join('|')}|`}
+              data-archive-tags={`|${view.canonicalTags.join('|')}|`}
               data-archive-id={view.id}
               data-archive-accession={view.item.core.accession_date ?? ''}
-              data-archive-year={view.dateDisplay.match(/\d{4}/)?.[0] ?? ''}
+              data-archive-year={view.item.core.date_display.match(/\d{4}/)?.[0] ?? ''}
               data-archive-type-label={view.typeLabel}
               data-archive-title={view.title}
               data-archive-original-index={originalIndex}
             >
               <a
                 class="archive-entry"
-                href={`/archive/${view.id}/`}
-                aria-label={`查看档案：${view.title}`}
+                href={localizePath(`/archive/${view.id}/`, locale)}
+                aria-label={t("查看档案：{0}", locale, {0: (view.title)})}
                 data-archive-entry
               >
                 <figure class="archive-image">
@@ -289,26 +294,26 @@ const searchIndexJson = JSON.stringify(
 
                   <dl class="archive-facts">
                     <div>
-                      <dt>类型</dt>
+                      <dt>{t("类型", locale)}</dt>
                       <dd data-search-highlight>{view.typeLabel}</dd>
                     </div>
                     <div>
-                      <dt>年代</dt>
+                      <dt>{t("年代", locale)}</dt>
                       <dd data-search-highlight>{view.dateDisplay}</dd>
                     </div>
                     <div>
-                      <dt>地点</dt>
+                      <dt>{t("地点", locale)}</dt>
                       <dd data-search-highlight>{view.placeDisplay}</dd>
                     </div>
                   </dl>
 
-                  <ul class="archive-tags" aria-label="标签">
+                  <ul class="archive-tags" aria-label={t("标签", locale)}>
                     {filterDisplayTags(view.tags, view.placeDisplay, view.placeFilters).map((tag) => <li data-search-highlight>{tag}</li>)}
                   </ul>
 
                   <p class="archive-match-reason" data-match-reason hidden></p>
 
-                  <span class="archive-entry-action" aria-hidden="true">查看档案 →</span>
+                  <span class="archive-entry-action" aria-hidden="true">{t("查看档案 →", locale)}</span>
                 </div>
               </a>
             </li>
@@ -316,12 +321,12 @@ const searchIndexJson = JSON.stringify(
         }
       </ul>
 
-      <nav class="archive-pagination" id="archive-pagination" aria-label="档案分页" hidden>
+      <nav class="archive-pagination" id="archive-pagination" aria-label={t("档案分页", locale)} hidden>
         <p id="archive-page-summary"></p>
         <div>
-          <button class="ui-action ui-action--secondary" id="archive-page-previous" type="button">← 上一页</button>
-          <span id="archive-page-numbers" aria-label="页码"></span>
-          <button class="ui-action ui-action--secondary" id="archive-page-next" type="button">下一页 →</button>
+          <button class="ui-action ui-action--secondary" id="archive-page-previous" type="button">{t("← 上一页", locale)}</button>
+          <span id="archive-page-numbers" aria-label={t("页码", locale)}></span>
+          <button class="ui-action ui-action--secondary" id="archive-page-next" type="button">{t("下一页 →", locale)}</button>
         </div>
       </nav>
       <script type="application/json" id="archive-search-index" set:html={searchIndexJson} />
@@ -330,7 +335,9 @@ const searchIndexJson = JSON.stringify(
 </BaseLayout>
 
 <script>
-  import '../../scripts/archive-likes';
+import {clientText as ct,clientPath,clientLocale} from '../../i18n/client';
+
+import '../../scripts/archive-likes';
   import {
     SEARCH_FIELD_LABELS,
     normalizeSearchText,
@@ -444,19 +451,19 @@ const searchIndexJson = JSON.stringify(
   const renderActiveFilterChips = () => {
     if (!filterChips || !searchInput || !categorySelect || !decadeSelect || !placeSelect || !tagSelect) return;
     const definitions = [
-      { key: 'q', label: '关键词', value: searchInput.value.trim() },
-      { key: 'category', label: '分类', value: categorySelect.value ? categorySelect.selectedOptions[0]?.textContent?.trim() ?? '' : '' },
-      { key: 'decade', label: '年代', value: decadeSelect.value ? `${decadeSelect.value}年代` : '' },
-      { key: 'place', label: '地点', value: placeSelect.value },
-      { key: 'tag', label: '标签', value: tagSelect.value },
+      { key: 'q', label: ct("关键词"), value: searchInput.value.trim() },
+      { key: 'category', label: ct("分类"), value: categorySelect.value ? categorySelect.selectedOptions[0]?.textContent?.trim() ?? '' : '' },
+      { key: 'decade', label: ct("年代"), value: decadeSelect.value ? ct("{0}年代", {0: (decadeSelect.value)}) : '' },
+      { key: 'place', label: ct("地点"), value: placeSelect.value ? placeSelect.selectedOptions[0]?.textContent?.trim() ?? placeSelect.value : '' },
+      { key: 'tag', label: ct("标签"), value: tagSelect.value ? tagSelect.selectedOptions[0]?.textContent?.trim() ?? tagSelect.value : '' },
     ].filter((definition) => definition.value);
 
     filterChips.replaceChildren(...definitions.map((definition) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.dataset.clearFilter = definition.key;
-      button.textContent = `${definition.label}：${definition.value} ×`;
-      button.setAttribute('aria-label', `移除${definition.label}筛选：${definition.value}`);
+      button.textContent = `${definition.label}${clientLocale() === 'en' ? ': ' : '：'}${definition.value} ×`;
+      button.setAttribute('aria-label', ct("移除{0}筛选：{1}", {0: (definition.label), 1: (definition.value)}));
       return button;
     }));
   };
@@ -473,7 +480,7 @@ const searchIndexJson = JSON.stringify(
   };
 
   const compareText = (left: string, right: string) =>
-    left.localeCompare(right, 'zh-CN', { numeric: true, sensitivity: 'base' });
+    left.localeCompare(right, clientLocale(), { numeric: true, sensitivity: 'base' });
 
   // 页面在构建时已经按首次录入日期排好，浏览器只需恢复这份稳定次序。
   const compareRecentEntries = (left: HTMLElement, right: HTMLElement) =>
@@ -529,7 +536,7 @@ const searchIndexJson = JSON.stringify(
         element.textContent = original;
         return;
       }
-      const normalized = original.toLocaleLowerCase('zh-CN');
+      const normalized = original.toLocaleLowerCase(clientLocale());
       const ranges: Array<[number, number]> = [];
       for (const term of terms) {
         let fromIndex = 0;
@@ -574,7 +581,7 @@ const searchIndexJson = JSON.stringify(
         continue;
       }
       reason.hidden = false;
-      reason.textContent = `匹配：${match.matchedFields.map((field) => SEARCH_FIELD_LABELS[field]).join(' · ')}`;
+      reason.textContent = ct("匹配：{0}", {0: (match.matchedFields.map((field) => SEARCH_FIELD_LABELS[field]).join(' · '))});
     }
   };
 
@@ -608,10 +615,11 @@ const searchIndexJson = JSON.stringify(
         tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
       }
     }
+    const tagLabel = (value: string) => Array.from(tagSelect.options).find((option) => option.value === value)?.textContent?.trim() ?? value;
     const suggestions = [...tagCounts.entries()]
       .sort((left, right) => {
-        const leftNear = terms.some((term) => normalizeSearchText(left[0]).includes(term));
-        const rightNear = terms.some((term) => normalizeSearchText(right[0]).includes(term));
+        const leftNear = terms.some((term) => normalizeSearchText(tagLabel(left[0])).includes(term));
+        const rightNear = terms.some((term) => normalizeSearchText(tagLabel(right[0])).includes(term));
         return Number(rightNear) - Number(leftNear) || right[1] - left[1] || compareText(left[0], right[0]);
       })
       .slice(0, 5);
@@ -619,8 +627,8 @@ const searchIndexJson = JSON.stringify(
       const button = document.createElement('button');
       button.type = 'button';
       button.dataset.suggestedTag = tag;
-      button.textContent = `${tag} · ${count}`;
-      button.setAttribute('aria-label', `按相关标签“${tag}”继续筛选`);
+      button.textContent = `${tagLabel(tag)} · ${count}`;
+      button.setAttribute('aria-label', ct("按相关标签“{0}”继续筛选", {0: (tagLabel(tag))}));
       return button;
     }));
     searchAssist.hidden = suggestions.length === 0;
@@ -638,7 +646,7 @@ const searchIndexJson = JSON.stringify(
       return { startIndex, endIndex, totalPages };
     }
     pagination.hidden = totalPages <= 1;
-    pageSummary.textContent = `第 ${currentPage} 页，共 ${totalPages} 页`;
+    pageSummary.textContent = ct("第 {0} 页，共 {1} 页", {0: (currentPage), 1: (totalPages)});
     previousPageButton.disabled = currentPage <= 1;
     nextPageButton.disabled = currentPage >= totalPages;
     pageNumbers.replaceChildren(...Array.from({ length: totalPages }, (_, index) => {
@@ -647,7 +655,7 @@ const searchIndexJson = JSON.stringify(
       button.type = 'button';
       button.dataset.archivePage = String(page);
       button.textContent = String(page);
-      button.setAttribute('aria-label', `前往第 ${page} 页`);
+      button.setAttribute('aria-label', ct("前往第 {0} 页", {0: (page)}));
       if (page === currentPage) button.setAttribute('aria-current', 'page');
       return button;
     }));
@@ -686,24 +694,24 @@ const searchIndexJson = JSON.stringify(
     const pageState = renderPagination(matchingEntries);
     const hasActiveFilters = terms.length > 0 || Boolean(selectedCategory || selectedDecade || selectedPlace || selectedTag);
     const advancedFilterCount = [selectedDecade, selectedPlace, selectedTag].filter(Boolean).length;
-    if (moreFiltersSummary) moreFiltersSummary.textContent = advancedFilterCount ? `已选 ${advancedFilterCount} 项` : '年代、地点、标签';
+    if (moreFiltersSummary) moreFiltersSummary.textContent = advancedFilterCount ? ct("已选 {0} 项", {0: (advancedFilterCount)}) : ct("年代、地点、标签");
     if (archiveActions) archiveActions.hidden = !hasActiveFilters;
     renderActiveFilterChips();
     if (emptyState) emptyState.hidden = matchingEntries.length !== 0;
     if (!matchingEntries.length) {
       const hasOnlyCategoryFilter = Boolean(selectedCategory) && !terms.length && !selectedDecade && !selectedPlace && !selectedTag;
       const hasKeywordFilter = terms.length > 0;
-      resultsSummary.textContent = hasOnlyCategoryFilter ? '当前暂无此类档案。' : '没有找到符合条件的档案。';
-      if (emptyTitle) emptyTitle.textContent = hasOnlyCategoryFilter ? '这个分类还没有公开档案' : '没有找到符合条件的档案';
+      resultsSummary.textContent = hasOnlyCategoryFilter ? ct("当前暂无此类档案。") : ct("没有找到符合条件的档案。");
+      if (emptyTitle) emptyTitle.textContent = hasOnlyCategoryFilter ? ct("这个分类还没有公开档案") : ct("没有找到符合条件的档案");
       if (emptyDescription) emptyDescription.textContent = hasOnlyCategoryFilter
-        ? '可以先浏览其他分类；新内容通过发布检查后会出现在这里。'
+        ? ct("可以先浏览其他分类；新内容通过发布检查后会出现在这里。")
         : hasKeywordFilter
-          ? '可以换一个更短的关键词、减少同时搜索的词数，或清除后浏览全部档案。'
-          : '可以移除部分筛选条件，或清除后浏览全部档案。';
+          ? ct("可以换一个更短的关键词、减少同时搜索的词数，或清除后浏览全部档案。")
+          : ct("可以移除部分筛选条件，或清除后浏览全部档案。");
       return;
     }
-    const rangeText = pageState.totalPages > 1 ? `，显示第 ${pageState.startIndex + 1}–${pageState.endIndex} 件` : '';
-    resultsSummary.textContent = `${hasActiveFilters ? '找到' : '共'} ${matchingEntries.length} 件档案${rangeText}`;
+    const rangeText = pageState.totalPages > 1 ? ct("，显示第 {0}–{1} 件", {0: (pageState.startIndex + 1), 1: (pageState.endIndex)}) : '';
+    resultsSummary.textContent = ct("{0} {1} 件档案{2}", {0: (hasActiveFilters ? ct("找到") : ct("共")), 1: (matchingEntries.length), 2: (rangeText)});
   };
 
   const applyFilterChange = () => {

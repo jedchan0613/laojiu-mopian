@@ -1,3 +1,4 @@
+import { clientText as ct, clientLocale, clientError } from '../i18n/client';
 // 账户页面共享的请求封装。
 // 统一携带账户请求标记（服务端会校验来源与标记，防止其他网页代为提交），
 // 统一把后端返回的中文提示转成可直接展示的错误信息。
@@ -5,7 +6,7 @@
 export type AccountResponse = Record<string, any>;
 
 export const accountFetch = async (path: string, options: { method?: string; body?: unknown } = {}): Promise<AccountResponse> => {
-	const headers: Record<string, string> = { 'X-LJM-Account-Request': '1' };
+	const headers: Record<string, string> = { 'X-LJM-Account-Request': '1', 'X-LJM-Language': clientLocale() };
 	if (options.body !== undefined) headers['Content-Type'] = 'application/json';
 	let response: Response;
 	try {
@@ -16,7 +17,7 @@ export const accountFetch = async (path: string, options: { method?: string; bod
 			body: options.body === undefined ? undefined : JSON.stringify(options.body),
 		});
 	} catch {
-		throw new Error('网络连接失败，请检查网络后重试；已填写的内容不会自动丢失。');
+		throw new Error(ct('网络连接失败，请检查网络后重试；已填写的内容不会自动丢失。'));
 	}
 	let payload: AccountResponse = {};
 	try {
@@ -25,7 +26,7 @@ export const accountFetch = async (path: string, options: { method?: string; bod
 		payload = {};
 	}
 	if (!response.ok) {
-		const error = new Error(typeof payload.error === 'string' && payload.error ? payload.error : '暂时无法完成操作，请稍后再试。');
+		const error = new Error(typeof payload.error === 'string' && payload.error ? clientError(payload.error) : ct('暂时无法完成操作，请稍后再试。'));
 		(error as Error & { status?: number }).status = response.status;
 		throw error;
 	}
@@ -34,7 +35,7 @@ export const accountFetch = async (path: string, options: { method?: string; bod
 
 export const setStatus = (element: Element | null, message: string, tone: 'info' | 'ok' | 'error' = 'info') => {
 	if (!element) return;
-	element.textContent = message;
+	element.textContent = tone === 'error' ? clientError(message) : ct(message);
 	if (tone === 'info') element.removeAttribute('data-tone');
 	else element.setAttribute('data-tone', tone);
 };
@@ -47,5 +48,5 @@ export const formatDate = (value: string) => {
 	if (!value) return '';
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return value;
-	return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+	return new Intl.DateTimeFormat(clientLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 };

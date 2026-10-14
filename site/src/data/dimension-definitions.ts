@@ -4,6 +4,8 @@ import diaryNotebookSource from './standards/diary-notebook-dimensions.json';
 import photoSource from './standards/photo-dimensions.json';
 import postcardSource from './standards/postcard-dimensions.json';
 import type { ArchiveItem } from './archive-schema';
+import english from '../i18n/archive-labels.en.json';
+import { isEnglishArchiveLocale } from './code-dictionary';
 
 export interface DimensionDefinition {
 	dimension_code: string;
@@ -32,7 +34,7 @@ export const allDimensionDefinitions = [
 	...cardDimensions,
 ];
 
-export const getDimensionsForItem = (item: ArchiveItem) => {
+const getCanonicalDimensionsForItem = (item: ArchiveItem) => {
 	switch (item.metadata.schema) {
 		case 'photo':
 			return photoDimensions;
@@ -47,4 +49,11 @@ export const getDimensionsForItem = (item: ArchiveItem) => {
 		default:
 			return [];
 	}
+};
+
+export const getDimensionsForItem = (item: ArchiveItem, locale: string = 'zh-CN') => {
+  const definitions = getCanonicalDimensionsForItem(item);
+  return isEnglishArchiveLocale(locale) ? definitions.map((definition) => ({ ...definition,
+    name: (english.dimension_names as Record<string, string>)[definition.name] ?? definition.name,
+  })) : definitions;
 };

@@ -1,6 +1,11 @@
 ---
+import { getLocale, localizePath } from '../i18n/ui';
+import { interfaceText } from '../i18n/client';
+const locale = getLocale(Astro.url.pathname);
+const ct = (text: string, params: Record<string, unknown> = {}) => interfaceText(text, locale, params);
+
 const playlist = [
-	{ title: 'Lullaby（夏日蝉鸣）', src: '/audio/lullaby-summer-cicadas.ogg' },
+	{ title: ct('Lullaby（夏日蝉鸣）'), src: '/audio/lullaby-summer-cicadas.ogg' },
 	{ title: 'Last Reunion', src: '/audio/last-reunion.mp3' },
 ];
 const firstTrack = playlist[0];
@@ -11,7 +16,7 @@ const firstTrack = playlist[0];
 	data-background-music
 	data-background-music-playlist={JSON.stringify(playlist)}
 	data-state="paused"
-	aria-label="背景音乐"
+	aria-label={ct("背景音乐")}
 >
 	<audio
 		data-background-music-audio
@@ -23,8 +28,8 @@ const firstTrack = playlist[0];
 		type="button"
 		data-background-music-toggle
 		aria-pressed="false"
-		aria-label={`播放背景音乐《${firstTrack.title}》`}
-		title={`背景音乐：${firstTrack.title}`}
+		aria-label={ct("播放背景音乐《{0}》", {"0": (firstTrack.title)})}
+		title={ct("背景音乐：{0}", {"0": (firstTrack.title)})}
 	>
 		<svg class="background-music__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
 			<path d="M9.25 17.25V6.5l8-1.75v10.5" />
@@ -32,7 +37,7 @@ const firstTrack = playlist[0];
 			<ellipse cx="6.75" cy="17.4" rx="2.5" ry="1.85" />
 			<ellipse cx="14.75" cy="15.4" rx="2.5" ry="1.85" />
 		</svg>
-		<span data-background-music-label aria-live="polite">播放音乐</span>
+		<span data-background-music-label aria-live="polite">{ct("播放音乐")}</span>
 	</button>
 	<span class="background-music__track" data-background-music-track aria-hidden="true">
 		1 / {playlist.length} · {firstTrack.title}
@@ -40,6 +45,8 @@ const firstTrack = playlist[0];
 </aside>
 
 <script>
+import { clientText as ct } from '../i18n/client';
+
 	type BackgroundTrack = { title: string; src: string };
 
 	const root = document.querySelector<HTMLElement>('[data-background-music]');
@@ -89,7 +96,7 @@ const firstTrack = playlist[0];
 			const track = currentTrack();
 			if (!track) return;
 			trackLabel.textContent = `${currentTrackIndex + 1} / ${playlist.length} · ${track.title}`;
-			toggle.title = `背景音乐：${track.title}`;
+			toggle.title = ct("背景音乐：{0}", {"0": (track.title)});
 		};
 
 		const rememberPreference = (preference: 'playing' | 'paused') => {
@@ -118,20 +125,20 @@ const firstTrack = playlist[0];
 			toggle.setAttribute('aria-pressed', String(isPlaying));
 
 			if (state === 'playing') {
-				label.textContent = '暂停音乐';
-				toggle.setAttribute('aria-label', `暂停背景音乐《${track?.title ?? ''}》`);
+				label.textContent = ct('暂停音乐');
+				toggle.setAttribute('aria-label', ct("暂停背景音乐《{0}》", {"0": (track?.title ?? '')}));
 				return;
 			}
 
 			if (state === 'unavailable') {
-				label.textContent = '音乐不可用';
-				toggle.setAttribute('aria-label', '背景音乐暂时不可用');
+				label.textContent = ct('音乐不可用');
+				toggle.setAttribute('aria-label', ct('背景音乐暂时不可用'));
 				toggle.disabled = true;
 				return;
 			}
 
-			label.textContent = '播放音乐';
-			toggle.setAttribute('aria-label', `播放背景音乐《${track?.title ?? ''}》`);
+			label.textContent = ct('播放音乐');
+			toggle.setAttribute('aria-label', ct("播放背景音乐《{0}》", {"0": (track?.title ?? '')}));
 		};
 
 		const requestPlayback = async () => {

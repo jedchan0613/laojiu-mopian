@@ -1,3 +1,4 @@
+import { clientText as ct, clientPath } from '../i18n/client';
 interface FeaturedCarouselItem {
 	src: string;
 	srcset: string;
@@ -73,19 +74,19 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 		image.alt = item.description;
 		image.width = item.width;
 		image.height = item.height;
-		recordLink.href = item.href;
-		recordLink.setAttribute('aria-label', `查看精选档案：${item.title}`);
+		recordLink.href = clientPath(item.href);
+		recordLink.setAttribute('aria-label', ct("查看精选档案：{0}", {"0": (item.title)}));
 		if (recordDate) recordDate.textContent = item.dateDisplay;
 		if (recordTitle) recordTitle.textContent = item.title;
 		if (recordInfo) recordInfo.textContent = item.recordInfo;
 		if (likeButton) {
 			likeButton.dataset.itemId = item.itemId;
-			likeButton.setAttribute('aria-label', `为"${item.title}"点赞`);
+			likeButton.setAttribute('aria-label', ct("为\"{0}\"点赞", {"0": (item.title)}));
 			likeButton.dispatchEvent(new CustomEvent('archive-like-target-change'));
 		}
 		syncDots();
 		if (announce && announcement) {
-			announcement.textContent = `已显示第 ${activeIndex + 1} 张精选图片：${item.description}`;
+			announcement.textContent = ct("已显示第 {0} 张精选图片：{1}", {"0": (activeIndex + 1), "1": (item.description)});
 		}
 		if (!prefersReducedMotion.matches) {
 			image.animate(

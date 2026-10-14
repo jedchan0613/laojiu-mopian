@@ -33,13 +33,18 @@ const listFiles = async (directory) => {
 };
 
 // 账户页面（登录、用户中心）不进站点地图：它们是私密入口，不应被搜索引擎收录或收录进索引。
-const accountPagePattern = /^(?:login|me)(?:\/|\.html)/;
+const accountPagePattern = /^(?:en\/)?(?:login|me)(?:\/|\.html)/;
 const isAccountPage = (path) => accountPagePattern.test(relative(distRoot, path).split(sep).join('/'));
 
-const htmlFiles = (await listFiles(distRoot))
+const candidates = (await listFiles(distRoot))
 	.filter((path) => path.endsWith('.html'))
-	.filter((path) => !path.endsWith(`${sep}404.html`))
+	.filter((path) => !/(?:^|\/)404(?:\/index)?\.html$/.test(relative(distRoot, path).split(sep).join('/')))
 	.filter((path) => !isAccountPage(path));
+const htmlFiles=[];
+for (const file of candidates) {
+ const html=await readFile(file,'utf8');
+ if(!/<meta\b[^>]*name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html))htmlFiles.push(file);
+}
 
 const toPublicPath = (path) => {
 	const relativePath = relative(distRoot, path).split(sep).join('/');
@@ -55,11 +60,18 @@ const escapeXml = (value) => value
 	.replaceAll('"', '&quot;')
 	.replaceAll("'", '&apos;');
 
-const urls = [...new Set(htmlFiles.map(toPublicPath))]
-	.sort((left, right) => left.localeCompare(right, 'en'))
-	.map((path) => new URL(path, siteUrl).href);
-const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
-	.map((url) => `  <url><loc>${escapeXml(url)}</loc></url>`)
+const paths = [...new Set(htmlFiles.map(toPublicPath))].sort((left, right) => left.localeCompare(right, 'en'));
+const publicPaths = new Set(paths);
+const urls = paths.map((path) => new URL(path, siteUrl).href);
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${paths
+	.map((path) => {
+		const chinesePath = path === '/en/' ? '/' : path.startsWith('/en/') ? path.slice(3) : path;
+		const englishPath = chinesePath === '/' ? '/en/' : `/en${chinesePath}`;
+		const alternatives = publicPaths.has(chinesePath) && publicPaths.has(englishPath)
+			? [['zh-CN', chinesePath], ['en', englishPath], ['x-default', chinesePath]].map(([locale, alternate]) => `<xhtml:link rel="alternate" hreflang="${locale}" href="${escapeXml(new URL(alternate, siteUrl).href)}"/>`).join('')
+			: '';
+		return `  <url><loc>${escapeXml(new URL(path, siteUrl).href)}</loc>${alternatives}</url>`;
+	})
 	.join('\n')}\n</urlset>\n`;
 await writeFile(sitemapPath, sitemap, 'utf8');
 
@@ -69,6 +81,8 @@ try {
 } catch {
 	// 构建中没有 robots.txt 时使用最小的公开规则。
 }
-robots = `${robots.replace(/^Sitemap:.*$/gim, '').trim()}\nSitemap: ${new URL('/sitemap.xml', siteUrl).href}\n`;
+const privateAccountRules = ['/login/', '/me/', '/en/login/', '/en/me/']
+	.filter((path) => !robots.includes(`Disallow: ${path}`)).map((path) => `Disallow: ${path}`).join('\n');
+robots = `${robots.replace(/^Sitemap:.*$/gim, '').trim()}\n${privateAccountRules ? `${privateAccountRules}\n` : ''}Sitemap: ${new URL('/sitemap.xml', siteUrl).href}\n`;
 await writeFile(robotsPath, robots, 'utf8');
 process.stdout.write(`站点地图：已生成 ${urls.length} 个公开页面地址。\n`);

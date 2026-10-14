@@ -1,3 +1,5 @@
+import { compareAlbumPositions, parseAlbumPosition, albumPositionIdentity } from './album-position.mjs';
+
 const managedCoreFields = new Set([
 	'record_status', 'item_id', 'collection_code', 'privacy_level', 'use_status', 'master_file_path',
 	'access_file_path', 'publication_file_path', 'created_date', 'updated_date', 'id_check', 'required_check',
@@ -24,8 +26,14 @@ const commonFieldSectionLabels = new Map([
 	['保存状态', '保存与利用'], ['利用与保管', '保存与利用'],
 ]);
 
-const commonFieldSectionFor = (definition, { required = false, value } = {}) => {
-	if (hiddenCommonFieldCodes.has(definition.field_code) && !definition.required && !required) {
+// 照片与相册总档案维护「相册编号、原始位置」是日常操作，这两类对象不再隐藏空值。
+const albumRelationFieldCodes = new Set(['album_id', 'original_position']);
+
+const albumAwareObjectTypes = new Set(['PHO', 'ALB']);
+
+const commonFieldSectionFor = (definition, { required = false, value, objectType } = {}) => {
+	if (hiddenCommonFieldCodes.has(definition.field_code) && !definition.required && !required &&
+		!(albumRelationFieldCodes.has(definition.field_code) && albumAwareObjectTypes.has(objectType))) {
 		// 隐藏空的低频可选项；旧值仍有维护入口，保存时不会丢失。
 		return hasMeaningfulValue(value) ? '已保存的扩展字段' : null;
 	}
@@ -190,16 +198,19 @@ const state = {
 	officialSnapshot: null,
 	confirmedPublicationCopies: false, workspaceMode: 'records', recordViewMode: 'overview', drafts: [], history: [], recycleBin: [],
 	pendingRemovedImages: [], validationIssues: [], pendingObjectCategory: '', recordStatusFilter: 'normal',
-	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '',
+	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '', recordAlbumFilter: '',
 	recordPage: 1, recordPageSize: 15,
 	recordFilters: { category: '', research: '', evidence: '', rights: '', imageStatus: '' },
 	recoveryTab: 'history', recordReferenceOpen: false,
 	integrityReport: null, integrityLoading: false, imagePreflight: [], adminMode: 'local', publicSiteUrl: '',
 	autoSaveNotice: '',
+	translation: { itemId: '', loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en' },
 	query: {
 		loaded: false, loading: false, error: '', records: [], generation: 0,
 	},
 };
+
+const hasUnsavedChanges = () => state.dirty || state.translation.dirty;
 
 const publicPreviewUrl = (pathname = '/') => {
 	if (state.adminMode !== 'online' || !state.publicSiteUrl) return pathname;
@@ -214,6 +225,8 @@ const elements = {
 	recordTypeFilter: document.querySelector('#record-type-filter'),
 	recordDecadeFilter: document.querySelector('#record-decade-filter'),
 	recordQuickStatusFilter: document.querySelector('#record-quick-status-filter'),
+	recordAlbumFilter: document.querySelector('#record-album-filter'),
+	recordAlbumOptions: document.querySelector('#record-album-options'),
 	recordPagination: document.querySelector('#record-pagination'),
 	recordId: document.querySelector('#record-id'), recordKicker: document.querySelector('#record-kicker'),
 	editorSurface: document.querySelector('#editor-surface'), previewLink: document.querySelector('#preview-link'),
@@ -814,6 +827,10 @@ const filteredRecords = () => {
 	if (state.recordQuickStatus) {
 		records = records.filter((record) => statusLabel(record) === state.recordQuickStatus);
 	}
+	if (state.recordAlbumFilter.trim()) {
+		const wantedAlbum = state.recordAlbumFilter.trim();
+		records = records.filter((record) => String(record.core.album_id ?? '').trim() === wantedAlbum);
+	}
 	const filters = state.recordFilters;
 	const queryById = new Map(state.query.records.map((record) => [record.item_id, record]));
 	return records.filter((record) => {
@@ -835,6 +852,49 @@ const filteredRecords = () => {
 };
 
 const chineseCollator = new Intl.Collator('zh-CN');
+
+const albumUsageMap = () => {
+	const usage = new Map();
+	for (const record of state.records) {
+		if (recordIsWithdrawn(record) || !albumAwareObjectTypes.has(record.core.object_type)) continue;
+		const albumId = String(record?.core?.album_id ?? '').trim();
+		if (!albumId) continue;
+		const entry = usage.get(albumId) ?? { count: 0, photoCount: 0, hasAlbumRecord: false, title: '' };
+		entry.count += 1;
+		if (record.core.object_type === 'PHO') entry.photoCount += 1;
+		if (record.core.object_type === 'ALB') { entry.hasAlbumRecord = true; entry.title ||= record.core.title; }
+		usage.set(albumId, entry);
+	}
+	return usage;
+};
+
+const albumFieldContext = (value) => {
+	const albumId = String(value ?? '').trim();
+	const usage = albumUsageMap();
+	const currentType = state.current?.core?.object_type;
+	if (!albumId) {
+		return usage.size ? { message: `已有 ${usage.size} 个相册编号，可从下拉建议沿用，也可直接填写新编号。` } : null;
+	}
+	const siblings = state.records.filter((record) => record.core.item_id !== state.current?.core?.item_id &&
+		!recordIsWithdrawn(record) && albumAwareObjectTypes.has(record.core.object_type) &&
+		String(record.core.album_id ?? '').trim() === albumId);
+	if (currentType === 'ALB') {
+		return { message: siblings.length ? `同册已有 ${siblings.length} 件档案。` : '相册总档案：同册照片填写同一编号后即归入本册。' };
+	}
+	const hasAlbumRecord = siblings.some((record) => record.core.object_type === 'ALB');
+	if (!siblings.length) return { message: '新相册编号；整理时建议再补一条相册（ALB）总档案。' };
+	if (!hasAlbumRecord) return { message: `同编号已有 ${siblings.length} 件档案，但还没有相册（ALB）总档案。`, warning: true };
+	return { message: `同册已有 ${siblings.length} 件档案。` };
+};
+
+const albumIdSuggestionsDatalist = () => {
+	const usage = albumUsageMap();
+	if (!usage.size) return '';
+	const options = [...usage.entries()].sort((left, right) => left[0].localeCompare(right[0]))
+		.map(([albumId, entry]) => `<option value="${escapeHtml(albumId)}">${escapeHtml(`${entry.title || '暂无总档案'} · ${entry.photoCount} 张照片`)}</option>`)
+		.join('');
+	return `<datalist id="album-id-suggestions">${options}</datalist>`;
+};
 
 const normalizeRecordItemDate = (value) => {
 	const match = String(value ?? '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -1158,6 +1218,11 @@ const syncRecordToolOptions = (tabRecords) => {
 	elements.recordQuickStatusFilter.innerHTML = `<option value="">全部状态</option>${statuses
 		.map((value) => `<option value="${escapeHtml(value)}" ${value === state.recordQuickStatus ? 'selected' : ''}>${escapeHtml(value)}</option>`)
 		.join('')}`;
+	const albumUsage = albumUsageMap();
+	elements.recordAlbumOptions.innerHTML = [...albumUsage.entries()].sort((left, right) => left[0].localeCompare(right[0]))
+		.map(([albumId, entry]) => `<option value="${escapeHtml(albumId)}">${escapeHtml(`${entry.title || '暂无总档案'} · ${entry.photoCount} 张照片`)}</option>`)
+		.join('');
+	if (elements.recordAlbumFilter.value !== state.recordAlbumFilter) elements.recordAlbumFilter.value = state.recordAlbumFilter;
 	for (const [filter, field, dictionary, emptyLabel] of [
 		['research', 'research_status', 'research_status', '全部状态'],
 		['evidence', 'evidence_level', 'evidence_level', '全部等级'],
@@ -1179,9 +1244,16 @@ const syncRecordToolOptions = (tabRecords) => {
 const renderRecordList = () => {
 	const tabRecords = recordsInCurrentStatusTab();
 	syncRecordToolOptions(tabRecords);
+	const albumFilterActive = Boolean(state.recordAlbumFilter.trim());
 	const records = sortedRecords(filteredRecords());
+	if (albumFilterActive) {
+		records.sort((left, right) =>
+			Number(right.core.object_type === 'ALB') - Number(left.core.object_type === 'ALB') ||
+			compareAlbumPositions(left.core.original_position, right.core.original_position) ||
+			chineseCollator.compare(String(left.core.title ?? ''), String(right.core.title ?? '')));
+	}
 	const statusName = state.recordStatusFilter === 'withdrawn' ? '已撤销' : '正常';
-	const activeConditions = [state.search.trim(), state.recordTypeFilter, state.recordDecadeFilter, state.recordQuickStatus, ...Object.values(state.recordFilters)]
+	const activeConditions = [state.search.trim(), state.recordTypeFilter, state.recordDecadeFilter, state.recordQuickStatus, state.recordAlbumFilter.trim(), ...Object.values(state.recordFilters)]
 		.filter(Boolean).length;
 	elements.recordFiltersClear.hidden = !activeConditions;
 	elements.recordCount.textContent = activeConditions
@@ -1198,7 +1270,7 @@ const renderRecordList = () => {
 		return `<button class="record-card ${record.core.item_id === state.activeId ? 'is-active' : ''}" data-id="${escapeHtml(record.core.item_id)}" type="button">
 			<span class="record-card-thumb">${image ? `<img src="${escapeHtml(image.thumbnailUrl || image.previewUrl)}" alt="" loading="lazy" decoding="async" />` : '<span aria-hidden="true">⌁</span>'}</span>
 			<span class="record-card-copy"><span class="record-card-title"><strong>${escapeHtml(record.core.title || '未命名藏品')}</strong><em class="record-status-chip is-${recordStatusTone(record)}">${escapeHtml(statusLabel(record))}</em></span>
-			<span class="record-card-meta">${escapeHtml(typeLabel)} · ${escapeHtml(record.core.date_display || '年代未知')}</span>
+			<span class="record-card-meta">${escapeHtml(typeLabel)} · ${escapeHtml(record.core.date_display || '年代未知')}${albumFilterActive ? ` · ${escapeHtml(record.core.object_type === 'ALB' ? '整册资料' : String(record.core.original_position ?? '').trim() || '页序未填')}` : ''}</span>
 			<small>${escapeHtml(record.core.item_id)}${issueCount ? ` · ${issueCount} 项待处理` : ''}</small></span>
 		</button>`;
 	}).join('') : `<div class="record-list-empty">${activeConditions ? '当前搜索或筛选没有匹配记录，可以放宽部分条件' : `暂无${statusName}档案`}</div>`;
@@ -1445,6 +1517,7 @@ const showRecordActionDock = ({ status, disabled, showPublish }) => {
 };
 
 const updateHeader = () => {
+	refreshAlbumRelationState();
 	const centerTitles = {
 		maintenance: ['维护概览', '质量待办与只读完整性巡检'],
 		drafts: ['草稿中心', `${state.drafts.length} 份尚未正式发布的草稿`],
@@ -1554,14 +1627,14 @@ const updateHeader = () => {
 	elements.recordMoreActions.hidden = !canOfferWithdrawal && !canOfferRestore && !canOfferSimilar;
 	elements.recordMoreActionsLabel.textContent = canOfferRestore ? '恢复操作' : '更多操作';
 	elements.similarRecordButton.hidden = !canOfferSimilar;
-	elements.similarRecordButton.disabled = state.dirty;
-	elements.similarRecordButton.title = state.dirty ? '请先保存或放弃当前修改，再从这条档案新建' : '只复用类型、批次、来源和行政区域';
+	elements.similarRecordButton.disabled = hasUnsavedChanges();
+	elements.similarRecordButton.title = hasUnsavedChanges() ? '请先保存或放弃当前修改，再从这条档案新建' : '只复用类型、批次、来源和行政区域';
 	elements.lifecycleButton.hidden = !canOfferWithdrawal && !canOfferRestore;
 	elements.lifecycleButton.classList.toggle('is-danger', canOfferWithdrawal);
 	elements.lifecycleButton.classList.toggle('is-restore', canOfferRestore);
 	if (canOfferWithdrawal) {
 		elements.lifecycleButton.textContent = '撤销档案';
-		const blockedByDraft = Boolean(state.current._admin?.hasDraft || state.dirty);
+		const blockedByDraft = Boolean(state.current._admin?.hasDraft || hasUnsavedChanges());
 		elements.lifecycleButton.disabled = blockedByDraft;
 		elements.lifecycleButton.title = blockedByDraft ? '请先处理当前未发布修改，再撤销已发布档案' : '从公开网站撤下，保留本地档案和图片';
 	} else if (canOfferRestore) {
@@ -1581,12 +1654,22 @@ const updateHeader = () => {
 		disabled: waitingForExactType,
 		showPublish: state.activeTab === 'privacy',
 	});
+	if (state.activeTab === 'translation') {
+		elements.saveDraftButton.hidden = true;
+		elements.publishButton.hidden = true;
+		hideRecordActionDock();
+		elements.saveState.textContent = state.translation.dirty ? '英文有尚未保存的修改' : '英文独立保存；中文内容和隐私权限沿用原档案';
+		elements.saveState.classList.toggle('is-dirty', state.translation.dirty);
+	}
 	updateTaskSummary();
 };
 
 const openRecord = (itemId, viewMode = 'editor') => {
 	const record = state.records.find((candidate) => candidate.core.item_id === itemId);
 	if (!record) return;
+	if (state.translation.itemId !== itemId || state.translation.dirty) state.translation = {
+		itemId, loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en',
+	};
 	state.activeId = itemId;
 	state.workspaceMode = 'records';
 	state.recordViewMode = viewMode;
@@ -1656,6 +1739,7 @@ const startNewRecord = (templateRecord = null) => {
 	state.imagePreflight = [];
 	state.confirmedPublicationCopies = false;
 	state.pendingObjectCategory = '';
+	state.translation = { itemId: '', loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en' };
 	state.officialSnapshot = null;
 	const reusableCore = templateRecord ? Object.fromEntries(similarCoreFieldCodes
 		.filter((fieldCode) => templateRecord.core[fieldCode] !== undefined)
@@ -1682,7 +1766,7 @@ const startNewRecord = (templateRecord = null) => {
 };
 
 const startSimilarRecord = async () => {
-	if (!state.current || state.isNew || isWithdrawn() || state.dirty) return;
+	if (!state.current || state.isNew || isWithdrawn() || hasUnsavedChanges()) return;
 	const confirmed = await confirmAction({
 		title: '以此为模板新建',
 		message: '将复用当前藏品的类型、批次、获得方式、来源和省市区。',
@@ -1768,6 +1852,7 @@ const publicCoreFieldCodes = new Set([
 	'item_id', 'source_place',
 	'backup_status', 'condition_grade',
 	'provenance_notes', 'updated_date', 'publication_file_path',
+	'album_id', 'original_position',
 ]);
 const fieldVisibilityBadge = (scope, fieldCode) => {
 	// 对象专属字段（metadata）会进入公开页面的“藏品细节 / 档案信息”；
@@ -1802,6 +1887,8 @@ const briefFieldHelpOverrides = new Map([
 	['title', '题名应简明可检索；推测内容注明“约／疑似／未知”。'],
 	['batch_id', '同批获得或同一原始组合使用相同编号。'],
 	['date_display', '例如“1989”“约1985年”或“年代未知”。'],
+	['album_id', '同一本相册使用同一编号；不要填写姓名或私人地址。'],
+	['original_position', '例如“第3页右上”；不清楚时留空，不按年代重排。'],
 	['physical_location', '填写柜、盒、夹或保护袋等存放位置。'],
 	['acquisition_method', '记录藏品如何进入本档案。'],
 	['source_name', '填写姓名、摊主代称、机构或平台。'],
@@ -1862,6 +1949,7 @@ const renderField = ({
 	const regionState = administrativeRegionListIds[fieldCode]
 		? administrativeRegionFieldState(fieldCode, value)
 		: null;
+	const albumState = fieldCode === 'album_id' && !readonly && !albumAwareObjectTypes.has(state.current.core.object_type) ? albumFieldContext(value) : null;
 	let control;
 	if (fieldCode === 'object_type' && options.length) {
 		control = renderObjectTypeControl(options, value, { readonly, required });
@@ -1887,6 +1975,8 @@ const renderField = ({
 		control = `<textarea class="field-control" ${attributes}${requiredControlAttribute} data-array="true" placeholder="每行填写一项">${escapeHtml(Array.isArray(value) ? value.join('\n') : value ?? '')}</textarea>`;
 	} else if (type === '长文本') {
 		control = `<textarea class="field-control" ${attributes}${requiredControlAttribute}>${escapeHtml(value ?? '')}</textarea>`;
+	} else if (fieldCode === 'album_id') {
+		control = `<input class="field-control" type="text" list="album-id-suggestions" autocomplete="off" ${attributes}${requiredControlAttribute} value="${escapeHtml(value ?? '')}" />${albumIdSuggestionsDatalist()}`;
 	} else if (administrativeRegionListIds[fieldCode]) {
 		control = `<input class="field-control administrative-region-control${regionState?.warning ? ' is-invalid' : ''}" type="text" list="${administrativeRegionListIds[fieldCode]}" autocomplete="off" placeholder="${escapeHtml(regionState?.placeholder ?? '')}" data-initial-value="${escapeHtml(value ?? '')}" ${attributes}${requiredControlAttribute}${regionState?.warning ? ' aria-invalid="true"' : ''} value="${escapeHtml(value ?? '')}" />`;
 	} else {
@@ -1909,7 +1999,9 @@ const renderField = ({
 	// 分组提示或简短帮助，避免红色和灰色说明同时堆叠。
 	const notes = fieldIssues.length
 		? `<span class="field-error" role="alert">${escapeHtml(briefFieldError(fieldIssues))}</span>`
-		: regionState?.message
+		: albumState
+			? `<span class="field-context${albumState.warning ? ' is-warning' : ''}">${escapeHtml(albumState.message)}</span>`
+			: regionState?.message
 			? `<span class="field-context${regionState.warning ? ' is-warning' : ''}">${escapeHtml(regionState.message)}</span>`
 			: context
 				? `<span class="field-context">${escapeHtml(context)}</span>`
@@ -1920,6 +2012,74 @@ const renderField = ({
 		<span class="field-label">${escapeHtml(label)}${required ? '<span class="required-mark">必填</span>' : ''}${fieldVisibilityBadge(scope, fieldCode)}</span>
 		${control}${notes ? `<span class="field-notes">${notes}</span>` : ''}
 	</${wrapperTag}>`;
+};
+
+const albumRelationSummary = () => {
+	const albumId = String(state.current?.core.album_id ?? '').trim();
+	if (!albumId) return state.current?.core.object_type === 'ALB'
+		? '请设置本册关联编号，供册内照片共用。' : '未关联相册；散张照片可以留空。';
+	const members = state.records.filter((record) => !recordIsWithdrawn(record) &&
+		albumAwareObjectTypes.has(record.core.object_type) && String(record.core.album_id ?? '').trim() === albumId &&
+		record.core.item_id !== state.current.core.item_id);
+	if (!isWithdrawn()) members.push(state.current);
+	const photos = members.filter((record) => record.core.object_type === 'PHO');
+	const albums = members.filter((record) => record.core.object_type === 'ALB');
+	const positions = new Map();
+	let missing = 0, unclear = 0;
+	for (const record of photos) {
+		const position = String(record.core.original_position ?? '').trim();
+		if (!position) { missing += 1; continue; }
+		if (!parseAlbumPosition(position).parsed) { unclear += 1; continue; }
+		const identity = albumPositionIdentity(position);
+		if (!identity) continue;
+		positions.set(identity, (positions.get(identity) ?? 0) + 1);
+	}
+	const duplicated = [...positions.values()].filter((count) => count > 1).length;
+	const previousId = state.officialSnapshot?.core.album_id ?? state.records.find((r) => r.core.item_id === state.current.core.item_id)?.core.album_id;
+	return [state.current.core.object_type === 'ALB' && previousId && previousId !== albumId ? '本册编号已修改；其他照片的归属不会自动改变，请逐件核对。' : '',
+		albums.length > 1 ? '同编号有多个相册总档案，请核对。' : albums.length ? `所属相册：${albums[0].core.title || albumId}` : '尚未录入相册总档案，可以先整理照片。',
+		`同册 ${photos.length} 张照片`, missing ? `${missing} 张未标位置` : '',
+		unclear ? `${unclear} 张位置尚不能确定页序` : '', duplicated ? `${duplicated} 处页内位置重复，请核对` : '']
+		.filter(Boolean).join(' · ');
+};
+
+const renderAlbumRelations = () => {
+	if (!albumAwareObjectTypes.has(state.current.core.object_type)) return '';
+	const albumId = String(state.current.core.album_id ?? '').trim();
+	const isAlbum = state.current.core.object_type === 'ALB';
+	const usage = albumUsageMap();
+	const choices = [...usage.entries()].sort((a,b) => chineseCollator.compare(a[1].title || a[0],b[1].title || b[0]));
+	return `<section class="form-section album-relation-section">
+		<details data-details-key="album-relation" ${isAlbum || albumId ? 'open' : ''}>
+		<summary><span>${isAlbum ? '本册关联信息' : '相册归属（可选）'}</span><small data-album-hint>${albumId ? '已填写相册编号' : isAlbum ? '供册内照片共用' : '散张照片可跳过'}</small></summary>
+		<p class="album-guidance">${isAlbum ? '总档案记录整本相册；每张照片另建档，并填写相同的相册编号。' : '选择所属相册，再记录这张照片在原册中的位置。照片的年代、地点仍分别填写。'}</p>
+		${choices.length && !isAlbum ? `<label class="album-choice-label">从已有相册选择<select data-album-choice><option value="">请选择，也可在下方手动填写</option>${choices.map(([id,entry]) => `<option value="${escapeHtml(id)}"${id === albumId ? ' selected' : ''}>${escapeHtml(entry.title || '尚无总档案')} · ${escapeHtml(id)} · ${entry.photoCount} 张照片</option>`).join('')}</select></label>` : ''}
+		<div class="form-grid">
+		${renderField({fieldCode:'album_id',definition:commonDefinition('album_id'),value:state.current.core.album_id})}
+		${!isAlbum || hasMeaningfulValue(state.current.core.original_position) ? renderField({fieldCode:'original_position',definition:commonDefinition('original_position'),value:state.current.core.original_position}) : ''}
+		</div>
+		${isAlbum && !albumId ? `<p class="album-guidance">新相册可先保存草稿，再用其永久编号作为关联编号；已有相册编号继续沿用。</p><button class="quiet-button" data-album-action="use-record-id" type="button"${state.current.core.item_id && !isWithdrawn() ? '' : ' disabled'}>使用本册永久编号</button>` : ''}
+		<p class="album-maintenance-summary" data-album-summary role="status">${escapeHtml(albumRelationSummary())}</p>
+		<div class="album-relation-actions">
+		<button class="quiet-button" data-album-action="show-members" type="button"${albumId ? '' : ' disabled'}>查看同册档案</button>
+		<button class="quiet-button" data-album-action="new-photo" title="先保存当前档案，再新增同册照片" type="button"${!albumId || state.isNew || hasUnsavedChanges() || isWithdrawn() ? ' disabled' : ''}>新增同册照片</button>
+		</div></details></section>`;
+};
+
+const refreshAlbumRelationState = () => {
+	const summary = elements.editorSurface.querySelector('[data-album-summary]');
+	if (summary) summary.textContent = albumRelationSummary();
+	const albumId = String(state.current?.core.album_id ?? '').trim();
+	const hint = elements.editorSurface.querySelector('[data-album-hint]');
+	if (hint) hint.textContent = albumId ? '已填写相册编号' : state.current?.core.object_type === 'ALB' ? '供册内照片共用' : '散张照片可跳过';
+	const choice = elements.editorSurface.querySelector('[data-album-choice]');
+	if (choice) choice.value = albumId;
+	const useId = elements.editorSurface.querySelector('[data-album-action="use-record-id"]');
+	if (useId) { useId.disabled = !state.current?.core.item_id || Boolean(albumId) || isWithdrawn(); useId.hidden = Boolean(albumId); }
+	for (const action of ['show-members','new-photo']) {
+		const button = elements.editorSurface.querySelector(`[data-album-action="${action}"]`);
+		if (button) button.disabled = !albumId || (action === 'new-photo' && (state.isNew || hasUnsavedChanges() || isWithdrawn()));
+	}
 };
 
 const renderBasic = () => {
@@ -1946,6 +2106,7 @@ const renderBasic = () => {
 	const dimensionFields = dimensionFieldCodes();
 	const requiredCoreFields = requiredCoreFieldsForVisibility();
 	for (const definition of state.standards.commonFields.fields) {
+		if (albumAwareObjectTypes.has(state.current.core.object_type) && albumRelationFieldCodes.has(definition.field_code)) continue;
 		if (managedCoreFields.has(definition.field_code) ||
 			primaryCoreFields.includes(definition.field_code) || definition.data_type === '公式' ||
 			(dimensionFields.has(definition.field_code) && !coreCanonical.has(definition.field_code) &&
@@ -1953,6 +2114,7 @@ const renderBasic = () => {
 		const section = commonFieldSectionFor(definition, {
 			required: basicFieldRule(definition.field_code).required || requiredCoreFields.has(definition.field_code) || activeFieldIssueMap.has(definition.field_code),
 			value: state.current.core[definition.field_code],
+			objectType: state.current.core.object_type,
 		});
 		if (!section) continue;
 		if (!remainingBySection.has(section)) remainingBySection.set(section, []);
@@ -2027,6 +2189,7 @@ const renderBasic = () => {
 		<div><span>收藏品编码 · 自动生成</span><output data-collection-code-output>${escapeHtml(state.current.core.collection_code || '待填写编码组成字段')}</output></div></div>
 	<div class="form-grid common-info-grid">${objectTypeField}${primary}</div>
 	</section>
+	${renderAlbumRelations()}
 	<section class="basic-code-logic-panel" aria-label="编码生成逻辑">
 		<aside class="collection-code-logic is-inline" data-collection-code-logic>${renderCollectionCodeLogic()}</aside>
 	</section>
@@ -2088,6 +2251,192 @@ const renderWithdrawnImages = () => {
 		<p>这里只读显示撤销时保留的发布副本，不提供替换、移除或重新公开操作。</p></div></div>
 		${imageCards ? `<div class="withdrawn-image-grid">${imageCards}</div>` : '<div class="empty-state">这条撤销记录没有可显示的发布图片。</div>'}</section>`;
 };
+
+const translationStateLabel = (value) => ({
+	missing: '未翻译', draft: '草稿', review: '待审核', published: '已审核有效',
+	partial: '部分需复核', stale: '需复核', invalid: '需修正', ineligible: '不能公开',
+}[value] ?? '未翻译');
+
+const adoptTranslationData = (data) => {
+	state.translation.data = data;
+	state.translation.draft = deepClone(data.translation ?? {
+		fields: {}, image_descriptions: {}, transcription_kind: 'none',
+	});
+	// 中文已删除的项不再出现于编辑表单；旧正式译文仍保留在私有版本/历史中。
+	state.translation.draft.fields = Object.fromEntries(Object.entries(state.translation.draft.fields ?? {})
+		.filter(([key]) => Object.hasOwn(data.source.fields, key)));
+	state.translation.draft.image_descriptions = Object.fromEntries(Object.entries(state.translation.draft.image_descriptions ?? {})
+		.filter(([key]) => Object.hasOwn(data.source.image_descriptions, key)));
+	state.translation.dirty = false;
+	state.translation.confirmed = new Set();
+	state.translation.error = '';
+};
+
+const loadTranslation = async () => {
+	const view = state.translation;
+	if (view.loading) return;
+	view.loading = true;
+	view.error = '';
+	try {
+		const response = await fetch(`/api/admin/translations/${encodeURIComponent(view.itemId)}`, { cache: 'no-store' });
+		const data = await readApiJson(response);
+		if (!response.ok) throw new Error(data.error ?? '英文内容暂时无法读取。');
+		if (state.translation !== view) return;
+		adoptTranslationData(data);
+	} catch (error) { if (state.translation === view) view.error = error.message; }
+	finally {
+		view.loading = false;
+		if (state.translation === view && state.activeTab === 'translation') { renderEditor(); updateHeader(); }
+	}
+};
+
+const translationFieldLabel = (key) => {
+	const field = key.split('.').at(-1);
+	const labels = { title: '题名', description: '公开简介', date_display: '年代说明', tags: '检索标签',
+		transcription: '原文译文', source_note: '来源说明', collector_note: '收藏者补充',
+		image_descriptions: '图片说明', physical_location: '保管位置' };
+	return labels[field] ?? fieldLabelOverrides[field] ?? commonDefinition(field)?.name ?? humanFieldLabel(field);
+};
+
+const translationSourceDisplay = (value) => Array.isArray(value) ? value.join('\n') : String(value ?? '');
+
+const renderTranslationDraftPreview = () => {
+	const { data, draft, previewLocale } = state.translation;
+	if (!data || !draft) return '';
+	const fields = previewLocale === 'en' ? draft.fields : data.source.fields;
+	const imageDescriptions = previewLocale === 'en' ? draft.image_descriptions : data.source.image_descriptions;
+	const title = fields['core.title'] || (previewLocale === 'en' ? 'Translation not available' : '暂无题名');
+	const description = fields['public_view.description'] || (previewLocale === 'en' ? 'Description translation not available.' : '暂无简介');
+	const itemId = data.item_id;
+	const firstImage = Object.keys(data.source.image_descriptions ?? {})[0];
+	const image = firstImage ? `<figure><img src="/api/image/${encodeURIComponent(itemId)}/${encodeURIComponent(firstImage.split('/').at(-1))}?variant=preview" alt="${escapeHtml(imageDescriptions[firstImage] || '')}" /><figcaption>${escapeHtml(imageDescriptions[firstImage] || (previewLocale === 'en' ? 'Image caption translation not available.' : '暂无图片说明'))}</figcaption></figure>` : '';
+	return `<div class="translation-draft-preview" lang="${previewLocale === 'en' ? 'en' : 'zh-CN'}">
+		<h3>${escapeHtml(title)}</h3><p class="record-id">${escapeHtml(itemId)}</p>${image}
+		<p>${escapeHtml(fields['core.date_display'] || '')}</p><p>${escapeHtml(description)}</p>
+		${Array.isArray(fields['public_view.tags']) ? `<p>${fields['public_view.tags'].map(escapeHtml).join(' · ')}</p>` : ''}
+		${Object.entries(fields).filter(([key]) => !['core.title', 'core.date_display', 'public_view.description', 'public_view.tags'].includes(key)).map(([key, value]) => `<dl><dt>${escapeHtml(translationFieldLabel(key))}</dt><dd>${escapeHtml(translationSourceDisplay(value))}</dd></dl>`).join('')}
+	</div>`;
+};
+
+const renderTranslation = () => {
+	if (state.isNew || !state.current?._admin?.hasOfficial || state.current?._admin?.officialRecordStatus !== 'ACT') {
+		return '<div class="empty-state">请先按原有字段、图片和隐私流程发布中文档案，再维护它的英文内容。英文面板不会把中文草稿或私密字段带入公开网站。</div>';
+	}
+	const view = state.translation;
+	if (view.error) return `<div class="empty-state"><p>${escapeHtml(view.error)}</p><button class="quiet-button" type="button" data-translation-action="reload">重新读取</button></div>`;
+	if (!view.data) {
+		if (!view.loading) void loadTranslation();
+		return '<div class="empty-state">正在读取当前公开中文内容和英文版本…</div>';
+	}
+	const { data, draft } = view;
+	const fieldEntries = Object.entries(data.source.fields ?? {});
+	const imageEntries = Object.entries(data.source.image_descriptions ?? {});
+	const stale = new Set([...data.stale_fields, ...data.stale_images.map((key) => `image:${key}`)]);
+	const renderRow = ([key, value], isImage = false) => {
+		const token = isImage ? `image:${key}` : key;
+		const translation = isImage ? draft.image_descriptions[key] : draft.fields[key];
+		const needsReview = stale.has(token);
+		const label = isImage ? `图片说明 · ${key.split('/').at(-1)}` : translationFieldLabel(key);
+		return `<section class="translation-row${needsReview ? ' needs-review' : ''}">
+			<div class="translation-source"><strong>${escapeHtml(label)}</strong><span>当前公开中文原文</span><p>${escapeHtml(translationSourceDisplay(value))}</p></div>
+			<div class="translation-control"><label>英文${Array.isArray(value) ? `（${value.length} 项，每行一项，顺序与原文一致）` : ''}
+		<textarea lang="en" rows="${String(value).length > 160 ? '5' : '3'}" maxlength="${isImage ? '2000' : '100000'}" data-translation-field="${escapeHtml(key)}" data-translation-image="${isImage}" data-translation-array="${Array.isArray(value)}">${escapeHtml(translationSourceDisplay(translation))}</textarea></label>
+			${needsReview ? `<label class="translation-reconfirm"><input type="checkbox" data-translation-confirm="${escapeHtml(token)}" ${view.confirmed.has(token) ? 'checked' : ''}/> 中文来源已变化；我已重新对照此项译文</label>` : ''}
+			</div></section>`;
+	};
+	return `<div class="translation-panel">
+		<section class="form-section"><h3>英文内容 · ${escapeHtml(translationStateLabel(data.state))}</h3>
+		<p>这里只翻译当前已经公开的文字。编号、图片、日期数值、分类代码、隐私与下载权限仍由中文档案管理。</p>
+		<p class="translation-state" role="status">${view.dirty ? '有未保存的英文修改' : data.has_draft ? '英文草稿已保存，网站继续使用上次已审核版本' : `网站英文状态：${translationStateLabel(data.published_state)}`}</p>
+		${stale.size ? '<p class="field-error">标记项的中文来源已经变化。对应旧译文不会公开，请改译或逐项复核后保存。</p>' : ''}
+		<div class="translation-actions"><button type="button" class="quiet-button" data-translation-action="save">保存英文草稿</button><button type="button" class="quiet-button" data-translation-action="review">保存并标记待审核</button><button type="button" class="quiet-button" data-translation-action="reload">刷新中文来源</button>
+		<a class="quiet-button" href="${escapeHtml(publicPreviewUrl(`/archive/${encodeURIComponent(data.item_id)}/`))}" target="_blank" rel="noopener">查看中文页面</a><a class="quiet-button" href="${escapeHtml(publicPreviewUrl(`/en/archive/${encodeURIComponent(data.item_id)}/`))}" target="_blank" rel="noopener">查看已发布英文页面</a></div></section>
+		${fieldEntries.map((entry) => renderRow(entry)).join('')}
+		${imageEntries.map((entry) => renderRow(entry, true)).join('')}
+		<section class="form-section"><h3>原文翻译说明</h3><label>涉及原文转录的英文内容属于 <select data-translation-kind><option value="none" ${draft.transcription_kind === 'none' ? 'selected' : ''}>未翻译原文</option><option value="full" ${draft.transcription_kind === 'full' ? 'selected' : ''}>完整译文</option><option value="summary" ${draft.transcription_kind === 'summary' ? 'selected' : ''}>英文摘要（不冒充全文）</option></select></label><p>原件图片和中文转录保留原始语言。“约”“待考”“推测”等不确定性必须保留，不能新增人物身份或未确认事实。</p></section>
+		<details class="form-section"><summary>查看英文草稿预览</summary><p>预览仅供维护核对；未审核草稿不会进入网站。</p><div class="translation-actions"><button class="quiet-button" type="button" data-translation-preview="zh-CN">中文</button><button class="quiet-button" type="button" data-translation-preview="en">English</button><button class="quiet-button" type="button" data-translation-action="refresh-preview">刷新预览</button></div>${renderTranslationDraftPreview()}</details>
+		<section class="form-section"><h3>审核并发布英文</h3><label class="translation-reconfirm"><input type="checkbox" data-translation-publish-confirm/> 我已逐项对照公开原文，核对事实、不确定性、脱敏范围，并确认这些英文可以公开。</label><p>先保存草稿，再审核发布。系统仍须完成正式构建和安全发布，失败会恢复上次有效英文。</p><button type="button" class="publish-button" data-translation-action="publish">审核并发布英文</button></section>
+	</div>`;
+};
+
+const saveEnglishTranslation = async (status = 'draft') => {
+	const view = state.translation;
+	if (!view.data || !view.draft) return;
+	const nonemptyFields = Object.fromEntries(Object.entries(view.draft.fields ?? {}).filter(([, value]) =>
+		Array.isArray(value) ? value.some((part) => part.trim()) : String(value).trim()));
+	const nonemptyImages = Object.fromEntries(Object.entries(view.draft.image_descriptions ?? {}).filter(([, value]) => String(value).trim()));
+	for (const [key, value] of Object.entries(nonemptyFields)) {
+		const original = view.data.source.fields[key];
+		if (Array.isArray(original) && (!Array.isArray(value) || value.length !== original.length || value.some((part) => !part.trim()))) {
+			showToast(`${translationFieldLabel(key)}需要与原文逐项对应，请每行填写一项，共 ${original.length} 项。`, true); return;
+		}
+	}
+	setBusy(true, '正在保存英文…', '英文草稿与正式档案数据分开保存');
+	try {
+		const data = await apiPost(`/api/admin/translations/${encodeURIComponent(view.itemId)}/save`, {
+			revision: view.data.revision, source_hash: view.data.source_hash, status,
+			fields: nonemptyFields, image_descriptions: nonemptyImages,
+			transcription_kind: view.draft.transcription_kind,
+			confirmed_fields: [...view.confirmed],
+		});
+		adoptTranslationData(data); renderEditor(); updateHeader();
+		showToast(status === 'review' ? '英文已保存并标记待审核，尚未公开。' : '英文草稿已保存，尚未公开。');
+	} catch (error) { showToast(error.message, true); }
+	finally { setBusy(false); }
+};
+
+elements.editorSurface.addEventListener('input', (event) => {
+	const control = event.target;
+	if (!control.matches('[data-translation-field]')) return;
+	const draft = state.translation.draft;
+	if (!draft) return;
+	const key = control.dataset.translationField;
+	const value = control.dataset.translationArray === 'true' ? control.value.split(/\r?\n/).map((part) => part.trim()) : control.value;
+	if (control.dataset.translationImage === 'true') draft.image_descriptions[key] = value;
+	else draft.fields[key] = value;
+	state.translation.dirty = true;
+	updateHeader(); updateTabCompletionBadges();
+});
+
+elements.editorSurface.addEventListener('change', (event) => {
+	const control = event.target;
+	if (control.matches('[data-translation-confirm]')) {
+		if (control.checked) state.translation.confirmed.add(control.dataset.translationConfirm);
+		else state.translation.confirmed.delete(control.dataset.translationConfirm);
+		state.translation.dirty = true; updateHeader();
+	}
+	if (control.matches('[data-translation-kind]')) {
+		state.translation.draft.transcription_kind = control.value;
+		state.translation.dirty = true; updateHeader();
+	}
+});
+
+elements.editorSurface.addEventListener('click', async (event) => {
+	const locale = event.target.closest('[data-translation-preview]');
+	if (locale) { state.translation.previewLocale = locale.dataset.translationPreview; renderEditor(); return; }
+	const button = event.target.closest('[data-translation-action]');
+	if (!button) return;
+	const action = button.dataset.translationAction;
+	if (action === 'refresh-preview') { renderEditor(); return; }
+	if (action === 'save' || action === 'review') { await saveEnglishTranslation(action === 'review' ? 'review' : 'draft'); return; }
+	if (action === 'reload') {
+		if (state.translation.dirty && !await confirmUnsavedChanges('刷新会放弃尚未保存的英文修改，确定刷新吗？')) return;
+		state.translation.data = null; state.translation.error = ''; state.translation.dirty = false;
+		void loadTranslation(); renderEditor(); return;
+	}
+	if (action === 'publish') {
+		if (state.translation.dirty) { showToast('请先保存当前英文修改，再审核发布。', true); return; }
+		const confirmed = elements.editorSurface.querySelector('[data-translation-publish-confirm]')?.checked === true;
+		if (!confirmed) { showToast('请先勾选英文审核确认。', true); return; }
+		const view = state.translation;
+		const operation = beginCancellableOperation('publish-translation', '正在审核发布英文…', '执行正式构建与安全发布；中文档案和权限保持原有口径');
+		try {
+			const data = await apiPost(`/api/admin/translations/${encodeURIComponent(view.itemId)}/publish`, { revision: view.data.revision, confirmed }, { operation });
+			adoptTranslationData(data); renderEditor(); updateHeader(); showToast('英文审核与正式构建完成。');
+		} catch (error) { showToast(error.message, true); }
+		finally { finishCancellableOperation(operation); }
+	}
+});
 
 const renderSpecific = () => {
 	activeFieldIssueMap = buildFieldIssueMap('specific');
@@ -2964,8 +3313,36 @@ const previewGallerySelect = (gallery, index) => {
 		button.setAttribute('aria-current', String(thumbnailIndex === active)));
 };
 
+const handleAlbumAction = (action) => {
+		const albumId = String(state.current?.core.album_id ?? '').trim();
+		if (isWithdrawn() && action !== 'show-members') return;
+		if (action === 'use-record-id' && !albumId && state.current?.core.item_id) {
+			setFieldValue('core','','album_id',state.current.core.item_id);
+			renderEditorPreservingViewport(() => elements.editorSurface.querySelector('[data-field="album_id"]'));
+		} else if (action === 'show-members' && albumId) {
+			state.search = ''; elements.recordSearch.value = '';
+			state.recordTypeFilter = ''; state.recordDecadeFilter = ''; state.recordQuickStatus = '';
+			state.recordFilters = { category:'',research:'',evidence:'',rights:'',imageStatus:'' };
+			state.recordStatusFilter = 'normal'; state.recordAlbumFilter = albumId; state.recordPage = 1;
+			renderRecordList(); renderWorkspaceNavigation(); setMobileRecordBrowserOpen(true);
+		} else if (action === 'new-photo' && albumId && !state.isNew && !hasUnsavedChanges()) {
+			const source = deepClone(state.current);
+			// 只沿用本册关联与入藏来源；不把相册整体年代、画面地点和隐私确认套给新照片。
+			for (const key of ['country','province','city','district']) delete source.core[key];
+			source.core.object_type = 'PHO';
+			startNewRecord(source);
+			state.current.core.album_id = albumId;
+			state.current.core.accession_date = source.core.accession_date || today();
+			state.dirty = true;
+			renderEditor(); updateHeader();
+			showToast('已新建同册照片。请分别填写题名、年代、位置和图片，再保存草稿。');
+		}
+};
+
 // 预览区域的事件：设备切换、信件阅读方式、画廊灯箱和引用复制，不影响编辑器其他功能。
 elements.editorSurface.addEventListener('click', async (event) => {
+	const albumAction = event.target.closest('[data-album-action]');
+	if (albumAction) { handleAlbumAction(albumAction.dataset.albumAction); return; }
 	const viewportButton = event.target.closest('[data-preview-viewport]');
 	if (viewportButton) {
 		const shell = viewportButton.closest('.preview-main')?.querySelector('[data-preview-viewport-shell]');
@@ -3074,6 +3451,7 @@ function renderEditor() {
 	}
 	if (state.activeTab === 'images') elements.editorSurface.innerHTML = renderImages();
 	else if (state.activeTab === 'specific') elements.editorSurface.innerHTML = renderSpecific();
+	else if (state.activeTab === 'translation') elements.editorSurface.innerHTML = renderTranslation();
 	else if (state.activeTab === 'preview') elements.editorSurface.innerHTML = renderPreview();
 	else if (state.activeTab === 'privacy') elements.editorSurface.innerHTML = renderPrivacy();
 	else elements.editorSurface.innerHTML = renderBasic();
@@ -3107,6 +3485,11 @@ const updateTabCompletionBadges = () => {
 	tabs.forEach((tab) => {
 		const badge = tab.querySelector('[data-tab-status]');
 		const tabName = tab.dataset.tab;
+		if (tabName === 'translation') {
+			badge.textContent = state.translation.dirty ? '未保存' : translationStateLabel(state.translation.data?.state ?? 'missing');
+			badge.className = ['stale', 'partial'].includes(state.translation.data?.state) ? 'is-warning' : 'is-pending';
+			return;
+		}
 		const missingCount = tabName === 'preview'
 			? actionableIssues.length
 			: counts.get(tabName) ?? 0;
@@ -3318,6 +3701,7 @@ const handleFieldChange = async (control) => {
 		return;
 	}
 	setFieldValue(scope, dimension, fieldCode, value);
+	if (scope === 'core' && ['album_id','original_position'].includes(fieldCode)) refreshAlbumRelationState();
 };
 
 const stageImageUpload = async (image, operation, position, total) => {
@@ -3573,7 +3957,7 @@ const publishCurrent = async () => {
 };
 
 const openWithdrawalDialog = () => {
-	if (!state.current || state.current._admin?.officialRecordStatus !== 'ACT' || state.current._admin?.hasDraft || state.dirty) {
+	if (!state.current || state.current._admin?.officialRecordStatus !== 'ACT' || state.current._admin?.hasDraft || hasUnsavedChanges()) {
 		showToast('请先处理当前未发布修改，再撤销已发布档案。', true);
 		return;
 	}
@@ -3720,7 +4104,7 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 elements.recordList.addEventListener('click', async (event) => {
 	const button = event.target.closest('.record-card');
 	if (!button) return;
-	if (state.dirty && !await confirmUnsavedChanges('确定先放弃这些修改并打开另一条记录吗？')) return;
+	if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定先放弃这些修改并打开另一条记录吗？')) return;
 	previewRecord(button.dataset.id);
 });
 
@@ -3754,6 +4138,12 @@ elements.recordQuickStatusFilter.addEventListener('change', (event) => {
 	renderRecordList();
 });
 
+elements.recordAlbumFilter.addEventListener('input', (event) => {
+	state.recordAlbumFilter = event.target.value;
+	state.recordPage = 1;
+	renderRecordList();
+});
+
 elements.recordAdvanced.addEventListener('toggle', () => {
 	if (elements.recordAdvanced.open && !state.query.loaded && !state.query.loading) void loadQueryRecords();
 });
@@ -3777,6 +4167,8 @@ elements.recordFiltersClear.addEventListener('click', () => {
 	state.recordTypeFilter = '';
 	state.recordDecadeFilter = '';
 	state.recordQuickStatus = '';
+	state.recordAlbumFilter = '';
+	elements.recordAlbumFilter.value = '';
 	for (const key of Object.keys(state.recordFilters)) state.recordFilters[key] = '';
 	state.recordPage = 1;
 	renderRecordList();
@@ -3792,7 +4184,7 @@ elements.recordPagination.addEventListener('click', (event) => {
 });
 
 elements.newRecordButton.addEventListener('click', async () => {
-	if (state.dirty && !await confirmUnsavedChanges('确定先放弃这些修改并新建藏品吗？')) return;
+	if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定先放弃这些修改并新建藏品吗？')) return;
 	startNewRecord();
 });
 
@@ -3803,7 +4195,7 @@ elements.mobileRecordBrowserToggle.addEventListener('click', () => {
 elements.recordsPaneClose.addEventListener('click', () => setMobileRecordBrowserOpen(false));
 
 elements.backToLibraryButton.addEventListener('click', async () => {
-	if (state.dirty && !await confirmUnsavedChanges('确定放弃这些修改并返回档案速览吗？')) return;
+	if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定放弃这些修改并返回档案速览吗？')) return;
 	const targetId = state.activeId ?? sortedRecords(filteredRecords())[0]?.core.item_id;
 	if (targetId) previewRecord(targetId);
 	else {
@@ -3822,7 +4214,7 @@ elements.similarRecordButton.addEventListener('click', () => { void startSimilar
 // 与切记录、刷新等入口的提醒保持一致。
 document.querySelectorAll('.desk-nav a[href$="/admin/submissions.html"], .desk-nav a[href$="/admin/contacts.html"], .desk-nav a[href$="/admin/preview/"]').forEach((link) => {
 	link.addEventListener('click', async (event) => {
-		if (!state.dirty) return;
+		if (!hasUnsavedChanges()) return;
 		event.preventDefault();
 		if (await confirmUnsavedChanges('确定先离开编辑页面前往这里吗？')) window.location.assign(link.href);
 	});
@@ -3834,7 +4226,7 @@ document.querySelector('.desk-nav').addEventListener('click', async (event) => {
 	// 点击“档案管理”按钮，绕过未保存提醒并静默重置编辑器。
 	const button = event.target.closest('.desk-nav-button[data-workspace]');
 	if (!button) return;
-	if (state.dirty && button.dataset.workspace !== 'records' &&
+	if (hasUnsavedChanges() && button.dataset.workspace !== 'records' &&
 		!await confirmUnsavedChanges('确定先离开编辑页面吗？')) return;
 	setWorkspaceMode(button.dataset.workspace);
 });
@@ -3842,7 +4234,7 @@ document.querySelector('.desk-nav').addEventListener('click', async (event) => {
 elements.recordStatusNav.addEventListener('click', async (event) => {
 	const button = event.target.closest('[data-record-status]');
 	if (!button) return;
-	if (state.dirty && !await confirmUnsavedChanges('确定放弃这些修改并切换档案状态吗？')) return;
+	if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定放弃这些修改并切换档案状态吗？')) return;
 	setRecordStatusFilter(button.dataset.recordStatus);
 });
 
@@ -3907,6 +4299,15 @@ elements.editorSurface.addEventListener('input', (event) => {
 
 elements.editorSurface.addEventListener('change', async (event) => {
 	const control = event.target;
+	if (control.matches('[data-album-choice]')) {
+		if (control.value) {
+			setFieldValue('core','','album_id',control.value);
+			const input = elements.editorSurface.querySelector('[data-field="album_id"]');
+			if (input) input.value = control.value;
+			refreshAlbumRelationState();
+		}
+		return;
+	}
 	if (control.matches('.object-category-control')) {
 		handleObjectCategoryChange(control);
 		return;
@@ -4207,6 +4608,7 @@ window.addEventListener('keydown', (event) => {
 	if (!(event.ctrlKey || event.metaKey) || event.key !== 's' || event.shiftKey || event.altKey) return;
 	if (state.workspaceMode !== 'records' || state.recordViewMode !== 'editor' || !state.current || isWithdrawn()) return;
 	event.preventDefault();
+	if (state.activeTab === 'translation') { void saveEnglishTranslation(); return; }
 	if (!elements.saveDraftButton.hidden && !elements.saveDraftButton.disabled) saveDraftWithFeedback();
 });
 elements.busyCancelButton.addEventListener('click', cancelActiveOperation);
@@ -4221,7 +4623,7 @@ elements.withdrawDialog.addEventListener('close', () => {
 });
 
 window.addEventListener('beforeunload', (event) => {
-	if (!state.dirty) return;
+	if (!hasUnsavedChanges()) return;
 	event.preventDefault();
 	event.returnValue = '';
 });

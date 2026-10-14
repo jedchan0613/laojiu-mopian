@@ -1,14 +1,19 @@
 ---
+import { getLocale, localizePath } from '../i18n/ui';
+import { interfaceText } from '../i18n/client';
+const locale = getLocale(Astro.url.pathname);
+const ct = (text: string, params: Record<string, unknown> = {}) => interfaceText(text, locale, params);
+
 import SiteIcon from './SiteIcon.astro';
 
 const configuredEmail = import.meta.env.PUBLIC_CONTACT_EMAIL?.trim() ?? '';
 const contactEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(configuredEmail) ? configuredEmail : '';
 const fallbackMailto = contactEmail
-	? `mailto:${contactEmail}?subject=${encodeURIComponent('老旧默片｜网站联系')}`
+	? `mailto:${contactEmail}?subject=${encodeURIComponent(ct('老旧默片｜网站联系'))}`
 	: '';
 ---
 
-<div class="contact-widget" data-contact-widget data-ready="false" aria-label="联系站主">
+<div class="contact-widget" data-contact-widget data-ready="false" aria-label={ct("联系站主")}>
 	<button
 		class="contact-launcher"
 		type="button"
@@ -16,7 +21,7 @@ const fallbackMailto = contactEmail
 		aria-expanded="false"
 		aria-controls="contact-panel"
 	>
-		<span>联系站主</span>
+		<span>{ct("联系站主")}</span>
 	</button>
 
 	<section
@@ -30,138 +35,138 @@ const fallbackMailto = contactEmail
 	>
 		<header class="contact-heading">
 			<div>
-				<p>有重要的事想告诉我？</p>
-				<h2 id="contact-panel-title">联系我</h2>
+				<p>{ct("有重要的事想告诉我？")}</p>
+				<h2 id="contact-panel-title">{ct("联系我")}</h2>
 			</div>
-			<button class="contact-close" type="button" data-contact-close aria-label="收起联系挂件">×</button>
+			<button class="contact-close" type="button" data-contact-close aria-label={ct("收起联系挂件")}>×</button>
 		</header>
 
-		<div class="contact-view-tabs" role="tablist" aria-label="联系挂件功能">
-			<button type="button" role="tab" aria-selected="true" aria-controls="contact-compose-view" data-contact-view-button="compose">写留言</button>
-			<button type="button" role="tab" aria-selected="false" aria-controls="contact-lookup-view" data-contact-view-button="lookup">查进度</button>
+		<div class="contact-view-tabs" role="tablist" aria-label={ct("联系挂件功能")}>
+			<button type="button" role="tab" aria-selected="true" aria-controls="contact-compose-view" data-contact-view-button="compose">{ct("写留言")}</button>
+			<button type="button" role="tab" aria-selected="false" aria-controls="contact-lookup-view" data-contact-view-button="lookup">{ct("查进度")}</button>
 		</div>
 
 		<div id="contact-compose-view" role="tabpanel" data-contact-view="compose">
-			<p class="contact-intro">先选择来信类型，我会更快找到重点。</p>
-			<p class="contact-service" data-contact-service role="status">正在检查私密联系通道…</p>
+			<p class="contact-intro">{ct("先选择来信类型，我会更快找到重点。")}</p>
+			<p class="contact-service" data-contact-service role="status">{ct("正在检查私密联系通道…")}</p>
 
 			<form id="contact-form" method="post" action="/api/contact" data-contact-form autocomplete="off">
 				<fieldset data-contact-fields disabled>
-					<legend class="sr-only">填写联系内容</legend>
+					<legend class="sr-only">{ct("填写联系内容")}</legend>
 					<input class="contact-honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
 					<input type="hidden" name="category" value="privacy" data-contact-category />
 					<input type="hidden" name="page_path" data-contact-page-path />
 
-					<div class="contact-categories" aria-label="来信类型">
+					<div class="contact-categories" aria-label={ct("来信类型")}>
 						<button type="button" data-contact-category-button="privacy" aria-pressed="true">
 							<SiteIcon name="rights" />
-							<span><strong>隐私问题</strong><small>纠错、限制公开、撤下</small></span>
+							<span><strong>{ct("隐私问题")}</strong><small>{ct("纠错、限制公开、撤下")}</small></span>
 						</button>
 						<button type="button" data-contact-category-button="collab" aria-pressed="false">
 							<SiteIcon name="collection" />
-							<span><strong>合作洽谈</strong><small>展览、研究、授权、媒体</small></span>
+							<span><strong>{ct("合作洽谈")}</strong><small>{ct("展览、研究、授权、媒体")}</small></span>
 						</button>
 						<button type="button" data-contact-category-button="other" aria-pressed="false">
 							<SiteIcon name="story" />
-							<span><strong>其他事宜</strong><small>建议、询问或留言</small></span>
+							<span><strong>{ct("其他事宜")}</strong><small>{ct("建议、询问或留言")}</small></span>
 						</button>
 					</div>
 
 					<div class="contact-context" role="status" aria-live="polite">
-						<strong data-contact-context-title>隐私问题</strong>
-						<span data-contact-context-copy>请指出相关档案或页面及风险；此类来信会优先进入人工核对。</span>
+						<strong data-contact-context-title>{ct("隐私问题")}</strong>
+						<span data-contact-context-copy>{ct("请指出相关档案或页面及风险；此类来信会优先进入人工核对。")}</span>
 					</div>
 
 					<label data-contact-reference-field>
-						<span>相关档案编号或页面地址 <small>选填</small></span>
-						<input name="reference" maxlength="500" placeholder="例如：LJM-… 或网页地址" />
+						<span>{ct("相关档案编号或页面地址 ")}<small>{ct("选填")}</small></span>
+						<input name="reference" maxlength="500" placeholder={ct("例如：LJM-… 或网页地址")} />
 					</label>
 
 					<label>
-						<span>怎么称呼您 <small>选填</small></span>
-						<input name="name" maxlength="40" placeholder="昵称或机构简称即可" />
+						<span>{ct("怎么称呼您 ")}<small>{ct("选填")}</small></span>
+						<input name="name" maxlength="40" placeholder={ct("昵称或机构简称即可")} />
 					</label>
 
 					<div class="contact-row">
 						<label>
-							<span>回复方式</span>
+							<span>{ct("回复方式")}</span>
 							<select name="contact_type" data-contact-channel>
-								<option value="email">电子邮箱</option>
-								<option value="wechat">微信</option>
-								<option value="phone">电话</option>
-								<option value="none">无需回复</option>
+								<option value="email">{ct("电子邮箱")}</option>
+								<option value="wechat">{ct("微信")}</option>
+								<option value="phone">{ct("电话")}</option>
+								<option value="none">{ct("无需回复")}</option>
 							</select>
 						</label>
 						<label data-contact-value-field>
-							<span>联系方式</span>
-							<input name="contact" type="email" required minlength="3" maxlength="120" placeholder="您的邮箱" data-contact-value />
+							<span>{ct("联系方式")}</span>
+							<input name="contact" type="email" required minlength="3" maxlength="120" placeholder={ct("您的邮箱")} data-contact-value />
 						</label>
 					</div>
 
 					<label>
-						<span>简要说明</span>
-						<textarea name="message" required minlength="10" maxlength="2000" rows="4" placeholder="请写清楚事情、涉及的页面和希望如何处理" data-contact-message></textarea>
+						<span>{ct("简要说明")}</span>
+						<textarea name="message" required minlength="10" maxlength="2000" rows="4" placeholder={ct("请写清楚事情、涉及的页面和希望如何处理")} data-contact-message></textarea>
 						<small class="contact-count" data-contact-count>0 / 2000</small>
 					</label>
 
 					<div class="contact-privacy-note">
 						<SiteIcon name="rights" />
-						<p>首次留言请勿发送完整证件号、精确住址、清晰签名、医疗资料或未脱敏图片。需要补充材料时，请先确认安全的传递方式。</p>
+						<p>{ct("首次留言请勿发送完整证件号、精确住址、清晰签名、医疗资料或未脱敏图片。需要补充材料时，请先确认安全的传递方式。")}</p>
 					</div>
 
 					<label class="contact-consent">
 						<input type="checkbox" name="processing" required />
-						<span>我已阅读隐私提示，同意为处理这次联系而私密保存以上内容。</span>
+						<span>{ct("我已阅读隐私提示，同意为处理这次联系而私密保存以上内容。")}</span>
 					</label>
 
 					<div class="contact-actions">
-						<a class="contact-detail-link" href="/corrections/" data-contact-correction-link>查看纠错与撤下说明</a>
-						<button class="ui-action ui-action--primary" type="submit" data-contact-submit>提交留言</button>
+						<a class="contact-detail-link" href={localizePath('/corrections/', locale)} data-contact-correction-link>{ct("查看纠错与撤下说明")}</a>
+						<button class="ui-action ui-action--primary" type="submit" data-contact-submit>{ct("提交留言")}</button>
 					</div>
 					<p class="contact-feedback" data-contact-feedback role="status" aria-live="polite"></p>
 				</fieldset>
 			</form>
 
 			<section class="contact-receipt" data-contact-receipt hidden tabindex="-1" aria-labelledby="contact-receipt-title">
-				<p>请妥善保存这份回执</p>
-				<h3 id="contact-receipt-title">留言已收到。</h3>
+				<p>{ct("请妥善保存这份回执")}</p>
+				<h3 id="contact-receipt-title">{ct("留言已收到。")}</h3>
 				<dl>
-					<dt>联系编号</dt><dd data-contact-receipt-id></dd>
-					<dt>查询密钥</dt><dd data-contact-receipt-key></dd>
+					<dt>{ct("联系编号")}</dt><dd data-contact-receipt-id></dd>
+					<dt>{ct("查询密钥")}</dt><dd data-contact-receipt-key></dd>
 				</dl>
-				<p class="contact-receipt-note">查询密钥相当于这封留言的钥匙，请勿公开分享。回执不会显示您的联系方式或留言正文。</p>
+				<p class="contact-receipt-note">{ct("查询密钥相当于这封留言的钥匙，请勿公开分享。回执不会显示您的联系方式或留言正文。")}</p>
 				<div class="contact-receipt-actions">
-					<button class="ui-action ui-action--secondary" type="button" data-contact-copy-receipt>复制回执</button>
-					<button class="ui-action ui-action--secondary" type="button" data-contact-save-receipt>保存回执</button>
-					<button class="contact-detail-link" type="button" data-contact-open-lookup>查询进度</button>
+					<button class="ui-action ui-action--secondary" type="button" data-contact-copy-receipt>{ct("复制回执")}</button>
+					<button class="ui-action ui-action--secondary" type="button" data-contact-save-receipt>{ct("保存回执")}</button>
+					<button class="contact-detail-link" type="button" data-contact-open-lookup>{ct("查询进度")}</button>
 				</div>
 			</section>
 
-			<noscript><p class="contact-unavailable">请在浏览器中开启 JavaScript 后使用联系挂件。页面不会在未提交时保存您填写的内容。</p></noscript>
+			<noscript><p class="contact-unavailable">{ct("请在浏览器中开启 JavaScript 后使用联系挂件。页面不会在未提交时保存您填写的内容。")}</p></noscript>
 			<div class="contact-fallback" data-contact-fallback hidden>
-				<p>私密联系通道暂时不可用。隐私、纠错或撤下事项可以先查看处理说明。</p>
+				<p>{ct("私密联系通道暂时不可用。隐私、纠错或撤下事项可以先查看处理说明。")}</p>
 				<div>
-					<a href="/corrections/">纠错与撤下说明</a>
-					{contactEmail && <a href={fallbackMailto}>发送备用邮件</a>}
+					<a href={localizePath('/corrections/', locale)}>{ct("纠错与撤下说明")}</a>
+					{contactEmail && <a href={fallbackMailto}>{ct("发送备用邮件")}</a>}
 				</div>
 			</div>
 		</div>
 
 		<div id="contact-lookup-view" role="tabpanel" data-contact-view="lookup" hidden>
 			<div class="contact-lookup-heading">
-				<h3>查询联系进度</h3>
-				<p>输入回执上的联系编号和查询密钥。结果只显示处理状态和站主给您的说明。</p>
+				<h3>{ct("查询联系进度")}</h3>
+				<p>{ct("输入回执上的联系编号和查询密钥。结果只显示处理状态和站主给您的说明。")}</p>
 			</div>
 			<form method="post" action="/api/contact/lookup" data-contact-lookup-form autocomplete="off">
 				<label>
-					<span>联系编号</span>
+					<span>{ct("联系编号")}</span>
 					<input name="id" required pattern="LX-[A-Fa-f0-9]{24}" placeholder="LX-…" spellcheck="false" data-contact-lookup-id />
 				</label>
 				<label>
-					<span>查询密钥</span>
+					<span>{ct("查询密钥")}</span>
 					<input name="key" type="password" required pattern="[a-f0-9]{64}" autocomplete="off" data-contact-lookup-key />
 				</label>
-				<button class="ui-action ui-action--secondary" type="submit">查询进度</button>
+				<button class="ui-action ui-action--secondary" type="submit">{ct("查询进度")}</button>
 			</form>
 			<p class="contact-lookup-result" data-contact-lookup-result role="status" aria-live="polite"></p>
 		</div>
@@ -169,6 +174,8 @@ const fallbackMailto = contactEmail
 </div>
 
 <script>
+import { clientText as ct } from '../i18n/client';
+
 	const contactRoot = document.querySelector<HTMLElement>('[data-contact-widget]');
 	const contactLauncher = contactRoot?.querySelector<HTMLButtonElement>('[data-contact-launcher]');
 	let contactModulePromise: Promise<unknown> | undefined;
@@ -188,7 +195,7 @@ const fallbackMailto = contactEmail
 			const service = contactRoot?.querySelector<HTMLElement>('[data-contact-service]');
 			const fallback = contactRoot?.querySelector<HTMLElement>('[data-contact-fallback]');
 			if (panel) panel.hidden = false;
-			if (service) service.textContent = '联系功能没有加载完成，请稍后重试。';
+			if (service) service.textContent = ct('联系功能没有加载完成，请稍后重试。');
 			if (fallback) fallback.hidden = false;
 			contactLauncher.setAttribute('aria-expanded', 'true');
 		}

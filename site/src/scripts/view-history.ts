@@ -1,3 +1,4 @@
+import { clientPath } from '../i18n/client';
 // 浏览足迹：把访客最近看过的公开档案保存在其自己的浏览器（localStorage）里，
 // 供首页「您最近看过」继续浏览使用。数据不会上传、不会进入网址，可随时清空。
 
@@ -60,4 +61,34 @@ export function clearViewHistory(): void {
 	} catch {
 		// 清理失败时无需提示，页面会按空足迹处理。
 	}
+}
+
+/** Refresh language and publication status from the current public summary.
+ * Legacy title/image snapshots never become visible until their ID is confirmed.
+ */
+export async function readLocalizedViewHistory(): Promise<ViewHistoryEntry[]> {
+ const cached = readViewHistory();
+ if (!cached.length) return [];
+ try {
+  const response = await fetch(clientPath('/records.json'), { headers: { Accept: 'application/json' }, cache: 'no-cache' });
+  if (!response.ok) return [];
+  const payload = await response.json();
+  if (!Array.isArray(payload?.records)) return [];
+  const records = new Map<string, any>(payload.records.map((record: any) => [record.id, record]));
+  return cached.flatMap((entry) => {
+   const record = records.get(entry.id);
+   if (!record || typeof record.title !== 'string') return [];
+   const cover = typeof record.cover === 'string' ? record.cover : '';
+   return [{
+    ...entry,
+    title: record.title,
+    typeLabel: String(record.type_label ?? ''),
+    dateDisplay: String(record.date_display ?? ''),
+    imageSrc: cover,
+    imageAlt: typeof record.cover_alt === 'string' ? record.cover_alt : record.title,
+    imageWidth: Number(record.cover_width) > 0 ? Number(record.cover_width) : entry.imageWidth,
+    imageHeight: Number(record.cover_height) > 0 ? Number(record.cover_height) : entry.imageHeight,
+   }];
+  });
+ } catch { return []; }
 }

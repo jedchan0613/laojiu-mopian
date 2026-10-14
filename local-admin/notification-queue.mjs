@@ -32,7 +32,7 @@ export async function processProgressNotifications(root, { recipientFor, send, r
 		const recipient = recipientFor(item.accountId);
 		if (!recipient) { await writeAtomic(file, { ...item, status: 'skipped' }); continue; }
 		try {
-			await send({ to: recipient.email, template: 'submission-progress', variables: { event: item.event, title: item.title } });
+			await send({ to: recipient.email, template: 'submission-progress', variables: { event: item.event, title: item.title, language: recipient.preferred_language ?? 'zh-CN' } });
 			await writeAtomic(file, { ...item, status: 'sent', sent_at: new Date().toISOString() });
 			try { record({ accountId: item.accountId, template: 'submission-progress', status: 'sent' }); } catch { /* 审计写入故障不重发已投递的邮件。 */ }
 		} catch (error) {

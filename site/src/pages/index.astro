@@ -1,4 +1,7 @@
 ---
+
+import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
+const locale = getLocale(Astro.url.pathname);
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BrandMark from '../components/BrandMark.astro';
 import { archiveItems } from '../data/archive';
@@ -10,7 +13,7 @@ import { createArchiveRecordView, isPublishedArchiveItem } from '../data/archive
 import { getResponsiveImage } from '../data/responsive-images';
 
 const publishedItems = archiveItems.filter(isPublishedArchiveItem);
-const publishedViews = publishedItems.map(createArchiveRecordView);
+const publishedViews = publishedItems.map(item => createArchiveRecordView(item, locale));
 const categoryCounts = new Map<string, number>();
 for (const item of publishedItems) {
 	const slug = getArchiveCategorySlug(item.core.object_type);
@@ -44,12 +47,12 @@ const categoryViewGroups = archiveCategories.map((category) => ({
 }));
 
 const getHomepagePlace = (view: (typeof publishedViews)[number]) => [
-	view.item.core.specific_place,
-	view.item.core.street_town,
-	view.item.core.district,
-	view.item.core.city,
-	view.item.core.province,
-	view.item.core.country,
+	view.localizedCore.specific_place,
+	view.localizedCore.street_town,
+	view.localizedCore.district,
+	view.localizedCore.city,
+	view.localizedCore.province,
+	view.localizedCore.country,
 ].find((value) => value?.trim())?.trim();
 
 // 上方精选：每种访客分类优先取简介与图片说明完整的一件，同等完整时优先最新记录，只展示首张图片，
@@ -64,7 +67,7 @@ const featuredSlides = categoryViewGroups.flatMap(({ category, views }) => {
 		title: view.title,
 		dateDisplay: view.dateDisplay,
 		recordInfo: [view.typeLabel, getHomepagePlace(view)].filter(Boolean).join(' · '),
-		href: `/archive/${view.id}/`,
+		href: localizePath(`/archive/${view.id}/`, locale),
 		categorySlug: category.slug,
 	}] : [];
 });
@@ -81,14 +84,14 @@ const recentViews = categoryViewGroups.flatMap(({ views }) => {
 
 // 优先使用已经公开的简介，缺少时只组合公开年代与地点，不使用推测性叙述。
 const createHomepageRecordNote = (view: (typeof publishedViews)[number]) => {
-	const description = view.item.public_view.description?.trim();
+	const description = view.description;
 	if (description) return description;
 	const place = getHomepagePlace(view);
 	const dateFact = view.dateDisplay === '年代未知'
-		? '年代尚待确认'
-		: `年代记录为 ${view.dateDisplay}`;
+		? t('年代尚待确认',locale)
+		: t("年代记录为 {0}", locale, {0: (view.dateDisplay)});
 	return place
-		? `${view.typeLabel}，${dateFact}，地点标注为${place}。`
+		? t("{0}，{1}，地点标注为{2}。", locale, {0: (view.typeLabel), 1: (dateFact), 2: (place)})
 		: `${view.typeLabel}，${dateFact}。`;
 };
 
@@ -129,18 +132,18 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 				<header class="masthead">
 					<div class="masthead-title">
 						<div class="masthead-mark"><BrandMark variant="seal" /></div>
-						<h1>老旧默片</h1>
+						<h1>{t("老旧默片", locale)}</h1>
 					</div>
-					<p>普通人的生活档案</p>
+					<p>{t("普通人的生活档案", locale)}</p>
 				</header>
-				<section class="introduction" aria-label="网站介绍">
+				<section class="introduction" aria-label={t("网站介绍", locale)}>
 					<p>
-						<span class="introduction-line">从一张照片、一封信和一件旧物开始，</span>
-						<span class="introduction-line">保存普通人的生活痕迹。</span>
+						<span class="introduction-line">{t("从一张照片、一封信和一件旧物开始，", locale)}</span>
+						<span class="introduction-line">{t("保存普通人的生活痕迹。", locale)}</span>
 					</p>
 					<div class="introduction-actions">
-						<a class="browse-link ui-action ui-action--primary" href="/archive/">进入馆藏 →</a>
-						<button class="browse-link random-record-link" type="button" data-random-record-button>随手翻一件</button>
+						<a class="browse-link ui-action ui-action--primary" href={localizePath("/archive/", locale)}>{t("进入馆藏 →", locale)}</a>
+						<button class="browse-link random-record-link" type="button" data-random-record-button>{t("随手翻一件", locale)}</button>
 					</div>
 				</section>
 			</div>
@@ -165,13 +168,13 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 						href,
 					}))) : undefined}
 					role={featuredSlides.length > 1 ? 'region' : undefined}
-					aria-roledescription={featuredSlides.length > 1 ? '轮播图' : undefined}
-					aria-label={featuredSlides.length > 1 ? '精选公开藏品图片' : undefined}
+					aria-roledescription={featuredSlides.length > 1 ? (locale === 'en' ? 'carousel' : '轮播图') : undefined}
+					aria-label={featuredSlides.length > 1 ? (locale === 'en' ? 'Featured public collection images' : '精选公开藏品图片') : undefined}
 				>
 					<a
 						class="hero-record"
-						href={firstFeaturedSlide.href}
-						aria-label={`查看精选档案：${firstFeaturedSlide.title}`}
+						href={localizePath(firstFeaturedSlide.href, locale)}
+						aria-label={t("查看精选档案：{0}", locale, {0: (firstFeaturedSlide.title)})}
 						data-home-carousel-link={featuredSlides.length > 1 ? '' : undefined}
 					>
 						<figure>
@@ -191,7 +194,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 							</div>
 							<figcaption>
 								<div class="hero-record-heading">
-									<small class="hero-record-date"><span>年代</span><span data-home-carousel-date>{firstFeaturedSlide.dateDisplay}</span></small>
+									<small class="hero-record-date"><span>{t("年代", locale)}</span><span data-home-carousel-date>{firstFeaturedSlide.dateDisplay}</span></small>
 									<strong data-home-carousel-title>{firstFeaturedSlide.title}</strong>
 								</div>
 								<p class="hero-record-info" data-home-carousel-info>{firstFeaturedSlide.recordInfo}</p>
@@ -199,22 +202,22 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 						</figure>
 					</a>
 					{featuredSlides.length > 1 && (
-						<div class="hero-carousel-controls" aria-label="精选图片轮播控制">
-							<button type="button" class="carousel-arrow carousel-arrow--prev" data-home-carousel-previous aria-label="查看上一张精选图片">
+						<div class="hero-carousel-controls" aria-label={t("精选图片轮播控制", locale)}>
+							<button type="button" class="carousel-arrow carousel-arrow--prev" data-home-carousel-previous aria-label={t("查看上一张精选图片", locale)}>
 								<span aria-hidden="true">←</span>
 							</button>
-							<div class="carousel-dots" data-home-carousel-dots role="group" aria-label="精选图片页码">
+							<div class="carousel-dots" data-home-carousel-dots role="group" aria-label={t("精选图片页码", locale)}>
 								{featuredSlides.map((slide, index) => (
 									<button
 										type="button"
 										class="carousel-dot"
 										aria-current={index === 0 ? 'true' : 'false'}
-										aria-label={`第 ${index + 1} 张精选图片`}
+										aria-label={t("第 {0} 张精选图片", locale, {0: (index + 1)})}
 										data-home-carousel-dot={index}
 									/>
 								))}
 							</div>
-							<button type="button" class="carousel-arrow carousel-arrow--next" data-home-carousel-next aria-label="查看下一张精选图片">
+							<button type="button" class="carousel-arrow carousel-arrow--next" data-home-carousel-next aria-label={t("查看下一张精选图片", locale)}>
 								<span aria-hidden="true">→</span>
 							</button>
 							<span class="carousel-announcement" data-home-carousel-announcement aria-live="polite"></span>
@@ -224,19 +227,19 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 			)}
 		</div>
 
-		<nav class="archive-entrances" aria-label="档案分类入口">
+		<nav class="archive-entrances" aria-label={t("档案分类入口", locale)}>
 			<div class="archive-entrances-heading">
 				<div class="archive-entrances-title">
-					<p>按藏品类型浏览</p>
+					<p>{t("按藏品类型浏览", locale)}</p>
 				</div>
 			</div>
 			<ul class="category-active-list">
 				{activeCategories.map((category) => (
 					<li class="has-records">
-						<a href={`/archive/?category=${category.slug}`}>
+						<a href={localizePath(`/archive/?category=${category.slug}`, locale)}>
 							<span class="category-index" aria-hidden="true">{category.indexLabel}</span>
-							<strong>{category.label}</strong>
-							<small>{category.count} 件档案</small>
+							<strong>{t(category.label, locale)}</strong>
+							<small>{category.count} {locale === 'en' && category.count === 1 ? 'record' : t("件档案", locale)}</small>
 							<span class="category-arrow" aria-hidden="true">→</span>
 						</a>
 					</li>
@@ -244,11 +247,11 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 			</ul>
 			{pendingCategories.length > 0 && (
 				<p class="category-pending">
-					<span class="category-pending-label">正在整理：</span>
+					<span class="category-pending-label">{t("正在整理：", locale)}</span>
 					{pendingCategories.map((category, index) => (
 						<span class="category-pending-item">
 							{index > 0 && <span class="category-pending-sep" aria-hidden="true"> · </span>}
-							<span class="category-pending-link">{category.label}</span>
+							<span class="category-pending-link">{t(category.label, locale)}</span>
 						</span>
 					))}
 				</p>
@@ -259,9 +262,9 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 			<section class="home-discovery" aria-labelledby="discovery-heading">
 				<header class="discovery-heading">
 					<div class="discovery-title">
-						<h2 id="discovery-heading">继续浏览</h2>
+						<h2 id="discovery-heading">{t("继续浏览", locale)}</h2>
 					</div>
-					<a class="ui-text-link" href="/archive/">查看档案目录 →</a>
+					<a class="ui-text-link" href={localizePath("/archive/", locale)}>{t("查看档案目录 →", locale)}</a>
 				</header>
 
 				<div class:list={['recent-records', {
@@ -270,8 +273,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 				}]}>
 					<article class="recent-lead">
 						<a
-							href={`/archive/${leadEntry.view.id}/`}
-							aria-label={`查看档案：${leadEntry.view.title}`}
+							href={localizePath(`/archive/${leadEntry.view.id}/`, locale)}
+							aria-label={t("查看档案：{0}", locale, {0: (leadEntry.view.title)})}
 							data-home-recent-record={leadEntry.view.id}
 							data-home-recent-category={getArchiveCategorySlug(leadEntry.view.objectType)}
 						>
@@ -293,7 +296,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 								<small><span class="recent-record-index" aria-hidden="true">01</span>{leadEntry.view.typeLabel} · {leadEntry.view.dateDisplay}</small>
 								<strong>{leadEntry.view.title}</strong>
 								<p class="recent-lead-note">{leadEntry.note}</p>
-								<em>查看档案 →</em>
+								<em>{t("查看档案 →", locale)}</em>
 							</span>
 						</a>
 					</article>
@@ -304,8 +307,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 								{sideEntries.map(({ view, image, note }, index) => (
 									<li>
 										<a
-											href={`/archive/${view.id}/`}
-											aria-label={`查看档案：${view.title}`}
+											href={localizePath(`/archive/${view.id}/`, locale)}
+											aria-label={t("查看档案：{0}", locale, {0: (view.title)})}
 											data-home-recent-record={view.id}
 											data-home-recent-category={getArchiveCategorySlug(view.objectType)}
 										>
@@ -327,13 +330,13 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 												<small><span class="recent-record-index" aria-hidden="true">{String(index + 2).padStart(2, '0')}</span>{view.typeLabel} · {view.dateDisplay}</small>
 												<strong>{view.title}</strong>
 												<p class="recent-record-note">{note}</p>
-												<em>查看档案 →</em>
+												<em>{t("查看档案 →", locale)}</em>
 											</span>
 										</a>
 									</li>
 								))}
 							</ul>
-							{!hasPairedEntries && <p class="recent-side-note">更多档案正在整理、核对与释读中。</p>}
+							{!hasPairedEntries && <p class="recent-side-note">{t("更多档案正在整理、核对与释读中。", locale)}</p>}
 						</div>
 					)}
 				</div>
@@ -343,35 +346,37 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		<section class="view-history" data-view-history hidden aria-labelledby="view-history-heading">
 			<header class="view-history-header">
 				<div class="view-history-title">
-					<h2 id="view-history-heading">最近看过</h2>
+					<h2 id="view-history-heading">{t("最近看过", locale)}</h2>
 				</div>
-				<button class="view-history-clear" type="button" data-view-history-clear>清空足迹</button>
+				<button class="view-history-clear" type="button" data-view-history-clear>{t("清空足迹", locale)}</button>
 			</header>
 			<ul class="view-history-list" data-view-history-list></ul>
 		</section>
 	</div>
 	<script type="application/json" id="random-record-index" set:html={JSON.stringify(randomRecordIds)} />
 	<script>
-		import '../scripts/home-featured-carousel';
+import {clientText as ct,clientPath,clientLocale} from '../i18n/client';
+
+import '../scripts/home-featured-carousel';
 		import '../scripts/random-record';
-		import { clearViewHistory, readViewHistory } from '../scripts/view-history';
+		import { clearViewHistory, readLocalizedViewHistory } from '../scripts/view-history';
 
 		// 浏览足迹：完全在访客浏览器本地渲染，没有足迹时区块保持隐藏。
 		const historySection = document.querySelector<HTMLElement>('[data-view-history]');
 		const historyList = historySection?.querySelector<HTMLElement>('[data-view-history-list]');
 		const historyClearButton = historySection?.querySelector<HTMLButtonElement>('[data-view-history-clear]');
 
-		const renderViewHistory = () => {
+		const renderViewHistory = async () => {
 			if (!historySection || !historyList) return;
-			const entries = readViewHistory().slice(0, 4);
+			const entries = (await readLocalizedViewHistory()).slice(0, 4);
 			historySection.hidden = entries.length === 0;
 			historyList.replaceChildren(...entries.map((entry) => {
 				const item = document.createElement('li');
 				item.className = 'view-history-item';
 				const link = document.createElement('a');
 				link.className = 'view-history-link';
-				link.href = `/archive/${entry.id}/`;
-				link.setAttribute('aria-label', `继续查看档案：${entry.title}`);
+				link.href = clientPath(`/archive/${entry.id}/`);
+				link.setAttribute('aria-label', ct("继续查看档案：{0}", {0: (entry.title)}));
 				const image = document.createElement('span');
 				image.className = 'view-history-image';
 				if (entry.imageSrc) {
@@ -387,11 +392,11 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 				const copy = document.createElement('span');
 				copy.className = 'view-history-copy';
 				const meta = document.createElement('small');
-				meta.textContent = `${entry.typeLabel} · ${entry.dateDisplay || '年代未知'}`;
+				meta.textContent = `${entry.typeLabel} · ${entry.dateDisplay || ct("年代未知")}`;
 				const title = document.createElement('strong');
 				title.textContent = entry.title;
 				const open = document.createElement('em');
-				open.textContent = '继续查看 →';
+				open.textContent = ct("继续查看 →");
 				copy.append(meta, title, open);
 				link.append(image, copy);
 				item.append(link);
@@ -469,6 +474,18 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 		display: flex;
 		align-items: center;
 		gap: var(--masthead-gap);
+	}
+
+	:global(html[lang='en']) .masthead h1 {
+		min-width: 0;
+		white-space: normal;
+		text-wrap: balance;
+		overflow-wrap: normal;
+		letter-spacing: 0.01em;
+	}
+
+	:global(html[lang='en']) .masthead p {
+		letter-spacing: 0.14em;
 	}
 
 	.masthead-mark {

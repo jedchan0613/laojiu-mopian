@@ -1,4 +1,9 @@
 ---
+import { getLocale, localizePath } from '../i18n/ui';
+import { interfaceText } from '../i18n/client';
+const locale = getLocale(Astro.url.pathname);
+const ct = (text: string, params: Record<string, unknown> = {}) => interfaceText(text, locale, params);
+
 import SiteIcon from './SiteIcon.astro';
 
 interface Props {
@@ -14,13 +19,13 @@ const { itemId, title } = Astro.props;
 	class="archive-favorite-button"
 	data-archive-favorite
 	data-item-id={itemId}
-	aria-label={`收藏“${title}”`}
+	aria-label={ct("收藏“{0}”", {"0": (title)})}
 	aria-pressed="false"
 	hidden
 	disabled
 >
 	<SiteIcon name="bookmark" class="archive-favorite-icon" />
-	<span data-favorite-label>收藏</span>
+	<span data-favorite-label>{ct("收藏")}</span>
 </button>
 
 <style>

@@ -1,3 +1,4 @@
+import { clientPath } from '../i18n/client';
 // 随手翻一件：从构建时写入页面的公开档案编号索引中随机挑选一条跳转。
 // 按钮由页面提供（data-random-record-button），索引由页面内嵌 JSON 提供
 // （id 为 random-record-index）。按钮在页面里默认以 visibility:hidden 占据
@@ -31,7 +32,7 @@ const initializeRandomRecord = () => {
 		button.dataset.randomRecordReady = '';
 		button.addEventListener('click', () => {
 			const target = itemIds[Math.floor(Math.random() * itemIds.length)];
-			if (target) window.location.assign(`/archive/${target}/`);
+			if (target) window.location.assign(clientPath(`/archive/${target}/`));
 		});
 	}
 };

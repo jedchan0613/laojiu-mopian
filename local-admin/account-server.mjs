@@ -6,6 +6,7 @@
 // - 公开反向代理只应转发 /api/account/ 前缀；本文件可作为独立进程启动，也可被本地服务直接挂载。
 
 import fs from 'node:fs';
+import { normalizeAccountLanguage, localizeAccountPayload } from './account-i18n.mjs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,7 +66,7 @@ export function createAccountHandler({
 
 	const send = (response, status, value, extraHeaders = {}) => {
 		if (response.headersSent) return;
-		const body = JSON.stringify(value);
+		const body = JSON.stringify(localizeAccountPayload(value, response.ljmLanguage, status));
 		response.writeHead(status, {
 			'Content-Type': 'application/json; charset=utf-8',
 			'Content-Length': Buffer.byteLength(body),
@@ -199,6 +200,7 @@ export function createAccountHandler({
 		const isAccount = pathname.startsWith('/api/account/');
 		const isAdmin = pathname.startsWith('/api/account-admin/');
 		if (!isAccount && !isAdmin) return false;
+		response.ljmLanguage = isAdmin ? 'zh-CN' : normalizeAccountLanguage(request.headers['x-ljm-language']);
 		try {
 			throttleAddress(request);
 			if (isAdmin) return await handleAdmin(request, response, pathname);
@@ -215,6 +217,7 @@ export function createAccountHandler({
 		const method = request.method ?? 'GET';
 		const mutation = method !== 'GET' && method !== 'HEAD';
 		const client = request.headers['user-agent'] ?? '';
+		const language = normalizeAccountLanguage(request.headers['x-ljm-language']);
 
 		if (pathname === '/api/account/config') {
 			if (method !== 'GET') fail('不支持此操作。', 405);
@@ -226,12 +229,12 @@ export function createAccountHandler({
 
 		if (pathname === '/api/account/code' && method === 'POST') {
 			const payload = await readJson(request);
-			const result = await store.requestLoginCode({ email: payload.email, ip: address });
+			const result = await store.requestLoginCode({ email: payload.email, ip: address, language });
 			return withCookies(response, [], 200, { ok: true, ...result }), true;
 		}
 		if (pathname === '/api/account/verify' && method === 'POST') {
 			const payload = await readJson(request);
-			const result = await store.verifyLoginCode({ email: payload.email, ticket: payload.ticket, code: payload.code, client, ip: address });
+			const result = await store.verifyLoginCode({ email: payload.email, ticket: payload.ticket, code: payload.code, client, ip: address, language });
 			if (result.state === 'signed_in') {
 				const { token, ...rest } = result;
 				return withCookies(response, [sessionCookie(token, secureCookies, accountLimits.sessionAbsoluteSeconds)], 200, rest), true;
@@ -247,6 +250,7 @@ export function createAccountHandler({
 				agreed: payload.agreed,
 				nickname: payload.nickname,
 				client,
+				language,
 				ip: address,
 			});
 			return withCookies(response, [sessionCookie(result.token, secureCookies, accountLimits.sessionAbsoluteSeconds)], 200, { state: 'signed_in', user: result.user }), true;
@@ -258,11 +262,11 @@ export function createAccountHandler({
 		if (pathname === '/api/account/profile' && method === 'POST') {
 			const session = requireSession(request);
 			const payload = await readJson(request);
-			return withCookies(response, [], 200, { user: store.updateProfile({ session, nickname: payload.nickname, notifyProgress: payload.notify_progress }) }), true;
+			return withCookies(response, [], 200, { user: store.updateProfile({ session, nickname: payload.nickname, notifyProgress: payload.notify_progress, preferredLanguage: payload.preferred_language }) }), true;
 		}
 		if (pathname === '/api/account/email/change/start' && method === 'POST') {
 			const session = requireSession(request);
-			return withCookies(response, [], 200, { ok: true, ...(await store.requestEmailChange({ session, ip: address })) }), true;
+			return withCookies(response, [], 200, { ok: true, ...(await store.requestEmailChange({ session, ip: address, language })) }), true;
 		}
 		if (pathname === '/api/account/email/change/verify-old' && method === 'POST') {
 			const session = requireSession(request);
@@ -273,7 +277,7 @@ export function createAccountHandler({
 			const session = requireSession(request);
 			const payload = await readJson(request);
 			return withCookies(response, [], 200, await store.requestEmailChangeConfirm({
-				changeTicket: payload.change_ticket, userId: session.user.id, email: payload.email, ip: address,
+				changeTicket: payload.change_ticket, userId: session.user.id, email: payload.email, ip: address, language,
 			})), true;
 		}
 		if (pathname === '/api/account/email/change/confirm' && method === 'POST') {
@@ -282,7 +286,7 @@ export function createAccountHandler({
 			const result = store.confirmEmailChange({
 				changeTicket: payload.change_ticket, userId: session.user.id, code: payload.code,
 			});
-			await store.notifyEmailChanged({ oldEmail: result.old_email, newEmail: result.new_email });
+			await store.notifyEmailChanged({ oldEmail: result.old_email, newEmail: result.new_email, language });
 			return withCookies(response, [clearedCookie(secureCookies)], 200, result), true;
 		}
 		if (pathname === '/api/account/logout' && method === 'POST') {
@@ -513,7 +517,7 @@ if (isDirectRun) {
 		const recipient = store.notificationRecipient(accountId);
 		if (!recipient) return;
 		try {
-			await mailer.send({ to: recipient.email, template: 'submission-progress', variables: { event, title } });
+			await mailer.send({ to: recipient.email, template: 'submission-progress', variables: { event, title, language: recipient.preferred_language } });
 			store.recordNotification({ accountId, template: 'submission-progress', status: 'sent' });
 		} catch (error) {
 			store.recordNotification({ accountId, template: 'submission-progress', status: 'failed', error: error instanceof Error ? error.message : String(error) });

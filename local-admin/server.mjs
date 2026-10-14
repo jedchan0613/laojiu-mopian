@@ -15,6 +15,7 @@ import { createAccountStore, accountLimits, createAccountReader } from './accoun
 import { createAccountHandler } from './account-server.mjs';
 import { createMailer } from './mail.mjs';
 import { enqueueProgressNotification } from './notification-queue.mjs';
+import { createTranslationStore } from './translations.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
@@ -41,6 +42,7 @@ const allowedAdminEmails = new Set((process.env.LJM_ADMIN_ALLOWED_EMAILS ?? '')
 const configuredDataRoot = process.env.LJM_ADMIN_DATA_ROOT?.trim();
 const projectRoot = readEnvironmentPath('LJM_PROJECT_ROOT', path.resolve(adminDirectory, '..'));
 const publicDirectory = path.join(adminDirectory, 'public');
+const sharedAlbumModuleDirectory = path.resolve(adminDirectory, '..', 'shared');
 const adminDataRoot = configuredDataRoot ? path.resolve(configuredDataRoot) : adminDirectory;
 const archiveDataDirectory = readEnvironmentPath(
 	'LJM_ARCHIVE_DATA_DIR',
@@ -59,6 +61,8 @@ const standardsDirectory = path.join(siteDirectory, 'src', 'data', 'standards');
 const siteArchiveDirectory = path.join(siteDirectory, 'public', 'archive');
 const siteResponsiveArchiveDirectory = path.join(siteDirectory, 'public', 'archive-responsive');
 const siteArchiveDataFile = path.join(siteDirectory, 'src', 'data', 'archive.ts');
+const siteTranslationDataFile = path.join(siteDirectory, 'src', 'data', 'archive-translations.json');
+const translationDirectory = path.join(adminDataRoot, 'translations');
 const responsiveImageManifestFile = path.join(siteDirectory, 'src', 'data', 'generated', 'image-manifest.json');
 const archiveCategoryFile = path.join(siteDirectory, 'src', 'data', 'archive-categories.json');
 const siteDistDirectory = path.join(siteDirectory, 'dist');
@@ -199,6 +203,7 @@ for (const publicRoot of [siteDirectory, publicDirectory, path.join(projectRoot,
 	if (pathIsInside(publicRoot, submissionDirectory)) throw new Error('私密投稿目录不能位于网站、管理页面或公开素材目录内。');
 	if (pathIsInside(publicRoot, uploadStagingDirectory)) throw new Error('临时上传目录不能位于网站、管理页面或公开素材目录内。');
 	if (pathIsInside(publicRoot, accountDataRoot)) throw new Error('账户私密数据目录不能位于网站、管理页面或公开素材目录内。');
+	if (pathIsInside(publicRoot, translationDirectory)) throw new Error('英文草稿与审核数据目录不能位于公开目录内。');
 }
 // 投稿进度通知：只有投稿人主动开启通知偏好时才发信；发送失败只记录，不回退审核或发布结果。
 const notifier = async ({ accountId, event, title }) => {
@@ -216,6 +221,7 @@ const notifier = async ({ accountId, event, title }) => {
 const submissionStore = createSubmissionStore({ root: submissionDirectory, siteDirectory, notifier });
 const publicSubmissions = createPublicSubmissionHandler({ store: submissionStore, origin: localAdminOrigin, local: true });
 const contactStore = createContactStore({ root: contactDirectory });
+const translationStore = createTranslationStore({ root: translationDirectory });
 const publicContacts = createPublicContactHandler({ store: contactStore, origin: localAdminOrigin, local: true });
 
 // 账户服务：本地模式在同一个本机服务里挂载账户处理器，账户数据仍只写入自己的私密目录。
@@ -295,6 +301,7 @@ const mimeTypes = new Map([
 	['.css', 'text/css; charset=utf-8'],
 	['.html', 'text/html; charset=utf-8'],
 	['.js', 'text/javascript; charset=utf-8'],
+	['.mjs', 'text/javascript; charset=utf-8'],
 	['.json', 'application/json; charset=utf-8'],
 	['.jpg', 'image/jpeg'],
 	['.jpeg', 'image/jpeg'],
@@ -1089,6 +1096,46 @@ const loadFieldRoutingStandards = async () => Promise.all([
 	readJson(path.join(standardsDirectory, 'common-fields.json')),
 ]);
 
+// 相册关联是可选字段。只拒绝无法安全保存的输入，不把尚未整理完成的相册当作隐私确认。
+const getAlbumFieldIssues = (record) => {
+	const issues = [];
+	const add = (field, message) => issues.push({ code: `album_${field}_invalid`, tab: 'basic', field, message });
+	for (const [field, label, limit] of [['album_id', '相册编号', 200], ['original_position', '原始位置', 500]]) {
+		const value = record?.core?.[field];
+		if (value === undefined || value === null || value === '') continue;
+		if (typeof value !== 'string') {
+			add(field, `${label}只能填写文字。`);
+			continue;
+		}
+		if (value.length > limit || /[\u0000-\u001f\u007f-\u009f]/.test(value)) {
+			add(field, `${label}最多填写 ${limit} 个字符，不能包含换行或控制字符。`);
+			continue;
+		}
+		if (field === 'album_id' && (/[\\/]/.test(value) || ['.', '..'].includes(value.trim()))) {
+			add(field, '相册编号不能填写路径或包含斜杠；已有中文、空格和下划线编号可以继续使用。');
+		}
+	}
+	return issues;
+};
+
+const getAlbumPublicationIssues = async (record) => {
+	const issues = getAlbumFieldIssues(record);
+	if (issues.length || record?.core?.object_type !== 'ALB') return issues;
+	const albumId = record.core.album_id?.trim();
+	if (!albumId) return issues;
+	const [officialRecords, drafts] = await Promise.all([loadOfficialRecords(), loadDrafts()]);
+	// 正式版本和草稿都参与检查：草稿尚未发布的改号不能掩盖仍在线的原相册。
+	const duplicate = [...officialRecords, ...drafts.map((draft) => draft.record)].find((candidate) =>
+		candidate?.core?.item_id !== record.core.item_id &&
+		candidate?.core?.object_type === 'ALB' && candidate.core.record_status !== 'WDR' &&
+		typeof candidate.core.album_id === 'string' && candidate.core.album_id.trim() === albumId);
+	if (duplicate) issues.push({
+		code: 'album_duplicate_parent', tab: 'basic', field: 'album_id',
+		message: `相册编号已用于另一条相册总档案（${duplicate.core.item_id}），请核对后再发布。`,
+	});
+	return issues;
+};
+
 const getPublicationIssues = async (
 	record,
 	commonFields,
@@ -1098,6 +1145,7 @@ const getPublicationIssues = async (
 ) => {
 	const issues = [];
 	const add = (code, tab, message, field = null) => issues.push({ code, tab, message, field });
+	issues.push(...await getAlbumPublicationIssues(record));
 	try {
 		assertSafeRecord(record);
 	} catch (error) {
@@ -1688,6 +1736,11 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 	if (routingConflicts.length) {
 		throw new Error('发现旧基本信息与对象专属信息存在不同的单值内容，已停止自动合并，避免覆盖旧值。');
 	}
+	const albumIssues = getAlbumFieldIssues(record);
+	if (albumIssues.length) throw new PublicationValidationError(albumIssues);
+	for (const field of ['album_id', 'original_position']) {
+		if (typeof record.core[field] === 'string') record.core[field] = record.core[field].trim();
+	}
 	applyCollectionCode(record, collectionCodeRules, codeDictionary);
 	assertSafeRecord(record);
 	throwIfOperationCancelled(signal);
@@ -1828,7 +1881,7 @@ const validateForPublication = async (record, confirmations) => {
 	if (issues.length) throw new PublicationValidationError(issues);
 };
 
-const generateSiteArchiveSource = async () => {
+const loadPublicTranslationRecords = async () => {
 	const [officialRecords, collectionCodeStandards, fieldRoutingStandards] = await Promise.all([
 		loadOfficialRecords(),
 		loadCollectionCodeStandards(),
@@ -1849,7 +1902,24 @@ const generateSiteArchiveSource = async () => {
 			return applyCollectionCode(normalizedRecord, collectionCodeRules, codeDictionary);
 		})
 		.sort((left, right) => (left.core.item_id ?? '').localeCompare(right.core.item_id ?? ''));
+	return records;
+};
+
+const generateSiteArchiveSource = async () => {
+	const records = await loadPublicTranslationRecords();
 	return `import type { ArchiveItem } from './archive-schema';\n\n// 本文件由本地档案管理入口根据 archive-data 中通过发布检查的记录生成。\n// 原始主档、完整私人地址、完整号码、签名和指纹不得写入这里。\nexport const archiveItems = ${JSON.stringify(records, null, '\t')} satisfies ArchiveItem[];\n\nexport type { ArchiveItem } from './archive-schema';\n`;
+};
+
+const generateSiteTranslationLayer = async () => {
+	const layer = await translationStore.publicLayer(await loadPublicTranslationRecords());
+	await fs.writeFile(siteTranslationDataFile, `${JSON.stringify(layer, null, 2)}\n`, 'utf8');
+};
+
+const loadTranslationItem = async (itemId) => {
+	if (!itemIdPattern.test(itemId ?? '')) throw new RequestError('永久编号无效。');
+	const item = (await loadPublicTranslationRecords()).find((record) => record.core.item_id === itemId);
+	if (!item) throw new RequestError('这条档案尚未公开或已经撤销，不能维护公开英文。', 404);
+	return item;
 };
 
 const updateEntryManifest = async (entryDirectory, updates) => {
@@ -2064,6 +2134,8 @@ const restoreWithdrawnRecord = async (payload) => {
 const runSiteBuild = async (options = {}) => {
 	const { signal = null } = options;
 	throwIfOperationCancelled(signal);
+	// 每次档案更新后重新对照来源，只导出已审核且仍有效的英文；中文发布不会覆盖私有译文。
+	await generateSiteTranslationLayer();
 	const buildCommand = process.platform === 'win32'
 		? { file: process.env.ComSpec ?? 'C:\\Windows\\System32\\cmd.exe', arguments: ['/d', '/s', '/c', 'npm run build'] }
 		: { file: npmCommand, arguments: ['run', 'build'] };
@@ -2078,6 +2150,34 @@ const runSiteBuild = async (options = {}) => {
 	});
 	throwIfOperationCancelled(signal);
 	return `${stdout}\n${stderr}`.trim();
+};
+
+const publishEnglishTranslation = async (itemId, payload, options = {}) => {
+	const { signal = null } = options;
+	if (publishInProgress) throw new RequestError('已有一项网站更新正在进行，请稍候。', 409);
+	publishInProgress = true;
+	let previous = null;
+	let changed = false;
+	try {
+		previous = await translationStore.readRaw(itemId);
+		throwIfOperationCancelled(signal);
+		const item = await loadTranslationItem(itemId);
+		await translationStore.publish(item, payload, options.reviewedBy || '本地档案维护者');
+		changed = true;
+		const buildOutput = await runSiteBuild({ signal });
+		throwIfOperationCancelled(signal);
+		const deployment = onlineMode ? await releaseDeployer.deploy({ signal }) : null;
+		return { ...(await translationStore.detail(item)), buildOutput, deployment };
+	} catch (error) {
+		if (changed) {
+			await translationStore.restoreRaw(itemId, previous);
+			let rollbackMessage = '';
+			try { await runSiteBuild(); }
+			catch (rollbackError) { rollbackMessage = `；恢复后的构建未完成：${safeMessage(rollbackError)}`; }
+			throw new RequestError(`英文发布未完成，已恢复上次正式英文版本：${safeMessage(error)}${rollbackMessage}`);
+		}
+		throw error;
+	} finally { publishInProgress = false; }
 };
 
 const withdrawOfficialRecord = async (payload) => {
@@ -2413,7 +2513,32 @@ const adminServer = http.createServer(async (request, response) => {
 			sendJson(response, 200, { ok: true });
 			return;
 		}
-		if (onlineMode) await accessAuthenticator.verifyRequest(request);
+		const adminIdentity = onlineMode ? await accessAuthenticator.verifyRequest(request) : null;
+		const translationRoute = /^\/api\/admin\/translations\/(LJM-\d{8}-[A-Z]{3}-\d{3})(?:\/(save|publish))?$/.exec(url.pathname);
+		if (translationRoute) {
+			const [, itemId, action] = translationRoute;
+			if (!action && request.method === 'GET') {
+				sendJson(response, 200, await translationStore.detail(await loadTranslationItem(itemId)), { request }); return;
+			}
+			if (request.method === 'POST' && ['save', 'publish'].includes(action)) {
+				requireSafeMutation(request);
+				if (publishInProgress) throw new RequestError('已有一项网站更新正在进行，请稍候。', 409);
+				if (action === 'save') {
+					const payload = await readSubmissionJson(request, 512 * 1024);
+					if (publishInProgress) throw new RequestError('已有一项网站更新正在进行，请稍候。', 409);
+					publishInProgress = true;
+					try { sendJson(response, 200, await translationStore.saveDraft(await loadTranslationItem(itemId), payload)); }
+					finally { publishInProgress = false; }
+					return;
+				}
+				const result = await runManagedOperation(request, 'publish-translation', async ({ signal }) =>
+					publishEnglishTranslation(itemId, await readSubmissionJson(request, 32 * 1024), {
+						signal, reviewedBy: adminIdentity?.email || '本地档案维护者',
+					}));
+				sendJson(response, 200, result); return;
+			}
+			sendJson(response, 405, { error: '不支持此操作。' }); return;
+		}
 		if (url.pathname === '/api/admin/submissions' && request.method === 'GET') {
 			// 列出账号投稿时附上投稿人账号状态，便于识别与核查；免注册投稿的 account 为 null。
 			const accounts = new Map();
@@ -2592,6 +2717,13 @@ const adminServer = http.createServer(async (request, response) => {
 			return;
 		}
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname.startsWith('/admin/')) {
+			// 仅提供管理页需要的一个共享模块；此分支之前已完成线上 Access 鉴权。
+			if (url.pathname === '/admin/album-position.mjs') {
+				await sendFile(response, sharedAlbumModuleDirectory, '/album-position.mjs', {
+					cacheControl: 'private, max-age=300', request,
+				});
+				return;
+			}
 			const resourceExtension = path.extname(url.pathname).toLowerCase();
 			await sendFile(response, publicDirectory, url.pathname.slice('/admin'.length), {
 				cacheControl: ['.js', '.css'].includes(resourceExtension)
@@ -2635,6 +2767,7 @@ if (process.argv.includes('--check-config')) {
 	console.log('配置和必要目录检查通过。');
 } else if (process.argv.includes('--sync-site-data')) {
 	await fs.writeFile(siteArchiveDataFile, await generateSiteArchiveSource(), 'utf8');
+	await generateSiteTranslationLayer();
 	console.log('网站档案数据已根据正式 JSON 重新生成。');
 } else {
 	let shutdownRequested = false;

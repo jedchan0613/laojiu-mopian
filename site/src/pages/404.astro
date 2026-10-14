@@ -1,4 +1,7 @@
 ---
+
+import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
+const locale = getLocale(Astro.url.pathname);
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { archiveItems } from '../data/archive';
 import { isPublishedArchiveItem } from '../data/archive-view';
@@ -10,39 +13,39 @@ const randomRecordIds = archiveItems
 ---
 
 <BaseLayout
-  title="页面暂时不可访问｜老旧默片"
-  description="当前页面不存在、地址已经改变，或相关档案暂时不对外开放。"
+  title={t("页面暂时不可访问｜老旧默片", locale)}
+  description={t("当前页面不存在、地址已经改变，或相关档案暂时不对外开放。", locale)}
 >
   <section class="not-found" aria-labelledby="not-found-title">
-    <p class="not-found-mark">缺页</p>
-    <h1 id="not-found-title">这页目前找不到</h1>
+    <p class="not-found-mark">{t("缺页", locale)}</p>
+    <h1 id="not-found-title">{t("这页目前找不到", locale)}</h1>
     <p>
-      地址可能已经改变，也可能对应一件目前不对外开放的档案。为了保护资料隐私，这里不会说明具体原因。
+      {t("地址可能已经改变，也可能对应一件目前不对外开放的档案。为了保护资料隐私，这里不会说明具体原因。", locale)}
     </p>
-    <form class="not-found-search" action="/archive/" method="get" role="search" aria-labelledby="not-found-search-heading">
-      <p class="not-found-search-heading" id="not-found-search-heading">先在档案里找找看</p>
+    <form class="not-found-search" action={localizePath('/archive/',locale)} method="get" role="search" aria-labelledby="not-found-search-heading">
+      <p class="not-found-search-heading" id="not-found-search-heading">{t("先在档案里找找看", locale)}</p>
       <div class="not-found-search-row">
-        <label class="not-found-search-label" for="not-found-search-input">搜索档案关键词</label>
+        <label class="not-found-search-label" for="not-found-search-input">{t("搜索档案关键词", locale)}</label>
         <input
           id="not-found-search-input"
           type="search"
           name="q"
-          placeholder="例如：明信片、上海、家书"
+          placeholder={t("例如：明信片、上海、家书", locale)}
           autocomplete="off"
         />
-        <button class="ui-action ui-action--primary" type="submit">搜索档案</button>
+        <button class="ui-action ui-action--primary" type="submit">{t("搜索档案", locale)}</button>
       </div>
-      <p class="not-found-search-hint">会打开档案列表，并自动填入这个关键词。</p>
+      <p class="not-found-search-hint">{t("会打开档案列表，并自动填入这个关键词。", locale)}</p>
     </form>
     <div class="not-found-actions">
-      <a class="ui-action ui-action--primary" href="/archive/">浏览现有档案</a>
-      <button class="ui-action ui-action--secondary" type="button" data-random-record-button hidden>随手翻一件</button>
-      <a class="ui-text-link" href="/">返回首页</a>
+      <a class="ui-action ui-action--primary" href={localizePath("/archive/", locale)}>{t("浏览现有档案", locale)}</a>
+      <button class="ui-action ui-action--secondary" type="button" data-random-record-button hidden>{t("随手翻一件", locale)}</button>
+      <a class="ui-text-link" href={localizePath("/", locale)}>{t("返回首页", locale)}</a>
     </div>
     <aside>
-      <strong>如果您是在核对某件档案</strong>
-      <span>请检查永久编号和页面地址。也可以查看纠错与撤下说明，准备需要提交的信息。</span>
-      <a class="ui-text-link" href="/corrections/">查看纠错与撤下说明 →</a>
+      <strong>{t("如果您是在核对某件档案", locale)}</strong>
+      <span>{t("请检查永久编号和页面地址。也可以查看纠错与撤下说明，准备需要提交的信息。", locale)}</span>
+      <a class="ui-text-link" href={localizePath("/corrections/", locale)}>{t("查看纠错与撤下说明 →", locale)}</a>
     </aside>
   </section>
   <script type="application/json" id="random-record-index" set:html={JSON.stringify(randomRecordIds)} />

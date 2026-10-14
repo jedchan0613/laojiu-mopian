@@ -6,6 +6,7 @@
 // - 账号业务数据与档案 core / metadata / public_view 完全分开；账号编号、投稿 TG- 编号、档案 LJM- 编号彼此独立。
 // - 验证码只存不可逆摘要；会话令牌只存摘要；邮箱与来源地址只存用于限流聚合的摘要。
 
+import { normalizeAccountLanguage } from './account-i18n.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -65,6 +66,7 @@ const schema = [
 		id TEXT PRIMARY KEY,
 		email TEXT NOT NULL UNIQUE,
 		nickname TEXT NOT NULL,
+		preferred_language TEXT NOT NULL DEFAULT 'zh-CN',
 		status TEXT NOT NULL DEFAULT 'active',
 		agreement_version TEXT NOT NULL DEFAULT '',
 		agreement_accepted_at TEXT NOT NULL DEFAULT '',
@@ -217,6 +219,11 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 	if (!database.prepare('SELECT version FROM schema_version LIMIT 1').get()) {
 		database.prepare('INSERT INTO schema_version (version) VALUES (1)').run();
 	}
+	// Incremental migration retains all users, codes, favorites and sessions.
+	if (!database.prepare('PRAGMA table_info(users)').all().some((column) => column.name === 'preferred_language')) {
+		database.exec("ALTER TABLE users ADD COLUMN preferred_language TEXT NOT NULL DEFAULT 'zh-CN'");
+	}
+	database.prepare('UPDATE schema_version SET version = 2 WHERE version < 2').run();
 	const schemaVersion = database.prepare('SELECT version FROM schema_version LIMIT 1').get().version;
 
 	const run = (sql, ...parameters) => database.prepare(sql).run(...parameters);
@@ -266,7 +273,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 	};
 
 	// 发送验证码：先落库再发信；发信失败时作废该验证码并如实报错，不产生虚假成功。
-	const issueCode = async ({ email, purpose, ip }) => {
+	const issueCode = async ({ email, purpose, ip, language = 'zh-CN' }) => {
 		if (!mailer.available) fail('登录服务暂时不可用，邮件通道尚未配置完成。', 503);
 		const current = now();
 		const code = generateCode();
@@ -282,7 +289,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			iso(current), iso(addSeconds(current, accountLimits.codeTtlSeconds)), ipHashOf(ip));
 		let delivered;
 		try {
-			delivered = await mailer.send({ to: email, template: 'login-code', variables: { code, minutes: Math.round(accountLimits.codeTtlSeconds / 60), purpose } });
+			delivered = await mailer.send({ to: email, template: 'login-code', variables: { code, minutes: Math.round(accountLimits.codeTtlSeconds / 60), purpose, language: normalizeAccountLanguage(language) } });
 		} catch (error) {
 			run(`UPDATE verification_codes SET consumed_at = ? WHERE id = ?`, iso(current), id);
 			recordMail(toHash, 'login-code', 'failed', '', String(error?.message ?? error).slice(0, 300));
@@ -340,6 +347,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 	const publicUser = (row) => ({
 		id: row.id,
 		nickname: row.nickname,
+		preferred_language: normalizeAccountLanguage(row.preferred_language),
 		email: row.email,
 		status: row.status,
 		status_label: accountStates[row.status] ?? row.status,
@@ -347,10 +355,10 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 		agreement_version: row.agreement_version,
 		created_at: row.created_at,
 	});
-	const defaultNickname = (email) => {
+	const defaultNickname = (email, language = 'zh-CN') => {
 		// 默认昵称不含邮箱信息，也不能从邮箱推导。
 		const suffix = createHash('sha256').update(`${email}:${randomBytes(8).toString('hex')}`).digest('hex').slice(0, 6);
-		return `读者${suffix}`;
+		return `${normalizeAccountLanguage(language) === 'en' ? 'Reader' : '读者'}${suffix}`;
 	};
 	const cleanNickname = (value, fallback) => {
 		const nickname = String(value ?? '').trim();
@@ -429,7 +437,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 		}),
 
 		// 请求登录验证码。无论邮箱是否已注册，成功路径的返回完全一致。
-		async requestLoginCode({ email, ip }) {
+		async requestLoginCode({ email, ip, language = 'zh-CN' }) {
 			const normalized = normalizeEmail(email);
 			if (!emailPattern.test(normalized) || normalized.length > 160) fail('请输入正确的邮箱地址。');
 			requireMailer();
@@ -441,13 +449,13 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 				const wait = accountLimits.codeResendSeconds - Math.floor((now().getTime() - new Date(previous.created_at).getTime()) / 1000);
 				if (wait > 0) fail(`请等待 ${wait} 秒后再重新发送验证码。`, 429);
 			}
-			const result = await issueCode({ email: normalized, purpose: 'login', ip });
+			const result = await issueCode({ email: normalized, purpose: 'login', ip, language });
 			audit('system', 'code_requested', digest(normalized).slice(0, 12), { purpose: 'login' });
 			return result;
 		},
 
 		// 校验登录验证码：已有账号直接登录并下发会话；新邮箱返回一次性开通票据。
-		async verifyLoginCode({ email, ticket, code, client, ip }) {
+		async verifyLoginCode({ email, ticket, code, client, ip, language }) {
 			const normalized = normalizeEmail(email);
 			if (!emailPattern.test(normalized)) fail('请输入正确的邮箱地址。');
 			verifyCode({ email: normalized, purpose: 'login', ticket, code });
@@ -464,17 +472,21 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 					: '该账号正在处理注销，暂时无法登录。如需帮助，请通过联系入口告知站主。', 403);
 			}
 			const token = createSession({ userId: user.id, client });
+			if (language !== undefined) {
+				run('UPDATE users SET preferred_language = ? WHERE id = ?', normalizeAccountLanguage(language), user.id);
+				user.preferred_language = normalizeAccountLanguage(language);
+			}
 			run('UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?', iso(now()), iso(now()), user.id);
 			audit('user', 'signed_in', user.id, { ip: ipHashOf(ip) });
 			return { state: 'signed_in', token, user: publicUser(user) };
 		},
 
 		// 首次开通：必须主动同意协议，记录协议版本与同意时间；昵称可留空使用默认昵称。
-		async completeOnboarding({ onboardingTicket, agreement, agreed, nickname, client, ip }) {
+		async completeOnboarding({ onboardingTicket, agreement, agreed, nickname, client, ip, language = 'zh-CN' }) {
 			if (agreed !== true) fail('请先阅读并主动同意服务与隐私说明。');
 			if (agreement !== agreementVersion) fail('协议版本已更新，请刷新页面后重新阅读。');
 			const pending = readTicket({ kind: 'onboarding', ticket: onboardingTicket });
-			const chosenNickname = cleanNickname(nickname, defaultNickname(pending.email));
+			const chosenNickname = cleanNickname(nickname, defaultNickname(pending.email, language));
 			const ticket = consumeTicket({ kind: 'onboarding', ticket: onboardingTicket });
 			const email = normalizeEmail(ticket.email);
 			if (one('SELECT id FROM users WHERE email = ?', email)) fail('该邮箱已经开通账号，请直接登录。', 409);
@@ -487,6 +499,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			run(`INSERT INTO users (id, email, nickname, status, agreement_version, agreement_accepted_at, notify_progress, created_at, updated_at, last_login_at, suspended_at, suspended_reason)
 				VALUES (?, ?, ?, 'active', ?, ?, 0, ?, ?, ?, '', '')`,
 				user.id, user.email, user.nickname, agreementVersion, iso(current), iso(current), iso(current), iso(current));
+			run('UPDATE users SET preferred_language = ? WHERE id = ?', normalizeAccountLanguage(language), user.id);
 			const sessionToken = createSession({ userId: user.id, client });
 			audit('user', 'account_created', user.id, { ip: ipHashOf(ip), agreement: agreementVersion });
 			return { token: sessionToken, user: publicUser(one('SELECT * FROM users WHERE id = ?', user.id)) };
@@ -514,8 +527,13 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 				requests: requests.map((row) => ({ ...row, kind_label: requestKinds[row.kind] ?? row.kind, status_label: requestStates[row.status] ?? row.status })),
 			};
 		},
-		updateProfile({ session, nickname, notifyProgress }) {
+		updateProfile({ session, nickname, notifyProgress, preferredLanguage }) {
+			if (preferredLanguage !== undefined && !['zh-CN', 'en'].includes(preferredLanguage)) fail('不支持这种语言。');
 			const current = now();
+			if (preferredLanguage !== undefined) {
+				run('UPDATE users SET preferred_language = ?, updated_at = ? WHERE id = ?', preferredLanguage, iso(current), session.user.id);
+				audit('user', 'language_preference_changed', session.user.id, { preferred_language: preferredLanguage });
+			}
 			if (nickname !== undefined) {
 				const clean = cleanNickname(nickname, session.user.nickname);
 				run('UPDATE users SET nickname = ?, updated_at = ? WHERE id = ?', clean, iso(current), session.user.id);
@@ -529,7 +547,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 		},
 
 		// 更换邮箱第一步：向当前邮箱发码。
-		async requestEmailChange({ session, ip }) {
+		async requestEmailChange({ session, ip, language }) {
 			requireMailer();
 			const email = normalizeEmail(session.user.email);
 			requireAllowed(`change:email:${digest(email).slice(0, 32)}`, accountLimits.emailPerHour, 3600, '该邮箱请求验证码过于频繁，请稍后再试。');
@@ -539,7 +557,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 				const wait = accountLimits.codeResendSeconds - Math.floor((now().getTime() - new Date(previous.created_at).getTime()) / 1000);
 				if (wait > 0) fail(`请等待 ${wait} 秒后再重新发送验证码。`, 429);
 			}
-			return issueCode({ email, purpose: 'email_change_old', ip });
+			return issueCode({ email, purpose: 'email_change_old', ip, language: language ?? session.user.preferred_language });
 		},
 		verifyEmailChange({ session, ticket, code }) {
 			const email = normalizeEmail(session.user.email);
@@ -549,7 +567,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			return { change_ticket: changeTicket };
 		},
 		// 更换邮箱第二步：向新邮箱发码；新邮箱已被占用时明确提示冲突。
-		async requestEmailChangeConfirm({ changeTicket, userId, email, ip }) {
+		async requestEmailChangeConfirm({ changeTicket, userId, email, ip, language }) {
 			requireMailer();
 			const ticket = readTicket({ kind: 'email_change', ticket: changeTicket });
 			// 换邮箱票据必须属于当前登录账号，避免凭证在账号之间串用。
@@ -559,7 +577,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			if (normalized === normalizeEmail(ticket.email)) fail('新邮箱与当前邮箱相同，不需要更换。');
 			if (one('SELECT id FROM users WHERE email = ?', normalized)) fail('该邮箱已经绑定其他账号，请更换另一个邮箱。', 409);
 			requireAllowed(`mail:site:${iso(now()).slice(0, 10)}`, accountLimits.siteMailPerDay, 24 * 3600, '今日邮件额度已用完，请稍后再试。');
-			const issued = await issueCode({ email: normalized, purpose: 'email_change_new', ip });
+			const issued = await issueCode({ email: normalized, purpose: 'email_change_new', ip, language: language ?? one('SELECT preferred_language FROM users WHERE id = ?', userId)?.preferred_language });
 			consumeTicket({ kind: 'email_change', ticket: changeTicket });
 			const nextTicket = createTicket({
 				kind: 'email_change_new',
@@ -586,9 +604,9 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			audit('user', 'email_changed', ticket.user_id);
 			return { ok: true, old_email: oldEmail, new_email: normalizeEmail(ticket.email) };
 		},
-		async notifyEmailChanged({ oldEmail, newEmail }) {
+		async notifyEmailChanged({ oldEmail, newEmail, language = 'zh-CN' }) {
 			try {
-				const delivery = await mailer.send({ to: oldEmail, template: 'email-changed-notice', variables: { newEmail } });
+				const delivery = await mailer.send({ to: oldEmail, template: 'email-changed-notice', variables: { newEmail, language: normalizeAccountLanguage(language) } });
 				recordMail(digest(oldEmail).slice(0, 32), 'email-changed-notice', 'sent', String(delivery?.id ?? '').slice(0, 120));
 			} catch (error) {
 				recordMail(digest(oldEmail).slice(0, 32), 'email-changed-notice', 'failed', '', String(error?.message ?? error).slice(0, 300));
@@ -653,9 +671,9 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 
 		// 投稿进度通知：只在用户主动开启通知偏好时返回收件人；注销处理中的账号不接收提醒。
 		notificationRecipient(accountId) {
-			const user = one('SELECT id, email, nickname, notify_progress, status FROM users WHERE id = ?', String(accountId ?? ''));
+			const user = one('SELECT id, email, nickname, notify_progress, status, preferred_language FROM users WHERE id = ?', String(accountId ?? ''));
 			if (!user || !user.notify_progress || user.status === 'pending_deletion') return null;
-			return { email: user.email, nickname: user.nickname };
+			return { email: user.email, nickname: user.nickname, preferred_language: normalizeAccountLanguage(user.preferred_language) };
 		},
 		recordNotification({ accountId, template, status, error = '' }) {
 			const user = one('SELECT email FROM users WHERE id = ?', String(accountId ?? ''));

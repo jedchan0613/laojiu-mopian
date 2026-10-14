@@ -1,4 +1,4 @@
-import { getCodeEntry } from './code-dictionary';
+import { getCodeEntry, isEnglishArchiveLocale } from './code-dictionary';
 
 export interface PublicUsagePolicy {
 	statusLabel: string;
@@ -41,11 +41,17 @@ const policies: Record<string, Omit<PublicUsagePolicy, 'statusLabel'>> = {
 	},
 };
 
-export const getPublicUsagePolicy = (rightsStatus: string | undefined): PublicUsagePolicy => {
-	const normalizedStatus = rightsStatus?.trim() || 'UNK';
-	const policy = policies[normalizedStatus] ?? policies.UNK;
-	return {
-		statusLabel: getCodeEntry(normalizedStatus)?.label ?? '权利不明',
-		...policy,
-	};
+
+const englishPolicies: Record<string, Omit<PublicUsagePolicy, 'statusLabel'>> = {
+  PD: { canDownloadPublicationCopy: true, title: 'Download the website publication copy', description: 'This item has been verified as public domain or free of copyright restrictions. You may download the compressed copy used on this website.', attribution: 'When republishing or citing it for research, please retain the title, permanent identifier and Laojiu Mopian source credit.' },
+  LIC: { canDownloadPublicationCopy: false, title: 'Display permission obtained; downloads unavailable', description: 'The current permission covers website display. The scope for downloading and reuse has not been separately confirmed.', attribution: 'Before using the material, check the specific permission and retain its title, permanent identifier and source in your citation.' },
+  OWN: { canDownloadPublicationCopy: false, title: 'Physical object held; downloads unavailable', description: 'Possession of the physical object does not establish copyright ownership, so the website does not offer image downloads.', attribution: 'The page may be viewed and cited. This does not grant permission to copy or republish its contents.' },
+  RES: { canDownloadPublicationCopy: false, title: 'Rights restricted; downloads unavailable', description: 'This item is subject to specific contractual, privacy or copyright restrictions.', attribution: 'The content may only be viewed within the scope of its current public display.' },
+  UNK: { canDownloadPublicationCopy: false, title: 'Rights unverified; downloads unavailable', description: 'Until the rights are clarified, the website offers online viewing and citation only.', attribution: 'Public display does not grant permission to copy, download or republish.' },
+};
+export const getPublicUsagePolicy = (rightsStatus: string | undefined, locale: string = 'zh-CN'): PublicUsagePolicy => {
+  const normalizedStatus = rightsStatus?.trim() || 'UNK';
+  const selected = isEnglishArchiveLocale(locale) ? englishPolicies : policies;
+  const policy = selected[normalizedStatus] ?? selected.UNK;
+  return { statusLabel: getCodeEntry(normalizedStatus, locale)?.label ?? (isEnglishArchiveLocale(locale) ? 'Rights unknown' : '权利不明'), ...policy };
 };

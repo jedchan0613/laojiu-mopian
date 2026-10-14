@@ -1,4 +1,9 @@
 ---
+import { getLocale, localizePath } from '../i18n/ui';
+import { interfaceText } from '../i18n/client';
+const locale = getLocale(Astro.url.pathname);
+const ct = (text: string, params: Record<string, unknown> = {}) => interfaceText(text, locale, params);
+
 import SiteIcon from './SiteIcon.astro';
 
 interface Props {
@@ -15,13 +20,13 @@ const { itemId, title, compact = false } = Astro.props;
 	class:list={['archive-like-button', { 'archive-like-button--compact': compact }]}
 	data-archive-like
 	data-item-id={itemId}
-	aria-label={`为“${title}”点赞`}
+	aria-label={ct("为“{0}”点赞", {"0": (title)})}
 	aria-pressed="false"
 	hidden
 	disabled
 >
 	<SiteIcon name="heart" class="archive-like-icon" />
-	<span data-like-label>点赞</span>
+	<span data-like-label>{ct("点赞")}</span>
 	<span class="archive-like-count" data-like-count aria-live="polite">—</span>
 </button>
 

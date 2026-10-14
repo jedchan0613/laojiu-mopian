@@ -1,4 +1,7 @@
 ---
+
+import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
+const locale = getLocale(Astro.url.pathname);
 import ContactWidget from '../components/ContactWidget.astro';
 import SocialLinks from '../components/SocialLinks.astro';
 import BrandMark from '../components/BrandMark.astro';
@@ -7,6 +10,7 @@ import '../assets/fonts/brand-subsets.css';
 import '../assets/fonts/complete/complete.css';
 
 interface Props {
+	englishAvailable?: boolean;
 	title?: string;
 	description?: string;
 	image?: string;
@@ -17,19 +21,25 @@ interface Props {
 }
 
 const {
-	title = '老旧默片｜普通人的生活档案',
-	description = '老旧默片——从一张照片、一封信和一件旧物开始，保存普通人的生活痕迹。',
+	title: originalTitle = '老旧默片｜普通人的生活档案',
+	description: originalDescription = '老旧默片——从一张照片、一封信和一件旧物开始，保存普通人的生活痕迹。',
 	image,
 	pageType = 'website',
 	structuredData,
 	robots,
+	englishAvailable = true,
 } = Astro.props;
 const currentPath = Astro.url.pathname;
-const isHome = currentPath === '/';
-const isArchive = currentPath.startsWith('/archive');
-const isAbout = currentPath.startsWith('/about');
-const isContribute = currentPath.startsWith('/contribute');
-const isAccount = currentPath.startsWith('/login') || currentPath.startsWith('/me');
+const pathWithoutLocale = canonicalPath(currentPath);
+const title = t(originalTitle, locale);
+const description = t(originalDescription, locale);
+const isHome = pathWithoutLocale === '/';
+const isArchive = pathWithoutLocale.startsWith('/archive') || pathWithoutLocale.startsWith('/albums/');
+const isAbout = pathWithoutLocale.startsWith('/about');
+const isContribute = pathWithoutLocale.startsWith('/contribute');
+const isAccount = pathWithoutLocale.startsWith('/login') || pathWithoutLocale.startsWith('/me');
+const chineseUrl = Astro.site ? new URL(localizePath(currentPath, 'zh-CN'), Astro.site) : undefined;
+const englishUrl = Astro.site ? new URL(localizePath(currentPath, 'en'), Astro.site) : undefined;
 const canonicalUrl = Astro.site ? new URL(currentPath, Astro.site) : undefined;
 const shareImageUrl = image && Astro.site ? new URL(image, Astro.site) : undefined;
 const serializedStructuredData = structuredData
@@ -38,18 +48,19 @@ const serializedStructuredData = structuredData
 ---
 
 <!doctype html>
-<html lang="zh-CN">
+<html lang={locale}>
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3" />
-		<link rel="preload" href={brandFont} as="font" type="font/woff2" crossorigin />
+		<link rel="icon" type="image/svg+xml" href={localizePath("/favicon.svg?v=3", locale)} />
+		<link rel="preload" href={localizePath(brandFont, locale)} as="font" type="font/woff2" crossorigin />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
 		{robots && <meta name="robots" content={robots} />}
 		<meta name="theme-color" content="#eee9de" />
-		<meta property="og:locale" content="zh_CN" />
-		<meta property="og:site_name" content="老旧默片" />
+		<meta property="og:locale" content={locale === 'en' ? 'en_US' : 'zh_CN'} />
+		<meta property="og:locale:alternate" content={locale === 'en' ? 'zh_CN' : 'en_US'} />
+		<meta property="og:site_name" content={t('老旧默片',locale)} />
 		<meta property="og:type" content={pageType} />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
@@ -57,6 +68,9 @@ const serializedStructuredData = structuredData
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
 		{canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+		{chineseUrl && <link rel="alternate" hreflang="zh-CN" href={chineseUrl} />}
+		{englishUrl && englishAvailable && <link rel="alternate" hreflang="en" href={englishUrl} />}
+		{chineseUrl && <link rel="alternate" hreflang="x-default" href={chineseUrl} />}
 		{canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
 		{shareImageUrl && <meta property="og:image" content={shareImageUrl} />}
 		{shareImageUrl && <meta name="twitter:image" content={shareImageUrl} />}
@@ -66,19 +80,23 @@ const serializedStructuredData = structuredData
 		<title>{title}</title>
 	</head>
 	<body>
-		<a class="skip-link" href="#main-content">跳到主要内容</a>
+		<a class="skip-link" href={localizePath("#main-content", locale)}>{t("跳到主要内容", locale)}</a>
 		<div class:list={['site-shell', { 'site-shell--archive': isArchive }]}>
 			<header class="site-header" data-home-brand={isHome ? 'compact' : undefined}>
-				<nav aria-label="主要导航">
-					<a class="site-brand" href="/" aria-label="老旧默片首页" aria-current={isHome ? 'page' : undefined}>
+				<nav aria-label={t("主要导航", locale)}>
+					<a class="site-brand" href={localizePath("/", locale)} aria-label={t("老旧默片首页", locale)} aria-current={isHome ? 'page' : undefined}>
 						<span class="site-logo"><BrandMark /></span>
-						<span class="site-name">老旧默片</span>
+						<span class="site-name">{t("老旧默片", locale)}</span>
 					</a>
 					<div class="site-links">
-						<a href="/archive/" aria-current={isArchive ? 'page' : undefined}>档案</a>
-						<a href="/about/" aria-current={isAbout ? 'page' : undefined}>关于</a>
-						<a href="/contribute/" aria-current={isContribute ? 'page' : undefined}>我要投稿</a>
-						<a href="/login/" data-account-nav aria-current={isAccount ? 'page' : undefined}>登录</a>
+						<a href={localizePath("/archive/", locale)} aria-current={isArchive ? 'page' : undefined}>{t("档案", locale)}</a>
+						<a href={localizePath("/about/", locale)} aria-current={isAbout ? 'page' : undefined}>{t("关于", locale)}</a>
+						<a href={localizePath("/contribute/", locale)} aria-current={isContribute ? 'page' : undefined}>{t("我要投稿", locale)}</a>
+						<a href={localizePath("/login/", locale)} data-account-nav aria-current={isAccount ? 'page' : undefined}>{t("登录", locale)}</a>
+						<div class="language-switch" aria-label={locale === 'en' ? 'Choose language' : '选择语言'}>
+							<a href={localizePath(currentPath, 'zh-CN')} lang="zh-CN" data-language="zh-CN" aria-current={locale === 'zh-CN' ? 'true' : undefined}>简体中文</a><span aria-hidden="true">/</span>
+							<a href={localizePath(currentPath, 'en')} lang="en" data-language="en" aria-current={locale === 'en' ? 'true' : undefined}>English</a>
+						</div>
 					</div>
 				</nav>
 			</header>
@@ -89,23 +107,42 @@ const serializedStructuredData = structuredData
 
 			<footer class="site-footer">
 				<div class="footer-identity">
-					<p class="footer-name">老旧默片</p>
-					<p class="footer-subtitle">普通人的生活档案</p>
+					<p class="footer-name">{t("老旧默片", locale)}</p>
+					<p class="footer-subtitle">{t("普通人的生活档案", locale)}</p>
 					<SocialLinks />
 				</div>
 				<div class="footer-end">
 					<div class="footer-links">
-						<a href="/corrections/">纠错与撤下</a>
+						<a href={localizePath("/corrections/", locale)}>{t("纠错与撤下", locale)}</a>
 						<ContactWidget />
 					</div>
 				</div>
 			</footer>
 		</div>
-		<script>import '../scripts/account-nav';</script>
+		<script>
+			import '../scripts/account-nav';
+			import {localizePath, type Locale} from '../i18n/ui';
+			for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-language]')) {
+				const language=link.dataset.language as Locale;
+				link.href=localizePath(location.pathname+location.search+location.hash,language);
+				link.addEventListener('click',()=>{
+					link.href=localizePath(location.pathname+location.search+location.hash,language);
+					try {localStorage.setItem('ljm-language',language);}catch {}
+				});
+			}
+		</script>
 	</body>
 </html>
 
 <style is:global>
+	.language-switch { display:flex; align-items:center; gap:0.5rem; font:0.76rem var(--site-ui-font); }
+	.language-switch a[aria-current='true'] { color:var(--site-ink); font-weight:600; }
+	html:lang(en) { --site-brand-font: Georgia, 'Times New Roman', serif; --site-text-font: Georgia, 'Times New Roman', serif; --site-ui-font: system-ui, Arial, sans-serif; }
+	html:lang(en) :where(h1,h2,h3,p,a,button,small,label) { letter-spacing:normal; overflow-wrap:break-word; }
+	html:lang(en) .category-active-list strong { white-space:normal; }
+	.translation-notice { margin:1rem 0; padding:0.8rem 1rem; border:1px solid var(--site-border); font:0.85rem/1.6 var(--site-ui-font); }
+	.original-text { margin-block:1rem; }
+	@media(max-width:640px) { .language-switch { flex-basis:100%; justify-content:flex-end; gap:0.4rem; } .site-links { gap:0.3rem 0.75rem; } .site-links .language-switch a { min-width:0; padding:0 0.3rem; } html:lang(en) .site-brand { flex-shrink:1; } }
 
 	/* 与主字库同源的按需补充字形，避免新档案标题中的个别字回退成另一种宋体。 */
 	@font-face {

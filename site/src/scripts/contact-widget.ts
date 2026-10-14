@@ -1,3 +1,4 @@
+import { clientText as ct, clientLocale, clientError } from '../i18n/client';
 type ContactReceipt = { id: string; key: string; created_at: string };
 type ContactConfig = { available: boolean; consent_version: string };
 
@@ -40,9 +41,9 @@ if (root && root.dataset.ready !== 'true') {
 	let serviceCheckStarted = false;
 
 	const categoryCopy: Record<string, [string, string]> = {
-		collab: ['合作洽谈', '请简要说明合作方向、时间安排和希望采用的联系方式。'],
-		privacy: ['隐私问题', '请指出相关档案或页面及风险；此类来信会优先进入人工核对。'],
-		other: ['其他事宜', '建议、问题或想说的话，都可以在这里简要说明。'],
+		collab: [ct('合作洽谈'), ct('请简要说明合作方向、时间安排和希望采用的联系方式。')],
+		privacy: [ct('隐私问题'), ct('请指出相关档案或页面及风险；此类来信会优先进入人工核对。')],
+		other: [ct('其他事宜'), ct('建议、问题或想说的话，都可以在这里简要说明。')],
 	};
 
 	const createKey = () => {
@@ -57,16 +58,16 @@ if (root && root.dataset.ready !== 'true') {
 		try {
 			const response = await fetch(url, payload === undefined ? { cache: 'no-store', signal: controller.signal } : {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'X-LJM-Contact': '1' },
+				headers: { 'Content-Type': 'application/json', 'X-LJM-Contact': '1', 'X-LJM-Language': clientLocale() },
 				body: JSON.stringify(payload),
 				signal: controller.signal,
 			});
-			const result = await response.json().catch(() => { throw new Error('联系通道返回了无法读取的结果。'); });
-			if (!response.ok) throw new Error(result.error || '操作没有完成，请稍后重试。');
+			const result = await response.json().catch(() => { throw new Error(ct('联系通道返回了无法读取的结果。')); });
+			if (!response.ok) throw new Error(clientError(result.error) || ct('操作没有完成，请稍后重试。'));
 			return result;
 		} catch (error) {
 			if (error instanceof DOMException && error.name === 'AbortError') {
-				throw new Error('连接等待超时，无法确认这次操作是否完成；请稍后再试一次。');
+				throw new Error(ct('连接等待超时，无法确认这次操作是否完成；请稍后再试一次。'));
 			}
 			throw error;
 		} finally {
@@ -113,7 +114,7 @@ if (root && root.dataset.ready !== 'true') {
 	};
 
 	const setChannel = () => {
-		const labels: Record<string, string> = { email: '您的邮箱', wechat: '您的微信号', phone: '您的电话号码' };
+		const labels: Record<string, string> = { email: ct('您的邮箱'), wechat: ct('您的微信号'), phone: ct('您的电话号码') };
 		const noReply = channel.value === 'none';
 		valueField.hidden = noReply;
 		contactValue.required = !noReply;
@@ -123,7 +124,7 @@ if (root && root.dataset.ready !== 'true') {
 	};
 
 	const receiptText = () => receipt
-		? `老旧默片联系回执\n联系编号：${receipt.id}\n查询密钥：${receipt.key}\n收到时间：${new Date(receipt.created_at).toLocaleString('zh-CN', { hour12: false })}\n\n请勿公开分享查询密钥。`
+		? ct("老旧默片联系回执\n联系编号：{0}\n查询密钥：{1}\n收到时间：{2}\n\n请勿公开分享查询密钥。", {"0": (receipt.id), "1": (receipt.key), "2": (new Date(receipt.created_at).toLocaleString(clientLocale(), { hour12: false }))})
 		: '';
 
 	const showReceipt = (next: ContactReceipt) => {
@@ -139,16 +140,16 @@ if (root && root.dataset.ready !== 'true') {
 	const checkService = async () => {
 		try {
 			const config = await jsonRequest('/api/contact/config') as ContactConfig;
-			if (!config.available || !config.consent_version) throw new Error('联系通道尚未启用。');
+			if (!config.available || !config.consent_version) throw new Error(ct('联系通道尚未启用。'));
 			consentVersion = config.consent_version;
 			fields.disabled = false;
-			service.textContent = config.available ? '私密联系通道可用。' : '联系通道暂时不可用。';
+			service.textContent = config.available ? ct('私密联系通道可用。') : ct('联系通道暂时不可用。');
 			service.removeAttribute('data-unavailable');
 			fallback.hidden = true;
 		} catch {
 			consentVersion = '';
 			fields.disabled = true;
-			service.textContent = '私密联系通道暂时不可用，请稍后再试。';
+			service.textContent = ct('私密联系通道暂时不可用，请稍后再试。');
 			service.setAttribute('data-unavailable', '');
 			fallback.hidden = false;
 		}
@@ -173,7 +174,7 @@ if (root && root.dataset.ready !== 'true') {
 		event.preventDefault();
 		if (!consentVersion || submitButton.disabled) return;
 		submitButton.disabled = true;
-		feedback.textContent = '正在私密提交…';
+		feedback.textContent = ct('正在私密提交…');
 		requestKey ||= createKey();
 		const data = new FormData(form);
 		const payload = {
@@ -195,7 +196,7 @@ if (root && root.dataset.ready !== 'true') {
 			requestKey = '';
 			feedback.textContent = '';
 		} catch (error) {
-			feedback.textContent = error instanceof Error ? error.message : '提交失败，请稍后重试。';
+			feedback.textContent = error instanceof Error ? clientError(error.message) : ct('提交失败，请稍后重试。');
 		} finally {
 			submitButton.disabled = false;
 		}
@@ -203,8 +204,8 @@ if (root && root.dataset.ready !== 'true') {
 
 	$<HTMLButtonElement>('[data-contact-copy-receipt]').addEventListener('click', async (event) => {
 		const button = event.currentTarget as HTMLButtonElement;
-		try { await navigator.clipboard.writeText(receiptText()); button.textContent = '已复制'; }
-		catch { button.textContent = '请手动保存回执'; }
+		try { await navigator.clipboard.writeText(receiptText()); button.textContent = ct('已复制'); }
+		catch { button.textContent = ct('请手动保存回执'); }
 	});
 
 	$<HTMLButtonElement>('[data-contact-save-receipt]').addEventListener('click', () => {
@@ -212,7 +213,7 @@ if (root && root.dataset.ready !== 'true') {
 		const url = URL.createObjectURL(new Blob([receiptText()], { type: 'text/plain;charset=utf-8' }));
 		const anchor = document.createElement('a');
 		anchor.href = url;
-		anchor.download = `${receipt.id}-联系回执.txt`;
+		anchor.download = ct("{0}-联系回执.txt", {"0": (receipt.id)});
 		anchor.click();
 		setTimeout(() => URL.revokeObjectURL(url), 1000);
 	});
@@ -224,22 +225,22 @@ if (root && root.dataset.ready !== 'true') {
 		const button = lookupForm.querySelector<HTMLButtonElement>('button[type="submit"]')!;
 		if (button.disabled) return;
 		button.disabled = true;
-		lookupResult.textContent = '正在查询…';
+		lookupResult.textContent = ct('正在查询…');
 		try {
 			const result = await jsonRequest('/api/contact/lookup', {
 				id: lookupId.value.trim().toUpperCase(),
 				key: lookupKey.value.trim(),
 			});
-			lookupResult.textContent = `${result.status_label}${result.message ? `\n站主的说明：${result.message}` : '\n暂时还没有新的说明。'}`;
+			lookupResult.textContent = `${ct(result.status_label)}${result.message ? ct("\n站主的说明：{0}", {"0": (result.message)}) : ct('\n暂时还没有新的说明。')}`;
 		} catch (error) {
-			lookupResult.textContent = error instanceof Error ? error.message : '查询失败，请稍后重试。';
+			lookupResult.textContent = error instanceof Error ? clientError(error.message) : ct('查询失败，请稍后重试。');
 		} finally {
 			button.disabled = false;
 		}
 	});
 
 	pagePathInput.value = `${location.pathname}${location.search}`.slice(0, 500);
-	const archiveId = location.pathname.match(/^\/archive\/(LJM-[A-Z0-9-]+)\/?$/)?.[1];
+	const archiveId = location.pathname.match(/^\/(?:en\/)?archive\/(LJM-[A-Z0-9-]+)\/?$/)?.[1];
 	if (archiveId) {
 		const reference = referenceField.querySelector<HTMLInputElement>('input');
 		if (reference) reference.value = archiveId;

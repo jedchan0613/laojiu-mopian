@@ -1,3 +1,4 @@
+import { clientText as ct, clientLocale } from '../i18n/client';
 type LikeState = {
 	count: number;
 	liked: boolean;
@@ -8,7 +9,7 @@ type LikeButton = HTMLButtonElement & {
 };
 
 const buttons = [...document.querySelectorAll<LikeButton>('[data-archive-like]')];
-const numberFormatter = new Intl.NumberFormat('zh-CN');
+const numberFormatter = new Intl.NumberFormat(clientLocale());
 const maxItemsPerRequest = 20;
 const states = new Map<string, LikeState>();
 const loadingItems = new Set<string>();
@@ -35,8 +36,8 @@ function renderButton(button: LikeButton, state: LikeState) {
 	button.hidden = false;
 	button.disabled = state.liked;
 	button.setAttribute('aria-pressed', String(state.liked));
-	button.title = state.liked ? '这个访问地址已经赞过这件档案' : '为这件档案点赞';
-	if (label) label.textContent = state.liked ? '已赞' : '点赞';
+	button.title = state.liked ? ct('这个访问地址已经赞过这件档案') : ct('为这件档案点赞');
+	if (label) label.textContent = state.liked ? ct('已赞') : ct('点赞');
 	if (count) count.textContent = numberFormatter.format(state.count);
 }
 
@@ -49,7 +50,7 @@ function setState(itemId: string, state: LikeState) {
 	}));
 }
 
-function markItemUnavailable(itemId: string, message = '这件档案的点赞暂时不可用') {
+function markItemUnavailable(itemId: string, message = ct('这件档案的点赞暂时不可用')) {
 	brokenItems.add(itemId);
 	for (const button of buttonsFor(itemId)) {
 		const label = button.querySelector<HTMLElement>('[data-like-label]');
@@ -57,19 +58,19 @@ function markItemUnavailable(itemId: string, message = '这件档案的点赞暂
 		button.hidden = false;
 		button.disabled = true;
 		button.title = message;
-		if (label) label.textContent = '暂不可用';
+		if (label) label.textContent = ct('暂不可用');
 		if (count) count.textContent = '';
 	}
 }
 
-function setUnavailable(message = '点赞服务暂时不可用') {
+function setUnavailable(message = ct('点赞服务暂时不可用')) {
 	for (const button of buttons) {
 		const label = button.querySelector<HTMLElement>('[data-like-label]');
 		const count = button.querySelector<HTMLElement>('[data-like-count]');
 		button.disabled = true;
 		button.hidden = true;
 		button.title = message;
-		if (label) label.textContent = '暂不可用';
+		if (label) label.textContent = ct('暂不可用');
 		if (count) count.textContent = '';
 	}
 	document.dispatchEvent(new CustomEvent('archive-likes-unavailable'));
@@ -80,7 +81,7 @@ async function requestJson(url: string, init?: RequestInit) {
 		...init,
 		headers: { Accept: 'application/json', ...init?.headers },
 	});
-	if (!response.ok) throw new Error(`点赞接口返回 ${response.status}`);
+	if (!response.ok) throw new Error(ct("点赞接口返回 {0}", {"0": (response.status)}));
 	return response.json();
 }
 
@@ -142,15 +143,15 @@ function initializeLikes() {
 					body: '{}',
 				}) as LikeState;
 				if (!Number.isInteger(result.count) || result.count < 0 || result.liked !== true) {
-					throw new Error('点赞接口数据格式不正确');
+					throw new Error(ct('点赞接口数据格式不正确'));
 				}
 				setState(itemId, result);
 			} catch {
 				for (const matchingButton of buttonsFor(itemId)) {
 					const label = matchingButton.querySelector<HTMLElement>('[data-like-label]');
 					matchingButton.disabled = false;
-					matchingButton.title = '点赞没有成功，请稍后再试';
-					if (label) label.textContent = '重试';
+					matchingButton.title = ct('点赞没有成功，请稍后再试');
+					if (label) label.textContent = ct('重试');
 				}
 			}
 		});

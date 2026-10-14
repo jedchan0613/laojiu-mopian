@@ -1,4 +1,9 @@
 ---
+import { getLocale, localizePath } from '../i18n/ui';
+import { interfaceText } from '../i18n/client';
+const locale = getLocale(Astro.url.pathname);
+const ct = (text: string, params: Record<string, unknown> = {}) => interfaceText(text, locale, params);
+
 import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/account.css';
 
@@ -12,26 +17,26 @@ interface Props {
 
 const { current, title, description, heading, lede } = Astro.props;
 const items = [
-	{ key: 'contributions', href: '/me/contributions/', label: '我的投稿', note: '' },
-	{ key: 'favorites', href: '/me/favorites/', label: '我的收藏', note: '' },
-	{ key: 'settings', href: '/me/settings/', label: '账户设置', note: '' },
+	{ key: 'contributions', href: '/me/contributions/', label: ct('我的投稿'), note: '' },
+	{ key: 'favorites', href: '/me/favorites/', label: ct('我的收藏'), note: '' },
+	{ key: 'settings', href: '/me/settings/', label: ct('账户设置'), note: '' },
 ] as const;
 ---
 
-<BaseLayout title={title} description={description} robots="noindex, nofollow">
+<BaseLayout title={ct(title)} description={ct(description)} robots="noindex, nofollow">
 	<div class="account-page" data-ljm-account-page={current}>
 		<header class="account-hero">
 			<div>
-				<p class="eyebrow">用户中心</p>
-				<h1>{heading}</h1>
-				<p class="account-lede">{lede}</p>
+				<p class="eyebrow">{ct("用户中心")}</p>
+				<h1>{ct(heading)}</h1>
+				<p class="account-lede">{ct(lede)}</p>
 			</div>
-			<div class="account-seal" aria-hidden="true"><span>老旧默片</span><strong>我的</strong><span>账户</span></div>
+			<div class="account-seal" aria-hidden="true"><span>{ct("老旧默片")}</span><strong>{ct("我的")}</strong><span>{ct("账户")}</span></div>
 		</header>
-		<nav class="account-nav" aria-label="用户中心导航">
+		<nav class="account-nav" aria-label={ct("用户中心导航")}>
 			{items.map((item) => (
-				<a href={item.href} aria-current={item.key === current ? 'page' : undefined}>
-					{item.label}{item.note ? <small>{item.note}</small> : null}
+				<a href={localizePath(item.href, locale)} aria-current={item.key === current ? 'page' : undefined}>
+					{ct(item.label)}{item.note ? <small>{item.note}</small> : null}
 				</a>
 			))}
 		</nav>

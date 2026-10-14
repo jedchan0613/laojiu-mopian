@@ -1,3 +1,4 @@
+import { clientText as ct, clientLocale, clientPath, clientError } from '../i18n/client';
 // 我的投稿：列出本人投稿、显示用户可见状态与当前最需要完成的一项操作，并支持关联旧投稿。
 // 「已公开」不自行维护，而是用公开档案数据里的编号集合判断。
 
@@ -33,25 +34,25 @@ const actionable = new Set(['draft', 'needs_info', 'declined']);
 
 const visibleState = (item: SubmissionSummary, publishedIds: Set<string>, publicListAvailable: boolean) => {
 	if (item.change_request?.kind === 'remove') {
-		const labels: Record<string, string> = { received: '撤下申请已收到', processing: '撤下处理中', done: '撤下申请已处理', rejected: '撤下申请未通过' };
-		return { label: labels[item.change_request.status] ?? '撤下申请', alert: item.change_request.status !== 'done' };
+		const labels: Record<string, string> = { received: ct('撤下申请已收到'), processing: ct('撤下处理中'), done: ct('撤下申请已处理'), rejected: ct('撤下申请未通过') };
+		return { label: labels[item.change_request.status] ?? ct('撤下申请'), alert: item.change_request.status !== 'done' };
 	}
-	if (item.withdrawal_requested) return { label: '停止处理申请已收到', alert: true };
+	if (item.withdrawal_requested) return { label: ct('停止处理申请已收到'), alert: true };
 	if (item.change_request) {
-		const labels: Record<string, string> = { received: '修改申请已收到', processing: '修改处理中', done: '修改申请已处理', rejected: '修改申请未通过' };
-		return { label: labels[item.change_request.status] ?? '修改申请', alert: ['received', 'processing'].includes(item.change_request.status) };
+		const labels: Record<string, string> = { received: ct('修改申请已收到'), processing: ct('修改处理中'), done: ct('修改申请已处理'), rejected: ct('修改申请未通过') };
+		return { label: labels[item.change_request.status] ?? ct('修改申请'), alert: ['received', 'processing'].includes(item.change_request.status) };
 	}
-	if (item.linked_item_id && !publicListAvailable) return { label: '公开状态暂不可核对', alert: true };
-	if (item.linked_item_id && publishedIds.has(item.linked_item_id)) return { label: '已公开', alert: false };
-	return { label: item.status_label, alert: actionable.has(item.status) };
+	if (item.linked_item_id && !publicListAvailable) return { label: ct('公开状态暂不可核对'), alert: true };
+	if (item.linked_item_id && publishedIds.has(item.linked_item_id)) return { label: ct('已公开'), alert: false };
+	return { label: ct(item.status_label), alert: actionable.has(item.status) };
 };
 
 // 每张卡片只给一个当前最需要的操作，避免堆满按钮。
 const primaryAction = (item: SubmissionSummary) => {
-	if (item.status === 'draft') return { label: '继续编辑', href: `/me/contribution/?id=${item.id}` };
-	if (item.status === 'needs_info') return { label: '查看补充要求', href: `/me/contribution/?id=${item.id}` };
-	if (item.change_request || item.withdrawal_requested) return { label: '查看处理情况', href: `/me/contribution/?id=${item.id}` };
-	return { label: '查看详情', href: `/me/contribution/?id=${item.id}` };
+	if (item.status === 'draft') return { label: ct('继续编辑'), href: clientPath(`/me/contribution/?id=${item.id}`) };
+	if (item.status === 'needs_info') return { label: ct('查看补充要求'), href: clientPath(`/me/contribution/?id=${item.id}`) };
+	if (item.change_request || item.withdrawal_requested) return { label: ct('查看处理情况'), href: clientPath(`/me/contribution/?id=${item.id}`) };
+	return { label: ct('查看详情'), href: clientPath(`/me/contribution/?id=${item.id}`) };
 };
 
 const card = (item: SubmissionSummary, publishedIds: Set<string>, publicListAvailable: boolean) => {
@@ -61,7 +62,7 @@ const card = (item: SubmissionSummary, publishedIds: Set<string>, publicListAvai
 
 	const placeholder = document.createElement('span');
 	placeholder.className = 'account-card-placeholder';
-	placeholder.textContent = `${item.image_count} 张图片`;
+	placeholder.textContent = ct("{0} 张图片", {"0": (item.image_count)});
 	node.append(placeholder);
 
 	const pill = document.createElement('span');
@@ -71,17 +72,17 @@ const card = (item: SubmissionSummary, publishedIds: Set<string>, publicListAvai
 	node.append(pill);
 
 	const title = document.createElement('h3');
-	title.textContent = item.title || '（未命名草稿）';
+	title.textContent = item.title || ct('（未命名草稿）');
 	node.append(title);
 
 	const meta = document.createElement('p');
-	meta.textContent = [item.category || '未选分类', `最近更新 ${new Date(item.updated_at).toLocaleDateString('zh-CN')}`].join(' · ');
+	meta.textContent = [ct(item.category) || ct('未选分类'), ct("最近更新 {0}", {"0": (new Date(item.updated_at).toLocaleDateString(clientLocale()))})].join(' · ');
 	node.append(meta);
 
 	if (item.public_message) {
 		const message = document.createElement('p');
 		message.className = 'account-hint';
-		message.textContent = `站主说明：${item.public_message}`;
+		message.textContent = ct("站主说明：{0}", {"0": (item.public_message)});
 		node.append(message);
 	}
 
@@ -96,8 +97,8 @@ const card = (item: SubmissionSummary, publishedIds: Set<string>, publicListAvai
 	if (item.linked_item_id && publishedIds.has(item.linked_item_id)) {
 		const publicLink = document.createElement('a');
 		publicLink.className = 'ui-text-link';
-		publicLink.href = `/archive/${item.linked_item_id}/`;
-		publicLink.textContent = '打开公开页面';
+		publicLink.href = clientPath(`/archive/${item.linked_item_id}/`);
+		publicLink.textContent = ct('打开公开页面');
 		actions.append(publicLink);
 	}
 	node.append(actions);
@@ -108,7 +109,7 @@ const load = async () => {
 	try {
 		const [result, publicRecords] = await Promise.all([
 			accountFetch('/api/account/submissions'),
-			fetch('/records.json', { headers: { Accept: 'application/json' } })
+			fetch(clientPath('/records.json'), { headers: { Accept: 'application/json' } })
 				.then((response) => (response.ok ? response.json() : null))
 				.catch(() => null),
 		]);
@@ -117,8 +118,8 @@ const load = async () => {
 		toggle(loading, false);
 		toggle(content, true);
 		const pending = items.filter((item) => actionable.has(item.status) || item.withdrawal_requested).length;
-		if (summary) summary.textContent = pending ? `有 ${pending} 件需要你处理` : '目前没有待你处理的事项。';
-		if (quota && result.quota) quota.textContent = `今日还可提交 ${result.quota.submissions_left_today} 件 · 草稿还能保存 ${result.quota.drafts_left} 件 · 私密空间剩余约 ${Math.floor(result.quota.storage_left_bytes / 1024 / 1024)} MB`;
+		if (summary) summary.textContent = pending ? ct("有 {0} 件需要你处理", {"0": (pending)}) : ct('目前没有待你处理的事项。');
+		if (quota && result.quota) quota.textContent = ct("今日还可提交 {0} 件 · 草稿还能保存 {1} 件 · 私密空间剩余约 {2} MB", {"0": (result.quota.submissions_left_today), "1": (result.quota.drafts_left), "2": (Math.floor(result.quota.storage_left_bytes / 1024 / 1024))});
 		toggle(empty, items.length === 0);
 		if (list) for (const item of items) list.append(card(item, publishedIds, publicRecords !== null));
 	} catch (error) {
@@ -127,7 +128,7 @@ const load = async () => {
 			toggle(unauthenticated, true);
 			return;
 		}
-		setStatus(status, error instanceof Error ? error.message : '暂时无法读取投稿。', 'error');
+		setStatus(status, error instanceof Error ? clientError(error.message) : ct('暂时无法读取投稿。'), 'error');
 	}
 };
 
@@ -135,24 +136,24 @@ const claimStatus = document.querySelector('#claim-status');
 document.querySelector('#claim-submit')?.addEventListener('click', async () => {
 	const button = document.querySelector<HTMLButtonElement>('#claim-submit');
 	if (!document.querySelector<HTMLInputElement>('#claim-confirm')?.checked) {
-		setStatus(claimStatus, '请先勾选确认，再提交关联。', 'error');
+		setStatus(claimStatus, ct('请先勾选确认，再提交关联。'), 'error');
 		return;
 	}
 	const id = document.querySelector<HTMLInputElement>('#claim-id')?.value.trim().toUpperCase() ?? '';
 	const key = document.querySelector<HTMLInputElement>('#claim-key')?.value.trim() ?? '';
 	if (!/^TG-[A-F0-9]{24}$/.test(id) || !/^[a-f0-9]{64}$/.test(key)) {
-		setStatus(claimStatus, '请填写正确的投稿编号与查询密钥。', 'error');
+		setStatus(claimStatus, ct('请填写正确的投稿编号与查询密钥。'), 'error');
 		return;
 	}
 	if (button) button.disabled = true;
-	setStatus(claimStatus, '正在核对…');
+	setStatus(claimStatus, ct('正在核对…'));
 	try {
 		const result = await accountFetch('/api/account/submissions/claim', { method: 'POST', body: { id, key } });
-		setStatus(claimStatus, result.repeated ? '这份投稿已经关联到当前账号。' : '关联成功。以后可以在上方列表里查看它的处理进度。', 'ok');
+		setStatus(claimStatus, result.repeated ? ct('这份投稿已经关联到当前账号。') : ct('关联成功。以后可以在上方列表里查看它的处理进度。'), 'ok');
 		if (list) list.replaceChildren();
 		await load();
 	} catch (error) {
-		setStatus(claimStatus, error instanceof Error ? error.message : '关联没有完成。', 'error');
+		setStatus(claimStatus, error instanceof Error ? clientError(error.message) : ct('关联没有完成。'), 'error');
 	} finally {
 		if (button) button.disabled = false;
 	}

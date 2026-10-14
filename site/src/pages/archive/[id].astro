@@ -1,4 +1,7 @@
 ---
+
+import { t, getLocale, localizePath, canonicalPath } from '../../i18n/ui';
+const locale = getLocale(Astro.url.pathname);
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveLikeButton from '../../components/ArchiveLikeButton.astro';
 import ArchiveFavoriteButton from '../../components/ArchiveFavoriteButton.astro';
@@ -16,6 +19,8 @@ import {
 import { getCodeLabel } from '../../data/code-dictionary';
 import { getPublicUsagePolicy } from '../../data/archive-rights';
 import { getResponsiveImage } from '../../data/responsive-images';
+import { publishedAlbumGroups } from '../../data/album-groups';
+import { compareAlbumPositions } from '../../data/album-position.mjs';
 
 export function getStaticPaths() {
   return archiveItems.filter(isPublishedArchiveItem).map((item) => ({
@@ -29,10 +34,11 @@ interface Props {
 }
 
 const { item } = Astro.props;
-const view = createArchiveRecordView(item);
-const publishedViews = archiveItems.filter(isPublishedArchiveItem).map(createArchiveRecordView);
+const view = createArchiveRecordView(item, locale);
+const publishedViews = archiveItems.filter(isPublishedArchiveItem).map(item => createArchiveRecordView(item, locale));
 const currentCategorySlug = getArchiveCategorySlug(view.objectType);
-const currentCategory = archiveCategories.find((category) => category.slug === currentCategorySlug);
+const categorySource = archiveCategories.find((category) => category.slug === currentCategorySlug);
+const currentCategory = categorySource ? {...categorySource, label: t(categorySource.label, locale)} : undefined;
 const categoryViews = publishedViews.filter(
   (candidate) => getArchiveCategorySlug(candidate.objectType) === currentCategorySlug,
 );
@@ -54,9 +60,9 @@ const hasPublicOriginal = view.images.length > 0;
 // 访客看信件首先想看原件：有原件发布副本时默认“只看原件”，没有原件时才回退到文字阅读。
 const initialLetterMode = hasPublicOriginal ? 'original' : 'text';
 const letterReadingModes = [
-  hasPublicTranscription ? { value: 'text', label: '文字阅读' } : undefined,
-  hasPublicTranscription && hasPublicOriginal ? { value: 'compare', label: '原件对照' } : undefined,
-  hasPublicOriginal ? { value: 'original', label: '只看原件' } : undefined,
+  hasPublicTranscription ? { value: 'text', label: t("文字阅读", locale) } : undefined,
+  hasPublicTranscription && hasPublicOriginal ? { value: 'compare', label: t("原件对照", locale) } : undefined,
+  hasPublicOriginal ? { value: 'original', label: t("只看原件", locale) } : undefined,
 ].filter((mode): mode is { value: string; label: string } => Boolean(mode));
 const compactFacts = <T extends DisplayFact>(facts: T[]) => facts.filter((fact) => hasText(fact.value));
 const joinText = (value: string[] | undefined) => value?.filter(hasText).join('、') ?? '';
@@ -77,47 +83,48 @@ const preferredPlaceFilter = preferredPlace
 const formatDisplayDate = (value: string | undefined) => {
   const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return value?.trim() ?? '';
-  return `${match[1]}年${Number(match[2])}月${Number(match[3])}日`;
+  if (locale === 'en') return new Intl.DateTimeFormat('en-GB', {year:'numeric',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(`${value}T00:00:00Z`));
+  return t("{0}年{1}月{2}日", locale, {0: (match[1]), 1: (Number(match[2])), 2: (Number(match[3]))});
 };
 const basicFacts = compactFacts<LinkedDisplayFact>([
   {
-    label: '类型',
+    label: t("类型", locale),
     value: view.typeLabel,
     href: currentCategorySlug ? archiveFilterHref('category', currentCategorySlug) : undefined,
   },
   {
-    label: '年代',
+    label: t("年代", locale),
     value: view.dateDisplay,
     href: view.decade ? archiveFilterHref('decade', view.decade) : undefined,
   },
   {
-    label: '地点',
+    label: t("地点", locale),
     value: view.placeDisplay,
     href: preferredPlaceFilter ? archiveFilterHref('place', preferredPlaceFilter) : undefined,
   },
-  { label: '人物', value: joinText(item.core.people) },
+  { label: t("人物", locale), value: joinText(view.localizedCore.people) },
 ]);
 
 const updatedDate = formatDisplayDate(item.core.updated_date);
 
-const specificFacts = getSpecificMetadataFacts(item);
+const specificFacts = getSpecificMetadataFacts(item, { locale });
 
 // 面向访客的“更多信息”只显示中文标签：永久编号、收藏品编码、类型代码、
 // 维度代码等内部编码不在公开页展示；永久编号仍保留在“引用与分享”区块供核对使用。
-const displayLabel = (code: string | undefined) => hasText(code) ? getCodeLabel(code) : '';
+const displayLabel = (code: string | undefined) => hasText(code) ? getCodeLabel(code, locale) : '';
 const researchManagementFacts = compactFacts([
-  { label: '来源地点', value: item.core.source_place ?? '' },
-  { label: '保存等级', value: displayLabel(item.core.condition_grade) },
+  { label: t("来源地点", locale), value: view.localizedCore.source_place ?? '' },
+  { label: t("保存等级", locale), value: displayLabel(item.core.condition_grade) },
 ]);
 const getImageRole = (description: string, index: number) => {
   const matchedRole = ['正面', '背面', '封面', '内页', '全景', '细节', '留言面', '风景面'].find((role) =>
     description.includes(role));
-  return matchedRole ?? `图片 ${index + 1}`;
+  return matchedRole ?? t("图片 {0}", locale, {0: (index + 1)});
 };
 const galleryImages = view.images.map((source, index) => ({
   ...getResponsiveImage(source),
   description: view.imageDescriptions[index],
-  role: getImageRole(view.imageDescriptions[index], index),
+  role: t(getImageRole(item.public_view.image_descriptions?.[index] || (source.includes('/front-') ? '正面' : source.includes('/back-') ? '背面' : '细节'), index), locale),
 }));
 
 // 浏览足迹：当前档案的概要信息，由页面脚本写入访客自己的浏览器，
@@ -133,9 +140,9 @@ const recordViewData = {
   imageWidth: firstGalleryImage?.width ?? 0,
   imageHeight: firstGalleryImage?.height ?? 0,
 };
-const hasNarrativeContent = (!isLetter && hasText(view.transcription)) || hasText(item.core.provenance_notes);
+const hasNarrativeContent = (!isLetter && hasText(view.transcription)) || hasText(view.localizedCore.provenance_notes);
 const hasTags = view.tags.length > 0;
-const usagePolicy = getPublicUsagePolicy(item.core.rights_status);
+const usagePolicy = getPublicUsagePolicy(item.core.rights_status, locale);
 const downloadableImages = usagePolicy.canDownloadPublicationCopy
   ? view.images.map((source, index) => ({
     source,
@@ -146,7 +153,7 @@ const downloadableImages = usagePolicy.canDownloadPublicationCopy
 const relatedRecordEntries = publishedViews
   .filter((candidate) => candidate.id !== view.id)
   .map((candidate) => {
-    const sharedTags = candidate.tags.filter((tag) => view.tags.includes(tag));
+    const sharedTags = candidate.canonicalTags.filter((tag) => view.canonicalTags.includes(tag));
     // 国家与省级区域太宽泛，不作为优先推荐的地点线索。
     const specificPlaces = ['city', 'district', 'street_town', 'specific_place'] as const;
     const sharedPlaces = specificPlaces.flatMap((field) => {
@@ -163,11 +170,11 @@ const relatedRecordEntries = publishedViews
     const candidateCategorySlug = getArchiveCategorySlug(candidate.objectType);
     const sameCategory = Boolean(currentCategorySlug && candidateCategorySlug === currentCategorySlug);
     const reasons = [
-      explicitRelation ? '来自同一组档案线索' : '',
-      sharedTags.length ? `共同线索：${sharedTags.slice(0, 2).join('、')}` : '',
-      sharedPlaces.length ? `关联地点：${sharedPlaces.slice(0, 2).join('、')}` : '',
-      sameDecade ? `同属${view.decade}年代` : '',
-      sameCategory ? `同属${currentCategory?.label ?? '相近类型'}` : '',
+      explicitRelation ? t('来自同一组档案线索',locale) : '',
+      sharedTags.length ? t("共同线索：{0}", locale, {0: (sharedTags.slice(0, 2).map(tag => view.tagLabels[tag] ?? tag).join(locale === 'en' ? ', ' : '、'))}) : '',
+      sharedPlaces.length ? t("关联地点：{0}", locale, {0: (sharedPlaces.slice(0, 2).map(place => view.placeFilterLabels[place] ?? place).join(locale === 'en' ? ', ' : '、'))}) : '',
+      sameDecade ? t("同属{0}年代", locale, {0: (view.decade)}) : '',
+      sameCategory ? t("同属{0}", locale, {0: (t(currentCategory?.label ?? '相近类型',locale))}) : '',
     ].filter(Boolean);
     const score = Number(explicitRelation) * 12 + sharedTags.length * 4 + sharedPlaces.length * 6 + Number(sameDecade) * 2
       + Number(sameCategory) * 2 + Number(candidate.objectType !== view.objectType) * 0.25;
@@ -179,10 +186,29 @@ const relatedRecordEntries = publishedViews
     };
   })
   .filter((entry) => entry.score > 0 && entry.reason)
-  .sort((left, right) => right.score - left.score || left.view.title.localeCompare(right.view.title, 'zh-CN'))
+  .sort((left, right) => right.score - left.score || left.view.item.core.title.localeCompare(right.view.item.core.title, 'zh-CN'))
   .slice(0, 3);
-const recordUrl = Astro.site ? new URL(`/archive/${view.id}/`, Astro.site) : undefined;
-const archiveIndexUrl = Astro.site ? new URL('/archive/', Astro.site) : undefined;
+const recordUrl = Astro.site ? new URL(localizePath(`/archive/${view.id}/`, locale), Astro.site) : undefined;
+// 入口与生成页面使用同一套公开分组，避免历史编号产生断链或误计其他物件。
+const albumGroup = publishedAlbumGroups().find((group) => group.members.some((member) => member.core.item_id === view.id));
+const albumMateCount = albumGroup?.photos.length ?? 0;
+const albumPhotos = [...(albumGroup?.photos ?? [])].sort((left,right) =>
+  compareAlbumPositions(left.core.original_position,right.core.original_position) ||
+  left.core.title.localeCompare(right.core.title,'zh-CN') || left.core.item_id.localeCompare(right.core.item_id));
+const albumPhotoIndex = albumPhotos.findIndex((photo) => photo.core.item_id === view.id);
+const previousAlbumPhoto = albumPhotoIndex > 0 ? albumPhotos[albumPhotoIndex - 1] : undefined;
+const nextAlbumPhoto = albumPhotoIndex >= 0 ? albumPhotos[albumPhotoIndex + 1] : undefined;
+// 同册照片的页尾与页首保持同一页序，避免向下读完后跳到另一套分类顺序。
+const previousBrowseView = albumPhotoIndex >= 0
+  ? (previousAlbumPhoto ? createArchiveRecordView(previousAlbumPhoto, locale) : undefined) : previousView;
+const nextBrowseView = albumPhotoIndex >= 0
+  ? (nextAlbumPhoto ? createArchiveRecordView(nextAlbumPhoto, locale) : undefined) : nextView;
+const albumLinkLabel = albumGroup
+  ? (item.core.object_type === 'ALB'
+    ? t("翻阅本册照片（共 {0} 张） →", locale, { 0: albumMateCount })
+    : t("查看整本相册（共 {0} 张） →", locale, { 0: albumMateCount }))
+  : '';
+const archiveIndexUrl = Astro.site ? new URL(localizePath('/archive/', locale), Astro.site) : undefined;
 const recordStructuredData = {
   '@context': 'https://schema.org',
   '@type': 'CreativeWork',
@@ -200,14 +226,15 @@ const recordStructuredData = {
   url: recordUrl?.href,
   isPartOf: {
     '@type': 'CollectionPage',
-    name: '老旧默片',
+    name: t('老旧默片',locale),
+    inLanguage: locale,
     url: archiveIndexUrl?.href,
   },
 };
 
 const breadcrumbItems = [
-  { name: '首页', url: '/' },
-  { name: '档案', url: '/archive/' },
+  { name: t('首页',locale), url: '/' },
+  { name: t('档案',locale), url: '/archive/' },
   ...(currentCategory ? [{ name: currentCategory.label, url: `/archive/?category=${currentCategorySlug}` }] : []),
   { name: view.title, url: `/archive/${view.id}/` },
 ];
@@ -218,34 +245,37 @@ const breadcrumbStructuredData = {
     '@type': 'ListItem',
     position: index + 1,
     name: item.name,
-    item: Astro.site ? new URL(item.url, Astro.site).href : item.url,
+    item: Astro.site ? new URL(localizePath(item.url,locale), Astro.site).href : localizePath(item.url,locale),
   })),
 };
 ---
 
 <BaseLayout
-  title={`${view.title}｜老旧默片`}
+  title={t("{0}｜老旧默片", locale, {0: (view.title)})}
   description={view.description || `${view.title}，${view.typeLabel}，${view.dateDisplay || '年代未知'}。`}
   image={galleryImages[0]?.src}
   pageType="article"
   structuredData={[recordStructuredData, breadcrumbStructuredData]}
+  englishAvailable={view.translationState === 'published'}
+  robots={locale === 'en' && view.translationState !== 'published' ? 'noindex,follow' : undefined}
 >
   <article class="record-page" data-record-id={view.id}>
+    {locale === 'en' && view.translationState !== 'published' && <p class="translation-notice" role="status">Some English translations are pending review. Source text is shown where a current translation is unavailable.</p>}
     <div class="record-top">
-      <nav class="record-breadcrumb" aria-label="面包屑">
-        <a href="/" class="breadcrumb-link">首页</a>
+      <nav class="record-breadcrumb" aria-label={t("面包屑", locale)}>
+        <a href={localizePath("/", locale)} class="breadcrumb-link">{t("首页", locale)}</a>
         <span class="breadcrumb-sep" aria-hidden="true">/</span>
-        <a href="/archive/" class="breadcrumb-link">档案</a>
+        <a href={localizePath("/archive/", locale)} class="breadcrumb-link">{t("档案", locale)}</a>
         {currentCategory && (
           <Fragment>
             <span class="breadcrumb-sep" aria-hidden="true">/</span>
-            <a href={`/archive/?category=${currentCategorySlug}`} class="breadcrumb-link">{currentCategory.label}</a>
+            <a href={localizePath(`/archive/?category=${currentCategorySlug}`, locale)} class="breadcrumb-link">{currentCategory.label}</a>
           </Fragment>
         )}
         <span class="breadcrumb-sep" aria-hidden="true">/</span>
         <span class="breadcrumb-current" aria-current="page">{view.title}</span>
       </nav>
-      <a class="back-link ui-text-link" href={defaultBackHref} data-record-back>← 返回档案</a>
+      <a class="back-link ui-text-link" href={localizePath(defaultBackHref, locale)} data-record-back>{t("← 返回档案", locale)}</a>
     </div>
 
     <header class="record-heading">
@@ -254,12 +284,24 @@ const breadcrumbStructuredData = {
           <p class="section-mark icon-heading"><span>{view.typeLabel}</span></p>
           <h1>{view.title}</h1>
         </div>
-        <div class="record-heading-actions" aria-label="档案互动操作">
+        <div class="record-heading-actions" aria-label={t("档案互动操作", locale)}>
           <ArchiveLikeButton itemId={view.id} title={view.title} compact />
           <ArchiveFavoriteButton itemId={view.id} title={view.title} />
         </div>
       </div>
       {hasText(view.description) && <p class="record-lead">{view.description}</p>}
+      {albumGroup && (
+        <nav class="record-album-context" aria-label={t("同册照片", locale)}>
+          <div>
+            <a class="ui-text-link" href={localizePath(albumGroup.href, locale)} data-album-entry>{albumLinkLabel}</a>
+            {item.core.object_type === 'PHO' && item.core.original_position && <small>{t("相册中的位置", locale)}：{item.core.original_position}</small>}
+          </div>
+          {(previousAlbumPhoto || nextAlbumPhoto) && <div class="record-album-navigation">
+            {previousAlbumPhoto && <a href={localizePath(`/archive/${previousAlbumPhoto.core.item_id}/`, locale)} rel="prev">← {t("同册上一张", locale)}</a>}
+            {nextAlbumPhoto && <a href={localizePath(`/archive/${nextAlbumPhoto.core.item_id}/`, locale)} rel="next">{t("同册下一张", locale)} →</a>}
+          </div>}
+        </nav>
+      )}
     </header>
 
     <div
@@ -270,11 +312,11 @@ const breadcrumbStructuredData = {
       {isLetter && (
         <header class="letter-reading-header">
           <div>
-            <h2 class="icon-heading"><span>信件阅读</span></h2>
+            <h2 class="icon-heading"><span>{t("信件阅读", locale)}</span></h2>
           </div>
           <div class="letter-reading-controls">
             {letterReadingModes.length > 1 && (
-              <div class="letter-reading-modes" role="group" aria-label="选择信件查看方式">
+              <div class="letter-reading-modes" role="group" aria-label={t("选择信件查看方式", locale)}>
                 {letterReadingModes.map((mode) => (
                   <button
                     type="button"
@@ -287,18 +329,18 @@ const breadcrumbStructuredData = {
               </div>
             )}
             {hasPublicTranscription && (
-              <div class="letter-text-size" role="group" aria-label="调整文字字号">
-                <span>字号</span>
-                <button type="button" data-letter-size-select="small" aria-pressed="false">小</button>
-                <button type="button" data-letter-size-select="medium" aria-pressed="true">中</button>
-                <button type="button" data-letter-size-select="large" aria-pressed="false">大</button>
+              <div class="letter-text-size" role="group" aria-label={t("调整文字字号", locale)}>
+                <span>{t("字号", locale)}</span>
+                <button type="button" data-letter-size-select="small" aria-pressed="false">{t("小", locale)}</button>
+                <button type="button" data-letter-size-select="medium" aria-pressed="true">{t("中", locale)}</button>
+                <button type="button" data-letter-size-select="large" aria-pressed="false">{t("大", locale)}</button>
               </div>
             )}
           </div>
           <p class="letter-reading-introduction">
             {hasPublicTranscription
-              ? '默认先看原件：原件图片是最终核对依据；电子转录保留原有段落与换行，可随时切换查看方式。'
-              : '这封信暂未提供公开电子转录，当前仅展示经过检查的原件发布副本。'}
+              ? (locale === 'en' ? 'Original images are shown first and remain the source for verification. The transcription preserves original paragraphs and line breaks; switch views at any time.' : '默认先看原件：原件图片是最终核对依据；电子转录保留原有段落与换行，可随时切换查看方式。')
+              : (locale === 'en' ? 'No public transcription is available for this letter. Only reviewed publication copies of the original are shown.' : '这封信暂未提供公开电子转录，当前仅展示经过检查的原件发布副本。')}
           </p>
         </header>
       )}
@@ -307,13 +349,15 @@ const breadcrumbStructuredData = {
         <article class="letter-transcription" aria-labelledby="letter-transcription-heading">
           <header>
             <div>
-              <h2 id="letter-transcription-heading">电子文字</h2>
+              <h2 id="letter-transcription-heading">{locale === 'en' && !view.transcriptionTranslation ? 'Original text · English translation pending' : t("电子文字", locale)}</h2>
             </div>
           </header>
-          <div class="letter-transcription-text">{view.transcription}</div>
+          {locale === 'en' && view.transcriptionTranslation && <div class="translation-heading">{view.transcriptionKind === 'summary' ? 'English summary' : 'English translation'}</div>}
+          <div class="letter-transcription-text" lang={locale === 'en' && view.transcriptionTranslation ? 'en' : view.originalLanguage}>{locale === 'en' && view.transcriptionTranslation ? view.transcriptionTranslation : view.originalTranscription}</div>
+          {locale === 'en' && view.transcriptionTranslation && view.originalTranscription && <details class="original-text"><summary>View original text</summary><div class="letter-transcription-text" lang={view.originalLanguage}>{view.originalTranscription}</div></details>}
           <footer>
-            <span>〔不清〕表示原件难以辨认</span>
-            <span>□ 表示原件文字缺失</span>
+            <span>{t("〔不清〕表示原件难以辨认", locale)}</span>
+            <span>{t("□ 表示原件文字缺失", locale)}</span>
           </footer>
         </article>
       )}
@@ -331,7 +375,7 @@ const breadcrumbStructuredData = {
               width: image.width,
               height: image.height,
             })))}
-            aria-label="档案图片"
+            aria-label={t("档案图片", locale)}
           >
             <figure class="record-image">
               <button
@@ -339,7 +383,7 @@ const breadcrumbStructuredData = {
                 type="button"
                 data-gallery-open
                 data-gallery-swipe
-                aria-label={`放大查看：${galleryImages[0].description}`}
+                aria-label={t("放大查看：{0}", locale, {0: (galleryImages[0].description)})}
               >
                 <img
                   data-gallery-main
@@ -353,33 +397,33 @@ const breadcrumbStructuredData = {
                   decoding="async"
                   fetchpriority="high"
                 />
-                <span class="record-image-hint">放大查看</span>
+                <span class="record-image-hint">{t("放大查看", locale)}</span>
               </button>
               <figcaption>
                 <span class="record-image-caption">
                   <strong data-gallery-role>{galleryImages[0].role}</strong>
                   <span data-gallery-caption>{galleryImages[0].description}</span>
                 </span>
-                <small data-gallery-counter aria-live="polite">第 1 张，共 {galleryImages.length} 张</small>
+                <small data-gallery-counter aria-live="polite">{t("第 1 张，共", locale)} {galleryImages.length} {t("张", locale)}</small>
               </figcaption>
             </figure>
             {galleryImages.length > 1 && (
-              <div class="record-gallery-controls" aria-label="切换当前档案图片">
+              <div class="record-gallery-controls" aria-label={t("切换当前档案图片", locale)}>
                 <button class="gallery-step gallery-step-previous" type="button" data-gallery-previous-inline>
-                  <span aria-hidden="true">←</span> 上一张
+                  <span aria-hidden="true">←</span> {t("上一张", locale)}
                 </button>
-                <span>点击主图可进入大图查看</span>
+                <span>{t("点击主图可进入大图查看", locale)}</span>
                 <button class="gallery-step gallery-step-next" type="button" data-gallery-next-inline>
-                  下一张 <span aria-hidden="true">→</span>
+                  {t("下一张", locale)} <span aria-hidden="true">→</span>
                 </button>
               </div>
             )}
             {galleryImages.length > 1 && (
-              <div class="record-thumbnails" aria-label="切换档案图片">
+              <div class="record-thumbnails" aria-label={t("切换档案图片", locale)}>
                 {galleryImages.map((image, index) => (
                   <button
                     type="button"
-                    aria-label={`查看第 ${index + 1} 张图片：${image.description}`}
+                    aria-label={t("查看第 {0} 张图片：{1}", locale, {0: (index + 1), 1: (image.description)})}
                     aria-current={index === 0 ? 'true' : 'false'}
                     data-gallery-thumbnail
                     data-gallery-src={image.src}
@@ -405,22 +449,22 @@ const breadcrumbStructuredData = {
               </div>
             )}
 
-            <dialog class="record-lightbox" data-gallery-lightbox aria-label="在暗室中查看档案图片">
+            <dialog class="record-lightbox" data-gallery-lightbox aria-label={t("在暗室中查看档案图片", locale)}>
               <div class="lightbox-shell">
-                <button class="lightbox-close" type="button" data-gallery-close aria-label="关闭放大图片">关闭</button>
-                <div class="lightbox-zoom" aria-label="图片大小">
-                  <button type="button" data-gallery-zoom-out aria-label="缩小图片">−</button>
+                <button class="lightbox-close" type="button" data-gallery-close aria-label={t("关闭放大图片", locale)}>{t("关闭", locale)}</button>
+                <div class="lightbox-zoom" aria-label={t("图片大小", locale)}>
+                  <button type="button" data-gallery-zoom-out aria-label={t("缩小图片", locale)}>−</button>
                   <output data-gallery-zoom-level aria-live="polite">100%</output>
-                  <button type="button" data-gallery-zoom-in aria-label="放大图片">＋</button>
-                  <button type="button" data-gallery-zoom-reset>适应窗口</button>
+                  <button type="button" data-gallery-zoom-in aria-label={t("放大图片", locale)}>＋</button>
+                  <button type="button" data-gallery-zoom-reset>{t("适应窗口", locale)}</button>
                 </div>
                 {galleryImages.length > 1 && (
-                  <button class="lightbox-previous" type="button" data-gallery-previous aria-label="查看上一张图片">
+                  <button class="lightbox-previous" type="button" data-gallery-previous aria-label={t("查看上一张图片", locale)}>
                     <span aria-hidden="true">←</span>
                   </button>
                 )}
                 <figure class="lightbox-figure" data-gallery-swipe>
-                  <div class="lightbox-stage" data-gallery-zoom-stage tabindex="0" aria-label="图片区域，放大后可拖动；加减键调整大小，0键恢复">
+                  <div class="lightbox-stage" data-gallery-zoom-stage tabindex="0" aria-label={t("图片区域，放大后可拖动；加减键调整大小，0键恢复", locale)}>
                     <img
                       data-lightbox-main
                       src={galleryImages[0].src}
@@ -437,11 +481,11 @@ const breadcrumbStructuredData = {
                       <strong data-lightbox-role>{galleryImages[0].role}</strong>
                       <span data-lightbox-caption>{galleryImages[0].description}</span>
                     </span>
-                    <small data-lightbox-counter>第 1 张，共 {galleryImages.length} 张</small>
+                    <small data-lightbox-counter>{t("第 1 张，共", locale)} {galleryImages.length} {t("张", locale)}</small>
                   </figcaption>
                 </figure>
                 {galleryImages.length > 1 && (
-                  <button class="lightbox-next" type="button" data-gallery-next aria-label="查看下一张图片">
+                  <button class="lightbox-next" type="button" data-gallery-next aria-label={t("查看下一张图片", locale)}>
                     <span aria-hidden="true">→</span>
                   </button>
                 )}
@@ -452,7 +496,7 @@ const breadcrumbStructuredData = {
       }
 
       <section class="record-basic-information" aria-labelledby="basic-heading">
-        <h2 class="facts-heading icon-heading" id="basic-heading"><span>基本信息</span></h2>
+        <h2 class="facts-heading icon-heading" id="basic-heading"><span>{t("基本信息", locale)}</span></h2>
         <dl class="record-facts">
           {
             basicFacts.map((fact) => (
@@ -460,7 +504,7 @@ const breadcrumbStructuredData = {
                 <dt>{fact.label}</dt>
                 <dd>
                   {fact.href ? (
-                    <a class="fact-filter-link" href={fact.href}>
+                    <a class="fact-filter-link" href={localizePath(fact.href, locale)}>
                       {fact.value}
                       <span aria-hidden="true"> ↗</span>
                     </a>
@@ -471,20 +515,20 @@ const breadcrumbStructuredData = {
           }
         </dl>
         {(hasTags || hasText(updatedDate)) && (
-          <div class="record-sidebar-meta" aria-label="标签与更新时间">
+          <div class="record-sidebar-meta" aria-label={t("标签与更新时间", locale)}>
             {hasTags && (
               <div class="record-sidebar-meta-group">
-                <h3 class="icon-heading"><span>标签</span></h3>
+                <h3 class="icon-heading"><span>{t("标签", locale)}</span></h3>
                 <ul class="record-tags record-tags--sidebar">
-                  {view.tags.map((tag) => (
-                    <li><a href={archiveFilterHref('tag', tag)}>{tag}</a></li>
+                  {view.canonicalTags.map((tag) => (
+                    <li><a href={localizePath(archiveFilterHref('tag', tag), locale)}>{view.tagLabels[tag] ?? tag}</a></li>
                   ))}
                 </ul>
               </div>
             )}
             {hasText(updatedDate) && (
               <div class="record-sidebar-meta-group record-updated-date">
-                <h3 class="icon-heading"><span>最后更新</span></h3>
+                <h3 class="icon-heading"><span>{t("最后更新", locale)}</span></h3>
                 <p><time datetime={item.core.updated_date}>{updatedDate}</time></p>
               </div>
             )}
@@ -497,18 +541,20 @@ const breadcrumbStructuredData = {
       {
         hasNarrativeContent && (
           <section class="record-section" aria-labelledby="description-heading">
-            <h2 class="icon-heading" id="description-heading"><span>{isLetter ? '流传与来源' : '故事与原文'}</span></h2>
+            <h2 class="icon-heading" id="description-heading"><span>{locale === 'en' ? (isLetter ? 'Provenance and sources' : 'Story and original text') : isLetter ? '流传与来源' : '故事与原文'}</span></h2>
             <div class="section-content">
-              {hasText(item.core.provenance_notes) && (
+              {hasText(view.localizedCore.provenance_notes) && (
                 <div class="subsection">
-                  <h3>流传线索</h3>
-                  <p>{item.core.provenance_notes}</p>
+                  <h3>{t("流传线索", locale)}</h3>
+                  <p>{view.localizedCore.provenance_notes}</p>
                 </div>
               )}
               {!isLetter && hasText(view.transcription) && (
                 <div class="subsection">
-                  <h3>原文 / 转录</h3>
-                  <p class="transcription">{view.transcription}</p>
+                  <h3>{t("原文 / 转录", locale)}</h3>
+                  {locale === 'en' && <p>{view.transcriptionTranslation ? (view.transcriptionKind === 'summary' ? 'English summary' : 'English translation') : 'Original text · English translation pending'}</p>}
+                  <p class="transcription" lang={locale === 'en' && view.transcriptionTranslation ? 'en' : view.originalLanguage}>{locale === 'en' && view.transcriptionTranslation ? view.transcriptionTranslation : view.originalTranscription}</p>
+                  {locale === 'en' && view.transcriptionTranslation && view.originalTranscription && <details><summary>View original text</summary><p class="transcription" lang={view.originalLanguage}>{view.originalTranscription}</p></details>}
                 </div>
               )}
             </div>
@@ -519,7 +565,7 @@ const breadcrumbStructuredData = {
       {
         specificFacts.length > 0 && (
           <section class="record-section" aria-labelledby="specific-heading">
-            <h2 class="icon-heading" id="specific-heading"><span>藏品细节</span></h2>
+            <h2 class="icon-heading" id="specific-heading"><span>{t("藏品细节", locale)}</span></h2>
             <dl class="section-facts">
               {specificFacts.map((fact) => (
                 <div>
@@ -536,8 +582,8 @@ const breadcrumbStructuredData = {
         researchManagementFacts.length > 0 && (
           <details class="management-information">
             <summary>
-              <span class="icon-heading"><span>更多信息</span></span>
-              <small>{researchManagementFacts.length} 项</small>
+              <span class="icon-heading"><span>{t("更多信息", locale)}</span></span>
+              <small>{researchManagementFacts.length} {t("项", locale)}</small>
             </summary>
             <dl class="section-facts">
               {researchManagementFacts.map((fact) => (
@@ -555,12 +601,12 @@ const breadcrumbStructuredData = {
     {relatedRecordEntries.length > 0 && (
       <section class="record-related" aria-labelledby="record-related-heading">
         <div class="record-related-heading">
-          <h2 class="icon-heading" id="record-related-heading"><span>沿着线索继续看</span></h2>
-          <span>根据共同标签、地点、年代或分类自动关联。</span>
+          <h2 class="icon-heading" id="record-related-heading"><span>{t("沿着线索继续看", locale)}</span></h2>
+          <span>{t("根据共同标签、地点、年代或分类自动关联。", locale)}</span>
         </div>
         <div class="record-related-grid">
           {relatedRecordEntries.map((entry) => (
-            <a href={`/archive/${entry.view.id}/`} data-record-nav data-record-target={entry.view.id}>
+            <a href={localizePath(`/archive/${entry.view.id}/`, locale)} data-record-nav data-record-target={entry.view.id}>
               <figure>
                 {entry.coverImage && (
                   <img
@@ -594,24 +640,24 @@ const breadcrumbStructuredData = {
       data-download-available={String(usagePolicy.canDownloadPublicationCopy)}
     >
       <div class="record-usage-heading">
-        <h2 class="icon-heading" id="record-usage-heading"><span>使用与下载</span></h2>
+        <h2 class="icon-heading" id="record-usage-heading"><span>{t("使用与下载", locale)}</span></h2>
       </div>
       <div class="record-usage-content">
         <div class="record-usage-summary">
-          <span>权利状态 · {usagePolicy.statusLabel}</span>
+          <span>{t("权利状态 ·", locale)} {usagePolicy.statusLabel}</span>
           <strong>{usagePolicy.title}</strong>
           <p>{usagePolicy.description}</p>
           <small>{usagePolicy.attribution}</small>
         </div>
         {downloadableImages.length > 0 && (
-          <div class="record-downloads" aria-label="可下载的网页发布副本">
+          <div class="record-downloads" aria-label={t("可下载的网页发布副本", locale)}>
             {downloadableImages.map((image, index) => (
-              <a class="ui-action ui-action--primary" href={image.source} download={image.filename} data-download-publication-copy>
-                下载发布副本 {downloadableImages.length > 1 ? index + 1 : ''}
+              <a class="ui-action ui-action--primary" href={localizePath(image.source, locale)} download={image.filename} data-download-publication-copy>
+                {t("下载发布副本", locale)} {downloadableImages.length > 1 ? index + 1 : ''}
                 <small>{image.description}</small>
               </a>
             ))}
-            <p>下载内容是网站使用的压缩发布副本，不是原始扫描件或档案主文件。</p>
+            <p>{t("下载内容是网站使用的压缩发布副本，不是原始扫描件或档案主文件。", locale)}</p>
           </div>
         )}
       </div>
@@ -625,36 +671,36 @@ const breadcrumbStructuredData = {
       data-record-identifier={view.id}
     >
       <div class="record-citation-heading">
-        <h2 class="icon-heading" id="record-citation-heading"><span>引用与分享</span></h2>
+        <h2 class="icon-heading" id="record-citation-heading"><span>{t("引用与分享", locale)}</span></h2>
       </div>
       <div class="record-citation-content">
         <p class="citation-preview">
-          《{view.title}》（{view.id}），老旧默片。复制时会自动补充当前页面地址和访问日期。
+          《{view.title}》（{view.id}{t("），老旧默片。复制时会自动补充当前页面地址和访问日期。", locale)}
         </p>
         <div class="citation-actions">
-          <button class="ui-action ui-action--secondary" type="button" data-copy-record-link>复制页面链接</button>
-          <button class="ui-action ui-action--secondary" type="button" data-copy-record-citation>复制规范引用</button>
+          <button class="ui-action ui-action--secondary" type="button" data-copy-record-link>{t("复制页面链接", locale)}</button>
+          <button class="ui-action ui-action--secondary" type="button" data-copy-record-citation>{t("复制规范引用", locale)}</button>
         </div>
         <p class="citation-feedback" role="status" aria-live="polite" data-citation-feedback></p>
       </div>
     </section>
 
-    {(previousView || nextView) && (
-      <nav class="record-neighbors" aria-label={`${currentCategory?.label ?? '同类'}档案导航`}>
-        <p>继续浏览 · {currentCategory?.label ?? '同类档案'}</p>
+    {(previousBrowseView || nextBrowseView) && (
+      <nav class="record-neighbors" aria-label={albumPhotoIndex >= 0 ? t("同册照片", locale) : t("{0}档案导航", locale, {0: (currentCategory?.label ?? '同类')})}>
+        <p>{t("继续浏览 ·", locale)} {albumPhotoIndex >= 0 ? t("同册照片", locale) : currentCategory?.label ?? '同类档案'}</p>
         <div>
-          {previousView && (
-            <a href={`/archive/${previousView.id}/`} data-record-nav data-record-target={previousView.id}>
-              <small>← 上一件</small>
-              <strong>{previousView.title}</strong>
-              <span>{previousView.dateDisplay}</span>
+          {previousBrowseView && (
+            <a href={localizePath(`/archive/${previousBrowseView.id}/`, locale)} data-record-nav data-record-target={previousBrowseView.id}>
+              <small>{albumPhotoIndex >= 0 ? `← ${t("同册上一张", locale)}` : t("← 上一件", locale)}</small>
+              <strong>{previousBrowseView.title}</strong>
+              <span>{previousBrowseView.dateDisplay}</span>
             </a>
           )}
-          {nextView && (
-            <a class="is-next" href={`/archive/${nextView.id}/`} data-record-nav data-record-target={nextView.id}>
-              <small>下一件 →</small>
-              <strong>{nextView.title}</strong>
-              <span>{nextView.dateDisplay}</span>
+          {nextBrowseView && (
+            <a class="is-next" href={localizePath(`/archive/${nextBrowseView.id}/`, locale)} data-record-nav data-record-target={nextBrowseView.id}>
+              <small>{albumPhotoIndex >= 0 ? `${t("同册下一张", locale)} →` : t("下一件 →", locale)}</small>
+              <strong>{nextBrowseView.title}</strong>
+              <span>{nextBrowseView.dateDisplay}</span>
             </a>
           )}
         </div>
@@ -665,7 +711,9 @@ const breadcrumbStructuredData = {
 </BaseLayout>
 
 <script>
-  import '../../scripts/archive-likes';
+import {clientText as ct,clientPath,clientLocale} from '../../i18n/client';
+
+import '../../scripts/archive-likes';
   import '../../scripts/archive-favorite';
   import { recordView } from '../../scripts/view-history';
 
@@ -802,10 +850,10 @@ const breadcrumbStructuredData = {
       mainImage.alt = item.description;
       mainImage.width = item.width;
       mainImage.height = item.height;
-      openButton.setAttribute('aria-label', `放大查看：${item.description}`);
+      openButton.setAttribute('aria-label', ct("放大查看：{0}", {0: (item.description)}));
       thumbnails.forEach((button, thumbnailIndex) =>
         button.setAttribute('aria-current', String(thumbnailIndex === activeIndex)));
-      if (counter) counter.textContent = `第 ${activeIndex + 1} 张，共 ${items.length} 张`;
+      if (counter) counter.textContent = ct("第 {0} 张，共 {1} 张", {0: (activeIndex + 1), 1: (items.length)});
       if (caption) caption.textContent = item.description;
       if (role) role.textContent = item.role;
       if (lightboxImage) {
@@ -817,7 +865,7 @@ const breadcrumbStructuredData = {
       }
       if (lightboxCaption) lightboxCaption.textContent = item.description;
       if (lightboxRole) lightboxRole.textContent = item.role;
-      if (lightboxCounter) lightboxCounter.textContent = `第 ${activeIndex + 1} 张，共 ${items.length} 张`;
+      if (lightboxCounter) lightboxCounter.textContent = ct("第 {0} 张，共 {1} 张", {0: (activeIndex + 1), 1: (items.length)});
     };
 
     thumbnails.forEach((thumbnail, index) => {
@@ -930,22 +978,23 @@ const breadcrumbStructuredData = {
     if (
       browseState?.targetId === recordPage?.dataset.recordId &&
       typeof browseState.href === 'string' &&
-      browseState.href.startsWith('/archive/')
+      /^\/(?:en\/)?archive\/(?:[?#]|$)/.test(browseState.href)
     ) {
+      const localizedBrowseState = { ...browseState, href: clientPath(browseState.href), restorePending: true };
       window.sessionStorage.setItem(
         browseStateKey,
-        JSON.stringify({ ...browseState, restorePending: true }),
+        JSON.stringify(localizedBrowseState),
       );
       if (backLink) {
-        backLink.href = browseState.href;
-        backLink.textContent = '← 返回筛选结果';
+        backLink.href = clientPath(browseState.href);
+        backLink.textContent = ct("← 返回筛选结果");
       }
 
       document.querySelectorAll<HTMLAnchorElement>('[data-record-nav]').forEach((link) => {
         link.addEventListener('click', () => {
           window.sessionStorage.setItem(
             browseStateKey,
-            JSON.stringify({ ...browseState, targetId: link.dataset.recordTarget ?? '', restorePending: true }),
+            JSON.stringify({ ...localizedBrowseState, targetId: link.dataset.recordTarget ?? '', restorePending: true }),
           );
         });
       });
@@ -983,7 +1032,7 @@ const breadcrumbStructuredData = {
   };
   const publicRecordUrl = () =>
     document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href ?? window.location.href;
-  const accessDate = () => new Intl.DateTimeFormat('zh-CN', {
+  const accessDate = () => new Intl.DateTimeFormat(clientLocale(), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -992,26 +1041,31 @@ const breadcrumbStructuredData = {
   citation?.querySelector<HTMLButtonElement>('[data-copy-record-link]')?.addEventListener('click', async () => {
     try {
       await copyText(publicRecordUrl());
-      showCitationFeedback('页面链接已复制。');
+      showCitationFeedback(ct("页面链接已复制。"));
     } catch {
-      showCitationFeedback('复制失败，请从浏览器地址栏复制。');
+      showCitationFeedback(ct("复制失败，请从浏览器地址栏复制。"));
     }
   });
 
   citation?.querySelector<HTMLButtonElement>('[data-copy-record-citation]')?.addEventListener('click', async () => {
     const title = citation.dataset.recordTitle ?? '';
     const identifier = citation.dataset.recordIdentifier ?? '';
-    const citationText = `《${title}》（${identifier}），老旧默片，${publicRecordUrl()}，访问日期：${accessDate()}。`;
+    const citationText = ct("《{0}》（{1}），老旧默片，{2}，访问日期：{3}。", {0: (title), 1: (identifier), 2: (publicRecordUrl()), 3: (accessDate())});
     try {
       await copyText(citationText);
-      showCitationFeedback('规范引用已复制。');
+      showCitationFeedback(ct("规范引用已复制。"));
     } catch {
-      showCitationFeedback('复制失败，请手动选择上方引用信息。');
+      showCitationFeedback(ct("复制失败，请手动选择上方引用信息。"));
     }
   });
 </script>
 
 <style>
+  .record-album-context { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.8rem 1.4rem; padding:0.85rem 1rem; margin-top:1rem; border:1px solid var(--site-border-soft); font:0.78rem/1.7 var(--site-ui-font); }
+  .record-album-context > div { display:flex; flex-wrap:wrap; gap:0.5rem 1.2rem; align-items:baseline; min-width:0; }
+  .record-album-context small { color:var(--site-muted); overflow-wrap:anywhere; }
+  .record-album-navigation a { color:var(--site-muted); text-decoration:none; border-bottom:1px solid var(--site-border-soft); }
+  .record-album-navigation a:hover { color:var(--site-accent); }
   .record-page {
     padding-top: 1.1rem;
   }

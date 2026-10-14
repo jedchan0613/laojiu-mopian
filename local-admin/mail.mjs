@@ -8,6 +8,7 @@
 //
 // 邮件正文只包含必要的验证码或通知文字，不附私密图片、投稿内容或用户联系方式（与方案 G 一致）。
 
+import { normalizeAccountLanguage } from './account-i18n.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -33,6 +34,21 @@ const progressLabels = {
 	published: '已经公开发布',
 	change_done: '修改或撤下申请已处理',
 	change_rejected: '修改或撤下申请未通过',
+};
+
+const englishMailTemplates = {
+	'login-code': ({ code, minutes, purpose }) => ({
+		subject: `Laojiu Mopian: ${({ login: 'Sign-in', email_change_old: 'Current email verification', email_change_new: 'New email verification' })[purpose] ?? 'Sign-in'} code`,
+		text: [`Your verification code is: ${code}`, '', `This code expires in ${minutes} minutes and can be used only once. After too many incorrect attempts, request a new code.`, 'If you did not request this, ignore this email. Your account will remain unchanged.', '', 'Laojiu Mopian · An archive of everyday lives'].join('\n'),
+	}),
+	'email-changed-notice': ({ newEmail }) => ({
+		subject: 'Laojiu Mopian: Your account email has changed',
+		text: ['The email address linked to your account has changed.', '', `New email: ${newEmail}`, '', 'All signed-in devices have been signed out for security. Sign in again using your new email.', 'If you did not make this change, contact the curator through the website immediately.', '', 'Laojiu Mopian · An archive of everyday lives'].join('\n'),
+	}),
+	'submission-progress': ({ event, title }) => {
+		const progress = ({ needs_info: 'More information needed', approved: 'Initial review approved; in preparation', declined: 'Not selected this time', published: 'Published', change_done: 'Amendment or removal request processed', change_rejected: 'Amendment or removal request declined' })[event] ?? 'Progress updated';
+		return { subject: `Laojiu Mopian: Submission update — ${progress}`, text: [`Your submission “${title || 'Untitled'}” has an update: ${progress}.`, '', 'Sign in to your account on the website to view the full reply and next steps.', '', 'This email is a notification only. It contains no submission body, images or contact details. You can disable progress emails in Account settings.', '', 'Laojiu Mopian · An archive of everyday lives'].join('\n') };
+	},
 };
 
 export const mailTemplates = {
@@ -117,7 +133,7 @@ export function createMailer({
 	const render = (template, variables) => {
 		const builder = mailTemplates[template];
 		if (!builder) throw new MailError(`未知的邮件模板：${template}。`);
-		return builder(variables ?? {});
+		return (normalizeAccountLanguage(variables?.language) === 'en' ? englishMailTemplates[template] : builder)(variables ?? {});
 	};
 
 	return {

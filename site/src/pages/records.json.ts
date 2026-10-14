@@ -4,22 +4,29 @@
 import type { APIRoute } from 'astro';
 import { archiveItems } from '../data/archive';
 import { createArchiveRecordView, isPublishedArchiveItem } from '../data/archive-view';
+import { getLocale, localizePath } from '../i18n/ui';
+import { getResponsiveImage } from '../data/responsive-images';
 
-export const GET: APIRoute = () => {
+export const GET: APIRoute = ({url}) => {
+	const locale = getLocale(url.pathname);
 	const records = archiveItems
 		.filter(isPublishedArchiveItem)
 		.map((item) => {
-			const view = createArchiveRecordView(item);
+			const view = createArchiveRecordView(item, locale);
+			const image = view.images[0] ? getResponsiveImage(view.images[0]) : undefined;
 			return {
 				id: view.id,
 				title: view.title,
 				type_label: view.typeLabel,
 				date_display: view.dateDisplay,
 				cover: view.images[0] ?? null,
-				href: `/archive/${view.id}/`,
+				cover_alt: view.imageDescriptions[0] ?? '',
+				cover_width: image?.width ?? 0,
+				cover_height: image?.height ?? 0,
+				href: localizePath(`/archive/${view.id}/`, locale),
 			};
 		});
-	return new Response(JSON.stringify({ records }), {
+	return new Response(JSON.stringify({ locale, records }), {
 		headers: {
 			'Content-Type': 'application/json; charset=utf-8',
 			'Cache-Control': 'public, max-age=300',

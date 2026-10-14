@@ -1,174 +1,92 @@
 import type { ArchiveItem, ObjectType } from './archive-schema';
-import { getCodeEntry, getCodeLabel } from './code-dictionary';
+import { getCodeEntry, getCodeLabel, getArchiveTermLabel, isEnglishArchiveLocale } from './code-dictionary';
 import { getDimensionsForItem } from './dimension-definitions';
+import { getArchiveTranslation, getLocalizedArchiveCore, getLocalizedArchiveText, getLocalizedArchiveValue, getOriginalTranscriptionLanguage } from './archive-localization';
 
-// 搜索字段按用途分开保存，档案列表在构建时输出为 JSON 搜索索引，
-// 访客搜索时按字段重要程度加权评分，并据此显示“匹配位置”。
-// 所有字段值已统一转为小写，客户端不需要再次规范化大小写。
-export interface ArchiveSearchFields {
-	title: string;
-	identifiers: string;
-	typeLabel: string;
-	dateDisplay: string;
-	place: string;
-	description: string;
-	transcription: string;
-	tags: string;
-}
-
+export interface ArchiveSearchFields { title: string; identifiers: string; typeLabel: string; dateDisplay: string; place: string; description: string; transcription: string; tags: string; }
 export interface ArchiveRecordView {
-	item: ArchiveItem;
-	id: string;
-	collectionCode: string;
-	title: string;
-	objectType: ObjectType;
-	typeLabel: string;
-	dateDisplay: string;
-	decade?: string;
-	placeDisplay: string;
-	placeFilters: string[];
-	description: string;
-	transcription: string;
-	tags: string[];
-	images: string[];
-	imageDescriptions: string[];
-	searchFields: ArchiveSearchFields;
+  item: ArchiveItem; id: string; collectionCode: string; title: string; objectType: ObjectType;
+  typeLabel: string; dateDisplay: string; decade?: string; placeDisplay: string; placeFilters: string[];
+  canonicalPlaceFilters: string[]; placeFilterLabels: Record<string, string>; canonicalTags: string[]; tagLabels: Record<string, string>;
+  localizedCore: ArchiveItem['core']; description: string; transcription: string; originalTranscription: string;
+  transcriptionTranslation: string; transcriptionKind: 'none' | 'full' | 'summary'; originalLanguage: string; translationState: string;
+  revisionNote: string; tags: string[]; images: string[]; imageDescriptions: string[]; searchFields: ArchiveSearchFields;
 }
-
-export interface DisplayFact {
-	label: string;
-	value: string;
-	code?: string;
-}
-
-const hasText = (value: unknown): value is string =>
-	typeof value === 'string' && value.trim().length > 0;
-
-const uniqueText = (values: Array<string | undefined>) =>
-	[...new Set(values.filter(hasText).map((value) => value.trim()))];
-
-export const getObjectTypeLabel = (type: ObjectType) => getCodeLabel(type);
-
-export const isPublishedArchiveItem = (item: ArchiveItem) =>
-	item.core.record_status === 'ACT' &&
-	item.core.use_status === 'U3' &&
-	item.core.privacy_level === 'G';
-
-export const getDecade = (dateDisplay: string) => {
-	const yearMatch = dateDisplay.match(/(\d{4})/);
-	if (!yearMatch) return undefined;
-
-	const year = Number(yearMatch[1]);
-	return String(Math.floor(year / 10) * 10);
+export interface DisplayFact { label: string; value: string; code?: string; originalText?: boolean; }
+const hasText = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+const uniqueText = (values: Array<string | undefined>) => [...new Set(values.filter(hasText).map((value) => value.trim()))];
+export const getObjectTypeLabel = (type: ObjectType, locale: string = 'zh-CN') => getCodeLabel(type, locale);
+export const isPublishedArchiveItem = (item: ArchiveItem) => item.core.record_status === 'ACT' && item.core.use_status === 'U3' && item.core.privacy_level === 'G';
+export const getDecade = (dateDisplay: string) => { const match = dateDisplay.match(/(\d{4})/); return match ? String(Math.floor(Number(match[1]) / 10) * 10) : undefined; };
+export const createArchiveRecordView = (item: ArchiveItem, requestedLocale: string | number = 'zh-CN'): ArchiveRecordView => {
+  const locale = typeof requestedLocale === 'string' ? requestedLocale : 'zh-CN';
+  const english = isEnglishArchiveLocale(locale);
+  const translation = getArchiveTranslation(item);
+  const localizedCore = getLocalizedArchiveCore(item, locale);
+  const fields = ['country', 'province', 'city', 'district', 'street_town', 'specific_place'] as const;
+  const canonicalPlaceFilters = uniqueText(fields.map((field) => item.core[field]));
+  const placeFilterLabels = Object.fromEntries(fields.filter((field) => hasText(item.core[field])).map((field) => [item.core[field]!.trim(), localizedCore[field]?.trim() ?? item.core[field]!.trim()]));
+  const placeDisplay = uniqueText(fields.map((field) => localizedCore[field])).join(' / ');
+  const canonicalTags = uniqueText(item.public_view.tags);
+  const rawLocalizedTags = getLocalizedArchiveValue(item, 'public_view.tags', locale);
+  const tags = Array.isArray(rawLocalizedTags) ? uniqueText(rawLocalizedTags) : canonicalTags;
+  const tagLabels = Object.fromEntries((item.public_view.tags ?? []).map((tag, index) => [tag.trim(), Array.isArray(rawLocalizedTags) ? String(rawLocalizedTags[index] ?? tag).trim() : tag.trim()]));
+  const title = localizedCore.title;
+  const dateDisplay = localizedCore.date_display?.trim() ?? '';
+  const description = getLocalizedArchiveText(item, 'public_view.description', locale);
+  // Original transcription stays original. A translated full text or summary is a separate field.
+  const transcription = item.public_view.transcription?.trim() ?? '';
+  const transcriptionTranslation = typeof translation.fields['public_view.transcription'] === 'string' ? translation.fields['public_view.transcription'] : '';
+  const images = uniqueText(item.core.publication_file_path ?? []);
+  const imageDescriptions = images.map((image, index) => {
+    if (english && translation.image_descriptions[image]) return translation.image_descriptions[image];
+    const maintained = item.public_view.image_descriptions?.[index]?.trim();
+    if (maintained) return maintained;
+    const filename = image.split('/').at(-1)?.toLowerCase() ?? '';
+    if (images.length === 1) return english ? `${title}, archive image` : `${title}的档案图片`;
+    if (filename.startsWith('front-')) return english ? `${title}, front` : `${title}，正面`;
+    if (filename.startsWith('back-')) return english ? `${title}, back` : `${title}，背面`;
+    return english ? `${title}, detail ${index + 1}` : `${title}，细节图 ${index + 1}`;
+  });
+  const typeLabel = getObjectTypeLabel(item.core.object_type, locale);
+  const collectionCode = item.core.collection_code?.trim() ?? '';
+  const joinSearch = (...values: (string | string[])[]) => [...new Set(values.flat().filter(Boolean))].join(' ').toLocaleLowerCase('en-US');
+  const translated = translation.fields;
+  const searchFields: ArchiveSearchFields = {
+    title: joinSearch(item.core.title, String(translated['core.title'] ?? '')),
+    identifiers: joinSearch(item.core.item_id, collectionCode, item.core.object_type),
+    typeLabel: joinSearch(getObjectTypeLabel(item.core.object_type), getObjectTypeLabel(item.core.object_type, 'en')),
+    dateDisplay: joinSearch(item.core.date_display ?? '', String(translated['core.date_display'] ?? '')),
+    place: joinSearch(canonicalPlaceFilters, ...fields.map((field) => { const value = translated[`core.${field}`]; return typeof value === 'string' ? value : ''; }), canonicalPlaceFilters.join(' / '), fields.map((field) => typeof translated[`core.${field}`] === 'string' ? String(translated[`core.${field}`]) : item.core[field] ?? '').filter(Boolean).join(' / ')),
+    description: joinSearch(item.public_view.description ?? '', String(translated['public_view.description'] ?? '')),
+    transcription: joinSearch(transcription, transcriptionTranslation),
+    tags: joinSearch(canonicalTags, Array.isArray(translated['public_view.tags']) ? translated['public_view.tags'] : []),
+  };
+  return { item, id: item.core.item_id, collectionCode, title, objectType: item.core.object_type, typeLabel, dateDisplay,
+    decade: getDecade(item.core.date_display ?? ''), placeDisplay, placeFilters: canonicalPlaceFilters, canonicalPlaceFilters,
+    placeFilterLabels, localizedCore, canonicalTags, tagLabels, description, transcription, originalTranscription: transcription,
+    transcriptionTranslation, transcriptionKind: translation.transcriptionKind, originalLanguage: getOriginalTranscriptionLanguage(item), translationState: translation.state,
+    revisionNote: getLocalizedArchiveText(item, 'public_view.revision_note', locale), tags, images, imageDescriptions, searchFields };
 };
-
-export const createArchiveRecordView = (item: ArchiveItem): ArchiveRecordView => {
-	const dateDisplay = item.core.date_display?.trim() ?? '';
-	// 地点只有 core 结构化字段一个填写位置，展示文字和筛选值都由它推导。
-	const placeFilters = uniqueText([
-		item.core.country,
-		item.core.province,
-		item.core.city,
-		item.core.district,
-		item.core.street_town,
-		item.core.specific_place,
-	]);
-	const placeDisplay = placeFilters.join(' / ');
-	const tags = uniqueText(item.public_view.tags);
-	const description = item.public_view.description?.trim() ?? '';
-	const transcription = item.public_view.transcription?.trim() ?? '';
-	const images = uniqueText(item.core.publication_file_path ?? []);
-	const maintainedDescriptions = item.public_view.image_descriptions ?? [];
-	const imageDescriptions = images.map((image, index) => {
-		const maintained = maintainedDescriptions[index]?.trim();
-		if (maintained) return maintained;
-		const filename = image.split('/').at(-1)?.toLocaleLowerCase('en-US') ?? '';
-		if (images.length === 1) return `${item.core.title}的档案图片`;
-		if (filename.startsWith('front-')) return `${item.core.title}，正面`;
-		if (filename.startsWith('back-')) return `${item.core.title}，背面`;
-		return `${item.core.title}，细节图 ${index + 1}`;
-	});
-	const typeLabel = getObjectTypeLabel(item.core.object_type);
-	const collectionCode = item.core.collection_code?.trim() ?? '';
-	const toSearchValue = (value: string) => value.toLocaleLowerCase('zh-CN');
-	const searchFields: ArchiveSearchFields = {
-		title: toSearchValue(item.core.title),
-		identifiers: toSearchValue([item.core.item_id, collectionCode, item.core.object_type].filter(Boolean).join(' ')),
-		typeLabel: toSearchValue(typeLabel),
-		dateDisplay: toSearchValue(dateDisplay),
-		place: toSearchValue([placeDisplay, ...placeFilters].filter(Boolean).join(' ')),
-		description: toSearchValue(description),
-		transcription: toSearchValue(transcription),
-		tags: toSearchValue(tags.join(' ')),
-	};
-
-	return {
-		item,
-		id: item.core.item_id,
-		collectionCode,
-		title: item.core.title,
-		objectType: item.core.object_type,
-		typeLabel,
-		dateDisplay,
-		decade: getDecade(dateDisplay),
-		placeDisplay,
-		placeFilters,
-		description,
-		transcription,
-		tags,
-		images,
-		imageDescriptions,
-		searchFields,
-	};
+const formatValue = (value: unknown, includeCodes: boolean, locale: string): string => {
+  const english = isEnglishArchiveLocale(locale);
+  if (Array.isArray(value)) return value.map((entry) => formatValue(entry, includeCodes, locale)).filter(Boolean).join(english ? ', ' : '、');
+  if (typeof value === 'number') return String(value);
+  if (!hasText(value)) return '';
+  const entry = getCodeEntry(value.trim(), locale);
+  return entry ? includeCodes ? english ? `${entry.label} (${entry.code})` : `${entry.label}（${entry.code}）` : entry.label : getArchiveTermLabel(value.trim(), locale);
 };
-
-const formatValue = (value: unknown, includeCodes: boolean): string => {
-	if (Array.isArray(value)) {
-		return value.map((entry) => formatValue(entry, includeCodes)).filter(Boolean).join('、');
-	}
-	if (typeof value === 'number') return String(value);
-	if (typeof value !== 'string' || value.trim() === '') return '';
-
-	const trimmed = value.trim();
-	const entry = getCodeEntry(trimmed);
-	return entry ? includeCodes ? `${entry.label}（${entry.code}）` : entry.label : trimmed;
+export const getSpecificMetadataFacts = (item: ArchiveItem, options: { includeCodes?: boolean; locale?: string } = {}): DisplayFact[] => {
+  const { includeCodes = false, locale = 'zh-CN' } = options;
+  const visitorFirstFields = new Set(['people', 'body_transcription', 'message_transcription', 'transcription']);
+  const values = item.metadata.dimensions as unknown as Record<string, Record<string, unknown> | undefined>;
+  return getDimensionsForItem(item, locale).flatMap((definition) => {
+    const dimension = values[definition.dimension_code];
+    if (!dimension) return [];
+    const formatted = definition.fields.map((field) => visitorFirstFields.has(field) ? '' : formatValue(getLocalizedArchiveValue(item, `metadata.dimensions.${definition.dimension_code}.${field}`, locale), includeCodes, locale)).filter(Boolean);
+    if (!formatted.length) return [];
+    return [{ label: definition.name, value: formatted.join(isEnglishArchiveLocale(locale) ? '; ' : '；'), code: includeCodes ? definition.dimension_code : undefined,
+      originalText: definition.fields.some((field) => field.endsWith('transcription') && hasText(dimension[field])) }];
+  });
 };
-
-export const getSpecificMetadataFacts = (
-	item: ArchiveItem,
-	options: { includeCodes?: boolean } = {},
-): DisplayFact[] => {
-	const includeCodes = options.includeCodes ?? false;
-	const definitions = getDimensionsForItem(item);
-	const visitorFirstFields = new Set([
-		'people',
-		'body_transcription',
-		'message_transcription',
-		'transcription',
-	]);
-	const values = item.metadata.dimensions as unknown as Record<
-		string,
-		Record<string, unknown> | undefined
-	>;
-
-	return definitions.flatMap((definition) => {
-		const dimensionValue = values[definition.dimension_code];
-		if (!dimensionValue) return [];
-
-		const formattedValues = definition.fields
-			.map((field) => visitorFirstFields.has(field) ? '' : formatValue(dimensionValue[field], includeCodes))
-			.filter(Boolean);
-		if (formattedValues.length === 0) return [];
-
-		return [
-			{
-				label: definition.name,
-				value: formattedValues.join('；'),
-				code: includeCodes ? definition.dimension_code : undefined,
-			},
-		];
-	});
-};
-
-export const displayCode = (code: string | undefined) =>
-	hasText(code) ? `${getCodeLabel(code)}（${code}）` : '';
+export const displayCode = (code: string | undefined, locale: string = 'zh-CN') => hasText(code) ? isEnglishArchiveLocale(locale) ? `${getCodeLabel(code, locale)} (${code})` : `${getCodeLabel(code, locale)}（${code}）` : '';

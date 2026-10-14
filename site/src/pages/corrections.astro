@@ -1,109 +1,108 @@
 ---
+
+import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
+const locale = getLocale(Astro.url.pathname);
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const configuredEmail = import.meta.env.PUBLIC_CONTACT_EMAIL?.trim() ?? '';
 const contactEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(configuredEmail) ? configuredEmail : '';
-const requestTemplate = `档案永久编号：
-页面地址：
-申请类型：资料纠错／权利补充／限制公开／撤下申请
-需要核对的内容：
-可以帮助核对的依据：
-希望如何处理：
-回信方式（如需要）：`;
+const requestTemplate = t("档案永久编号：\n页面地址：\n申请类型：资料纠错／权利补充／限制公开／撤下申请\n需要核对的内容：\n可以帮助核对的依据：\n希望如何处理：\n回信方式（如需要）：", locale, {});
 const mailtoHref = contactEmail
   ? `mailto:${contactEmail}?subject=${encodeURIComponent('老旧默片｜档案纠错或撤下申请')}&body=${encodeURIComponent(requestTemplate)}`
   : '';
 ---
 
 <BaseLayout
-  title="纠错与撤下说明｜老旧默片"
-  description="了解如何针对公开档案提出资料纠错、权利补充、限制公开或撤下申请。"
+  title={t("纠错与撤下说明｜老旧默片", locale)}
+  description={t("了解如何针对公开档案提出资料纠错、权利补充、限制公开或撤下申请。", locale)}
 >
   <article class="correction-page">
     <header class="correction-heading">
-      <p class="correction-eyebrow">纠错与撤下</p>
-      <h1>如果某件档案需要更正，或不再适合公开，可以按这里的方式联系。</h1>
-      <p>本页没有在线表单，不会收集您填写的内容。请先准备核对材料，再通过联系站主或邮件提交。</p>
+      <p class="correction-eyebrow">{t("纠错与撤下", locale)}</p>
+      <h1>{t("如果某件档案需要更正，或不再适合公开，可以按这里的方式联系。", locale)}</h1>
+      <p>{t("本页没有在线表单，不会收集您填写的内容。请先准备核对材料，再通过联系站主或邮件提交。", locale)}</p>
     </header>
 
     <section class="correction-section" aria-labelledby="request-types-heading">
-      <h2 id="request-types-heading">可以提出哪些申请</h2>
+      <h2 id="request-types-heading">{t("可以提出哪些申请", locale)}</h2>
       <dl>
         <div>
-          <dt>资料纠错</dt>
-          <dd>题名、年代、地点、人物、事件或其他说明可能存在错误。</dd>
+          <dt>{t("资料纠错", locale)}</dt>
+          <dd>{t("题名、年代、地点、人物、事件或其他说明可能存在错误。", locale)}</dd>
         </div>
         <div>
-          <dt>权利补充</dt>
-          <dd>补充著作权、授权范围、署名方式或资料来源。</dd>
+          <dt>{t("权利补充", locale)}</dt>
+          <dd>{t("补充著作权、授权范围、署名方式或资料来源。", locale)}</dd>
         </div>
         <div>
-          <dt>限制公开</dt>
-          <dd>申请遮盖敏感内容、限制下载或缩小公开范围。</dd>
+          <dt>{t("限制公开", locale)}</dt>
+          <dd>{t("申请遮盖敏感内容、限制下载或缩小公开范围。", locale)}</dd>
         </div>
         <div>
-          <dt>撤下申请</dt>
-          <dd>申请暂时或长期停止公开某件档案及其发布副本。</dd>
+          <dt>{t("撤下申请", locale)}</dt>
+          <dd>{t("申请暂时或长期停止公开某件档案及其发布副本。", locale)}</dd>
         </div>
       </dl>
     </section>
 
     <section class="correction-section" aria-labelledby="request-process-heading">
-      <h2 id="request-process-heading">提交前请准备</h2>
+      <h2 id="request-process-heading">{t("提交前请准备", locale)}</h2>
       <ol>
         <li>
-          <strong>提供永久编号和页面地址</strong>
-          <span>永久编号通常以“LJM-”开头，用它可以避免认错档案。</span>
+          <strong>{t("提供永久编号和页面地址", locale)}</strong>
+          <span>{t("永久编号通常以“LJM-”开头，用它可以避免认错档案。", locale)}</span>
         </li>
         <li>
-          <strong>说明希望核对的内容</strong>
-          <span>明确指出哪句话、哪项资料或哪张发布图片需要处理。</span>
+          <strong>{t("说明希望核对的内容", locale)}</strong>
+          <span>{t("明确指出哪句话、哪项资料或哪张发布图片需要处理。", locale)}</span>
         </li>
         <li>
-          <strong>提供能够帮助判断的依据</strong>
-          <span>可以说明资料来源或关系，但不要通过公开网页提交身份证号、完整地址、签名等敏感信息。</span>
+          <strong>{t("提供能够帮助判断的依据", locale)}</strong>
+          <span>{t("可以说明资料来源或关系，但不要通过公开网页提交身份证号、完整地址、签名等敏感信息。", locale)}</span>
         </li>
         <li>
-          <strong>等待人工核对</strong>
-          <span>收到申请不等于立即修改；必要时会先暂时撤下，再核对档案和权利情况。</span>
+          <strong>{t("等待人工核对", locale)}</strong>
+          <span>{t("收到申请不等于立即修改；必要时会先暂时撤下，再核对档案和权利情况。", locale)}</span>
         </li>
       </ol>
     </section>
 
     <section class="correction-section" aria-labelledby="request-template-heading">
-      <h2 id="request-template-heading">申请内容模板</h2>
-      <p>复制模板后，请在您自己的邮件或文字工具中填写。站点不会在这一页保存任何申请内容。</p>
+      <h2 id="request-template-heading">{t("申请内容模板", locale)}</h2>
+      <p>{t("复制模板后，请在您自己的邮件或文字工具中填写。站点不会在这一页保存任何申请内容。", locale)}</p>
       <pre id="correction-request-template">{requestTemplate}</pre>
       <div class="request-actions">
-        <button class="ui-action ui-action--secondary" type="button" data-copy-correction-template>复制申请模板</button>
-        {contactEmail && <a class="ui-action ui-action--primary" href={mailtoHref}>发送邮件</a>}
+        <button class="ui-action ui-action--secondary" type="button" data-copy-correction-template>{t("复制申请模板", locale)}</button>
+        {contactEmail && <a class="ui-action ui-action--primary" href={localizePath(mailtoHref, locale)}>{t("发送邮件", locale)}</a>}
       </div>
       <p class="copy-feedback" data-copy-correction-feedback role="status" aria-live="polite"></p>
       {!contactEmail && (
         <aside class="contact-pending">
-          <strong>正式联系邮箱尚未配置</strong>
-          <span>当前可以先复制申请模板。站点所有者配置真实公开邮箱后，本页会自动显示“发送邮件”入口；这里不会使用虚构地址。</span>
+          <strong>{t("正式联系邮箱尚未配置", locale)}</strong>
+          <span>{t("当前可以先复制申请模板。站点所有者配置真实公开邮箱后，本页会自动显示“发送邮件”入口；这里不会使用虚构地址。", locale)}</span>
         </aside>
       )}
     </section>
 
     <aside class="privacy-boundary">
-      <strong>隐私边界</strong>
-      <p>请先发送必要的说明，不要在第一封联系中附带完整证件号码、精确私人地址、清晰签名、指纹或医疗资料。确有必要时，应先确认安全的补充方式。</p>
+      <strong>{t("隐私边界", locale)}</strong>
+      <p>{t("请先发送必要的说明，不要在第一封联系中附带完整证件号码、精确私人地址、清晰签名、指纹或医疗资料。确有必要时，应先确认安全的补充方式。", locale)}</p>
     </aside>
   </article>
 </BaseLayout>
 
 <script>
+import {t, getLocale} from '../i18n/ui';
+
   const copyButton = document.querySelector<HTMLButtonElement>('[data-copy-correction-template]');
   const template = document.querySelector<HTMLElement>('#correction-request-template');
   const feedback = document.querySelector<HTMLElement>('[data-copy-correction-feedback]');
   copyButton?.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(template?.textContent?.trim() ?? '');
-      if (feedback) feedback.textContent = '申请模板已复制。';
+      if (feedback) feedback.textContent = t("申请模板已复制。", getLocale());
     } catch {
-      if (feedback) feedback.textContent = '浏览器未允许自动复制，请手工选择模板文字。';
+      if (feedback) feedback.textContent = t("浏览器未允许自动复制，请手工选择模板文字。", getLocale());
     }
   });
 </script>

@@ -1,3 +1,4 @@
+import { clientText as ct, clientLocale, clientError } from '../i18n/client';
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
 const form = $<HTMLFormElement>('#submission-form');
 const fields = $<HTMLFieldSetElement>('#submission-fields');
@@ -34,16 +35,16 @@ function remember(value: Receipt) {
 function showReceipt(value: Receipt) {
  remember(value);
  $('#receipt-id').textContent = value.id; $('#receipt-key').textContent = value.key;
- $('#receipt-title').textContent = value.confirmed ? '投稿已收到，谢谢您的信任。' : '接收状态待确认，请保留回执。';
- $('#receipt-description').textContent = value.confirmed ? '资料已进入私密审核区。您可以凭回执查看进度，或申请停止处理。' : '网络未返回明确结果。请先用下方查询功能确认是否收到，避免重复投稿；不要丢失查询密钥。';
+ $('#receipt-title').textContent = value.confirmed ? ct('投稿已收到，谢谢您的信任。') : ct('接收状态待确认，请保留回执。');
+ $('#receipt-description').textContent = value.confirmed ? ct('资料已进入私密审核区。您可以凭回执查看进度，或申请停止处理。') : ct('网络未返回明确结果。请先用下方查询功能确认是否收到，避免重复投稿；不要丢失查询密钥。');
  $('#submission-receipt').hidden = false;
 }
 async function jsonRequest(url: string, payload: unknown) {
  const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 20_000);
  try {
-  const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-LJM-Submission': '1' }, body: JSON.stringify(payload), signal: controller.signal, cache: 'no-store' });
-  const data = await response.json().catch(() => { throw new Error('投稿通道暂时无法连接，请稍后重试。'); });
-  if (!response.ok) throw new Error(data.error || '操作未完成，请稍后重试。');
+  const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-LJM-Submission': '1', 'X-LJM-Language': clientLocale() }, body: JSON.stringify(payload), signal: controller.signal, cache: 'no-store' });
+  const data = await response.json().catch(() => { throw new Error(ct('投稿通道暂时无法连接，请稍后重试。')); });
+  if (!response.ok) throw new Error(clientError(data.error) || ct('操作未完成，请稍后重试。'));
   return data;
  } finally { clearTimeout(timer); }
 }
@@ -54,45 +55,45 @@ async function checkService() {
   if (!response.ok || !config.available || typeof config.consent_version !== 'string' || !config.consent_version) throw new Error();
   consentVersion = config.consent_version;
   available = true; submit.disabled = false;
-  service.textContent = config.local_preview ? '本地体验：投稿只进入本机的私密审核区。' : '投稿通道已开放。您填写的内容仅在点击提交后发送。';
+  service.textContent = config.local_preview ? ct('本地体验：投稿只进入本机的私密审核区。') : ct('投稿通道已开放。您填写的内容仅在点击提交后发送。');
  } catch {
   available = false; consentVersion = ''; submit.disabled = true; service.dataset.unavailable = '';
-  service.textContent = '投稿通道暂未开放或连接失败。当前不会发送资料；请稍后刷新重试。';
+  service.textContent = ct('投稿通道暂未开放或连接失败。当前不会发送资料；请稍后刷新重试。');
  }
 }
 function renderImages() {
  previews.replaceChildren();
  for (const [index, entry] of selected.entries()) {
   const li = document.createElement('li');
-  const img = document.createElement('img'); img.src = entry.url; img.alt = `第 ${index + 1} 张待投稿副本`; img.width = 200; img.height = 120;
+  const img = document.createElement('img'); img.src = entry.url; img.alt = ct("第 {0} 张待投稿副本", {"0": (index + 1)}); img.width = 200; img.height = 120;
   const caption = document.createElement('p'); caption.textContent = `${index + 1}. ${entry.file.name} · ${(entry.file.size / 1024 ** 2).toFixed(2)} MB`;
-  const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '移除这张'; remove.setAttribute('aria-label', `移除第 ${index + 1} 张图片`);
+  const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = ct('移除这张'); remove.setAttribute('aria-label', ct("移除第 {0} 张图片", {"0": (index + 1)}));
   remove.addEventListener('click', () => { URL.revokeObjectURL(entry.url); selected = selected.filter(item => item !== entry); dirty = true; renderImages(); });
   li.append(img, caption, remove); previews.append(li);
  }
- fileFeedback.textContent = selected.length ? `已选择 ${selected.length} / 8 张，合计 ${(selected.reduce((sum, i) => sum + i.file.size, 0) / 1024 ** 2).toFixed(2)} / 20 MB。` : '尚未选择图片。';
+ fileFeedback.textContent = selected.length ? ct("已选择 {0} / 8 张，合计 {1} / 20 MB。", {"0": (selected.length), "1": ((selected.reduce((sum, i) => sum + i.file.size, 0) / 1024 ** 2).toFixed(2))}) : ct('尚未选择图片。');
 }
 async function addFiles(files: File[]) {
  if (busy || selecting) return;
- if (!secureContext) { fileFeedback.textContent = '当前访问地址不是安全连接，无法读取和加密图片。请通过网站的正式地址访问后再投稿。'; picker.value = ''; return; }
+ if (!secureContext) { fileFeedback.textContent = ct('当前访问地址不是安全连接，无法读取和加密图片。请通过网站的正式地址访问后再投稿。'); picker.value = ''; return; }
  selecting = true; submit.disabled = true;
  const errors: string[] = [];
  try {
   for (const file of files) {
-   if (selected.length >= 8) { errors.push('最多选择 8 张图片。'); break; }
-   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || !/\.(jpe?g|png|webp)$/i.test(file.name) || /(master|original|raw|主档|原始)/i.test(file.name)) { errors.push(`${file.name}：仅接收 JPG、PNG、WebP 筛选副本。`); continue; }
-   if (!file.size || file.size > 5 * 1024 ** 2 || selected.reduce((sum, i) => sum + i.file.size, 0) + file.size > 20 * 1024 ** 2) { errors.push(`${file.name}：每张最多 5 MB，合计最多 20 MB。`); continue; }
+   if (selected.length >= 8) { errors.push(ct('最多选择 8 张图片。')); break; }
+   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || !/\.(jpe?g|png|webp)$/i.test(file.name) || /(master|original|raw|主档|原始)/i.test(file.name)) { errors.push(ct("{0}：仅接收 JPG、PNG、WebP 筛选副本。", {"0": (file.name)})); continue; }
+   if (!file.size || file.size > 5 * 1024 ** 2 || selected.reduce((sum, i) => sum + i.file.size, 0) + file.size > 20 * 1024 ** 2) { errors.push(ct("{0}：每张最多 5 MB，合计最多 20 MB。", {"0": (file.name)})); continue; }
    const hash = await digest(await file.arrayBuffer());
-   if (selected.some(entry => entry.hash === hash)) { errors.push(`${file.name}：已选过相同图片。`); continue; }
+   if (selected.some(entry => entry.hash === hash)) { errors.push(ct("{0}：已选过相同图片。", {"0": (file.name)})); continue; }
    const url = URL.createObjectURL(file);
    try {
     await new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => img.naturalWidth * img.naturalHeight <= 40_000_000 ? resolve() : reject(); img.onerror = reject; img.src = url; });
     selected.push({ file, url, hash }); dirty = true;
-   } catch { URL.revokeObjectURL(url); errors.push(`${file.name}：无法预览或像素过大，请重新导出副本。`); }
+   } catch { URL.revokeObjectURL(url); errors.push(ct("{0}：无法预览或像素过大，请重新导出副本。", {"0": (file.name)})); }
   }
   renderImages();
   if (errors.length) fileFeedback.textContent += ` ${errors.join(' ')}`;
- } catch { fileFeedback.textContent = '图片读取失败，请重新选择。'; }
+ } catch { fileFeedback.textContent = ct('图片读取失败，请重新选择。'); }
  finally { selecting = false; submit.disabled = !available; picker.value = ''; }
 }
 picker.addEventListener('change', () => void addFiles(Array.from(picker.files || [])));
@@ -106,7 +107,7 @@ $('#contact-type').addEventListener('change', () => {
  const type = $<HTMLSelectElement>('#contact-type').value;
  const contact = $<HTMLInputElement>('#submission-contact');
  contact.type = type === 'email' ? 'email' : type === 'phone' ? 'tel' : 'text';
- contact.placeholder = type === 'email' ? '您常用的邮箱' : type === 'phone' ? '便于联系的电话号码' : '您的微信号';
+ contact.placeholder = type === 'email' ? ct('您常用的邮箱') : type === 'phone' ? ct('便于联系的电话号码') : ct('您的微信号');
 });
 for (const input of form.querySelectorAll<HTMLInputElement>('input[name=attribution]')) input.addEventListener('change', () => {
  const named = (new FormData(form)).get('attribution') === 'named'; $('#credit-field').hidden = !named; $<HTMLInputElement>('#submission-credit').required = named;
@@ -115,20 +116,20 @@ window.addEventListener('beforeunload', event => { if (dirty || busy) { event.pr
 function upload(payload: FormData): Promise<{ id: string }> {
  return new Promise((resolve, reject) => {
   const xhr = new XMLHttpRequest(); xhr.open('POST', '/api/submissions'); xhr.timeout = 120_000;
-  xhr.setRequestHeader('X-LJM-Submission', '1');
-  xhr.upload.onprogress = event => { if (event.lengthComputable) { progress.value = Math.round(event.loaded / event.total * 100); announce(progress.value === 100 ? '图片已发送，正在检查并保存，请稍候…' : `正在上传 ${progress.value}%…`); } };
-  xhr.onload = () => { try { const data = JSON.parse(xhr.responseText); if (xhr.status < 200 || xhr.status >= 300) reject(new Error(data.error || '投稿未完成。')); else resolve(data); } catch { reject(new Error('没有收到明确的接收结果，请先查询回执。')); } };
-  xhr.onerror = xhr.ontimeout = () => reject(new Error('连接中断或等待超时，请先查询回执确认是否收到；未收到时可以重试。'));
+  xhr.setRequestHeader('X-LJM-Submission', '1'); xhr.setRequestHeader('X-LJM-Language', clientLocale());
+  xhr.upload.onprogress = event => { if (event.lengthComputable) { progress.value = Math.round(event.loaded / event.total * 100); announce(progress.value === 100 ? ct('图片已发送，正在检查并保存，请稍候…') : ct("正在上传 {0}%…", {"0": (progress.value)})); } };
+  xhr.onload = () => { try { const data = JSON.parse(xhr.responseText); if (xhr.status < 200 || xhr.status >= 300) reject(new Error(clientError(data.error) || ct('投稿未完成。'))); else resolve(data); } catch { reject(new Error(ct('没有收到明确的接收结果，请先查询回执。'))); } };
+  xhr.onerror = xhr.ontimeout = () => reject(new Error(ct('连接中断或等待超时，请先查询回执确认是否收到；未收到时可以重试。')));
   xhr.send(payload);
  });
 }
 form.addEventListener('submit', async event => {
  event.preventDefault(); if (busy || selecting || !available || !form.reportValidity()) return;
- if (!consentVersion) { announce('同意条款版本尚未获取，请刷新页面后再试。'); return; }
- if (!selected.length) { announce('请先选择至少一张经过筛选的图片副本。'); picker.focus(); return; }
+ if (!consentVersion) { announce(ct('同意条款版本尚未获取，请刷新页面后再试。')); return; }
+ if (!selected.length) { announce(ct('请先选择至少一张经过筛选的图片副本。')); picker.focus(); return; }
  const data = new FormData(form);
  busy = true; submit.disabled = true; fields.disabled = true; progress.hidden = false; progress.value = 0;
- announce('正在准备图片副本…');
+ announce(ct('正在准备图片副本…'));
  try {
   const key = receipt && !receipt.confirmed ? receipt.key : hex(crypto.getRandomValues(new Uint8Array(32)));
   const id = `TG-${(await digest(new TextEncoder().encode(key))).slice(0, 24).toUpperCase()}`;
@@ -143,38 +144,38 @@ form.addEventListener('submit', async event => {
   payload.append('key', key); payload.append('consent_version', consentVersion);
   for (const { file } of selected) payload.append('images', file, file.name);
   const result = await upload(payload);
-  if (result.id !== id) throw new Error('接收回执需要核实，请先查询进度。');
+  if (result.id !== id) throw new Error(ct('接收回执需要核实，请先查询进度。'));
   showReceipt({ id, key, confirmed: true });
   for (const entry of selected) URL.revokeObjectURL(entry.url);
-  selected = []; renderImages(); form.reset(); $('#story-count').textContent = '0 / 3000'; $('#credit-field').hidden = true; $<HTMLInputElement>('#submission-credit').required = false; $<HTMLInputElement>('#submission-contact').type = 'email'; $<HTMLInputElement>('#submission-contact').placeholder = '您常用的邮箱';
-  dirty = false; announce('提交完成。请保存上方回执；继续填写可投另一份资料。');
+  selected = []; renderImages(); form.reset(); $('#story-count').textContent = '0 / 3000'; $('#credit-field').hidden = true; $<HTMLInputElement>('#submission-credit').required = false; $<HTMLInputElement>('#submission-contact').type = 'email'; $<HTMLInputElement>('#submission-contact').placeholder = ct('您常用的邮箱');
+  dirty = false; announce(ct('提交完成。请保存上方回执；继续填写可投另一份资料。'));
   $('#submission-receipt').focus(); $('#submission-receipt').scrollIntoView({ behavior: 'smooth', block: 'start' });
- } catch (error) { announce(error instanceof Error ? error.message : '投稿未完成，请稍后重试。'); if (receipt) showReceipt(receipt); }
+ } catch (error) { announce(error instanceof Error ? clientError(error.message) : ct('投稿未完成，请稍后重试。')); if (receipt) showReceipt(receipt); }
  finally { busy = false; submit.disabled = !available; fields.disabled = false; progress.hidden = true; }
 });
-const receiptText = () => receipt ? `老旧默片 · 投稿回执\n投稿编号：${receipt.id}\n查询密钥：${receipt.key}\n查询页面：${location.origin}/contribute/#submission-lookup\n接收状态：${receipt.confirmed ? '已收到' : '待查询确认'}\n请勿公开分享查询密钥。` : '';
+const receiptText = () => receipt ? ct("老旧默片 · 投稿回执\n投稿编号：{0}\n查询密钥：{1}\n查询页面：{2}/contribute/#submission-lookup\n接收状态：{3}\n请勿公开分享查询密钥。", {"0": (receipt.id), "1": (receipt.key), "2": (location.origin + (clientLocale() === 'en' ? '/en' : '')), "3": (receipt.confirmed ? ct('已收到') : ct('待查询确认'))}) : '';
 $('#download-receipt').addEventListener('click', () => {
  if (!receipt) return; const url = URL.createObjectURL(new Blob([receiptText()], { type: 'text/plain;charset=utf-8' }));
- const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${receipt.id}-回执.txt`; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+ const anchor = document.createElement('a'); anchor.href = url; anchor.download = ct("{0}-回执.txt", {"0": (receipt.id)}); anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
-$('#copy-receipt').addEventListener('click', async () => { try { await navigator.clipboard.writeText(receiptText()); $('#copy-receipt').textContent = '已复制'; } catch { $('#copy-receipt').textContent = '请手动复制或保存回执'; } });
+$('#copy-receipt').addEventListener('click', async () => { try { await navigator.clipboard.writeText(receiptText()); $('#copy-receipt').textContent = ct('已复制'); } catch { $('#copy-receipt').textContent = ct('请手动复制或保存回执'); } });
 function showLookup(data: { status_label: string; message: string; withdrawal_requested: boolean; status: string; in_preparation: boolean }) {
- lookupResult.textContent = `${data.withdrawal_requested ? '已收到停止处理申请，等待站主核查。' : data.status_label}${data.in_preparation ? '\n已进入档案整理流程；初审通过不等于已公开发布。' : ''}${data.message ? `\n站主的说明：${data.message}` : ''}`;
+ lookupResult.textContent = `${data.withdrawal_requested ? ct('已收到停止处理申请，等待站主核查。') : ct(data.status_label)}${data.in_preparation ? ct('\n已进入档案整理流程；初审通过不等于已公开发布。') : ''}${data.message ? ct("\n站主的说明：{0}", {"0": (data.message)}) : ''}`;
  $('#withdraw-controls').hidden = data.status === 'withdrawn' || data.withdrawal_requested;
 }
 lookupForm.addEventListener('input', () => { activeLookup = null; $('#withdraw-controls').hidden = true; lookupResult.textContent = ''; });
 lookupForm.addEventListener('submit', async event => {
  event.preventDefault(); const button = lookupForm.querySelector('button')!; if (button.disabled) return;
- button.disabled = true; activeLookup = null; $('#withdraw-controls').hidden = true; lookupResult.textContent = '正在查询…';
+ button.disabled = true; activeLookup = null; $('#withdraw-controls').hidden = true; lookupResult.textContent = ct('正在查询…');
  const credentials = { id: lookupId.value.trim().toUpperCase(), key: lookupKey.value.trim() };
  try { const data = await jsonRequest('/api/submissions/lookup', credentials); activeLookup = credentials; showLookup(data); if (receipt?.id === credentials.id) showReceipt({ ...receipt, confirmed: true }); }
- catch (error) { lookupResult.textContent = error instanceof Error ? error.message : '查询失败，请稍后重试。'; }
+ catch (error) { lookupResult.textContent = error instanceof Error ? clientError(error.message) : ct('查询失败，请稍后重试。'); }
  finally { button.disabled = false; }
 });
 $('#withdraw-submission').addEventListener('click', async () => {
  if (!activeLookup) return; const button = $<HTMLButtonElement>('#withdraw-submission'); button.disabled = true;
  try { showLookup(await jsonRequest('/api/submissions/withdraw', activeLookup)); }
- catch (error) { lookupResult.textContent = error instanceof Error ? error.message : '申请未完成，请稍后重试。'; }
+ catch (error) { lookupResult.textContent = error instanceof Error ? clientError(error.message) : ct('申请未完成，请稍后重试。'); }
  finally { button.disabled = false; }
 });
 try {
@@ -183,5 +184,5 @@ try {
 } catch { /* 不持久化表单正文、联系方式或图片。 */ }
 if (!secureContext) {
  available = false; submit.disabled = true; service.dataset.unavailable = '';
- service.textContent = '当前访问地址不是安全连接，无法加密处理投稿内容。请改用网站的正式地址（https）访问后再投稿。';
+ service.textContent = ct('当前访问地址不是安全连接，无法加密处理投稿内容。请改用网站的正式地址（https）访问后再投稿。');
 } else void checkService();
