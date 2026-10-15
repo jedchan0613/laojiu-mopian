@@ -99,7 +99,7 @@ const csvEscape = (value) => {
 
 // ---------- 批次读取 ----------
 
-const imageNamePattern = /^(front-public|back-public|detail-\d{2}-public)\.(jpg|jpeg|png|webp)$/i;
+const imageNamePattern = /^(front-public|back-public|detail-(0[1-9]|[1-9]\d)-public)\.(jpg|jpeg|png|webp)$/i;
 
 const imageSortWeight = (name) => {
 	const lower = name.toLowerCase();
@@ -427,7 +427,7 @@ const encodeItemImages = async (item) => {
 			throw new Error('这件藏品的图片总量过大，请拆小后在管理页面单独补充。');
 		}
 		const mimeType = imageTypes.get(path.extname(name).toLowerCase());
-		images.push({ kind: 'new', originalName: name, data: `data:${mimeType};base64,${buffer.toString('base64')}` });
+		images.push({ kind: 'new', originalName: name, publicationName: name, data: `data:${mimeType};base64,${buffer.toString('base64')}` });
 	}
 	return images;
 };
@@ -465,10 +465,14 @@ const main = async () => {
 	if (!batchDirectoryArg) usage();
 	const batchDirectory = path.resolve(batchDirectoryArg);
 
+	let health;
 	try {
-		await fetch(`${serverUrl}/healthz`);
+		health = await fetchJson('/healthz');
 	} catch {
 		throw new Error('本地档案管理服务没有运行。请先运行 node local-admin/server.mjs，再执行本脚本。');
+	}
+	if (!health?.capabilities?.publicationImageNames) {
+		throw new Error('管理服务尚不支持保留批次图片的正背面命名。请更新并重启本地管理服务后重试，避免第二幅照片被误存为背面。');
 	}
 
 	const csvBuffer = await fs.readFile(path.join(batchDirectory, 'items.csv')).catch(() => {

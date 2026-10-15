@@ -41,7 +41,8 @@ const albumCover = albumView?.images[0] ? getResponsiveImage(albumView.images[0]
 const dateSummary = albumDateSummary(members);
 const yearRange = dateSummary.range;
 const photoCount = photoEntries.length;
-const albumSummary = albumLead || t("已公开 {0} 张照片。", locale, { 0: photoCount });
+const imageCount = photoEntries.reduce((count, entry) => count + entry.view.images.length, 0);
+const albumSummary = albumLead || t("已公开 {0} 件照片档案，共 {1} 幅附图。", locale, { 0: photoCount, 1: imageCount });
 const pendingTranslation = photoEntries.some((entry) => entry.view.translationState !== 'published') ||
   (Boolean(albumView) && albumView!.translationState !== 'published');
 const albumUrl = Astro.site ? new URL(localizePath(albumHref(albumId), locale), Astro.site) : undefined;
@@ -96,9 +97,11 @@ const breadcrumbStructuredData = {
       <p class="section-mark icon-heading"><span>{t("相册", locale)}</span></p>
       <h1>{albumTitle}</h1>
       <p class="album-meta">
-        <span>{t("已公开 {0} 张照片", locale, { 0: photoCount })}</span>
-        {yearRange && <span>{t("已知照片年代：{0}", locale, { 0: yearRange })}</span>}
-        {dateSummary.unknownPhotoCount > 0 && <span>{t("{0} 张年代待考", locale, { 0: dateSummary.unknownPhotoCount })}</span>}
+        <span>{t("{0} 件照片档案 · {1} 幅附图", locale, { 0: photoCount, 1: imageCount })}</span>
+        {yearRange && <span>{dateSummary.uncertainPhotoCount > 0
+          ? t("照片年代线索：{0}（含推测）", locale, { 0: yearRange })
+          : t("已知照片年代：{0}", locale, { 0: yearRange })}</span>}
+        {dateSummary.unknownPhotoCount > 0 && <span>{t("{0} 件年代待考", locale, { 0: dateSummary.unknownPhotoCount })}</span>}
       </p>
       {albumLead && <p class="album-lead">{albumLead}</p>}
       {!albumView && <p class="album-order-note">{t("相册总档案尚未公开，以下为已公开照片。", locale)}</p>}
@@ -119,7 +122,7 @@ const breadcrumbStructuredData = {
             loading="eager"
             decoding="async"
           />
-          <figcaption>{t("相册封面或整页记录", locale)}</figcaption>
+          <figcaption>{albumView?.imageDescriptions[0] || t("相册封面或整页记录", locale)}</figcaption>
         </figure>
       )}
     </header>
@@ -154,7 +157,7 @@ const breadcrumbStructuredData = {
             <div class="album-photo-copy">
               <small>{entry.item.core.original_position?.trim() || t("页序未标注", locale)}</small>
               <strong>{entry.view.title}</strong>
-              <span>{entry.view.typeLabel} · {entry.view.dateDisplay}</span>
+              <span>{entry.view.typeLabel} · {entry.view.dateDisplay} · {t("{0} 幅附图", locale, { 0: entry.view.images.length })}</span>
             </div>
           </a></li>
         ))}

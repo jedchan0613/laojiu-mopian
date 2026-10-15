@@ -1,4 +1,5 @@
 import { compareAlbumPositions, parseAlbumPosition, albumPositionIdentity } from './album-position.mjs';
+import { filterApprovedMetadataIssues } from './publication-metadata-approvals.mjs';
 
 const managedCoreFields = new Set([
 	'record_status', 'item_id', 'collection_code', 'privacy_level', 'use_status', 'master_file_path',
@@ -530,7 +531,7 @@ const getCollectionCodeResult = () => {
 		}
 		if (dimensionCodes.length) segments.push(dimensionCodes.join('+'));
 	}
-	return { code: segments.join('_'), issues };
+	return { code: segments.join('_'), issues: filterApprovedMetadataIssues(state.current, issues) };
 };
 
 const getCollectionCodeBreakdown = () => (currentCollectionRules()?.required_dimensions ?? [])

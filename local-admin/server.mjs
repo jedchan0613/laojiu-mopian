@@ -16,6 +16,7 @@ import { createAccountHandler } from './account-server.mjs';
 import { createMailer } from './mail.mjs';
 import { enqueueProgressNotification } from './notification-queue.mjs';
 import { createTranslationStore } from './translations.mjs';
+import { filterApprovedMetadataIssues } from '../shared/publication-metadata-approvals.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
@@ -1073,11 +1074,12 @@ const getCollectionCodeResult = (record, collectionCodeRules, codeDictionary) =>
 		}
 		if (dimensionCodes.length) segments.push(dimensionCodes.join('+'));
 	}
+	const remainingIssues = filterApprovedMetadataIssues(record, issues);
 	return {
 		code: segments.join('_'),
 		segments,
-		issues,
-		complete: issues.length === 0,
+		issues: remainingIssues,
+		complete: remainingIssues.length === 0,
 	};
 };
 
@@ -1672,8 +1674,20 @@ const stageUploadedImage = async (request, operationId, signal) => {
 	}
 };
 
-const nextImageName = async (itemId, reservedNames, position, extension) => {
+const nextImageName = async (itemId, reservedNames, position, extension, publicationName) => {
 	const inboxItemDirectory = path.join(inboxDirectory, itemId);
+	// 批量资料已经区分正面、背面和组内其他图片，不能再按上传顺序改写其角色。
+	if (publicationName !== undefined) {
+		if (typeof publicationName !== 'string' || !/^(front|back|detail-(0[1-9]|[1-9]\d))-public\.(jpe?g|png|webp)$/i.test(publicationName)) {
+			throw new Error('发布副本文件名无效，请使用 front-public、back-public 或 detail-01-public 等规范名称。');
+		}
+		const filename = publicationName.toLowerCase().replace(/\.jpeg$/, '.jpg');
+		if (path.extname(filename) !== extension) throw new Error('发布副本文件名与图片实际格式不一致。');
+		if (reservedNames.has(filename) || await pathExists(path.join(inboxItemDirectory, filename))) {
+			throw new Error(`发布副本文件名已存在，已停止覆盖：${filename}`);
+		}
+		return filename;
+	}
 	const frontName = `front-public${extension}`;
 	const backName = `back-public${extension}`;
 	if (
@@ -1777,7 +1791,7 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 			if (image.kind === 'staged') {
 				const staged = stagedUploads.get(image.uploadToken);
 				if (!staged || staged.operationId !== operationId) throw new Error('临时图片已经失效，请重新保存。');
-				const filename = await nextImageName(itemId, reservedNames, position, allowedImageTypes.get(staged.mimeType));
+				const filename = await nextImageName(itemId, reservedNames, position, allowedImageTypes.get(staged.mimeType), image.publicationName);
 				const targetPath = path.join(inboxItemDirectory, filename);
 				await fs.copyFile(staged.filePath, targetPath, fsConstants.COPYFILE_EXCL);
 				newlyWrittenFiles.push(targetPath);
@@ -1787,7 +1801,7 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 			}
 			if (image.kind !== 'new') throw new Error('图片列表包含无法识别的项目。');
 			const decoded = decodeUploadedImage(image);
-			const filename = await nextImageName(itemId, reservedNames, position, decoded.extension);
+			const filename = await nextImageName(itemId, reservedNames, position, decoded.extension, image.publicationName);
 			const targetPath = path.join(inboxItemDirectory, filename);
 			await fs.writeFile(targetPath, decoded.buffer, { flag: 'wx', signal });
 			newlyWrittenFiles.push(targetPath);
@@ -2510,7 +2524,7 @@ const adminServer = http.createServer(async (request, response) => {
 		if (!onlineMode && await publicContacts(request, response, url.pathname)) return;
 		if (!onlineMode && accountService && await accountService.handler(request, response, url.pathname)) return;
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/healthz') {
-			sendJson(response, 200, { ok: true });
+			sendJson(response, 200, { ok: true, capabilities: { publicationImageNames: true } });
 			return;
 		}
 		const adminIdentity = onlineMode ? await accessAuthenticator.verifyRequest(request) : null;
@@ -2718,8 +2732,8 @@ const adminServer = http.createServer(async (request, response) => {
 		}
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname.startsWith('/admin/')) {
 			// 仅提供管理页需要的一个共享模块；此分支之前已完成线上 Access 鉴权。
-			if (url.pathname === '/admin/album-position.mjs') {
-				await sendFile(response, sharedAlbumModuleDirectory, '/album-position.mjs', {
+			if (['/admin/album-position.mjs', '/admin/publication-metadata-approvals.mjs'].includes(url.pathname)) {
+				await sendFile(response, sharedAlbumModuleDirectory, `/${path.basename(url.pathname)}`, {
 					cacheControl: 'private, max-age=300', request,
 				});
 				return;

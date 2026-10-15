@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { filterApprovedMetadataIssues } from '../../shared/publication-metadata-approvals.mjs';
 
 const root = new URL('../../', import.meta.url);
 const server = (await readFile(new URL('local-admin/server.mjs', root), 'utf8')).replaceAll('\r\n', '\n');
@@ -12,10 +13,10 @@ const declaration = (name) => {
   return server.slice(start, server.indexOf('\nconst ', start + 1));
 };
 // 使用正式发布流程中的实际函数，不以测试专用规则代替服务器检查。
-const evaluate = new Function([
+const evaluate = new Function('filterApprovedMetadataIssues', [
   'hasMeaningfulValue', 'normalizeRuleField', 'getRuleFieldValue',
   'toCollectionCodeToken', 'toCollectionTextToken', 'getCollectionCodeResult',
-].map(declaration).join('\n') + '\nreturn getCollectionCodeResult;')();
+].map(declaration).join('\n') + '\nreturn getCollectionCodeResult;')(filterApprovedMetadataIssues);
 const evaluateRecord = (record) => evaluate(record, rules, dictionary);
 
 // 自动部署先测试程序，后接入服务器正式资料；测试不能读取尚不存在的

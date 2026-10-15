@@ -532,5 +532,10 @@
   "同册下一张": "Next in album",
   "相册中的位置": "Position in album",
   "相册总档案尚未公开，以下为已公开照片。": "The album record is not public yet. Public photographs appear below.",
-  "{0} 张年代待考": "Photographs awaiting dates: {0}"
+  "{0} 张年代待考": "Photographs awaiting dates: {0}",
+  "已公开 {0} 件照片档案，共 {1} 幅附图。": "{0} published photograph records with {1} images.",
+  "{0} 件照片档案 · {1} 幅附图": "{0} photograph records · {1} images",
+  "{0} 件年代待考": "{0} records with unknown dates",
+  "{0} 幅附图": "{0} images",
+  "照片年代线索：{0}（含推测）": "Date clues: {0} (includes estimates)"
 }

@@ -215,4 +215,48 @@ test('相册关联在真实服务中保持草稿隔离、输入安全与发布�
 		const history = await readdir(path.join(privateRoot, 'history')).catch(() => []);
 		assert.deepEqual(history, []);
 	});
+	await t.test('批次脚本经真实接口保存时保留组内 detail，不把第二幅改为背面', async () => {
+		const batch = path.join(fixtureRoot, 'batch');
+		const imageFolder = path.join(batch, 'images', 'T001');
+		await mkdir(imageFolder, { recursive: true });
+		const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j8WQAAAAASUVORK5CYII=', 'base64');
+		const names = ['front-public.png', 'detail-01-public.png', 'detail-02-public.png'];
+		// PNG 结束块后的不同测试标识让各文件校验值不同；不使用任何真实图片。
+		for (const [index, name] of names.entries()) await writeFile(path.join(imageFolder, name), Buffer.concat([png, Buffer.from(`fixture-${index}`)]));
+		await writeFile(path.join(batch, 'items.csv'), 'temp_id,core.title,core.accession_date,core.object_type,core.batch_id,core.date_display,core.physical_location,core.album_id,view.image_descriptions\nT001,合成测试小组,2001-01-01,PHO,TEST-B01,年代未知,测试柜,测试相册,第一幅;第二幅;第三幅\n');
+		const cli = spawn(process.execPath, [fileURLToPath(new URL('local-admin/batch-intake.mjs', projectRoot)), batch, '--apply', '--confirmed-publication-copies'], {
+			env: { ...process.env, LJM_ADMIN_URL: origin }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
+		});
+		let output = ''; cli.stdout.on('data', chunk => { output += chunk; }); cli.stderr.on('data', chunk => { output += chunk; });
+		const [code] = await once(cli, 'exit');
+		assert.equal(code, 0, output);
+		const result = await readFile(path.join(batch, '_result.csv'), 'utf8');
+		const itemId = result.match(/LJM-20010101-PHO-\d{3}/)?.[0];
+		assert.ok(itemId, result);
+		const draft = JSON.parse(await readFile(path.join(privateRoot, 'drafts', `${itemId}.json`), 'utf8'));
+		assert.deepEqual(draft.record.core.publication_file_path.map(file => path.basename(file)), names);
+		assert.deepEqual(draft.record.public_view.image_descriptions, ['第一幅', '第二幅', '第三幅']);
+		assert.deepEqual(['record_status', 'privacy_level', 'use_status'].map(field => draft.record.core[field]), ['SUS','Y','U0']);
+		assert.deepEqual((await readdir(path.join(privateRoot, 'inbox', itemId))).sort(), [...names].sort());
+		assert.equal(await readFile(sourcePath, 'utf8'), sourceBefore);
+	});
+	await t.test('显式图片命名拒绝路径、格式错误和覆盖，并回滚本次新图', async () => {
+		const pngData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j8WQAAAAASUVORK5CYII=';
+		const image = publicationName => ({ kind:'new', originalName:'test.png', publicationName, data:pngData });
+		const record = fixture('PHO', '080');
+		for (const name of ['../front-public.png', 'detail-00-public.png', 'front-public.jpg', '', null]) {
+			const result = await post('/api/save-draft', { isNew:true, record, confirmedPublicationCopies:true, images:[image(name)] });
+			assert.equal(result.status, 400, JSON.stringify(result.body));
+		}
+		const conflict = await post('/api/save-draft', { isNew:true, record, confirmedPublicationCopies:true, images:[image('detail-01-public.png'), image('detail-01-public.png')] });
+		assert.equal(conflict.status, 400);
+		assert.deepEqual(await readdir(path.join(privateRoot, 'inbox', record.core.item_id)), []);
+		await assert.rejects(readFile(path.join(privateRoot, 'drafts', `${record.core.item_id}.json`)));
+		const saved = await post('/api/save-draft', { isNew:true, record, confirmedPublicationCopies:true, images:[image('front-public.png')] });
+		assert.equal(saved.status, 200, JSON.stringify(saved.body));
+		const original = await readFile(path.join(privateRoot, 'inbox', record.core.item_id, 'front-public.png'));
+		const overwrite = await post('/api/save-draft', { isNew:false, record:saved.body.draft.record, confirmedPublicationCopies:true, images:[image('front-public.png')] });
+		assert.equal(overwrite.status, 400);
+		assert.deepEqual(await readFile(path.join(privateRoot, 'inbox', record.core.item_id, 'front-public.png')), original);
+	});
 });
