@@ -91,7 +91,7 @@ export const validateTranslationRecord = (item, translation) => {
   const warning = (message, field) => { warnings.push(message); issues.push({ level: 'warning', field, message }); };
   const source = getPublicTranslationSource(item);
   if (!isRecord(translation)) return { valid: false, errors: ['译文记录格式无效。'], warnings, issues, state: 'invalid' };
-  if (translation.schema_version !== 1 || translation.locale !== 'en' || translation.item_id !== source.item_id) error('译文版本、语言或永久编号不匹配。');
+  if (translation.schema_version !== 1 || !['en', 'th'].includes(translation.locale) || translation.item_id !== source.item_id) error('译文版本、语言或永久编号不匹配。');
   if (!['draft', 'review', 'published'].includes(translation.status)) error('译文状态无效。');
   if (!/^[a-f0-9]{64}$/.test(translation.source_hash ?? '')) error('译文来源指纹无效。');
   if (!isRecord(translation.fields) || !isRecord(translation.image_descriptions ?? {})) error('译文内容必须使用字段映射。');
@@ -125,16 +125,18 @@ export const validateTranslationRecord = (item, translation) => {
   }
   if (!['none', 'full', 'summary'].includes(translation.transcription_kind ?? 'none')) error('原文译文类型无效。');
   if (Object.hasOwn(translation.fields ?? {}, 'public_view.transcription') && !['full', 'summary'].includes(translation.transcription_kind)) error('原文译文必须标明全文翻译或摘要。', 'public_view.transcription');
-  if (translation.status === 'published' && !/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(translation.reviewed_at ?? '')) error('发布英语译文前必须记录审核日期。');
+  if (translation.status === 'published' && !/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(translation.reviewed_at ?? '')) error('发布译文前必须记录审核日期。');
   const effective = getEffectiveTranslation(item, translation);
   for (const field of effective.stale_fields) warning(`源内容已变化，该字段译文需复核：${field}`, field);
-  if (translation.status === 'published') for (const field of getRequiredTranslationFields(item)) if (!Object.hasOwn(effective.fields, field)) warning(`缺少有效英语译文：${field}`, field);
+  if (translation.status === 'published') for (const field of getRequiredTranslationFields(item)) if (!Object.hasOwn(effective.fields, field)) warning(`缺少有效译文：${field}`, field);
   return { valid: errors.length === 0, errors, warnings, issues, state: errors.length ? 'invalid' : getTranslationState(item, translation), source_hash: getTranslationSourceHash(item) };
 };
-export const createPublicTranslationLayer = (items, translations) => {
+export const createPublicTranslationLayer = (items, translations, locale = 'en') => {
+  if (!['en','th'].includes(locale)) throw new Error('不支持的译文语言');
   const list = Array.isArray(translations) ? translations : Object.values(translations?.records ?? translations ?? {});
   const byId = new Map();
   for (const translation of list) {
+    if (translation?.locale !== locale) continue;
     if (byId.has(translation?.item_id)) throw new Error(`存在重复译文记录：${translation.item_id}`);
     byId.set(translation?.item_id, translation);
   }
@@ -147,7 +149,7 @@ export const createPublicTranslationLayer = (items, translations) => {
     if (!validation.valid) throw new Error(`档案译文校验失败：${item.core.item_id}：${validation.errors.join('；')}`);
     const effective = getEffectiveTranslation(item, translation);
     if (!Object.keys(effective.fields).length && !Object.keys(effective.image_descriptions).length) continue;
-    records[item.core.item_id] = { schema_version: 1, item_id: item.core.item_id, locale: 'en', status: 'published', source_hash: translation.source_hash, source_hashes: effective.source_hashes, fields: effective.fields, image_descriptions: effective.image_descriptions, transcription_kind: translation.transcription_kind ?? 'none', translation_state: validation.state };
+    records[item.core.item_id] = { schema_version: 1, item_id: item.core.item_id, locale, status: 'published', source_hash: translation.source_hash, source_hashes: effective.source_hashes, fields: effective.fields, image_descriptions: effective.image_descriptions, transcription_kind: translation.transcription_kind ?? 'none', translation_state: validation.state };
   }
-  return { schema_version: 1, locale: 'en', records };
+  return { schema_version: 1, locale, records };
 };

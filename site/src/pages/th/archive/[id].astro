@@ -1,0 +1,8 @@
+---
+import Page from '../../archive/[id].astro';
+import { archiveItems } from '../../../data/archive';
+import { isPublishedArchiveItem } from '../../../data/archive-view';
+export function getStaticPaths() { return archiveItems.filter(isPublishedArchiveItem).map(item => ({params:{id:item.core.item_id},props:{item}})); }
+const { item } = Astro.props;
+---
+<Page item={item} />

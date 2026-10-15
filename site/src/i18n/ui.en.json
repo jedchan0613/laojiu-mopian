@@ -560,5 +560,6 @@
   "同册下一件": "Next record in album",
   "册内影像选览": "Album image selection",
   "{0} {1} 件档案 · {2} 本相册、{3} 件未归册档案{4}": "Records: {1} · albums: {2}; ungrouped records: {3}{4}",
-  "{0} {1} 件档案 · 逐件展示{2}": "Records: {1} · individual view{2}"
+  "{0} {1} 件档案 · 逐件展示{2}": "Records: {1} · individual view{2}",
+  "选择语言": "Choose language"
 }

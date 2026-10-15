@@ -24,9 +24,9 @@ const normalizePublicAssetPath = (value: string) => {
 
 const profiles = socialProfiles.map((profile) => ({
 	...profile,
-	label: locale === 'en' ? ({douyin:'Douyin',xiaohongshu:'Xiaohongshu',wechat:'WeChat'}[profile.platform] ?? profile.label) : profile.label,
+	label: locale !== 'zh-CN' ? ({douyin:'Douyin',xiaohongshu:'Xiaohongshu',wechat:'WeChat'}[profile.platform] ?? profile.label) : profile.label,
 	account: profile.account.trim(),
-	accountLabel: locale === 'en' ? 'Account' : profile.platform === 'douyin' ? '抖音号' : profile.platform === 'xiaohongshu' ? '小红书号' : '微信号',
+	accountLabel: locale !== 'zh-CN' ? t('Account',locale) : profile.platform === 'douyin' ? '抖音号' : profile.platform === 'xiaohongshu' ? '小红书号' : '微信号',
 	href: normalizePublicHref(profile.url),
 	qrImage: normalizePublicAssetPath(profile.qrImage ?? ''),
 }));
@@ -38,7 +38,7 @@ const visibleProfiles = import.meta.env.DEV
 
 {visibleProfiles.length > 0 && (
 	<section class="social-follow" aria-labelledby="social-follow-title">
-		<p class="social-follow-title" id="social-follow-title">{locale === 'en' ? 'Follow Laojiu Mopian' : '关注老旧默片'}</p>
+		<p class="social-follow-title" id="social-follow-title">{locale !== 'zh-CN' ? t('Follow Laojiu Mopian',locale) : '关注老旧默片'}</p>
 		<ul>
 			{visibleProfiles.map((profile) => (
 				<li>
@@ -48,26 +48,26 @@ const visibleProfiles = import.meta.env.DEV
 							href={profile.href}
 							target={profile.href.startsWith('https://') ? '_blank' : undefined}
 							rel={profile.href.startsWith('https://') ? 'me noopener noreferrer' : undefined}
-							aria-label={locale === 'en' ? `View Laojiu Mopian on ${profile.label}${profile.account ? ` (${profile.account})` : ''}${profile.href.startsWith('https://') ? ', opens in a new window' : ''}` : `在${profile.label}查看老旧默片${profile.account ? `（${profile.account}）` : ''}${profile.href.startsWith('https://') ? '，新窗口打开' : ''}`}
+							aria-label={locale === 'zh-CN' ? `在${profile.label}查看老旧默片${profile.account ? `（${profile.account}）` : ''}${profile.href.startsWith('https://') ? '，新窗口打开' : ''}` : t('View Laojiu Mopian on {0}',locale,{0:profile.label}) + (profile.account ? ' ('+profile.account+')' : '') + (profile.href.startsWith('https://') ? ', '+t('opens in a new window',locale) : '')}
 						>
 							<SiteIcon name={profile.platform} class="social-profile-icon" />
 							<strong>{profile.label}</strong>
-							<small>{locale === 'en' ? 'View profile ↗' : profile.href.startsWith('https://') ? '打开主页 ↗' : '查看主页'}</small>
+							<small>{locale !== 'zh-CN' ? t('View profile ↗',locale) : profile.href.startsWith('https://') ? '打开主页 ↗' : '查看主页'}</small>
 						</a>
 					) : profile.account || profile.qrImage ? (
 						<details class="social-profile-details" name="social-profile">
-							<summary class="social-profile-link" aria-label={locale === 'en' ? `View the Laojiu Mopian ${profile.label} account and QR code` : `查看老旧默片${profile.label}账号和二维码`}>
+							<summary class="social-profile-link" aria-label={locale !== 'zh-CN' ? t(`View the Laojiu Mopian ${profile.label} account and QR code`,locale) : `查看老旧默片${profile.label}账号和二维码`}>
 								<SiteIcon name={profile.platform} class="social-profile-icon" />
 								<strong>{profile.label}</strong>
-								<small>{locale === 'en' ? 'View account' : '查看账号'}</small>
+								<small>{locale !== 'zh-CN' ? t('View account',locale) : '查看账号'}</small>
 							</summary>
 							<div class="social-profile-panel">
 								<p>{t('老旧默片',locale)} · {profile.label}</p>
 								{profile.qrImage && (
-									<a href={profile.qrImage} target="_blank" rel="noopener noreferrer" aria-label={locale === 'en' ? `Enlarge the Laojiu Mopian ${profile.label} QR code` : `打开老旧默片${profile.label}二维码大图`}>
+									<a href={profile.qrImage} target="_blank" rel="noopener noreferrer" aria-label={locale !== 'zh-CN' ? t(`Enlarge the Laojiu Mopian ${profile.label} QR code`,locale) : `打开老旧默片${profile.label}二维码大图`}>
 										<img
 											src={profile.qrImage}
-												alt={locale === 'en' ? `Laojiu Mopian ${profile.label} QR code` : `老旧默片${profile.label}二维码`}
+												alt={locale !== 'zh-CN' ? t(`Laojiu Mopian ${profile.label} QR code`,locale) : `老旧默片${profile.label}二维码`}
 											width={profile.qrImageWidth}
 											height={profile.qrImageHeight}
 											loading="lazy"
@@ -76,7 +76,7 @@ const visibleProfiles = import.meta.env.DEV
 								)}
 								{profile.account && <strong>{profile.accountLabel}：{profile.account}</strong>}
 								<small>
-									{locale === 'en' ? `Open the QR code or search for the account on ${profile.label}.` : profile.qrImage && profile.account
+									{locale !== 'zh-CN' ? t(`Open the QR code or search for the account on ${profile.label}.`,locale) : profile.qrImage && profile.account
 										? `点击查看二维码大图，或在${profile.label}中搜索上方账号。`
 										: profile.qrImage
 											? `点击查看二维码大图，在${profile.label}中找到老旧默片。`
@@ -87,12 +87,12 @@ const visibleProfiles = import.meta.env.DEV
 					) : (
 						<span
 							class="social-profile-link social-profile-link--pending"
-							aria-label={locale === 'en' ? `${profile.label} account details pending` : `${profile.label}账号待补充`}
+							aria-label={locale !== 'zh-CN' ? t(`${profile.label} account details pending`,locale) : `${profile.label}账号待补充`}
 							aria-disabled="true"
 						>
 							<SiteIcon name={profile.platform} class="social-profile-icon" />
 							<strong>{profile.label}</strong>
-							<small>{locale === 'en' ? 'Coming soon' : '待补充'}</small>
+							<small>{locale !== 'zh-CN' ? t('Coming soon',locale) : '待补充'}</small>
 						</span>
 					)}
 				</li>

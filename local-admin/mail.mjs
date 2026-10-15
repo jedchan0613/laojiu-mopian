@@ -8,6 +8,7 @@
 //
 // 邮件正文只包含必要的验证码或通知文字，不附私密图片、投稿内容或用户联系方式（与方案 G 一致）。
 
+import {thaiMailTemplates} from './mail-th.mjs';
 import { normalizeAccountLanguage } from './account-i18n.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -133,7 +134,7 @@ export function createMailer({
 	const render = (template, variables) => {
 		const builder = mailTemplates[template];
 		if (!builder) throw new MailError(`未知的邮件模板：${template}。`);
-		return (normalizeAccountLanguage(variables?.language) === 'en' ? englishMailTemplates[template] : builder)(variables ?? {});
+		return (normalizeAccountLanguage(variables?.language) === 'th' ? thaiMailTemplates[template] : normalizeAccountLanguage(variables?.language) === 'en' ? englishMailTemplates[template] : builder)(variables ?? {});
 	};
 
 	return {

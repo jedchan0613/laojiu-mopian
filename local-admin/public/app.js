@@ -206,7 +206,7 @@ const state = {
 	recoveryTab: 'history', recordReferenceOpen: false,
 	integrityReport: null, integrityLoading: false, imagePreflight: [], adminMode: 'local', publicSiteUrl: '',
 	autoSaveNotice: '',
-	translation: { itemId: '', loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en' },
+	translation: { itemId: '', loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en', locale:'en' },
 	query: {
 		loaded: false, loading: false, error: '', records: [], generation: 0,
 	},
@@ -1803,7 +1803,7 @@ const updateHeader = () => {
 		elements.saveDraftButton.hidden = true;
 		elements.publishButton.hidden = true;
 		hideRecordActionDock();
-		elements.saveState.textContent = state.translation.dirty ? '英文有尚未保存的修改' : '英文独立保存；中文内容和隐私权限沿用原档案';
+		elements.saveState.textContent = state.translation.dirty ? '译文有尚未保存的修改' : '译文独立保存；中文内容和隐私权限沿用原档案';
 		elements.saveState.classList.toggle('is-dirty', state.translation.dirty);
 	}
 	updateTaskSummary();
@@ -1813,7 +1813,7 @@ const openRecord = (itemId, viewMode = 'editor') => {
 	const record = state.records.find((candidate) => candidate.core.item_id === itemId);
 	if (!record) return;
 	if (state.translation.itemId !== itemId || state.translation.dirty) state.translation = {
-		itemId, loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en',
+		itemId, loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en', locale:'en',
 	};
 	state.activeId = itemId;
 	state.workspaceMode = 'records';
@@ -1884,7 +1884,7 @@ const startNewRecord = (templateRecord = null) => {
 	state.imagePreflight = [];
 	state.confirmedPublicationCopies = false;
 	state.pendingObjectCategory = '';
-	state.translation = { itemId: '', loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en' };
+	state.translation = { itemId: '', loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en', locale:'en' };
 	state.officialSnapshot = null;
 	const reusableCore = templateRecord ? Object.fromEntries(similarCoreFieldCodes
 		.filter((fieldCode) => templateRecord.core[fieldCode] !== undefined)
@@ -2403,6 +2403,7 @@ const translationStateLabel = (value) => ({
 }[value] ?? '未翻译');
 
 const adoptTranslationData = (data) => {
+	state.translation.locale = data.locale ?? state.translation.locale ?? 'en';
 	state.translation.data = data;
 	state.translation.draft = deepClone(data.translation ?? {
 		fields: {}, image_descriptions: {}, transcription_kind: 'none',
@@ -2423,9 +2424,9 @@ const loadTranslation = async () => {
 	view.loading = true;
 	view.error = '';
 	try {
-		const response = await fetch(`/api/admin/translations/${encodeURIComponent(view.itemId)}`, { cache: 'no-store' });
+		const response = await fetch(`/api/admin/translations/${encodeURIComponent(view.itemId)}?locale=${view.locale ?? 'en'}`, { cache: 'no-store' });
 		const data = await readApiJson(response);
-		if (!response.ok) throw new Error(data.error ?? '英文内容暂时无法读取。');
+		if (!response.ok) throw new Error(data.error ?? '译文内容暂时无法读取。');
 		if (state.translation !== view) return;
 		adoptTranslationData(data);
 	} catch (error) { if (state.translation === view) view.error = error.message; }
@@ -2448,14 +2449,14 @@ const translationSourceDisplay = (value) => Array.isArray(value) ? value.join('\
 const renderTranslationDraftPreview = () => {
 	const { data, draft, previewLocale } = state.translation;
 	if (!data || !draft) return '';
-	const fields = previewLocale === 'en' ? draft.fields : data.source.fields;
-	const imageDescriptions = previewLocale === 'en' ? draft.image_descriptions : data.source.image_descriptions;
-	const title = fields['core.title'] || (previewLocale === 'en' ? 'Translation not available' : '暂无题名');
-	const description = fields['public_view.description'] || (previewLocale === 'en' ? 'Description translation not available.' : '暂无简介');
+	const fields = previewLocale !== 'zh-CN' ? draft.fields : data.source.fields;
+	const imageDescriptions = previewLocale !== 'zh-CN' ? draft.image_descriptions : data.source.image_descriptions;
+	const title = fields['core.title'] || (previewLocale === 'th' ? 'ยังไม่มีคำแปลชื่อเรื่อง' : previewLocale === 'en' ? 'Translation not available' : '暂无题名');
+	const description = fields['public_view.description'] || (previewLocale === 'th' ? 'ยังไม่มีคำแปลคำอธิบาย' : previewLocale === 'en' ? 'Description translation not available.' : '暂无简介');
 	const itemId = data.item_id;
 	const firstImage = Object.keys(data.source.image_descriptions ?? {})[0];
-	const image = firstImage ? `<figure><img src="/api/image/${encodeURIComponent(itemId)}/${encodeURIComponent(firstImage.split('/').at(-1))}?variant=preview" alt="${escapeHtml(imageDescriptions[firstImage] || '')}" /><figcaption>${escapeHtml(imageDescriptions[firstImage] || (previewLocale === 'en' ? 'Image caption translation not available.' : '暂无图片说明'))}</figcaption></figure>` : '';
-	return `<div class="translation-draft-preview" lang="${previewLocale === 'en' ? 'en' : 'zh-CN'}">
+	const image = firstImage ? `<figure><img src="/api/image/${encodeURIComponent(itemId)}/${encodeURIComponent(firstImage.split('/').at(-1))}?variant=preview" alt="${escapeHtml(imageDescriptions[firstImage] || '')}" /><figcaption>${escapeHtml(imageDescriptions[firstImage] || (previewLocale === 'th' ? 'ยังไม่มีคำแปลคำบรรยายภาพ' : previewLocale === 'en' ? 'Image caption translation not available.' : '暂无图片说明'))}</figcaption></figure>` : '';
+	return `<div class="translation-draft-preview" lang="${previewLocale}">
 		<h3>${escapeHtml(title)}</h3><p class="record-id">${escapeHtml(itemId)}</p>${image}
 		<p>${escapeHtml(fields['core.date_display'] || '')}</p><p>${escapeHtml(description)}</p>
 		${Array.isArray(fields['public_view.tags']) ? `<p>${fields['public_view.tags'].map(escapeHtml).join(' · ')}</p>` : ''}
@@ -2463,15 +2464,15 @@ const renderTranslationDraftPreview = () => {
 	</div>`;
 };
 
-const renderTranslation = () => {
+const renderTranslationBody = () => {
 	if (state.isNew || !state.current?._admin?.hasOfficial || state.current?._admin?.officialRecordStatus !== 'ACT') {
-		return '<div class="empty-state">请先按原有字段、图片和隐私流程发布中文档案，再维护它的英文内容。英文面板不会把中文草稿或私密字段带入公开网站。</div>';
+		return '<div class="empty-state">请先按原有字段、图片和隐私流程发布中文档案，再维护它的译文内容。译文面板不会把中文草稿或私密字段带入公开网站。</div>';
 	}
 	const view = state.translation;
 	if (view.error) return `<div class="empty-state"><p>${escapeHtml(view.error)}</p><button class="quiet-button" type="button" data-translation-action="reload">重新读取</button></div>`;
 	if (!view.data) {
 		if (!view.loading) void loadTranslation();
-		return '<div class="empty-state">正在读取当前公开中文内容和英文版本…</div>';
+		return '<div class="empty-state">正在读取当前公开中文内容和译文版本…</div>';
 	}
 	const { data, draft } = view;
 	const fieldEntries = Object.entries(data.source.fields ?? {});
@@ -2484,23 +2485,23 @@ const renderTranslation = () => {
 		const label = isImage ? `图片说明 · ${key.split('/').at(-1)}` : translationFieldLabel(key);
 		return `<section class="translation-row${needsReview ? ' needs-review' : ''}">
 			<div class="translation-source"><strong>${escapeHtml(label)}</strong><span>当前公开中文原文</span><p>${escapeHtml(translationSourceDisplay(value))}</p></div>
-			<div class="translation-control"><label>英文${Array.isArray(value) ? `（${value.length} 项，每行一项，顺序与原文一致）` : ''}
-		<textarea lang="en" rows="${String(value).length > 160 ? '5' : '3'}" maxlength="${isImage ? '2000' : '100000'}" data-translation-field="${escapeHtml(key)}" data-translation-image="${isImage}" data-translation-array="${Array.isArray(value)}">${escapeHtml(translationSourceDisplay(translation))}</textarea></label>
+			<div class="translation-control"><label>译文${Array.isArray(value) ? `（${value.length} 项，每行一项，顺序与原文一致）` : ''}
+		<textarea lang="${view.locale ?? 'en'}" rows="${String(value).length > 160 ? '5' : '3'}" maxlength="${isImage ? '2000' : '100000'}" data-translation-field="${escapeHtml(key)}" data-translation-image="${isImage}" data-translation-array="${Array.isArray(value)}">${escapeHtml(translationSourceDisplay(translation))}</textarea></label>
 			${needsReview ? `<label class="translation-reconfirm"><input type="checkbox" data-translation-confirm="${escapeHtml(token)}" ${view.confirmed.has(token) ? 'checked' : ''}/> 中文来源已变化；我已重新对照此项译文</label>` : ''}
 			</div></section>`;
 	};
 	return `<div class="translation-panel">
-		<section class="form-section"><h3>英文内容 · ${escapeHtml(translationStateLabel(data.state))}</h3>
+		<section class="form-section"><h3>译文内容 · ${escapeHtml(translationStateLabel(data.state))}</h3>
 		<p>这里只翻译当前已经公开的文字。编号、图片、日期数值、分类代码、隐私与下载权限仍由中文档案管理。</p>
-		<p class="translation-state" role="status">${view.dirty ? '有未保存的英文修改' : data.has_draft ? '英文草稿已保存，网站继续使用上次已审核版本' : `网站英文状态：${translationStateLabel(data.published_state)}`}</p>
+		<p class="translation-state" role="status">${view.dirty ? '有未保存的译文修改' : data.has_draft ? '译文草稿已保存，网站继续使用上次已审核版本' : `网站译文状态：${translationStateLabel(data.published_state)}`}</p>
 		${stale.size ? '<p class="field-error">标记项的中文来源已经变化。对应旧译文不会公开，请改译或逐项复核后保存。</p>' : ''}
-		<div class="translation-actions"><button type="button" class="quiet-button" data-translation-action="save">保存英文草稿</button><button type="button" class="quiet-button" data-translation-action="review">保存并标记待审核</button><button type="button" class="quiet-button" data-translation-action="reload">刷新中文来源</button>
-		<a class="quiet-button" href="${escapeHtml(publicPreviewUrl(`/archive/${encodeURIComponent(data.item_id)}/`))}" target="_blank" rel="noopener">查看中文页面</a><a class="quiet-button" href="${escapeHtml(publicPreviewUrl(`/en/archive/${encodeURIComponent(data.item_id)}/`))}" target="_blank" rel="noopener">查看已发布英文页面</a></div></section>
+		<div class="translation-actions"><button type="button" class="quiet-button" data-translation-action="save">保存译文草稿</button><button type="button" class="quiet-button" data-translation-action="review">保存并标记待审核</button><button type="button" class="quiet-button" data-translation-action="reload">刷新中文来源</button>
+		<a class="quiet-button" href="${escapeHtml(publicPreviewUrl(`/archive/${encodeURIComponent(data.item_id)}/`))}" target="_blank" rel="noopener">查看中文页面</a><a class="quiet-button" href="${escapeHtml(publicPreviewUrl(`/${view.locale ?? 'en'}/archive/${encodeURIComponent(data.item_id)}/`))}" target="_blank" rel="noopener">查看已发布译文页面</a></div></section>
 		${fieldEntries.map((entry) => renderRow(entry)).join('')}
 		${imageEntries.map((entry) => renderRow(entry, true)).join('')}
-		<section class="form-section"><h3>原文翻译说明</h3><label>涉及原文转录的英文内容属于 <select data-translation-kind><option value="none" ${draft.transcription_kind === 'none' ? 'selected' : ''}>未翻译原文</option><option value="full" ${draft.transcription_kind === 'full' ? 'selected' : ''}>完整译文</option><option value="summary" ${draft.transcription_kind === 'summary' ? 'selected' : ''}>英文摘要（不冒充全文）</option></select></label><p>原件图片和中文转录保留原始语言。“约”“待考”“推测”等不确定性必须保留，不能新增人物身份或未确认事实。</p></section>
-		<details class="form-section"><summary>查看英文草稿预览</summary><p>预览仅供维护核对；未审核草稿不会进入网站。</p><div class="translation-actions"><button class="quiet-button" type="button" data-translation-preview="zh-CN">中文</button><button class="quiet-button" type="button" data-translation-preview="en">English</button><button class="quiet-button" type="button" data-translation-action="refresh-preview">刷新预览</button></div>${renderTranslationDraftPreview()}</details>
-		<section class="form-section"><h3>审核并发布英文</h3><label class="translation-reconfirm"><input type="checkbox" data-translation-publish-confirm/> 我已逐项对照公开原文，核对事实、不确定性、脱敏范围，并确认这些英文可以公开。</label><p>先保存草稿，再审核发布。系统仍须完成正式构建和安全发布，失败会恢复上次有效英文。</p><button type="button" class="publish-button" data-translation-action="publish">审核并发布英文</button></section>
+		<section class="form-section"><h3>原文翻译说明</h3><label>涉及原文转录的译文内容属于 <select data-translation-kind><option value="none" ${draft.transcription_kind === 'none' ? 'selected' : ''}>未翻译原文</option><option value="full" ${draft.transcription_kind === 'full' ? 'selected' : ''}>完整译文</option><option value="summary" ${draft.transcription_kind === 'summary' ? 'selected' : ''}>译文摘要（不冒充全文）</option></select></label><p>原件图片和中文转录保留原始语言。“约”“待考”“推测”等不确定性必须保留，不能新增人物身份或未确认事实。</p></section>
+		<details class="form-section"><summary>查看译文草稿预览</summary><p>预览仅供维护核对；未审核草稿不会进入网站。</p><div class="translation-actions"><button class="quiet-button" type="button" data-translation-preview="zh-CN">中文</button><button class="quiet-button" type="button" data-translation-preview="${view.locale ?? 'en'}">${view.locale === 'th' ? 'ไทย' : 'English'}</button><button class="quiet-button" type="button" data-translation-action="refresh-preview">刷新预览</button></div>${renderTranslationDraftPreview()}</details>
+		<section class="form-section"><h3>审核并发布译文</h3><label class="translation-reconfirm"><input type="checkbox" data-translation-publish-confirm/> 我已逐项对照公开原文，核对事实、不确定性、脱敏范围，并确认这些译文可以公开。</label><p>先保存草稿，再审核发布。系统仍须完成正式构建和安全发布，失败会恢复上次有效译文。</p><button type="button" class="publish-button" data-translation-action="publish">审核并发布译文</button></section>
 	</div>`;
 };
 
@@ -2516,16 +2517,16 @@ const saveEnglishTranslation = async (status = 'draft') => {
 			showToast(`${translationFieldLabel(key)}需要与原文逐项对应，请每行填写一项，共 ${original.length} 项。`, true); return;
 		}
 	}
-	setBusy(true, '正在保存英文…', '英文草稿与正式档案数据分开保存');
+	setBusy(true, '正在保存译文…', '译文草稿与正式档案数据分开保存');
 	try {
-		const data = await apiPost(`/api/admin/translations/${encodeURIComponent(view.itemId)}/save`, {
+		const data = await apiPost(`/api/admin/translations/${encodeURIComponent(view.itemId)}/save?locale=${view.locale ?? 'en'}`, {
 			revision: view.data.revision, source_hash: view.data.source_hash, status,
 			fields: nonemptyFields, image_descriptions: nonemptyImages,
 			transcription_kind: view.draft.transcription_kind,
 			confirmed_fields: [...view.confirmed],
 		});
 		adoptTranslationData(data); renderEditor(); updateHeader();
-		showToast(status === 'review' ? '英文已保存并标记待审核，尚未公开。' : '英文草稿已保存，尚未公开。');
+		showToast(status === 'review' ? '译文已保存并标记待审核，尚未公开。' : '译文草稿已保存，尚未公开。');
 	} catch (error) { showToast(error.message, true); }
 	finally { setBusy(false); }
 };
@@ -2543,7 +2544,7 @@ elements.editorSurface.addEventListener('input', (event) => {
 	updateHeader(); updateTabCompletionBadges();
 });
 
-elements.editorSurface.addEventListener('change', (event) => {
+elements.editorSurface.addEventListener('change', async (event) => {
 	const control = event.target;
 	if (control.matches('[data-translation-confirm]')) {
 		if (control.checked) state.translation.confirmed.add(control.dataset.translationConfirm);
@@ -2565,23 +2566,25 @@ elements.editorSurface.addEventListener('click', async (event) => {
 	if (action === 'refresh-preview') { renderEditor(); return; }
 	if (action === 'save' || action === 'review') { await saveEnglishTranslation(action === 'review' ? 'review' : 'draft'); return; }
 	if (action === 'reload') {
-		if (state.translation.dirty && !await confirmUnsavedChanges('刷新会放弃尚未保存的英文修改，确定刷新吗？')) return;
+		if (state.translation.dirty && !await confirmUnsavedChanges('刷新会放弃尚未保存的译文修改，确定刷新吗？')) return;
 		state.translation.data = null; state.translation.error = ''; state.translation.dirty = false;
 		void loadTranslation(); renderEditor(); return;
 	}
 	if (action === 'publish') {
-		if (state.translation.dirty) { showToast('请先保存当前英文修改，再审核发布。', true); return; }
+		if (state.translation.dirty) { showToast('请先保存当前译文修改，再审核发布。', true); return; }
 		const confirmed = elements.editorSurface.querySelector('[data-translation-publish-confirm]')?.checked === true;
-		if (!confirmed) { showToast('请先勾选英文审核确认。', true); return; }
+		if (!confirmed) { showToast('请先勾选译文审核确认。', true); return; }
 		const view = state.translation;
-		const operation = beginCancellableOperation('publish-translation', '正在审核发布英文…', '执行正式构建与安全发布；中文档案和权限保持原有口径');
+		const operation = beginCancellableOperation('publish-translation', '正在审核发布译文…', '执行正式构建与安全发布；中文档案和权限保持原有口径');
 		try {
-			const data = await apiPost(`/api/admin/translations/${encodeURIComponent(view.itemId)}/publish`, { revision: view.data.revision, confirmed }, { operation });
-			adoptTranslationData(data); renderEditor(); updateHeader(); showToast('英文审核与正式构建完成。');
+			const data = await apiPost(`/api/admin/translations/${encodeURIComponent(view.itemId)}/publish?locale=${view.locale ?? 'en'}`, { revision: view.data.revision, confirmed }, { operation });
+			adoptTranslationData(data); renderEditor(); updateHeader(); showToast('译文审核与正式构建完成。');
 		} catch (error) { showToast(error.message, true); }
 		finally { finishCancellableOperation(operation); }
 	}
 });
+
+const renderTranslation = () => `<section class="form-section"><label>译文语言 <select data-translation-locale><option value="en" ${state.translation.locale!=='th'?'selected':''}>英语 English</option><option value="th" ${state.translation.locale==='th'?'selected':''}>泰语 ไทย</option></select></label></section>`+renderTranslationBody();
 
 const renderSpecific = () => {
 	activeFieldIssueMap = buildFieldIssueMap('specific');

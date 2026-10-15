@@ -223,6 +223,8 @@ const submissionStore = createSubmissionStore({ root: submissionDirectory, siteD
 const publicSubmissions = createPublicSubmissionHandler({ store: submissionStore, origin: localAdminOrigin, local: true });
 const contactStore = createContactStore({ root: contactDirectory });
 const translationStore = createTranslationStore({ root: translationDirectory });
+const thaiTranslationStore = createTranslationStore({root:path.join(translationDirectory,'th'),locale:'th'});
+const translationStores = {en:translationStore,th:thaiTranslationStore};
 const publicContacts = createPublicContactHandler({ store: contactStore, origin: localAdminOrigin, local: true });
 
 // 账户服务：本地模式在同一个本机服务里挂载账户处理器，账户数据仍只写入自己的私密目录。
@@ -1927,6 +1929,8 @@ const generateSiteArchiveSource = async () => {
 const generateSiteTranslationLayer = async () => {
 	const layer = await translationStore.publicLayer(await loadPublicTranslationRecords());
 	await fs.writeFile(siteTranslationDataFile, `${JSON.stringify(layer, null, 2)}\n`, 'utf8');
+ const thaiLayer=await thaiTranslationStore.publicLayer(await loadPublicTranslationRecords());
+ await fs.writeFile(path.join(siteDirectory,'src','data','archive-translations.th.json'),`${JSON.stringify(thaiLayer,null,2)}\n`,'utf8');
 };
 
 const loadTranslationItem = async (itemId) => {
@@ -2167,6 +2171,9 @@ const runSiteBuild = async (options = {}) => {
 };
 
 const publishEnglishTranslation = async (itemId, payload, options = {}) => {
+ const locale=options.locale ?? 'en';
+ if(!['en','th'].includes(locale))throw new RequestError('不支持的译文语言。');
+ const translationStore=translationStores[locale];
 	const { signal = null } = options;
 	if (publishInProgress) throw new RequestError('已有一项网站更新正在进行，请稍候。', 409);
 	publishInProgress = true;
@@ -2188,7 +2195,7 @@ const publishEnglishTranslation = async (itemId, payload, options = {}) => {
 			let rollbackMessage = '';
 			try { await runSiteBuild(); }
 			catch (rollbackError) { rollbackMessage = `；恢复后的构建未完成：${safeMessage(rollbackError)}`; }
-			throw new RequestError(`英文发布未完成，已恢复上次正式英文版本：${safeMessage(error)}${rollbackMessage}`);
+			throw new RequestError(`译文发布未完成，已恢复上次正式译文版本：${safeMessage(error)}${rollbackMessage}`);
 		}
 		throw error;
 	} finally { publishInProgress = false; }
@@ -2531,6 +2538,9 @@ const adminServer = http.createServer(async (request, response) => {
 		const translationRoute = /^\/api\/admin\/translations\/(LJM-\d{8}-[A-Z]{3}-\d{3})(?:\/(save|publish))?$/.exec(url.pathname);
 		if (translationRoute) {
 			const [, itemId, action] = translationRoute;
+ const locale=url.searchParams.get('locale') ?? 'en';
+ if (!['en','th'].includes(locale)) throw new RequestError('不支持的译文语言。');
+ const translationStore=translationStores[locale];
 			if (!action && request.method === 'GET') {
 				sendJson(response, 200, await translationStore.detail(await loadTranslationItem(itemId)), { request }); return;
 			}
@@ -2547,7 +2557,7 @@ const adminServer = http.createServer(async (request, response) => {
 				}
 				const result = await runManagedOperation(request, 'publish-translation', async ({ signal }) =>
 					publishEnglishTranslation(itemId, await readSubmissionJson(request, 32 * 1024), {
-						signal, reviewedBy: adminIdentity?.email || '本地档案维护者',
+						signal, locale, reviewedBy: adminIdentity?.email || '本地档案维护者',
 					}));
 				sendJson(response, 200, result); return;
 			}

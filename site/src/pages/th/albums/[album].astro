@@ -1,0 +1,15 @@
+---
+import Page from '../../albums/[album].astro';
+import { publishedAlbumGroups } from '../../../data/album-groups';
+
+export function getStaticPaths() {
+  return publishedAlbumGroups().map(({ albumId, slug, members }) => ({
+    params: { album: slug },
+    props: { albumId, members },
+  }));
+}
+
+const { albumId, members } = Astro.props;
+---
+
+<Page albumId={albumId} members={members} />
