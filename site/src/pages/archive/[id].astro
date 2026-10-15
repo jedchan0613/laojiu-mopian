@@ -205,8 +205,8 @@ const nextBrowseView = albumPhotoIndex >= 0
   ? (nextAlbumPhoto ? createArchiveRecordView(nextAlbumPhoto, locale) : undefined) : nextView;
 const albumLinkLabel = albumGroup
   ? (item.core.object_type === 'ALB'
-    ? t("翻阅本册照片（共 {0} 张） →", locale, { 0: albumMateCount })
-    : t("查看整本相册（共 {0} 张） →", locale, { 0: albumMateCount }))
+    ? t("翻阅本册档案（共 {0} 件） →", locale, { 0: albumMateCount })
+    : t("查看整本相册（共 {0} 件照片档案） →", locale, { 0: albumMateCount }))
   : '';
 const archiveIndexUrl = Astro.site ? new URL(localizePath('/archive/', locale), Astro.site) : undefined;
 const recordStructuredData = {
@@ -297,8 +297,8 @@ const breadcrumbStructuredData = {
             {item.core.object_type === 'PHO' && item.core.original_position && <small>{t("相册中的位置", locale)}：{item.core.original_position}</small>}
           </div>
           {(previousAlbumPhoto || nextAlbumPhoto) && <div class="record-album-navigation">
-            {previousAlbumPhoto && <a href={localizePath(`/archive/${previousAlbumPhoto.core.item_id}/`, locale)} rel="prev">← {t("同册上一张", locale)}</a>}
-            {nextAlbumPhoto && <a href={localizePath(`/archive/${nextAlbumPhoto.core.item_id}/`, locale)} rel="next">{t("同册下一张", locale)} →</a>}
+            {previousAlbumPhoto && <a href={localizePath(`/archive/${previousAlbumPhoto.core.item_id}/`, locale)} rel="prev">← {t("同册上一件", locale)}</a>}
+            {nextAlbumPhoto && <a href={localizePath(`/archive/${nextAlbumPhoto.core.item_id}/`, locale)} rel="next">{t("同册下一件", locale)} →</a>}
           </div>}
         </nav>
       )}
@@ -691,14 +691,14 @@ const breadcrumbStructuredData = {
         <div>
           {previousBrowseView && (
             <a href={localizePath(`/archive/${previousBrowseView.id}/`, locale)} data-record-nav data-record-target={previousBrowseView.id}>
-              <small>{albumPhotoIndex >= 0 ? `← ${t("同册上一张", locale)}` : t("← 上一件", locale)}</small>
+              <small>{albumPhotoIndex >= 0 ? `← ${t("同册上一件", locale)}` : t("← 上一件", locale)}</small>
               <strong>{previousBrowseView.title}</strong>
               <span>{previousBrowseView.dateDisplay}</span>
             </a>
           )}
           {nextBrowseView && (
             <a class="is-next" href={localizePath(`/archive/${nextBrowseView.id}/`, locale)} data-record-nav data-record-target={nextBrowseView.id}>
-              <small>{albumPhotoIndex >= 0 ? `${t("同册下一张", locale)} →` : t("下一件 →", locale)}</small>
+              <small>{albumPhotoIndex >= 0 ? `${t("同册下一件", locale)} →` : t("下一件 →", locale)}</small>
               <strong>{nextBrowseView.title}</strong>
               <span>{nextBrowseView.dateDisplay}</span>
             </a>

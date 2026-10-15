@@ -537,5 +537,9 @@
   "{0} 件照片档案 · {1} 幅附图": "{0} photograph records · {1} images",
   "{0} 件年代待考": "{0} records with unknown dates",
   "{0} 幅附图": "{0} images",
-  "照片年代线索：{0}（含推测）": "Date clues: {0} (includes estimates)"
+  "照片年代线索：{0}（含推测）": "Date clues: {0} (includes estimates)",
+  "翻阅本册档案（共 {0} 件） →": "Browse album records ({0} records) →",
+  "查看整本相册（共 {0} 件照片档案） →": "View album ({0} photograph records) →",
+  "同册上一件": "Previous record in album",
+  "同册下一件": "Next record in album"
 }
