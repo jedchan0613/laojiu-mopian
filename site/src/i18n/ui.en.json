@@ -541,5 +541,6 @@
   "翻阅本册档案（共 {0} 件） →": "Browse album records ({0} records) →",
   "查看整本相册（共 {0} 件照片档案） →": "View album ({0} photograph records) →",
   "同册上一件": "Previous record in album",
-  "同册下一件": "Next record in album"
+  "同册下一件": "Next record in album",
+  "册内影像选览": "Album image selection"
 }
