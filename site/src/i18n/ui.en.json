@@ -1,4 +1,20 @@
 {
+  "按相册浏览": "Browse by album",
+  "同册档案集中查看，进入相册后逐件翻阅。": "Open an album to browse its individual records together.",
+  "查看全部相册 →": "View all albums →",
+  "暂时没有可公开的相册，其他档案仍可逐件浏览。": "No albums are public yet. Other records can still be browsed individually.",
+  "{0} 件公开档案": "{0} public records",
+  "命中 {0} 件 / 册内共 {1} 件公开档案": "{0} matching records / {1} public records in this album",
+  "进入相册 →": "Open album →",
+  "浏览方式": "Browse mode",
+  "相册与单件": "Albums and individual records",
+  "仅看相册": "Albums only",
+  "逐件查看全部档案": "View every record individually",
+  "同册档案默认收拢，进入相册后逐件查看。数量始终按真实档案件数统计，含相册总档案。": "Records from the same album are grouped together. Open the album to browse them individually. Counts always refer to actual records, including the album record.",
+  "没有找到符合条件的相册。": "No albums match these conditions.",
+  "可以清除筛选，或切换到“相册与单件”浏览其他档案。": "Clear the filters or choose “Albums and individual records” to browse other records.",
+  "，本页显示第 {0}–{1} 个浏览入口": "; showing browse entries {0}–{1}",
+  "{0} {1} 件档案 · {2} 本相册、{3} 件单件{4}": "{0} {1} records · {2} albums and {3} individual records{4}",
   "页面暂时不可访问｜老旧默片": "Page unavailable | Laojiu Mopian",
   "当前页面不存在、地址已经改变，或相关档案暂时不对外开放。": "This page does not exist, its address has changed, or the record is not currently public.",
   "缺页": "Missing page",
@@ -542,5 +558,7 @@
   "查看整本相册（共 {0} 件照片档案） →": "View album ({0} photograph records) →",
   "同册上一件": "Previous record in album",
   "同册下一件": "Next record in album",
-  "册内影像选览": "Album image selection"
+  "册内影像选览": "Album image selection",
+  "{0} {1} 件档案 · {2} 本相册、{3} 件未归册档案{4}": "Records: {1} · albums: {2}; ungrouped records: {3}{4}",
+  "{0} {1} 件档案 · 逐件展示{2}": "Records: {1} · individual view{2}"
 }

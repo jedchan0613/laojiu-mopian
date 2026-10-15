@@ -6,7 +6,7 @@
 		<meta name="color-scheme" content="light" />
 		<meta name="robots" content="noindex, nofollow" />
 		<title>档案管理｜老旧默片</title>
-		<link rel="stylesheet" href="./styles.css" />
+		<link rel="stylesheet" href="./styles.css?v=20261015-album-browse-3" />
 	</head>
 	<body class="admin-v2">
 		<a class="skip-link" href="#main-editor">跳到档案编辑区</a>
@@ -101,6 +101,12 @@
 							<span>已撤销</span><small id="withdrawn-records-badge">0</small>
 						</button>
 					</nav>
+					<nav class="record-browse-modes" id="record-browse-modes" aria-label="档案浏览方式">
+						<button class="is-active" data-record-browse="albums" type="button" aria-pressed="true">按册归集</button>
+						<button data-record-browse="album-only" type="button" aria-pressed="false">仅看相册</button>
+						<button data-record-browse="records" type="button" aria-pressed="false">逐件查看</button>
+					</nav>
+					<p class="record-browse-help">已归册档案从相册进入；未归册档案逐件显示。每件档案仍单独计数。</p>
 
 				<label class="search-box">
 					<span class="sr-only">搜索藏品</span>
@@ -157,7 +163,9 @@
 					<p id="record-query-state" role="status"></p>
 					<button class="text-button" id="record-query-refresh" type="button">刷新图片结构</button>
 				</details>
-				<div class="record-filter-summary"><div class="record-count" id="record-count" role="status" aria-live="polite" aria-atomic="true">正在读取档案…</div><button class="text-button" id="record-filters-clear" type="button" hidden>清除条件</button></div>
+					<section class="record-album-context" id="record-album-context" aria-label="当前相册" hidden></section>
+					<div class="record-filter-summary"><div class="record-count" id="record-count" role="status" aria-live="polite" aria-atomic="true">正在读取档案…</div><button class="text-button" id="record-filters-clear" type="button" hidden>清除条件</button></div>
+					<p class="record-browser-notice" id="record-browser-notice" role="status" hidden></p>
 				<nav class="record-list" id="record-list" aria-label="藏品列表"></nav>
 				<nav class="record-pagination" id="record-pagination" aria-label="档案列表分页" hidden></nav>
 				</div>
@@ -300,6 +308,6 @@
 		<datalist id="administrative-city-options"></datalist>
 		<datalist id="administrative-district-options"></datalist>
 
-		<script type="module" src="./app.js"></script>
+		<script type="module" src="./app.js?v=20261015-album-browse-3"></script>
 	</body>
 </html>

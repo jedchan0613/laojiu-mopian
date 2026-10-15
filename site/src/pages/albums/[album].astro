@@ -167,6 +167,21 @@ const breadcrumbStructuredData = {
   </article>
 </BaseLayout>
 
+<script>
+  import { clientPath, clientText } from '../../i18n/client';
+  // 从相册目录进入时，返回当前语言的原筛选和页码；不把任意地址写入链接。
+  try {
+    const state = JSON.parse(window.sessionStorage.getItem('ljm-archive-browse-state') ?? 'null');
+    const slug = window.location.pathname.split('/').filter(Boolean).at(-1);
+    if (state?.targetAlbumSlug === slug && typeof state.href === 'string' && /^\/(?:en\/)?archive\/(?:[?#]|$)/.test(state.href)) {
+      const localized = { ...state, href: clientPath(state.href), restorePending: true };
+      window.sessionStorage.setItem('ljm-archive-browse-state', JSON.stringify(localized));
+      const link = document.querySelector<HTMLAnchorElement>('.record-top .back-link');
+      if (link) { link.href = localized.href; link.textContent = clientText('← 返回筛选结果'); }
+    }
+  } catch { /* 禁用会话存储时仍可用默认返回入口。 */ }
+</script>
+
 <style>
   .album-page { display:grid; gap:2.5rem; min-width:0; padding:1.5rem 0 3rem; }
   .record-top { display:flex; justify-content:space-between; align-items:baseline; gap:1rem; font:0.78rem/1.6 var(--site-ui-font); color:var(--site-muted); }

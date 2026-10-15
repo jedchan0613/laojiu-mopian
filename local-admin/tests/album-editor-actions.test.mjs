@@ -11,19 +11,22 @@ const declaration = (name) => {
 const setup = (record) => {
   const state = { current: structuredClone(record), records: [], isNew: false, dirty: false,
     translation: {dirty: false}, search: '旧搜索', recordTypeFilter: 'ALB', recordDecadeFilter: '1990',
-    recordQuickStatus: '已发布', recordFilters: {category:'photo'}, recordStatusFilter:'withdrawn', recordPage:3 };
+    recordQuickStatus: '已发布', recordFilters: {category:'photo'}, recordStatusFilter:'withdrawn', recordPage:3,
+    recordOpenAlbum:'', recordAlbumFilter:'' };
   const calls = [];
   const elements = { recordSearch:{value:'旧搜索'}, editorSurface:{querySelector:()=>null} };
   const scope = {state, elements, deepClone:structuredClone, today:()=> '2026-10-14',
     isWithdrawn:()=>state.current?.core.record_status==='WDR',
     hasUnsavedChanges:()=>state.dirty || state.translation.dirty,
+    recordIsWithdrawn:(record)=>record?.core.record_status==='WDR' && !record?._admin?.hasDraft,
     updateDerivedCollectionCode:()=>{}, schemaForType:()=> 'photo',
     setFieldValue:(_scope,_dimension,key,value)=>{state.current.core[key]=value;state.dirty=true;},
     renderEditorPreservingViewport:()=>{},
   };
   for (const name of ['renderRecordList','renderWorkspaceNavigation','setMobileRecordBrowserOpen','renderEditor','updateHeader','renderTabs','showToast']) scope[name]=(...args)=>calls.push([name,...args]);
   const functions = new Function(...Object.keys(scope), [
-    declaration('similarCoreFieldCodes'), declaration('startNewRecord'), declaration('handleAlbumAction'),
+    declaration('similarCoreFieldCodes'), declaration('startNewRecord'), declaration('openRecordAlbum'),
+    declaration('startAlbumPhoto'), declaration('handleAlbumAction'),
     'return {handleAlbumAction};',
   ].join('\n'))(...Object.values(scope));
   return {...functions,state,elements,calls};
@@ -38,7 +41,8 @@ test('同册按钮清除其他筛选并使用真实搜索控件，保持当前�
   c.handleAlbumAction('show-members');
   assert.equal(c.elements.recordSearch.value,'');
   assert.equal(c.state.search,'');
-  assert.equal(c.state.recordAlbumFilter,'旧相册_01');
+  assert.equal(c.state.recordOpenAlbum,'旧相册_01');
+  assert.equal(c.state.recordAlbumFilter,'');
   assert.equal(c.state.recordStatusFilter,'normal');
   assert.equal(c.state.recordPage,1);
   assert.ok(Object.values(c.state.recordFilters).every(v=>v===''));

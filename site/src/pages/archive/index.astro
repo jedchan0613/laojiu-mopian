@@ -3,6 +3,8 @@
 import { t, getLocale, localizePath, canonicalPath } from '../../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AlbumBrowseCard from '../../components/AlbumBrowseCard.astro';
+import { createAlbumBrowseViews } from '../../data/album-browse';
 import { archiveItems } from '../../data/archive';
 import {
   archiveCategories,
@@ -17,6 +19,8 @@ import { getResponsiveImage } from '../../data/responsive-images';
 const publishedViews = archiveItems
   .filter(isPublishedArchiveItem)
   .map(item => createArchiveRecordView(item, locale));
+const albumBrowseViews = createAlbumBrowseViews(archiveItems, locale);
+const albumKeyByItemId = new Map(albumBrowseViews.flatMap((album) => album.memberIds.map((id) => [id, album.slug] as const)));
 
 // 目前只读取显示年代中出现的首个四位年份。将来遇到年份不明确的资料时，
 // 它仍会显示在“全部年代”中，但不会被错误归入某个具体年代。
@@ -149,6 +153,12 @@ const searchIndexJson = JSON.stringify(
           <div><h2>{t("查找档案", locale)}</h2></div>
         </div>
       </header>
+      <nav class="archive-view-modes" aria-label={t('浏览方式', locale)}>
+        <a href={localizePath('/archive/', locale)} data-archive-view="grouped" aria-current="page">{t('相册与单件', locale)}</a>
+        <a href={localizePath('/archive/?view=albums', locale)} data-archive-view="albums">{t('仅看相册', locale)}</a>
+        <a href={localizePath('/archive/?view=items', locale)} data-archive-view="items">{t('逐件查看全部档案', locale)}</a>
+      </nav>
+      <p class="archive-view-note">{t('同册档案默认收拢，进入相册后逐件查看。数量始终按真实档案件数统计，含相册总档案。', locale)}</p>
       <div class="archive-controls" aria-label={t("档案搜索与筛选", locale)}>
         <div class="archive-control">
           <label for="archive-search">{t("关键词搜索", locale)}</label>
@@ -250,10 +260,18 @@ const searchIndexJson = JSON.stringify(
       </div>
 
       <ul class="archive-list" id="archive-list">
+        {albumBrowseViews.map((album) => (
+          <li data-archive-album-card={album.slug} data-album-record-count={album.recordCount}>
+            <AlbumBrowseCard album={album} locale={locale} showMatches />
+            <ul class="album-matched-items" data-album-matched-items hidden></ul>
+          </li>
+        ))}
         {
           publishedEntries.map(({ view, coverImage }, originalIndex) => (
             <li
               data-archive-item
+              data-archive-album-key={albumKeyByItemId.get(view.id)}
+              hidden={albumKeyByItemId.has(view.id)}
               data-archive-category={getArchiveCategorySlug(view.objectType)}
               data-archive-decade={view.decade}
               data-archive-places={`|${view.placeFilters.join('|')}|`}
@@ -346,6 +364,7 @@ import '../../scripts/archive-likes';
     type ArchiveSearchMatch,
   } from '../../scripts/archive-search';
   import type { ArchiveSearchFields } from '../../data/archive-view';
+  import { groupArchiveMatches } from '../../data/archive-browse.mjs';
 
   const archiveIndex = document.querySelector<HTMLElement>('.archive-index');
   const searchInput = document.querySelector<HTMLInputElement>('#archive-search');
@@ -378,6 +397,12 @@ import '../../scripts/archive-likes';
   const nextPageButton = document.querySelector<HTMLButtonElement>('#archive-page-next');
   const pageNumbers = document.querySelector<HTMLElement>('#archive-page-numbers');
   const archiveEntries = Array.from(document.querySelectorAll<HTMLElement>('[data-archive-item]'));
+  const albumCards = new Map(Array.from(document.querySelectorAll<HTMLElement>('[data-archive-album-card]'))
+    .map((entry) => [entry.dataset.archiveAlbumCard!, entry]));
+  const entriesById = new Map(archiveEntries.map((entry) => [entry.dataset.archiveId!, entry]));
+  const viewModeLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-archive-view]'));
+  const requestedViewMode = new URLSearchParams(window.location.search).get('view');
+  let viewMode = requestedViewMode === 'albums' || requestedViewMode === 'items' ? requestedViewMode : 'grouped';
   const highlightOriginalText = new WeakMap<HTMLElement, string>();
   const browseStateKey = 'ljm-archive-browse-state';
   const pageSize = Math.max(1, Number(archiveIndex?.dataset.archivePageSize) || 12);
@@ -443,7 +468,16 @@ import '../../scripts/archive-likes';
     url.searchParams.delete('topic');
     setAddressParameter(url, 'sort', sortSelect.value === 'recent' ? '' : sortSelect.value);
     setAddressParameter(url, 'page', currentPage > 1 ? String(currentPage) : '');
+    setAddressParameter(url, 'view', viewMode === 'grouped' ? '' : viewMode);
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    for (const link of viewModeLinks) {
+      const destination = new URL(url);
+      setAddressParameter(destination, 'view', link.dataset.archiveView === 'grouped' ? '' : link.dataset.archiveView ?? '');
+      destination.searchParams.delete('page');
+      link.href = `${destination.pathname}${destination.search}`;
+      if (link.dataset.archiveView === viewMode) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    }
   };
 
   const currentBrowseHref = () => `${window.location.pathname}${window.location.search}`;
@@ -468,11 +502,11 @@ import '../../scripts/archive-likes';
     }));
   };
 
-  const saveBrowseState = (targetId = '') => {
+  const saveBrowseState = (targetId = '', targetAlbumSlug = '') => {
     try {
       window.sessionStorage.setItem(
         browseStateKey,
-        JSON.stringify({ href: currentBrowseHref(), scrollY: window.scrollY, targetId, restorePending: false }),
+        JSON.stringify({ href: currentBrowseHref(), scrollY: window.scrollY, targetId, targetAlbumSlug, restorePending: false }),
       );
     } catch {
       // 浏览器禁用会话存储时，网址中的筛选条件仍然可以独立恢复。
@@ -671,7 +705,7 @@ import '../../scripts/archive-likes';
     const selectedPlace = placeSelect.value;
     const selectedTag = tagSelect.value;
     const scoreMap = new Map<HTMLElement, ArchiveSearchMatch>();
-    const matchingEntries = archiveEntries.filter((entry) => {
+    const initialMatches = archiveEntries.filter((entry) => {
       const fields = searchFieldsByItemId.get(entry.dataset.archiveId ?? '');
       const keywordMatch = terms.length === 0
         ? { score: 0, matchedFields: [] }
@@ -687,12 +721,50 @@ import '../../scripts/archive-likes';
       entry.hidden = !isMatch;
       return isMatch;
     });
+    // 按真实档案筛选、排序后才收拢，不能拿甲的年代和乙的地点拼成一次命中。
     sortArchiveEntries(scoreMap);
+    const matchedIds = new Set(initialMatches.map((entry) => entry.dataset.archiveId));
+    const matchingEntries = archiveEntries.filter((entry) => matchedIds.has(entry.dataset.archiveId)
+      && (viewMode !== 'albums' || Boolean(entry.dataset.archiveAlbumKey)));
+    const displayGroups = groupArchiveMatches(matchingEntries.map((entry) => ({
+      id: entry.dataset.archiveId!, albumKey: entry.dataset.archiveAlbumKey,
+    })), viewMode);
+    archiveEntries.forEach((entry) => { entry.hidden = true; });
+    albumCards.forEach((entry) => { entry.hidden = true; });
+    const hasActiveFilters = terms.length > 0 || Boolean(selectedCategory || selectedDecade || selectedPlace || selectedTag);
+    const displayEntries: HTMLElement[] = [];
+    for (const group of displayGroups) {
+      const entry = group.kind === 'album' ? albumCards.get(group.key) : entriesById.get(group.key);
+      if (!entry) continue;
+      displayEntries.push(entry);
+      if (group.kind !== 'album') continue;
+      const matchSummary = entry.querySelector<HTMLElement>('[data-album-matches]');
+      if (matchSummary) matchSummary.textContent = ct('命中 {0} 件 / 册内共 {1} 件公开档案', {
+        0: group.memberIds.length, 1: entry.dataset.albumRecordCount ?? '',
+      });
+      const matchedItems = entry.querySelector<HTMLElement>('[data-album-matched-items]');
+      if (matchedItems) {
+        matchedItems.hidden = !hasActiveFilters;
+        matchedItems.replaceChildren(...group.memberIds.slice(0, 3).flatMap((id: string) => {
+          const member = entriesById.get(id);
+          const memberLink = member?.querySelector<HTMLAnchorElement>('[data-archive-entry]');
+          if (!memberLink) return [];
+          const li = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = memberLink.href;
+          link.textContent = member?.dataset.archiveTitle ?? id;
+          link.dataset.archiveEntry = '';
+          link.dataset.matchItemId = id;
+          li.append(link);
+          return [li];
+        }));
+      }
+    }
+    archiveList?.append(...displayEntries);
     renderSearchHighlights(terms);
     renderMatchReasons(scoreMap, terms.length > 0);
     renderSearchSuggestions(matchingEntries, terms);
-    const pageState = renderPagination(matchingEntries);
-    const hasActiveFilters = terms.length > 0 || Boolean(selectedCategory || selectedDecade || selectedPlace || selectedTag);
+    const pageState = renderPagination(displayEntries);
     const advancedFilterCount = [selectedDecade, selectedPlace, selectedTag].filter(Boolean).length;
     if (moreFiltersSummary) moreFiltersSummary.textContent = advancedFilterCount ? ct("已选 {0} 项", {0: (advancedFilterCount)}) : ct("年代、地点、标签");
     if (archiveActions) archiveActions.hidden = !hasActiveFilters;
@@ -702,6 +774,12 @@ import '../../scripts/archive-likes';
       const hasOnlyCategoryFilter = Boolean(selectedCategory) && !terms.length && !selectedDecade && !selectedPlace && !selectedTag;
       const hasKeywordFilter = terms.length > 0;
       resultsSummary.textContent = hasOnlyCategoryFilter ? ct("当前暂无此类档案。") : ct("没有找到符合条件的档案。");
+      if (viewMode === 'albums') {
+        resultsSummary.textContent = ct('没有找到符合条件的相册。');
+        if (emptyTitle) emptyTitle.textContent = ct('没有找到符合条件的相册。');
+        if (emptyDescription) emptyDescription.textContent = ct('可以清除筛选，或切换到“相册与单件”浏览其他档案。');
+        return;
+      }
       if (emptyTitle) emptyTitle.textContent = hasOnlyCategoryFilter ? ct("这个分类还没有公开档案") : ct("没有找到符合条件的档案");
       if (emptyDescription) emptyDescription.textContent = hasOnlyCategoryFilter
         ? ct("可以先浏览其他分类；新内容通过发布检查后会出现在这里。")
@@ -710,18 +788,31 @@ import '../../scripts/archive-likes';
           : ct("可以移除部分筛选条件，或清除后浏览全部档案。");
       return;
     }
-    const rangeText = pageState.totalPages > 1 ? ct("，显示第 {0}–{1} 件", {0: (pageState.startIndex + 1), 1: (pageState.endIndex)}) : '';
-    resultsSummary.textContent = ct("{0} {1} 件档案{2}", {0: (hasActiveFilters ? ct("找到") : ct("共")), 1: (matchingEntries.length), 2: (rangeText)});
+    const rangeText = pageState.totalPages > 1 ? ct('，本页显示第 {0}–{1} 个浏览入口', { 0: pageState.startIndex + 1, 1: pageState.endIndex }) : '';
+    const albumCount = displayGroups.filter((group) => group.kind === 'album').length;
+    const itemCount = displayGroups.filter((group) => group.kind === 'item').length;
+    resultsSummary.textContent = viewMode === 'items'
+      ? ct('{0} {1} 件档案 · 逐件展示{2}', {0: hasActiveFilters ? ct('找到') : ct('共'), 1: matchingEntries.length, 2: rangeText})
+      : ct('{0} {1} 件档案 · {2} 本相册、{3} 件未归册档案{4}', {
+      0: hasActiveFilters ? ct('找到') : ct('共'), 1: matchingEntries.length,
+      2: albumCount, 3: itemCount, 4: rangeText,
+    });
   };
 
   const applyFilterChange = () => {
     currentPage = 1;
-    updateFiltersInAddress();
     updateArchiveResults();
+    updateFiltersInAddress();
     saveBrowseState();
   };
 
   searchInput?.addEventListener('input', applyFilterChange);
+  for (const link of viewModeLinks) link.addEventListener('click', (event) => {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    viewMode = link.dataset.archiveView ?? 'grouped';
+    applyFilterChange();
+  });
   categorySelect?.addEventListener('change', applyFilterChange);
   sortSelect?.addEventListener('change', () => {
     userChosenSort = true;
@@ -747,8 +838,8 @@ import '../../scripts/archive-likes';
     tagSelect.value = '';
     currentPage = 1;
     if (moreFilters) moreFilters.open = false;
-    updateFiltersInAddress();
     updateArchiveResults();
+    updateFiltersInAddress();
     saveBrowseState();
     searchInput.focus();
   };
@@ -812,11 +903,12 @@ import '../../scripts/archive-likes';
   updateArchiveResults();
   updateFiltersInAddress();
 
-  document.querySelectorAll<HTMLAnchorElement>('[data-archive-entry]').forEach((entryLink) => {
-    entryLink.addEventListener('click', () => {
-      const targetId = entryLink.closest<HTMLElement>('[data-archive-id]')?.dataset.archiveId ?? '';
-      saveBrowseState(targetId);
-    });
+  archiveList?.addEventListener('click', (event) => {
+    const entryLink = (event.target as HTMLElement).closest<HTMLAnchorElement>('[data-archive-entry], [data-album-entry]');
+    if (!entryLink) return;
+    const targetId = entryLink.dataset.matchItemId ?? entryLink.closest<HTMLElement>('[data-archive-id]')?.dataset.archiveId ?? '';
+    const albumSlug = entryLink.closest<HTMLElement>('[data-archive-album-card]')?.dataset.archiveAlbumCard ?? '';
+    saveBrowseState(targetId, albumSlug);
   });
 
   try {
@@ -831,6 +923,12 @@ import '../../scripts/archive-likes';
 </script>
 
 <style>
+  .archive-view-modes { display:flex; flex-wrap:wrap; gap:0.65rem; margin:0 0 0.8rem; }
+  .archive-view-modes a { padding:0.5rem 0.85rem; border:1px solid var(--site-border-soft); color:var(--site-muted); text-decoration:none; font:0.8rem/1.6 var(--site-ui-font); }
+  .archive-view-modes a[aria-current="page"] { color:var(--site-accent); border-color:var(--site-accent); background:var(--site-paper); }
+  .archive-view-note { margin:0 0 1.3rem; color:var(--site-muted); font:0.78rem/1.8 var(--site-ui-font); }
+  .album-matched-items { padding:0.85rem 1.2rem 0.85rem 2.2rem; margin:0; border:1px solid var(--site-border-soft); border-top:0; font:0.78rem/1.8 var(--site-ui-font); }
+  .album-matched-items :global(a) { color:var(--site-accent); }
   .archive-page {
     padding-top: 1.15rem;
   }

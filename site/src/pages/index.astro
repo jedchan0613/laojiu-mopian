@@ -4,6 +4,8 @@ import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BrandMark from '../components/BrandMark.astro';
+import AlbumBrowseCard from '../components/AlbumBrowseCard.astro';
+import { createAlbumBrowseViews } from '../data/album-browse';
 import { archiveItems } from '../data/archive';
 import {
 	archiveCategories,
@@ -14,6 +16,24 @@ import { getResponsiveImage } from '../data/responsive-images';
 
 const publishedItems = archiveItems.filter(isPublishedArchiveItem);
 const publishedViews = publishedItems.map(item => createArchiveRecordView(item, locale));
+const albumBrowseViews = createAlbumBrowseViews(publishedItems, locale);
+const homeAlbumByRecordId = new Map(albumBrowseViews.map((album) => {
+	const representative = publishedViews.find((view) => album.memberIds.includes(view.id) && view.objectType === 'ALB')
+		?? publishedViews.find((view) => album.memberIds.includes(view.id))!;
+	return [representative.id, album] as const;
+}));
+const albumMemberIds = new Set(albumBrowseViews.flatMap((album) => album.memberIds));
+// 首页每册只保留一个入口；展示用题名和封面来自公开册卡，不改变真实档案数据。
+const homepageViews = publishedViews.flatMap((view) => {
+	const album = homeAlbumByRecordId.get(view.id);
+	if (!album) return albumMemberIds.has(view.id) ? [] : [view];
+	return [{ ...view, title: album.title, typeLabel: t('相册', locale),
+		description: album.description || t('{0} 件公开档案', locale, { 0: album.recordCount }),
+		images: album.coverPath ? [album.coverPath] : [],
+		imageDescriptions: album.coverDescription ? [album.coverDescription] : [album.title],
+	}];
+});
+const homepageRecordHref = (id: string) => localizePath(homeAlbumByRecordId.get(id)?.href ?? `/archive/${id}/`, locale);
 const categoryCounts = new Map<string, number>();
 for (const item of publishedItems) {
 	const slug = getArchiveCategorySlug(item.core.object_type);
@@ -35,7 +55,7 @@ const compareViewsByCreatedDate = (left: (typeof publishedViews)[number], right:
 };
 const categoryViewGroups = archiveCategories.map((category) => ({
 	category,
-		views: publishedViews
+		views: homepageViews
 			.filter((view) => getArchiveCategorySlug(view.objectType) === category.slug && Boolean(view.images[0]))
 			.sort((left, right) => {
 				const completeness = (view: (typeof publishedViews)[number]) =>
@@ -67,7 +87,7 @@ const featuredSlides = categoryViewGroups.flatMap(({ category, views }) => {
 		title: view.title,
 		dateDisplay: view.dateDisplay,
 		recordInfo: [view.typeLabel, getHomepagePlace(view)].filter(Boolean).join(' · '),
-		href: localizePath(`/archive/${view.id}/`, locale),
+		href: homepageRecordHref(view.id),
 		categorySlug: category.slug,
 	}] : [];
 });
@@ -258,6 +278,17 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 			)}
 		</nav>
 
+		<section class="home-albums" aria-labelledby="home-albums-heading">
+			<header class="home-albums-heading">
+				<div><h2 id="home-albums-heading">{t('按相册浏览', locale)}</h2>
+				<p>{t('同册档案集中查看，进入相册后逐件翻阅。', locale)}</p></div>
+				<a class="ui-text-link" href={localizePath('/archive/?view=albums', locale)}>{t('查看全部相册 →', locale)}</a>
+			</header>
+			{albumBrowseViews.length > 0
+				? <ul class="home-album-list">{albumBrowseViews.slice(0, 3).map((album) => <li><AlbumBrowseCard album={album} locale={locale} /></li>)}</ul>
+				: <p class="home-album-empty">{t('暂时没有可公开的相册，其他档案仍可逐件浏览。', locale)}</p>}
+		</section>
+
 		{recentEntries.length > 0 && leadEntry && (
 			<section class="home-discovery" aria-labelledby="discovery-heading">
 				<header class="discovery-heading">
@@ -273,7 +304,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 				}]}>
 					<article class="recent-lead">
 						<a
-							href={localizePath(`/archive/${leadEntry.view.id}/`, locale)}
+							href={homepageRecordHref(leadEntry.view.id)}
 							aria-label={t("查看档案：{0}", locale, {0: (leadEntry.view.title)})}
 							data-home-recent-record={leadEntry.view.id}
 							data-home-recent-category={getArchiveCategorySlug(leadEntry.view.objectType)}
@@ -307,7 +338,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 								{sideEntries.map(({ view, image, note }, index) => (
 									<li>
 										<a
-											href={localizePath(`/archive/${view.id}/`, locale)}
+											href={homepageRecordHref(view.id)}
 											aria-label={t("查看档案：{0}", locale, {0: (view.title)})}
 											data-home-recent-record={view.id}
 											data-home-recent-category={getArchiveCategorySlug(view.objectType)}
@@ -414,6 +445,12 @@ import '../scripts/home-featured-carousel';
 </BaseLayout>
 
 <style>
+	.home-albums { display:grid; gap:1.2rem; }
+	.home-albums-heading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:0.75rem 1.5rem; }
+	.home-albums-heading h2 { margin:0; font-size:1.2rem; }
+	.home-albums-heading p, .home-album-empty { color:var(--site-muted); font:0.8rem/1.8 var(--site-ui-font); }
+	.home-album-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,28rem),1fr)); list-style:none; margin:0; padding:0; gap:1rem; }
+	.home-album-list li { min-width:0; }
 	.home {
 		/* 字间距统一分四档：紧凑 / 常规 / 宽松 / 展示，避免零散数值 */
 		--ls-tight: 0.05em;

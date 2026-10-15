@@ -200,6 +200,7 @@ const state = {
 	confirmedPublicationCopies: false, workspaceMode: 'records', recordViewMode: 'overview', drafts: [], history: [], recycleBin: [],
 	pendingRemovedImages: [], validationIssues: [], pendingObjectCategory: '', recordStatusFilter: 'normal',
 	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '', recordAlbumFilter: '',
+	recordBrowseMode: 'albums', recordOpenAlbum: '', recordAlbumReturnState: null, recordBrowseNotice: '',
 	recordPage: 1, recordPageSize: 15,
 	recordFilters: { category: '', research: '', evidence: '', rights: '', imageStatus: '' },
 	recoveryTab: 'history', recordReferenceOpen: false,
@@ -228,6 +229,9 @@ const elements = {
 	recordQuickStatusFilter: document.querySelector('#record-quick-status-filter'),
 	recordAlbumFilter: document.querySelector('#record-album-filter'),
 	recordAlbumOptions: document.querySelector('#record-album-options'),
+	recordBrowseModes: document.querySelector('#record-browse-modes'),
+	recordAlbumContext: document.querySelector('#record-album-context'),
+	recordBrowserNotice: document.querySelector('#record-browser-notice'),
 	recordPagination: document.querySelector('#record-pagination'),
 	recordId: document.querySelector('#record-id'), recordKicker: document.querySelector('#record-kicker'),
 	editorSurface: document.querySelector('#editor-surface'), previewLink: document.querySelector('#preview-link'),
@@ -817,6 +821,10 @@ const recordsInCurrentStatusTab = () => state.records.filter((record) =>
 const filteredRecords = () => {
 	const words = state.search.trim().toLocaleLowerCase('zh-CN').split(/\s+/).filter(Boolean);
 	let records = recordsInCurrentStatusTab();
+	if (state.recordOpenAlbum) {
+		records = records.filter((record) => recordAlbumId(record) === state.recordOpenAlbum);
+	}
+	if (state.recordBrowseMode === 'album-only') records = records.filter((record) => recordAlbumId(record));
 	if (state.recordTypeFilter) {
 		records = records.filter((record) => record.core.object_type === state.recordTypeFilter);
 	}
@@ -854,17 +862,61 @@ const filteredRecords = () => {
 
 const chineseCollator = new Intl.Collator('zh-CN');
 
+// 只归集照片与相册总档案；其他对象的历史相册字段仍保留，并继续逐件显示。
+const recordAlbumId = (record) => {
+	const value = record?.core?.album_id;
+	return albumAwareObjectTypes.has(record?.core?.object_type) && typeof value === 'string' &&
+		!/[\u0000-\u001f\u007f-\u009f]/.test(value) ? value.trim() : '';
+};
+
+const compareAlbumRecords = (left, right) =>
+	Number(right.core.object_type === 'ALB') - Number(left.core.object_type === 'ALB') ||
+	compareAlbumPositions(left.core.original_position, right.core.original_position) ||
+	chineseCollator.compare(String(left.core.title ?? ''), String(right.core.title ?? '')) ||
+	String(left.core.item_id).localeCompare(String(right.core.item_id));
+
+// 调用者传入正常或撤销分区的记录，绝不把两个分区或正式版、草稿重复相加。
+const buildAdminAlbumGroups = (records) => {
+	const groups = new Map();
+	for (const record of records) {
+		const albumId = recordAlbumId(record);
+		if (!albumId) continue;
+		const group = groups.get(albumId) ?? { albumId, members: [], albums: [], photos: [] };
+		group.members.push(record);
+		if (record.core.object_type === 'ALB') group.albums.push(record);
+		else group.photos.push(record);
+		groups.set(albumId, group);
+	}
+	for (const group of groups.values()) {
+		group.members.sort(compareAlbumRecords);
+		group.albums.sort(compareAlbumRecords);
+		group.photos.sort(compareAlbumRecords);
+		group.title = group.albums[0]?.core.title || `相册 ${group.albumId}`;
+	}
+	return groups;
+};
+
+const recordBrowserEntries = (records, tabRecords) => {
+	if (state.recordBrowseMode === 'records' || state.recordOpenAlbum) {
+		return records.map((record) => ({ kind: 'record', record }));
+	}
+	const groups = buildAdminAlbumGroups(tabRecords);
+	const matchedGroups = buildAdminAlbumGroups(records);
+	const seen = new Set();
+	return records.flatMap((record) => {
+		const albumId = recordAlbumId(record);
+		if (!albumId) return [{ kind: 'record', record }];
+		if (seen.has(albumId)) return [];
+		seen.add(albumId);
+		return [{ kind: 'album', group: groups.get(albumId), matchedCount: matchedGroups.get(albumId).members.length }];
+	});
+};
+
 const albumUsageMap = () => {
 	const usage = new Map();
-	for (const record of state.records) {
-		if (recordIsWithdrawn(record) || !albumAwareObjectTypes.has(record.core.object_type)) continue;
-		const albumId = String(record?.core?.album_id ?? '').trim();
-		if (!albumId) continue;
-		const entry = usage.get(albumId) ?? { count: 0, photoCount: 0, hasAlbumRecord: false, title: '' };
-		entry.count += 1;
-		if (record.core.object_type === 'PHO') entry.photoCount += 1;
-		if (record.core.object_type === 'ALB') { entry.hasAlbumRecord = true; entry.title ||= record.core.title; }
-		usage.set(albumId, entry);
+	for (const [albumId, group] of buildAdminAlbumGroups(state.records.filter((record) => !recordIsWithdrawn(record)))) {
+		usage.set(albumId, { count: group.members.length, photoCount: group.photos.length,
+			hasAlbumRecord: Boolean(group.albums.length), title: group.albums[0]?.core.title || '' });
 	}
 	return usage;
 };
@@ -892,7 +944,7 @@ const albumIdSuggestionsDatalist = () => {
 	const usage = albumUsageMap();
 	if (!usage.size) return '';
 	const options = [...usage.entries()].sort((left, right) => left[0].localeCompare(right[0]))
-		.map(([albumId, entry]) => `<option value="${escapeHtml(albumId)}">${escapeHtml(`${entry.title || '暂无总档案'} · ${entry.photoCount} 张照片`)}</option>`)
+		.map(([albumId, entry]) => `<option value="${escapeHtml(albumId)}">${escapeHtml(`${entry.title || '暂无总档案'} · ${entry.photoCount} 件照片档案`)}</option>`)
 		.join('');
 	return `<datalist id="album-id-suggestions">${options}</datalist>`;
 };
@@ -1219,9 +1271,9 @@ const syncRecordToolOptions = (tabRecords) => {
 	elements.recordQuickStatusFilter.innerHTML = `<option value="">全部状态</option>${statuses
 		.map((value) => `<option value="${escapeHtml(value)}" ${value === state.recordQuickStatus ? 'selected' : ''}>${escapeHtml(value)}</option>`)
 		.join('')}`;
-	const albumUsage = albumUsageMap();
-	elements.recordAlbumOptions.innerHTML = [...albumUsage.entries()].sort((left, right) => left[0].localeCompare(right[0]))
-		.map(([albumId, entry]) => `<option value="${escapeHtml(albumId)}">${escapeHtml(`${entry.title || '暂无总档案'} · ${entry.photoCount} 张照片`)}</option>`)
+	const albumGroups = buildAdminAlbumGroups(tabRecords);
+	elements.recordAlbumOptions.innerHTML = [...albumGroups.entries()].sort((left, right) => left[0].localeCompare(right[0]))
+		.map(([albumId, group]) => `<option value="${escapeHtml(albumId)}">${escapeHtml(`${group.title} · ${group.photos.length} 件照片档案`)}</option>`)
 		.join('');
 	if (elements.recordAlbumFilter.value !== state.recordAlbumFilter) elements.recordAlbumFilter.value = state.recordAlbumFilter;
 	for (const [filter, field, dictionary, emptyLabel] of [
@@ -1242,29 +1294,85 @@ const syncRecordToolOptions = (tabRecords) => {
 	elements.recordAdvancedCount.textContent = advancedCount ? `已使用 ${advancedCount} 项` : '研究、证据、权利与图片';
 };
 
+const refreshAlbumBrowserActions = () => {
+	const button = elements.recordAlbumContext.querySelector('[data-album-browser-action="new-photo"]');
+	if (button) {
+		const duplicateAlbums = (buildAdminAlbumGroups(recordsInCurrentStatusTab()).get(state.recordOpenAlbum)?.albums.length ?? 0) > 1;
+		button.disabled = state.recordStatusFilter === 'withdrawn' || state.isNew || hasUnsavedChanges() || duplicateAlbums;
+		button.title = duplicateAlbums ? '同编号有多个总档案，请先核对后再新增。' : '先保存当前修改，再新增同册照片';
+	}
+};
+
+const renderAlbumBrowserContext = (tabRecords) => {
+	elements.recordAlbumContext.hidden = !state.recordOpenAlbum;
+	if (!state.recordOpenAlbum) {
+		elements.recordAlbumContext.innerHTML = '';
+		return;
+	}
+	const group = buildAdminAlbumGroups(tabRecords).get(state.recordOpenAlbum);
+	const parent = group?.albums.length === 1 ? group.albums[0] : null;
+	elements.recordAlbumContext.innerHTML = `
+		<button class="text-button" data-album-browser-action="back" type="button">← 返回总览</button>
+		<strong>${escapeHtml(group?.title || `相册 ${state.recordOpenAlbum}`)}</strong>
+		<small>${escapeHtml(state.recordOpenAlbum)} · 本册 ${group?.members.length ?? 0} 件档案</small>
+		${group?.albums.length > 1 ? '<p>同编号有多个总档案，请逐件核对。</p>' : !parent ? '<p>此分区尚无相册总档案。</p>' : ''}
+		<div class="record-album-actions">
+			${parent ? `<button class="text-button" data-album-browser-action="parent" data-id="${escapeHtml(parent.core.item_id)}" type="button">查看总档案</button>` : ''}
+			${group?.members.length && state.recordStatusFilter !== 'withdrawn' ? '<button class="text-button" data-album-browser-action="new-photo" title="先保存当前修改，再新增同册照片" type="button">新增同册照片</button>' : ''}
+		</div>`;
+	refreshAlbumBrowserActions();
+};
+
+const renderRecordAlbumCard = (entry) => {
+	const { group, matchedCount } = entry;
+	const coverRecord = group.members.find((record) => recordImages(record).length);
+	const image = coverRecord ? recordImages(coverRecord)[0] : null;
+	const draftCount = group.members.filter((record) => record._admin?.hasDraft).length;
+	return `<button class="record-card record-album-card" data-open-album="${escapeHtml(group.albumId)}" type="button">
+		<span class="record-card-thumb">${image ? `<img src="${escapeHtml(image.thumbnailUrl || image.previewUrl)}" alt="" loading="lazy" decoding="async" />` : '<span aria-hidden="true">▤</span>'}</span>
+		<span class="record-card-copy"><span class="record-card-title"><strong>${escapeHtml(group.title)}</strong><em class="record-status-chip">相册</em></span>
+		<span class="record-card-meta">本册 ${group.members.length} 件 · 当前命中 ${matchedCount} 件</span>
+		<span class="record-card-meta">${group.photos.length} 件照片档案${draftCount ? ` · ${draftCount} 件有草稿` : ''}${group.albums.length > 1 ? ' · 总档案重复' : !group.albums.length ? ' · 暂无总档案' : ''}</span>
+		<small>${escapeHtml(group.albumId)}</small></span>
+	</button>`;
+};
+
 const renderRecordList = () => {
 	const tabRecords = recordsInCurrentStatusTab();
 	syncRecordToolOptions(tabRecords);
-	const albumFilterActive = Boolean(state.recordAlbumFilter.trim());
+	const albumFilterActive = Boolean(state.recordOpenAlbum || state.recordAlbumFilter.trim());
 	const records = sortedRecords(filteredRecords());
 	if (albumFilterActive) {
-		records.sort((left, right) =>
-			Number(right.core.object_type === 'ALB') - Number(left.core.object_type === 'ALB') ||
-			compareAlbumPositions(left.core.original_position, right.core.original_position) ||
-			chineseCollator.compare(String(left.core.title ?? ''), String(right.core.title ?? '')));
+		records.sort(compareAlbumRecords);
 	}
+	const entries = recordBrowserEntries(records, tabRecords);
+	renderAlbumBrowserContext(tabRecords);
+	elements.recordAlbumFilter.disabled = Boolean(state.recordOpenAlbum);
+	elements.recordBrowseModes.querySelectorAll('[data-record-browse]').forEach((button) => {
+		const active = button.dataset.recordBrowse === state.recordBrowseMode;
+		button.classList.toggle('is-active', active);
+		button.setAttribute('aria-pressed', String(active));
+	});
+	elements.recordBrowserNotice.hidden = !state.recordBrowseNotice;
+	elements.recordBrowserNotice.textContent = state.recordBrowseNotice;
 	const statusName = state.recordStatusFilter === 'withdrawn' ? '已撤销' : '正常';
 	const activeConditions = [state.search.trim(), state.recordTypeFilter, state.recordDecadeFilter, state.recordQuickStatus, state.recordAlbumFilter.trim(), ...Object.values(state.recordFilters)]
 		.filter(Boolean).length;
 	elements.recordFiltersClear.hidden = !activeConditions;
-	elements.recordCount.textContent = activeConditions
-		? `${statusName}档案命中 ${records.length} / ${tabRecords.length} 条 · ${activeConditions} 个条件`
-		: `${statusName}档案 ${records.length} 条`;
-	const pageCount = Math.max(1, Math.ceil(records.length / state.recordPageSize));
+	const albumCount = entries.filter((entry) => entry.kind === 'album').length;
+	const summary = activeConditions
+		? `${statusName}档案命中 ${records.length} / ${tabRecords.length} 件 · ${activeConditions} 个条件`
+		: `${statusName}档案 ${records.length} 件`;
+	elements.recordCount.textContent = state.recordOpenAlbum
+		? `本册命中 ${records.length} / ${buildAdminAlbumGroups(tabRecords).get(state.recordOpenAlbum)?.members.length ?? 0} 件`
+		: `${summary}${state.recordBrowseMode === 'albums' ? ` · 展示 ${albumCount} 册、${entries.length - albumCount} 件未归册档案` : state.recordBrowseMode === 'album-only' ? ` · 展示 ${albumCount} 册` : ''}`;
+	const pageCount = Math.max(1, Math.ceil(entries.length / state.recordPageSize));
 	state.recordPage = Math.min(Math.max(1, state.recordPage), pageCount);
 	const startIndex = (state.recordPage - 1) * state.recordPageSize;
-	const pageRecords = records.slice(startIndex, startIndex + state.recordPageSize);
-	elements.recordList.innerHTML = pageRecords.length ? pageRecords.map((record) => {
+	const pageEntries = entries.slice(startIndex, startIndex + state.recordPageSize);
+	elements.recordList.innerHTML = pageEntries.length ? pageEntries.map((entry) => {
+		if (entry.kind === 'album') return renderRecordAlbumCard(entry);
+		const { record } = entry;
 		const image = recordImages(record)[0];
 		const issueCount = maintenanceTasksForRecord(record).length;
 		const typeLabel = queryCodeLabel('object_type', record.core.object_type);
@@ -1274,12 +1382,44 @@ const renderRecordList = () => {
 			<span class="record-card-meta">${escapeHtml(typeLabel)} · ${escapeHtml(record.core.date_display || '年代未知')}${albumFilterActive ? ` · ${escapeHtml(record.core.object_type === 'ALB' ? '整册资料' : String(record.core.original_position ?? '').trim() || '页序未填')}` : ''}</span>
 			<small>${escapeHtml(record.core.item_id)}${issueCount ? ` · ${issueCount} 项待处理` : ''}</small></span>
 		</button>`;
-	}).join('') : `<div class="record-list-empty">${activeConditions ? '当前搜索或筛选没有匹配记录，可以放宽部分条件' : `暂无${statusName}档案`}</div>`;
+	}).join('') : `<div class="record-list-empty">${state.recordBrowseMode === 'album-only' ? '当前没有匹配的相册，可清除条件或切换到按册归集、逐件查看。' : activeConditions ? '当前搜索或筛选没有匹配记录，可以放宽部分条件' : `暂无${statusName}档案`}</div>`;
 	elements.recordPagination.hidden = pageCount <= 1;
 	elements.recordPagination.innerHTML = pageCount > 1 ? `
 		<button class="record-page-button" data-record-page="${state.recordPage - 1}" type="button" ${state.recordPage === 1 ? 'disabled' : ''}>上一页</button>
-		<span>第 ${state.recordPage} / ${pageCount} 页 · 每页 ${state.recordPageSize} 条</span>
+		<span>第 ${state.recordPage} / ${pageCount} 页 · 每页 ${state.recordPageSize} 个入口</span>
 		<button class="record-page-button" data-record-page="${state.recordPage + 1}" type="button" ${state.recordPage === pageCount ? 'disabled' : ''}>下一页</button>` : '';
+};
+
+// 相册导航只更新左侧浏览状态，不重开档案，也不触碰尚未保存的表单或译文。
+const openRecordAlbum = (albumId, { clearFilters = false, status = state.recordStatusFilter } = {}) => {
+	if (typeof albumId !== 'string' || !albumId.trim()) return;
+	if (!state.recordOpenAlbum) state.recordAlbumReturnState = {
+		search: state.search, recordTypeFilter: state.recordTypeFilter, recordDecadeFilter: state.recordDecadeFilter,
+		recordQuickStatus: state.recordQuickStatus, recordAlbumFilter: state.recordAlbumFilter,
+		recordFilters: { ...state.recordFilters }, recordSort: state.recordSort,
+		recordStatusFilter: state.recordStatusFilter, recordPage: state.recordPage,
+	};
+	if (clearFilters) {
+		state.search = ''; elements.recordSearch.value = '';
+		state.recordTypeFilter = ''; state.recordDecadeFilter = ''; state.recordQuickStatus = '';
+		state.recordAlbumFilter = '';
+		state.recordFilters = { category: '', research: '', evidence: '', rights: '', imageStatus: '' };
+	}
+	state.recordOpenAlbum = albumId.trim();
+	state.recordStatusFilter = status;
+	state.recordPage = 1;
+	state.recordBrowseNotice = '';
+	renderRecordList(); renderWorkspaceNavigation(); setMobileRecordBrowserOpen(true);
+};
+
+const returnToRecordOverview = () => {
+	if (state.recordAlbumReturnState) Object.assign(state, state.recordAlbumReturnState);
+	state.recordOpenAlbum = '';
+	state.recordAlbumReturnState = null;
+	state.recordBrowseNotice = '';
+	elements.recordSearch.value = state.search;
+	elements.recordSort.value = state.recordSort;
+	renderRecordList(); renderWorkspaceNavigation();
 };
 
 const renderWorkspaceNavigation = () => {
@@ -1486,6 +1626,9 @@ const setWorkspaceMode = (mode) => {
 const setRecordStatusFilter = (filter) => {
 	if (!['normal', 'withdrawn'].includes(filter) || filter === state.recordStatusFilter) return;
 	state.recordStatusFilter = filter;
+	state.recordOpenAlbum = '';
+	state.recordAlbumReturnState = null;
+	state.recordBrowseNotice = '';
 	state.recordPage = 1;
 	state.recordQuickStatus = '';
 	renderRecordList();
@@ -1519,6 +1662,7 @@ const showRecordActionDock = ({ status, disabled, showPublish }) => {
 
 const updateHeader = () => {
 	refreshAlbumRelationState();
+	refreshAlbumBrowserActions();
 	const centerTitles = {
 		maintenance: ['维护概览', '质量待办与只读完整性巡检'],
 		drafts: ['草稿中心', `${state.drafts.length} 份尚未正式发布的草稿`],
@@ -2039,8 +2183,8 @@ const albumRelationSummary = () => {
 	const previousId = state.officialSnapshot?.core.album_id ?? state.records.find((r) => r.core.item_id === state.current.core.item_id)?.core.album_id;
 	return [state.current.core.object_type === 'ALB' && previousId && previousId !== albumId ? '本册编号已修改；其他照片的归属不会自动改变，请逐件核对。' : '',
 		albums.length > 1 ? '同编号有多个相册总档案，请核对。' : albums.length ? `所属相册：${albums[0].core.title || albumId}` : '尚未录入相册总档案，可以先整理照片。',
-		`同册 ${photos.length} 张照片`, missing ? `${missing} 张未标位置` : '',
-		unclear ? `${unclear} 张位置尚不能确定页序` : '', duplicated ? `${duplicated} 处页内位置重复，请核对` : '']
+		`同册 ${photos.length} 件照片档案`, missing ? `${missing} 件未标位置` : '',
+		unclear ? `${unclear} 件位置尚不能确定页序` : '', duplicated ? `${duplicated} 处页内位置重复，请核对` : '']
 		.filter(Boolean).join(' · ');
 };
 
@@ -2054,7 +2198,7 @@ const renderAlbumRelations = () => {
 		<details data-details-key="album-relation" ${isAlbum || albumId ? 'open' : ''}>
 		<summary><span>${isAlbum ? '本册关联信息' : '相册归属（可选）'}</span><small data-album-hint>${albumId ? '已填写相册编号' : isAlbum ? '供册内照片共用' : '散张照片可跳过'}</small></summary>
 		<p class="album-guidance">${isAlbum ? '总档案记录整本相册；每张照片另建档，并填写相同的相册编号。' : '选择所属相册，再记录这张照片在原册中的位置。照片的年代、地点仍分别填写。'}</p>
-		${choices.length && !isAlbum ? `<label class="album-choice-label">从已有相册选择<select data-album-choice><option value="">请选择，也可在下方手动填写</option>${choices.map(([id,entry]) => `<option value="${escapeHtml(id)}"${id === albumId ? ' selected' : ''}>${escapeHtml(entry.title || '尚无总档案')} · ${escapeHtml(id)} · ${entry.photoCount} 张照片</option>`).join('')}</select></label>` : ''}
+		${choices.length && !isAlbum ? `<label class="album-choice-label">从已有相册选择<select data-album-choice><option value="">请选择，也可在下方手动填写</option>${choices.map(([id,entry]) => `<option value="${escapeHtml(id)}"${id === albumId ? ' selected' : ''}>${escapeHtml(entry.title || '尚无总档案')} · ${escapeHtml(id)} · ${entry.photoCount} 件照片档案</option>`).join('')}</select></label>` : ''}
 		<div class="form-grid">
 		${renderField({fieldCode:'album_id',definition:commonDefinition('album_id'),value:state.current.core.album_id})}
 		${!isAlbum || hasMeaningfulValue(state.current.core.original_position) ? renderField({fieldCode:'original_position',definition:commonDefinition('original_position'),value:state.current.core.original_position}) : ''}
@@ -3314,6 +3458,20 @@ const previewGallerySelect = (gallery, index) => {
 		button.setAttribute('aria-current', String(thumbnailIndex === active)));
 };
 
+const startAlbumPhoto = (sourceRecord, albumId) => {
+	if (!sourceRecord || !albumId || recordIsWithdrawn(sourceRecord) || state.isNew || hasUnsavedChanges()) return;
+	const source = deepClone(sourceRecord);
+	// 只沿用本册关联与入藏来源；不把相册整体年代、画面地点和隐私确认套给新照片。
+	for (const key of ['country', 'province', 'city', 'district']) delete source.core[key];
+	source.core.object_type = 'PHO';
+	startNewRecord(source);
+	state.current.core.album_id = albumId;
+	state.current.core.accession_date = source.core.accession_date || today();
+	state.dirty = true;
+	renderEditor(); updateHeader();
+	showToast('已新建同册照片。请分别填写题名、年代、位置和图片，再保存草稿。');
+};
+
 const handleAlbumAction = (action) => {
 		const albumId = String(state.current?.core.album_id ?? '').trim();
 		if (isWithdrawn() && action !== 'show-members') return;
@@ -3321,22 +3479,9 @@ const handleAlbumAction = (action) => {
 			setFieldValue('core','','album_id',state.current.core.item_id);
 			renderEditorPreservingViewport(() => elements.editorSurface.querySelector('[data-field="album_id"]'));
 		} else if (action === 'show-members' && albumId) {
-			state.search = ''; elements.recordSearch.value = '';
-			state.recordTypeFilter = ''; state.recordDecadeFilter = ''; state.recordQuickStatus = '';
-			state.recordFilters = { category:'',research:'',evidence:'',rights:'',imageStatus:'' };
-			state.recordStatusFilter = 'normal'; state.recordAlbumFilter = albumId; state.recordPage = 1;
-			renderRecordList(); renderWorkspaceNavigation(); setMobileRecordBrowserOpen(true);
+			openRecordAlbum(albumId, { clearFilters: true, status: isWithdrawn() ? 'withdrawn' : 'normal' });
 		} else if (action === 'new-photo' && albumId && !state.isNew && !hasUnsavedChanges()) {
-			const source = deepClone(state.current);
-			// 只沿用本册关联与入藏来源；不把相册整体年代、画面地点和隐私确认套给新照片。
-			for (const key of ['country','province','city','district']) delete source.core[key];
-			source.core.object_type = 'PHO';
-			startNewRecord(source);
-			state.current.core.album_id = albumId;
-			state.current.core.accession_date = source.core.accession_date || today();
-			state.dirty = true;
-			renderEditor(); updateHeader();
-			showToast('已新建同册照片。请分别填写题名、年代、位置和图片，再保存草稿。');
+			startAlbumPhoto(state.current, albumId);
 		}
 };
 
@@ -3893,7 +4038,7 @@ const saveDraft = async ({ reload = true, silent = false, operation = null, auto
 		state.imagePreflight = [];
 		if (reload) {
 			updateCancellableOperation(currentOperation, '草稿已保存，正在刷新…', '正在重新读取轻量档案列表');
-			await loadBootstrap(state.activeId, { operation: currentOperation });
+			await loadBootstrap(state.activeId, { operation: currentOperation, keepSelectedRecord: true });
 		}
 		else updateHeader();
 		if (!silent) showToast(wasNewRecord
@@ -4086,12 +4231,22 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	syncRecordReferenceData();
 	renderWorkspaceNavigation();
 	const visibleRecords = sortedRecords(filteredRecords());
+	const selectionVisible = visibleRecords.some((record) => record.core.item_id === selectedId);
 	const targetId = selectedId === null || selectedId === undefined
 		? null
-		: visibleRecords.some((record) => record.core.item_id === selectedId)
+		: selectionVisible || (options.keepSelectedRecord && state.records.some((record) => record.core.item_id === selectedId))
 			? selectedId
 			: null;
-	if (targetId) selectRecord(targetId);
+	if (targetId) {
+		selectRecord(targetId);
+		if (options.keepSelectedRecord && !selectionVisible) {
+			const albumId = recordAlbumId(state.current);
+			state.recordBrowseNotice = state.recordOpenAlbum && albumId !== state.recordOpenAlbum
+				? `已保存${albumId ? `，现归入相册“${albumId}”` : '为未归册档案'}。原册列表仍保留，当前档案可继续编辑。`
+				: '档案已保存，因当前筛选条件未在列表中显示，仍可继续编辑。';
+			renderRecordList();
+		}
+	}
 	else {
 		state.activeId = null;
 		state.current = null;
@@ -4103,10 +4258,40 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 };
 
 elements.recordList.addEventListener('click', async (event) => {
+	const albumButton = event.target.closest('[data-open-album]');
+	if (albumButton) {
+		openRecordAlbum(albumButton.dataset.openAlbum, { clearFilters: true });
+		return;
+	}
 	const button = event.target.closest('.record-card');
 	if (!button) return;
 	if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定先放弃这些修改并打开另一条记录吗？')) return;
 	previewRecord(button.dataset.id);
+});
+
+elements.recordBrowseModes.addEventListener('click', (event) => {
+	const button = event.target.closest('[data-record-browse]');
+	if (!button || !['albums', 'album-only', 'records'].includes(button.dataset.recordBrowse)) return;
+	if (state.recordOpenAlbum) returnToRecordOverview();
+	state.recordBrowseMode = button.dataset.recordBrowse;
+	state.recordPage = 1;
+	state.recordBrowseNotice = '';
+	renderRecordList();
+});
+
+elements.recordAlbumContext.addEventListener('click', async (event) => {
+	const button = event.target.closest('[data-album-browser-action]');
+	if (!button || button.disabled) return;
+	const action = button.dataset.albumBrowserAction;
+	if (action === 'back') returnToRecordOverview();
+	else if (action === 'parent') {
+		if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定先放弃这些修改并打开相册总档案吗？')) return;
+		previewRecord(button.dataset.id);
+	} else if (action === 'new-photo' && state.recordStatusFilter !== 'withdrawn') {
+		const group = buildAdminAlbumGroups(recordsInCurrentStatusTab()).get(state.recordOpenAlbum);
+		if ((group?.albums.length ?? 0) > 1) { showToast('同编号有多个总档案，请先核对后再新增。', true); return; }
+		startAlbumPhoto(group?.albums[0] ?? group?.photos[0], state.recordOpenAlbum);
+	}
 });
 
 elements.recordSearch.addEventListener('input', (event) => {
@@ -4163,6 +4348,7 @@ elements.recordQueryRefresh.addEventListener('click', () => {
 });
 
 elements.recordFiltersClear.addEventListener('click', () => {
+	state.recordBrowseNotice = '';
 	state.search = '';
 	elements.recordSearch.value = '';
 	state.recordTypeFilter = '';

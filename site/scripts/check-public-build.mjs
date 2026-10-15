@@ -303,6 +303,33 @@ if (home) {
 
 if (archiveIndex) {
 	const archiveIds = [...archiveIndex.html.matchAll(/data-archive-id="([^"]+)"/g)].map((match) => match[1]);
+	const albumMembers = new Map();
+	const albumByItemId = new Map();
+	for (const match of archiveIndex.html.matchAll(/<li\b[^>]*data-archive-id="([^"]+)"[^>]*>/g)) {
+		const albumKey = match[0].match(/data-archive-album-key="([^"]+)"/)?.[1];
+		if (!albumKey) continue;
+		albumByItemId.set(match[1], albumKey);
+		albumMembers.set(albumKey, (albumMembers.get(albumKey) ?? 0) + 1);
+		check(/\shidden(?:\s|=|>)/.test(match[0]), `入册档案 ${match[1]} 在默认目录中没有收拢。`);
+	}
+	const albumKeys = [];
+	for (const match of archiveIndex.html.matchAll(/<li\b[^>]*data-archive-album-card="([^"]+)"[^>]*>/g)) {
+		albumKeys.push(match[1]);
+		const declaredCount = Number(match[0].match(/data-album-record-count="(\d+)"/)?.[1]);
+		check(declaredCount === albumMembers.get(match[1]), `相册 ${match[1]} 的公开总件数没有包含全部真实成员。`);
+	}
+	check(new Set(albumKeys).size === albumKeys.length, '档案目录重复展示同一个相册入口。');
+	check(albumKeys.length === albumMembers.size, '相册入口与入册档案的归属不一致。');
+	for (const mode of ['grouped', 'albums', 'items']) check(archiveIndex.html.includes(`data-archive-view="${mode}"`), `档案目录缺少 ${mode} 浏览方式。`);
+	check(home?.html.includes('id="home-albums-heading"'), '首页缺少清楚的按相册浏览入口。');
+	if (home) {
+		const homeRecordIds = [
+			...(home.html.match(/data-carousel-record-order="([^"]*)"/)?.[1].split(',').filter(Boolean) ?? []),
+			...[...home.html.matchAll(/data-home-recent-record="([^"]+)"/g)].map((match) => match[1]),
+		];
+		const homeAlbums = homeRecordIds.map((id) => albumByItemId.get(id)).filter(Boolean);
+		check(new Set(homeAlbums).size === homeAlbums.length, '首页精选与继续浏览重复分散展示了同册档案。');
+	}
 	const likeIds = [...archiveIndex.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
 	check(archiveIds.length === detailPages.length, '档案列表数量与公开详情页数量不一致。');
 	check(likeIds.length === 0, '档案列表不应再显示点赞入口。');

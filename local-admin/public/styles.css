@@ -5855,6 +5855,105 @@ body.admin-v2 .record-list {
 	scrollbar-width: thin;
 }
 
+body.admin-v2 .record-browse-modes {
+	display: flex;
+	gap: 0.25rem;
+	padding: 0.2rem;
+	background: #f2f4f7;
+	border-radius: 0.6rem;
+}
+
+body.admin-v2 .record-browse-modes button {
+	flex: 1;
+	padding: 0.5rem 0.35rem;
+	color: var(--admin-muted);
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 0.45rem;
+	font: inherit;
+	font-size: 0.68rem;
+	cursor: pointer;
+}
+
+body.admin-v2 .record-browse-modes button.is-active {
+	color: var(--admin-accent);
+	background: #fff;
+	border-color: var(--admin-line);
+	font-weight: 650;
+}
+
+body.admin-v2 .record-browse-help {
+	margin: 0.45rem 0.2rem 0.65rem;
+	color: var(--admin-muted);
+	font-size: 0.62rem;
+	line-height: 1.65;
+}
+
+body.admin-v2 .record-album-context {
+	display: grid;
+	gap: 0.35rem;
+	margin-top: 0.65rem;
+	padding: 0.65rem;
+	background: var(--admin-accent-soft);
+	border: 1px solid #d9e3ff;
+	border-radius: 0.6rem;
+	overflow-wrap: anywhere;
+}
+
+body.admin-v2 .record-album-context[hidden],
+body.admin-v2 .record-browser-notice[hidden] {
+	display: none;
+}
+
+body.admin-v2 .record-album-context > .text-button {
+	justify-self: start;
+}
+
+body.admin-v2 .record-album-context strong {
+	color: var(--admin-ink);
+	font-size: 0.78rem;
+}
+
+body.admin-v2 .record-album-context small,
+body.admin-v2 .record-album-context p {
+	margin: 0;
+	color: var(--admin-muted);
+	font-size: 0.62rem;
+	line-height: 1.65;
+}
+
+body.admin-v2 .record-album-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.65rem;
+}
+
+body.admin-v2 .record-album-actions button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+body.admin-v2 .record-browser-notice {
+	margin: 0 0.2rem 0.6rem;
+	padding: 0.6rem;
+	color: var(--admin-ink);
+	background: #fff6df;
+	border-radius: 0.5rem;
+	font-size: 0.68rem;
+	line-height: 1.7;
+	overflow-wrap: anywhere;
+}
+
+body.admin-v2 .record-card.record-album-card {
+	background: #f7f9ff;
+	border-color: #e0e7ff;
+}
+
+body.admin-v2 .record-album-card .record-status-chip {
+	color: var(--admin-accent);
+	background: var(--admin-accent-soft);
+}
+
 body.admin-v2 .record-card {
 	display: grid;
 	grid-template-columns: 3.05rem minmax(0, 1fr);
@@ -6998,7 +7097,7 @@ body.admin-v2 .record-overview-empty p {
 		display: none;
 		position: static;
 		height: auto;
-		max-height: 32rem;
+		max-height: none;
 		border-right: 0;
 		border-bottom: 1px solid var(--admin-line);
 	}
@@ -7017,7 +7116,24 @@ body.admin-v2 .record-overview-empty p {
 	}
 
 	body.admin-v2 .record-browser-content:not([hidden]) {
-		max-height: 27rem;
+		max-height: none;
+		flex: none;
+		overflow: visible;
+	}
+
+	/* 手机使用页面的自然滚动，避免筛选和相册页头把列表挤成几像素。 */
+	body.admin-v2 .record-browser-content > * {
+		flex-shrink: 0;
+	}
+
+	body.admin-v2 .record-list {
+		flex: none;
+		max-height: none;
+		overflow: visible;
+	}
+
+	body.admin-v2 .record-count {
+		display: block;
 	}
 
 	body.admin-v2 .workspace {
