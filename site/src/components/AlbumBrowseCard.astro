@@ -13,16 +13,16 @@ const cover = album.coverPath ? getResponsiveImage(album.coverPath) : undefined;
       : <span>{t('暂无图片', locale)}</span>}
   </figure>
   <div class="album-browse-copy">
-    <small>{t('相册', locale)}</small>
+    <small>{album.isLetterCollection ? t('信件选览', locale) : t('相册', locale)}</small>
     <h2>{album.title}</h2>
     {album.description && <p class="album-browse-description">{album.description}</p>}
     <p>{t('{0} 件公开档案', locale, { 0: album.recordCount })}</p>
-    <p>{t('{0} 件照片档案 · {1} 幅附图', locale, { 0: album.photoCount, 1: album.imageCount })}</p>
-    {album.dateSummary.range && <p>{album.dateSummary.uncertainPhotoCount > 0
+    <p>{album.isLetterCollection ? t('{0} 件信件档案', locale, { 0: album.letterCount }) : t('{0} 件照片档案 · {1} 幅附图', locale, { 0: album.photoCount, 1: album.imageCount })}</p>
+    {!album.isLetterCollection && album.dateSummary.range && <p>{album.dateSummary.uncertainPhotoCount > 0
       ? t('照片年代线索：{0}（含推测）', locale, { 0: album.dateSummary.range })
       : t('已知照片年代：{0}', locale, { 0: album.dateSummary.range })}</p>}
-    {album.dateSummary.unknownPhotoCount > 0 && <p>{t('{0} 件年代待考', locale, { 0: album.dateSummary.unknownPhotoCount })}</p>}
-    {!album.hasAlbumRecord && <p>{t('相册总档案尚未公开，以下为已公开照片。', locale)}</p>}
+    {!album.isLetterCollection && album.dateSummary.unknownPhotoCount > 0 && <p>{t('{0} 件年代待考', locale, { 0: album.dateSummary.unknownPhotoCount })}</p>}
+    {!album.isLetterCollection && !album.hasAlbumRecord && <p>{t('相册总档案尚未公开，以下为已公开照片。', locale)}</p>}
     {showMatches && <p class="album-browse-matches" data-album-matches>{t('命中 {0} 件 / 册内共 {1} 件公开档案', locale, { 0: album.recordCount, 1: album.recordCount })}</p>}
     <strong class="album-browse-action">{t('进入相册 →', locale)}</strong>
   </div>

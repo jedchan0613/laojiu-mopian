@@ -31,6 +31,7 @@ const commonFieldSectionLabels = new Map([
 const albumRelationFieldCodes = new Set(['album_id', 'original_position']);
 
 const albumAwareObjectTypes = new Set(['PHO', 'ALB']);
+const curatedLetterAlbum = { id: 'LJM-CUR-MING-LETTERS', tag: '明的家书', title: '明的家书' };
 
 const commonFieldSectionFor = (definition, { required = false, value, objectType } = {}) => {
 	if (hiddenCommonFieldCodes.has(definition.field_code) && !definition.required && !required &&
@@ -838,7 +839,7 @@ const filteredRecords = () => {
 	}
 	if (state.recordAlbumFilter.trim()) {
 		const wantedAlbum = state.recordAlbumFilter.trim();
-		records = records.filter((record) => String(record.core.album_id ?? '').trim() === wantedAlbum);
+		records = records.filter((record) => recordAlbumId(record) === wantedAlbum);
 	}
 	const filters = state.recordFilters;
 	const queryById = new Map(state.query.records.map((record) => [record.item_id, record]));
@@ -862,8 +863,10 @@ const filteredRecords = () => {
 
 const chineseCollator = new Intl.Collator('zh-CN');
 
-// 只归集照片与相册总档案；其他对象的历史相册字段仍保留，并继续逐件显示。
+// 信件选览只依赖已维护标签，不虚构实物相册记录，也不改变信件编号。
 const recordAlbumId = (record) => {
+	if (record?.core?.object_type === 'LET')
+		return record.public_view?.tags?.includes(curatedLetterAlbum.tag) ? curatedLetterAlbum.id : '';
 	const value = record?.core?.album_id;
 	return albumAwareObjectTypes.has(record?.core?.object_type) && typeof value === 'string' &&
 		!/[\u0000-\u001f\u007f-\u009f]/.test(value) ? value.trim() : '';
@@ -871,6 +874,8 @@ const recordAlbumId = (record) => {
 
 const compareAlbumRecords = (left, right) =>
 	Number(right.core.object_type === 'ALB') - Number(left.core.object_type === 'ALB') ||
+	(left.core.object_type === 'LET' && right.core.object_type === 'LET'
+		? String(left.core.date_start || left.core.date_display || '').localeCompare(String(right.core.date_start || right.core.date_display || '')) : 0) ||
 	compareAlbumPositions(left.core.original_position, right.core.original_position) ||
 	chineseCollator.compare(String(left.core.title ?? ''), String(right.core.title ?? '')) ||
 	String(left.core.item_id).localeCompare(String(right.core.item_id));
@@ -881,17 +886,19 @@ const buildAdminAlbumGroups = (records) => {
 	for (const record of records) {
 		const albumId = recordAlbumId(record);
 		if (!albumId) continue;
-		const group = groups.get(albumId) ?? { albumId, members: [], albums: [], photos: [] };
+		const group = groups.get(albumId) ?? { albumId, members: [], albums: [], photos: [], letters: [] };
 		group.members.push(record);
 		if (record.core.object_type === 'ALB') group.albums.push(record);
-		else group.photos.push(record);
+		else if (record.core.object_type === 'PHO') group.photos.push(record);
+		else if (record.core.object_type === 'LET') group.letters.push(record);
 		groups.set(albumId, group);
 	}
 	for (const group of groups.values()) {
 		group.members.sort(compareAlbumRecords);
 		group.albums.sort(compareAlbumRecords);
 		group.photos.sort(compareAlbumRecords);
-		group.title = group.albums[0]?.core.title || `相册 ${group.albumId}`;
+		group.letters.sort(compareAlbumRecords);
+		group.title = group.albumId === curatedLetterAlbum.id ? curatedLetterAlbum.title : group.albums[0]?.core.title || `相册 ${group.albumId}`;
 	}
 	return groups;
 };
@@ -1273,7 +1280,7 @@ const syncRecordToolOptions = (tabRecords) => {
 		.join('')}`;
 	const albumGroups = buildAdminAlbumGroups(tabRecords);
 	elements.recordAlbumOptions.innerHTML = [...albumGroups.entries()].sort((left, right) => left[0].localeCompare(right[0]))
-		.map(([albumId, group]) => `<option value="${escapeHtml(albumId)}">${escapeHtml(`${group.title} · ${group.photos.length} 件照片档案`)}</option>`)
+		.map(([albumId, group]) => `<option value="${escapeHtml(albumId)}">${escapeHtml(`${group.title} · ${group.letters.length ? `${group.letters.length} 件信件档案` : `${group.photos.length} 件照片档案`}`)}</option>`)
 		.join('');
 	if (elements.recordAlbumFilter.value !== state.recordAlbumFilter) elements.recordAlbumFilter.value = state.recordAlbumFilter;
 	for (const [filter, field, dictionary, emptyLabel] of [
@@ -1310,15 +1317,16 @@ const renderAlbumBrowserContext = (tabRecords) => {
 		return;
 	}
 	const group = buildAdminAlbumGroups(tabRecords).get(state.recordOpenAlbum);
+	const isLetterCollection = group?.albumId === curatedLetterAlbum.id;
 	const parent = group?.albums.length === 1 ? group.albums[0] : null;
 	elements.recordAlbumContext.innerHTML = `
 		<button class="text-button" data-album-browser-action="back" type="button">← 返回总览</button>
 		<strong>${escapeHtml(group?.title || `相册 ${state.recordOpenAlbum}`)}</strong>
 		<small>${escapeHtml(state.recordOpenAlbum)} · 本册 ${group?.members.length ?? 0} 件档案</small>
-		${group?.albums.length > 1 ? '<p>同编号有多个总档案，请逐件核对。</p>' : !parent ? '<p>此分区尚无相册总档案。</p>' : ''}
+		${isLetterCollection ? '<p>依据“明的家书”标签归集的线上信件选览，并非实物相册。</p>' : group?.albums.length > 1 ? '<p>同编号有多个总档案，请逐件核对。</p>' : !parent ? '<p>此分区尚无相册总档案。</p>' : ''}
 		<div class="record-album-actions">
 			${parent ? `<button class="text-button" data-album-browser-action="parent" data-id="${escapeHtml(parent.core.item_id)}" type="button">查看总档案</button>` : ''}
-			${group?.members.length && state.recordStatusFilter !== 'withdrawn' ? '<button class="text-button" data-album-browser-action="new-photo" title="先保存当前修改，再新增同册照片" type="button">新增同册照片</button>' : ''}
+			${!isLetterCollection && group?.members.length && state.recordStatusFilter !== 'withdrawn' ? '<button class="text-button" data-album-browser-action="new-photo" title="先保存当前修改，再新增同册照片" type="button">新增同册照片</button>' : ''}
 		</div>`;
 	refreshAlbumBrowserActions();
 };
@@ -1330,9 +1338,9 @@ const renderRecordAlbumCard = (entry) => {
 	const draftCount = group.members.filter((record) => record._admin?.hasDraft).length;
 	return `<button class="record-card record-album-card" data-open-album="${escapeHtml(group.albumId)}" type="button">
 		<span class="record-card-thumb">${image ? `<img src="${escapeHtml(image.thumbnailUrl || image.previewUrl)}" alt="" loading="lazy" decoding="async" />` : '<span aria-hidden="true">▤</span>'}</span>
-		<span class="record-card-copy"><span class="record-card-title"><strong>${escapeHtml(group.title)}</strong><em class="record-status-chip">相册</em></span>
+		<span class="record-card-copy"><span class="record-card-title"><strong>${escapeHtml(group.title)}</strong><em class="record-status-chip">${group.letters.length ? '信件选览' : '相册'}</em></span>
 		<span class="record-card-meta">本册 ${group.members.length} 件 · 当前命中 ${matchedCount} 件</span>
-		<span class="record-card-meta">${group.photos.length} 件照片档案${draftCount ? ` · ${draftCount} 件有草稿` : ''}${group.albums.length > 1 ? ' · 总档案重复' : !group.albums.length ? ' · 暂无总档案' : ''}</span>
+		<span class="record-card-meta">${group.letters.length ? `${group.letters.length} 件信件档案` : `${group.photos.length} 件照片档案`}${draftCount ? ` · ${draftCount} 件有草稿` : ''}${group.letters.length ? '' : group.albums.length > 1 ? ' · 总档案重复' : !group.albums.length ? ' · 暂无总档案' : ''}</span>
 		<small>${escapeHtml(group.albumId)}</small></span>
 	</button>`;
 };
@@ -1379,7 +1387,7 @@ const renderRecordList = () => {
 		return `<button class="record-card ${record.core.item_id === state.activeId ? 'is-active' : ''}" data-id="${escapeHtml(record.core.item_id)}" type="button">
 			<span class="record-card-thumb">${image ? `<img src="${escapeHtml(image.thumbnailUrl || image.previewUrl)}" alt="" loading="lazy" decoding="async" />` : '<span aria-hidden="true">⌁</span>'}</span>
 			<span class="record-card-copy"><span class="record-card-title"><strong>${escapeHtml(record.core.title || '未命名藏品')}</strong><em class="record-status-chip is-${recordStatusTone(record)}">${escapeHtml(statusLabel(record))}</em></span>
-			<span class="record-card-meta">${escapeHtml(typeLabel)} · ${escapeHtml(record.core.date_display || '年代未知')}${albumFilterActive ? ` · ${escapeHtml(record.core.object_type === 'ALB' ? '整册资料' : String(record.core.original_position ?? '').trim() || '页序未填')}` : ''}</span>
+			<span class="record-card-meta">${escapeHtml(typeLabel)} · ${escapeHtml(record.core.date_display || '年代未知')}${albumFilterActive && record.core.object_type !== 'LET' ? ` · ${escapeHtml(record.core.object_type === 'ALB' ? '整册资料' : String(record.core.original_position ?? '').trim() || '页序未填')}` : ''}</span>
 			<small>${escapeHtml(record.core.item_id)}${issueCount ? ` · ${issueCount} 项待处理` : ''}</small></span>
 		</button>`;
 	}).join('') : `<div class="record-list-empty">${state.recordBrowseMode === 'album-only' ? '当前没有匹配的相册，可清除条件或切换到按册归集、逐件查看。' : activeConditions ? '当前搜索或筛选没有匹配记录，可以放宽部分条件' : `暂无${statusName}档案`}</div>`;

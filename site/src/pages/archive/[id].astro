@@ -193,8 +193,11 @@ const relatedRecordEntries = publishedViews
 const recordUrl = Astro.site ? new URL(localizePath(`/archive/${view.id}/`, locale), Astro.site) : undefined;
 // 入口与生成页面使用同一套公开分组，避免历史编号产生断链或误计其他物件。
 const albumGroup = publishedAlbumGroups().find((group) => group.members.some((member) => member.core.item_id === view.id));
-const albumMateCount = albumGroup?.photos.length ?? 0;
-const albumPhotos = [...(albumGroup?.photos ?? [])].sort((left,right) =>
+const isLetterCollection = Boolean(albumGroup?.letters.length);
+const albumMateCount = isLetterCollection ? albumGroup!.letters.length : albumGroup?.photos.length ?? 0;
+const albumPhotos = [...(isLetterCollection ? albumGroup!.letters : albumGroup?.photos ?? [])].sort((left,right) =>
+  isLetterCollection ?
+    (left.core.date_start || left.core.date_display || '').localeCompare(right.core.date_start || right.core.date_display || '') || left.core.item_id.localeCompare(right.core.item_id) :
   compareAlbumPositions(left.core.original_position,right.core.original_position) ||
   left.core.title.localeCompare(right.core.title,'zh-CN') || left.core.item_id.localeCompare(right.core.item_id));
 const albumPhotoIndex = albumPhotos.findIndex((photo) => photo.core.item_id === view.id);
@@ -206,7 +209,7 @@ const previousBrowseView = albumPhotoIndex >= 0
 const nextBrowseView = albumPhotoIndex >= 0
   ? (nextAlbumPhoto ? createArchiveRecordView(nextAlbumPhoto, locale) : undefined) : nextView;
 const albumLinkLabel = albumGroup
-  ? (item.core.object_type === 'ALB'
+  ? (isLetterCollection ? t("查看《明的家书》信件选览（共 {0} 件） →", locale, { 0: albumMateCount }) : item.core.object_type === 'ALB'
     ? t("翻阅本册档案（共 {0} 件） →", locale, { 0: albumMateCount })
     : t("查看整本相册（共 {0} 件照片档案） →", locale, { 0: albumMateCount }))
   : '';
@@ -294,7 +297,7 @@ const breadcrumbStructuredData = {
       </div>
       {hasText(view.description) && <p class="record-lead">{view.description}</p>}
       {albumGroup && (
-        <nav class="record-album-context" aria-label={t("同册照片", locale)}>
+        <nav class="record-album-context" aria-label={isLetterCollection ? t("同辑信件", locale) : t("同册照片", locale)}>
           <div>
             <a class="ui-text-link" href={localizePath(albumGroup.href, locale)} data-album-entry>{albumLinkLabel}</a>
             {item.core.object_type === 'PHO' && item.core.original_position && <small>{t("相册中的位置", locale)}：{item.core.original_position}</small>}

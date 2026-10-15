@@ -27,7 +27,7 @@ const albumMemberIds = new Set(albumBrowseViews.flatMap((album) => album.memberI
 const homepageViews = publishedViews.flatMap((view) => {
 	const album = homeAlbumByRecordId.get(view.id);
 	if (!album) return albumMemberIds.has(view.id) ? [] : [view];
-	return [{ ...view, title: album.title, typeLabel: t('相册', locale),
+	return [{ ...view, title: album.title, typeLabel: album.isLetterCollection ? t('信件选览', locale) : t('相册', locale),
 		description: album.description || t('{0} 件公开档案', locale, { 0: album.recordCount }),
 		images: album.coverPath ? [album.coverPath] : [],
 		imageDescriptions: album.coverDescription ? [album.coverDescription] : [album.title],

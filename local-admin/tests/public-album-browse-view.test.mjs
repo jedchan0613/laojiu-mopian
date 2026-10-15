@@ -31,7 +31,7 @@ const createArchiveRecordViewStub = (item) => {
 const translateStub = (text, _locale, values = {}) => text.replace(/\{(\d+)\}/g, (_, key) => String(values[key]));
 const browseSource = (await readFile(sourceUrl('album-browse.ts'), 'utf8'))
   .replace(/import type \{ ArchiveItem \} from '\.\/archive';/, '')
-  .replace(/import \{ buildAlbumGroups, albumDateSummary \} from '\.\/album-groups';/, `import { buildAlbumGroups, albumDateSummary } from '${groupModuleUrl}';`)
+  .replace(/import \{ buildAlbumGroups, albumDateSummary, curatedLetterAlbum \} from '\.\/album-groups';/, `import { buildAlbumGroups, albumDateSummary, curatedLetterAlbum } from '${groupModuleUrl}';`)
   .replace(/import \{ createArchiveRecordView \} from '\.\/archive-view';/, `const createArchiveRecordView = ${createArchiveRecordViewStub.toString()};`)
   .replace(/import \{ t, type Locale \} from '\.\.\/i18n\/ui';/, `const t = ${translateStub.toString()};`);
 const { createAlbumBrowseViews } = await import(moduleUrl(browseSource));
@@ -100,6 +100,23 @@ test('公开总册优先提供标题和封面，档案件数、照片件数和�
   assert.equal(view.dateSummary.photoCount, 3);
   assert.equal(view.dateSummary.unknownPhotoCount, 1);
   assert.equal(view.dateSummary.uncertainPhotoCount, 1);
+});
+
+test('信件选览使用主题说明与公开信件封面，不把非公开信件带入计数', () => {
+  const taggedLetter = (id, changes = {}) => record(id, 'LET', {
+    album_id: undefined, publication_file_path: ['/published/' + id + '.jpg'], ...changes,
+  }, { tags: ['明的家书'], image_descriptions: ['信件公开副本'] });
+  const views = createAlbumBrowseViews([
+    taggedLetter('L1'), taggedLetter('L2', { privacy_level: 'Y', publication_file_path: ['/private/hidden.jpg'] }),
+  ], 'zh-CN');
+  const letterView = views.find((view) => view.isLetterCollection);
+  assert.equal(letterView.title, '明的家书');
+  assert.match(letterView.description, /网站的主题选览/);
+  assert.deepEqual(letterView.memberIds, ['L1']);
+  assert.equal(letterView.letterCount, 1);
+  assert.equal(letterView.photoCount, 0);
+  assert.equal(letterView.coverPath, '/published/L1.jpg');
+  assert.doesNotMatch(JSON.stringify(letterView), /hidden|private|L2/);
 });
 
 test('公开总册没有图片时保留总册文字，并回退到首个有图的公开照片', () => {

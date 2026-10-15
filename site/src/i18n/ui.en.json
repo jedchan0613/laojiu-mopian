@@ -561,5 +561,14 @@
   "册内影像选览": "Album image selection",
   "{0} {1} 件档案 · {2} 本相册、{3} 件未归册档案{4}": "Records: {1} · albums: {2}; ungrouped records: {3}{4}",
   "{0} {1} 件档案 · 逐件展示{2}": "Records: {1} · individual view{2}",
-  "选择语言": "Choose language"
+  "选择语言": "Choose language",
+  "信件选览": "Letter collection",
+  "{0} 件信件档案": "{0} letter records",
+  "{0} 件信件档案 · {1} 幅附图": "{0} letter records · {1} images",
+  "浏览本辑信件 ↓": "Browse letters ↓",
+  "本辑信件": "Letters in this collection",
+  "按档案记载的写信年代排列；不确定的日期以单件记录为准。": "Letters are ordered by their recorded dates; consult each record for uncertain dates.",
+  "这辑暂无可公开的信件。": "No public letters are available in this collection yet.",
+  "查看《明的家书》信件选览（共 {0} 件） →": "View Ming's Family Letters ({0} records) →",
+  "同辑信件": "Letters in this collection"
 }

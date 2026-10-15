@@ -30,6 +30,7 @@ const setup = (records, overrides = {}) => {
   const calls = [];
   const scope = {
     state, elements, compareAlbumPositions, albumAwareObjectTypes: new Set(['PHO', 'ALB']),
+    curatedLetterAlbum: { id: 'LJM-CUR-MING-LETTERS', tag: '明的家书', title: '明的家书' },
     chineseCollator: new Intl.Collator('zh-CN'), hasUnsavedChanges: () => state.dirty || state.translation.dirty,
     sortedRecords: (items) => [...items], syncRecordToolOptions: () => {}, maintenanceTasksForRecord: () => [],
     queryCodeLabel: (_dictionary, value) => value, deepClone: structuredClone,
@@ -117,6 +118,28 @@ test('仅看相册按56件真实档案计数，散件不出现，退出后仍可
   assert.doesNotMatch(c.elements.recordList.innerHTML, /data-id="[LS]"/);
   c.state.recordBrowseMode='records';
   assert.equal(c.filteredRecords().length,58);
+});
+
+test('维护页按标签收拢信件，并保留逐件计数及原有照片册', () => {
+  const tagged = (id, date) => ({ ...record(id, 'LET', ''),
+    core: { ...record(id, 'LET', '').core, date_start: date },
+    public_view: { tags: ['明的家书'] } });
+  const records = [record('A', 'ALB'), tagged('L2', '1995-01-01'), tagged('L1', '1987-01-01'),
+    record('U', 'LET', '')];
+  const c = setup(records);
+  const entries = c.recordBrowserEntries(c.filteredRecords(), c.recordsInCurrentStatusTab());
+  assert.equal(entries.filter((entry) => entry.kind === 'album').length, 2);
+  c.renderRecordList();
+  assert.match(c.elements.recordCount.textContent, /正常档案 4 件/);
+  assert.match(c.elements.recordList.innerHTML, /明的家书/);
+  assert.match(c.elements.recordList.innerHTML, /2 件信件档案/);
+  assert.doesNotMatch(c.elements.recordList.innerHTML, /暂无总档案/);
+  c.openRecordAlbum('LJM-CUR-MING-LETTERS');
+  assert.deepEqual(c.filteredRecords().map((entry) => entry.core.item_id), ['L2', 'L1']);
+  c.renderRecordList();
+  const markup = c.elements.recordList.innerHTML;
+  assert.ok(markup.indexOf('data-id="L1"') < markup.indexOf('data-id="L2"'));
+  assert.doesNotMatch(c.elements.recordAlbumContext.innerHTML, /new-photo|尚无相册总档案/);
 });
 
 test('正常、撤销与恢复草稿沿用既有分区语义，同一编号的正式快照不重复累计', () => {

@@ -9,7 +9,22 @@ export interface AlbumGroup {
   members: ArchiveItem[];
   albums: ArchiveItem[];
   photos: ArchiveItem[];
+  letters: ArchiveItem[];
 }
+
+// 这是按已公开标签形成的线上选览，不代表另有一件实物相册。
+export const curatedLetterAlbum = {
+  id: 'LJM-CUR-MING-LETTERS',
+  tag: '明的家书',
+  title: '明的家书',
+  description: '本辑按“明的家书”标签归集已公开的家庭书信，写作年代见各件档案。信中记下远行时与家人的通信，也谈到孩子的学习、住处、日常开支和身体照料。相隔各地的想念，常藏在这些具体的家常话里。这里是网站的主题选览，并非另有一件实物相册。',
+} as const;
+
+export const albumIdForItem = (item: ArchiveItem): string | undefined => {
+  if (item.core.object_type === 'LET')
+    return item.public_view.tags?.includes(curatedLetterAlbum.tag) ? curatedLetterAlbum.id : undefined;
+  return ['ALB', 'PHO'].includes(item.core.object_type) ? normalizeAlbumId(item.core.album_id) : undefined;
+};
 
 // 编号是管理关系，不能直接作为文件路径。旧编号中的中文、空格或下划线仍可关联。
 const normalizeAlbumId = (value: unknown): string | undefined => {
@@ -20,12 +35,12 @@ const normalizeAlbumId = (value: unknown): string | undefined => {
 export const albumSlug = (albumId: string) => `a-${createHash('sha256').update(albumId.trim()).digest('hex')}`;
 export const albumHref = (albumId: string) => `/albums/${albumSlug(albumId)}/`;
 
-/** 已公开照片/相册总档案的纯分组函数，不把私密、暂停、撤销或其他物件带入相册。 */
+/** 只归集已公开的实体相册照片与指定标签的线上信件选览。 */
 export const buildAlbumGroups = (items: ArchiveItem[]): AlbumGroup[] => {
   const groups = new Map<string, ArchiveItem[]>();
   for (const item of items) {
-    if (!item?.core || !isPublishedArchiveItem(item) || !['ALB', 'PHO'].includes(item.core.object_type)) continue;
-    const albumId = normalizeAlbumId(item.core.album_id);
+    if (!item?.core || !isPublishedArchiveItem(item)) continue;
+    const albumId = albumIdForItem(item);
     if (!albumId) continue;
     const members = groups.get(albumId) ?? [];
     members.push(item);
@@ -38,6 +53,7 @@ export const buildAlbumGroups = (items: ArchiveItem[]): AlbumGroup[] => {
       albumId, slug: albumSlug(albumId), href: albumHref(albumId), members,
       albums: members.filter((item) => item.core.object_type === 'ALB'),
       photos: members.filter((item) => item.core.object_type === 'PHO'),
+      letters: members.filter((item) => item.core.object_type === 'LET'),
     };
   });
 };

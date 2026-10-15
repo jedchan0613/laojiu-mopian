@@ -27,6 +27,22 @@ test('相册只分组 ACT/G/U3 的 PHO 与 ALB，照片计数不包括底片、�
   assert.equal(groups.albumPhotoCount(items), 1);
 });
 
+test('明的家书按信件标签归集，仅公开信件进入选览，且不改变照片计数', () => {
+  const letter = (id, overrides = {}, tags = ['明的家书']) => ({
+    ...record(id, 'LET', { album_id: undefined, ...overrides }),
+    public_view: { tags },
+  });
+  const items = [letter('L1'), letter('L2', { privacy_level: 'Y' }),
+    letter('L3', {}, ['别的标签']), letter('L4', { record_status: 'WDR' }),
+    record('P1', 'PHO', { album_id: '照片册' })];
+  const groupsById = new Map(groups.buildAlbumGroups(items).map((group) => [group.albumId, group]));
+  const letters = groupsById.get(groups.curatedLetterAlbum.id);
+  assert.deepEqual(letters.members.map((item) => item.core.item_id), ['L1']);
+  assert.equal(letters.photos.length, 0);
+  assert.equal(letters.letters.length, 1);
+  assert.deepEqual(groupsById.get('照片册').members.map((item) => item.core.item_id), ['P1']);
+});
+
 test('旧相册编号不会因为中文、空格、下划线丢失，路径稳定且不会变成公开私密目录名', () => {
   for (const albumId of ['家庭 相册_01', 'FSA-A0001', 'drafts', '../private', 'a/b', 'ALB_01']) {
     const [group] = groups.buildAlbumGroups([record('P1', 'PHO', { album_id: albumId })]);

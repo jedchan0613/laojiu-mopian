@@ -20,7 +20,7 @@ test('档案列表提供按相册筛选入口，激活时按原始位置排序�
 	assert.match(html, /list="record-album-options"/);
 	const script = await readScript();
 	assert.match(script, /recordAlbumFilter: ''/);
-	assert.match(script, /String\(record\.core\.album_id \?\? ''\)\.trim\(\) === wantedAlbum/);
+	assert.match(script, /recordAlbumId\(record\) === wantedAlbum/);
 	assert.match(script, /compareAlbumPositions\(left\.core\.original_position, right\.core\.original_position\)/);
 	assert.match(script, /页序未填/);
 	assert.match(script, /state\.recordAlbumFilter = ''/);
