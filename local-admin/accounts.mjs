@@ -358,7 +358,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 	const defaultNickname = (email, language = 'zh-CN') => {
 		// 默认昵称不含邮箱信息，也不能从邮箱推导。
 		const suffix = createHash('sha256').update(`${email}:${randomBytes(8).toString('hex')}`).digest('hex').slice(0, 6);
-		return `${normalizeAccountLanguage(language) === 'en' ? 'Reader' : '读者'}${suffix}`;
+		return `${normalizeAccountLanguage(language) === 'th' ? 'ผู้อ่าน' : normalizeAccountLanguage(language) === 'en' ? 'Reader' : '读者'}${suffix}`;
 	};
 	const cleanNickname = (value, fallback) => {
 		const nickname = String(value ?? '').trim();
@@ -528,7 +528,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 			};
 		},
 		updateProfile({ session, nickname, notifyProgress, preferredLanguage }) {
-			if (preferredLanguage !== undefined && !['zh-CN', 'en'].includes(preferredLanguage)) fail('不支持这种语言。');
+			if (preferredLanguage !== undefined && !['zh-CN', 'en','th'].includes(preferredLanguage)) fail('不支持这种语言。');
 			const current = now();
 			if (preferredLanguage !== undefined) {
 				run('UPDATE users SET preferred_language = ?, updated_at = ? WHERE id = ?', preferredLanguage, iso(current), session.user.id);

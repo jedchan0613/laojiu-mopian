@@ -200,7 +200,7 @@ const searchIndexJson = JSON.stringify(
               <label for="archive-decade">{t("年代", locale)}</label>
               <select id="archive-decade" aria-controls="archive-list">
                 <option value="">{t("全部年代", locale)}</option>
-                {availableDecades.map((decade) => <option value={decade}>{locale === 'en' ? `${decade}s` : `${decade}年代`}</option>)}
+                {availableDecades.map((decade) => <option value={decade}>{t('{0}年代',locale,{0:decade})}</option>)}
               </select>
             </div>
 

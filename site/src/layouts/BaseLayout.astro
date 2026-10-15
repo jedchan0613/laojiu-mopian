@@ -2,6 +2,7 @@
 
 import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
+import LanguagePicker from '../components/LanguagePicker.astro';
 import ContactWidget from '../components/ContactWidget.astro';
 import SocialLinks from '../components/SocialLinks.astro';
 import BrandMark from '../components/BrandMark.astro';
@@ -11,6 +12,7 @@ import '../assets/fonts/complete/complete.css';
 
 interface Props {
 	englishAvailable?: boolean;
+ thaiAvailable?: boolean;
 	title?: string;
 	description?: string;
 	image?: string;
@@ -28,6 +30,7 @@ const {
 	structuredData,
 	robots,
 	englishAvailable = true,
+ thaiAvailable = true,
 } = Astro.props;
 const currentPath = Astro.url.pathname;
 const pathWithoutLocale = canonicalPath(currentPath);
@@ -39,6 +42,7 @@ const isAbout = pathWithoutLocale.startsWith('/about');
 const isContribute = pathWithoutLocale.startsWith('/contribute');
 const isAccount = pathWithoutLocale.startsWith('/login') || pathWithoutLocale.startsWith('/me');
 const chineseUrl = Astro.site ? new URL(localizePath(currentPath, 'zh-CN'), Astro.site) : undefined;
+const thaiUrl = Astro.site ? new URL(localizePath(currentPath, 'th'), Astro.site) : undefined;
 const englishUrl = Astro.site ? new URL(localizePath(currentPath, 'en'), Astro.site) : undefined;
 const canonicalUrl = Astro.site ? new URL(currentPath, Astro.site) : undefined;
 const shareImageUrl = image && Astro.site ? new URL(image, Astro.site) : undefined;
@@ -58,8 +62,8 @@ const serializedStructuredData = structuredData
 		<meta name="description" content={description} />
 		{robots && <meta name="robots" content={robots} />}
 		<meta name="theme-color" content="#eee9de" />
-		<meta property="og:locale" content={locale === 'en' ? 'en_US' : 'zh_CN'} />
-		<meta property="og:locale:alternate" content={locale === 'en' ? 'zh_CN' : 'en_US'} />
+		<meta property="og:locale" content={locale === 'en' ? 'en_US' : locale === 'th' ? 'th_TH' : 'zh_CN'} />
+		{['zh_CN','en_US','th_TH'].filter(code=>code!==(locale==='th'?'th_TH':locale==='en'?'en_US':'zh_CN')).map(code=><meta property="og:locale:alternate" content={code} />)}
 		<meta property="og:site_name" content={t('老旧默片',locale)} />
 		<meta property="og:type" content={pageType} />
 		<meta property="og:title" content={title} />
@@ -70,6 +74,7 @@ const serializedStructuredData = structuredData
 		{canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
 		{chineseUrl && <link rel="alternate" hreflang="zh-CN" href={chineseUrl} />}
 		{englishUrl && englishAvailable && <link rel="alternate" hreflang="en" href={englishUrl} />}
+ {thaiUrl && thaiAvailable && <link rel="alternate" hreflang="th" href={thaiUrl} />}
 		{chineseUrl && <link rel="alternate" hreflang="x-default" href={chineseUrl} />}
 		{canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
 		{shareImageUrl && <meta property="og:image" content={shareImageUrl} />}
@@ -93,10 +98,7 @@ const serializedStructuredData = structuredData
 						<a href={localizePath("/about/", locale)} aria-current={isAbout ? 'page' : undefined}>{t("关于", locale)}</a>
 						<a href={localizePath("/contribute/", locale)} aria-current={isContribute ? 'page' : undefined}>{t("我要投稿", locale)}</a>
 						<a href={localizePath("/login/", locale)} data-account-nav aria-current={isAccount ? 'page' : undefined}>{t("登录", locale)}</a>
-						<div class="language-switch" aria-label={locale === 'en' ? 'Choose language' : '选择语言'}>
-							<a href={localizePath(currentPath, 'zh-CN')} lang="zh-CN" data-language="zh-CN" aria-current={locale === 'zh-CN' ? 'true' : undefined}>简体中文</a><span aria-hidden="true">/</span>
-							<a href={localizePath(currentPath, 'en')} lang="en" data-language="en" aria-current={locale === 'en' ? 'true' : undefined}>English</a>
-						</div>
+						<LanguagePicker />
 					</div>
 				</nav>
 			</header>
@@ -135,14 +137,16 @@ const serializedStructuredData = structuredData
 </html>
 
 <style is:global>
-	.language-switch { display:flex; align-items:center; gap:0.5rem; font:0.76rem var(--site-ui-font); }
-	.language-switch a[aria-current='true'] { color:var(--site-ink); font-weight:600; }
 	html:lang(en) { --site-brand-font: Georgia, 'Times New Roman', serif; --site-text-font: Georgia, 'Times New Roman', serif; --site-ui-font: system-ui, Arial, sans-serif; }
 	html:lang(en) :where(h1,h2,h3,p,a,button,small,label) { letter-spacing:normal; overflow-wrap:break-word; }
-	html:lang(en) .category-active-list strong { white-space:normal; }
+	html:lang(th) { --site-brand-font: Tahoma, 'Leelawadee UI', system-ui, sans-serif; --site-text-font: Tahoma, 'Leelawadee UI', system-ui, sans-serif; --site-ui-font: Tahoma, 'Leelawadee UI', system-ui, sans-serif; }
+ html:lang(th) :where(h1,h2,h3,p,a,button,small,label,summary) { letter-spacing:normal; line-height:1.7; word-break:normal; overflow-wrap:break-word; }
+ html:lang(th) .masthead h1 {white-space:normal;font-size:clamp(1.9rem,3.4vw,2.8rem);line-height:1.55;}
+ html:lang(th) .site-brand {flex-shrink:1;}
+ html:lang(en) .category-active-list strong { white-space:normal; }
 	.translation-notice { margin:1rem 0; padding:0.8rem 1rem; border:1px solid var(--site-border); font:0.85rem/1.6 var(--site-ui-font); }
 	.original-text { margin-block:1rem; }
-	@media(max-width:640px) { .language-switch { flex-basis:100%; justify-content:flex-end; gap:0.4rem; } .site-links { gap:0.3rem 0.75rem; } .site-links .language-switch a { min-width:0; padding:0 0.3rem; } html:lang(en) .site-brand { flex-shrink:1; } }
+	@media(max-width:640px) { .site-links {gap:0.3rem 0.6rem;} }
 
 	/* 与主字库同源的按需补充字形，避免新档案标题中的个别字回退成另一种宋体。 */
 	@font-face {

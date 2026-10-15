@@ -33,7 +33,7 @@ const listFiles = async (directory) => {
 };
 
 // 账户页面（登录、用户中心）不进站点地图：它们是私密入口，不应被搜索引擎收录或收录进索引。
-const accountPagePattern = /^(?:en\/)?(?:login|me)(?:\/|\.html)/;
+const accountPagePattern = /^(?:(?:en|th)\/)?(?:login|me)(?:\/|\.html)/;
 const isAccountPage = (path) => accountPagePattern.test(relative(distRoot, path).split(sep).join('/'));
 
 const candidates = (await listFiles(distRoot))
@@ -65,11 +65,10 @@ const publicPaths = new Set(paths);
 const urls = paths.map((path) => new URL(path, siteUrl).href);
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${paths
 	.map((path) => {
-		const chinesePath = path === '/en/' ? '/' : path.startsWith('/en/') ? path.slice(3) : path;
+		const chinesePath = path.replace(/^\/(en|th)(?=\/|$)/,'') || '/';
 		const englishPath = chinesePath === '/' ? '/en/' : `/en${chinesePath}`;
-		const alternatives = publicPaths.has(chinesePath) && publicPaths.has(englishPath)
-			? [['zh-CN', chinesePath], ['en', englishPath], ['x-default', chinesePath]].map(([locale, alternate]) => `<xhtml:link rel="alternate" hreflang="${locale}" href="${escapeXml(new URL(alternate, siteUrl).href)}"/>`).join('')
-			: '';
+		const candidates = [['zh-CN',chinesePath],['en',englishPath],['th',chinesePath==='/'?'/th/':'/th'+chinesePath]].filter(([,p])=>publicPaths.has(p));
+ const alternatives = candidates.length > 1 && publicPaths.has(chinesePath) ? [...candidates,['x-default',chinesePath]].map(([language,p])=>`<xhtml:link rel="alternate" hreflang="${language}" href="${escapeXml(new URL(p,siteUrl).href)}"/>`).join('') : '';
 		return `  <url><loc>${escapeXml(new URL(path, siteUrl).href)}</loc>${alternatives}</url>`;
 	})
 	.join('\n')}\n</urlset>\n`;
@@ -81,7 +80,7 @@ try {
 } catch {
 	// 构建中没有 robots.txt 时使用最小的公开规则。
 }
-const privateAccountRules = ['/login/', '/me/', '/en/login/', '/en/me/']
+const privateAccountRules = ['/login/', '/me/', '/en/login/', '/en/me/', '/th/login/', '/th/me/']
 	.filter((path) => !robots.includes(`Disallow: ${path}`)).map((path) => `Disallow: ${path}`).join('\n');
 robots = `${robots.replace(/^Sitemap:.*$/gim, '').trim()}\n${privateAccountRules ? `${privateAccountRules}\n` : ''}Sitemap: ${new URL('/sitemap.xml', siteUrl).href}\n`;
 await writeFile(robotsPath, robots, 'utf8');

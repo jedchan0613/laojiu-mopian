@@ -1,5 +1,6 @@
+import {thaiText} from '../shared/thai-text.mjs';
 // Locale changes presentation only. No state code, permissions or personal text is changed.
-export const normalizeAccountLanguage = value => value === 'en' ? 'en' : 'zh-CN';
+export const normalizeAccountLanguage = value => ['en','th'].includes(value) ? value : 'zh-CN';
 const labels = {
   '正常': 'Active', '已暂停': 'Suspended', '注销处理中': 'Deletion in progress',
   '数据导出申请': 'Data export request', '账号注销申请': 'Account deletion request', '账号恢复申诉': 'Account reinstatement appeal',
@@ -51,7 +52,8 @@ const errors = {
   '此地址不存在。': 'This address does not exist.',
 };
 export const localizeAccountError = (text, locale, status = 400) => {
-  if (normalizeAccountLanguage(locale) !== 'en' || typeof text !== 'string') return text;
+  if (normalizeAccountLanguage(locale) === 'zh-CN' || typeof text !== 'string') return text;
+  if (locale==='th') { const english=localizeAccountError(text,'en',status); return thaiText(english) !== english ? thaiText(english) : !/[\u3400-\u9fff]/.test(text) && !errors[text] ? text : 'ดำเนินการไม่สำเร็จ โปรดตรวจสอบข้อมูลแล้วลองอีกครั้ง'; }
   if (errors[text]) return errors[text];
   const rules = [
     [/^操作太频繁，请在 (\d+) 秒后再试。$/, n => `Too many requests. Try again in ${n} seconds.`],
@@ -65,11 +67,11 @@ export const localizeAccountError = (text, locale, status = 400) => {
   return status === 401 ? 'Please sign in again.' : status === 403 ? 'This action is not permitted. Check your account and try again.' : status === 429 ? 'Too many requests. Please try again later.' : status >= 500 ? 'The service is temporarily unavailable. Please try again later.' : 'The request could not be completed. Check the form and try again.';
 };
 export const localizeAccountPayload = (value, locale, status = 200) => {
-  if (normalizeAccountLanguage(locale) !== 'en' || !value || typeof value !== 'object') return value;
+  if (normalizeAccountLanguage(locale) === 'zh-CN' || !value || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map(entry => localizeAccountPayload(entry, locale, status));
   return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key,
     key === 'error' ? localizeAccountError(entry, locale, status)
-      : ['status_label', 'kind_label'].includes(key) ? labels[entry] ?? entry
+      : ['status_label', 'kind_label'].includes(key) ? locale==='th' ? thaiText(labels[entry] ?? entry) : labels[entry] ?? entry
       : entry && typeof entry === 'object' ? localizeAccountPayload(entry, locale, status) : entry,
   ]));
 };

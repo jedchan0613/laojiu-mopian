@@ -2,6 +2,7 @@
 
 import { t, getLocale, localizePath } from '../../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
+import {getArchiveTranslation} from '../../data/archive-localization';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { type ArchiveItem } from '../../data/archive';
 import { createArchiveRecordView } from '../../data/archive-view';
@@ -77,8 +78,9 @@ const breadcrumbStructuredData = {
   image={albumCover?.src ?? galleryEntries.find((entry) => entry.cover)?.cover?.src}
   pageType="website"
   structuredData={[albumStructuredData, breadcrumbStructuredData]}
-  englishAvailable={!pendingTranslation}
-  robots={locale === 'en' && pendingTranslation ? 'noindex,follow' : undefined}
+  englishAvailable={!members.some(item=>getArchiveTranslation(item,'en').state!=='published')}
+  thaiAvailable={!members.some(item=>getArchiveTranslation(item,'th').state!=='published')}
+  robots={locale !== 'zh-CN' && pendingTranslation ? 'noindex,follow' : undefined}
 >
   <article class="album-page" data-album-id={albumId} data-album-photo-count={photoCount}>
     <div class="record-top">
@@ -127,8 +129,8 @@ const breadcrumbStructuredData = {
       )}
     </header>
 
-    {locale === 'en' && pendingTranslation && (
-      <p class="translation-notice" role="status">{t("本页部分内容还没有英文译文，暂以中文显示。", locale)}</p>
+    {locale !== 'zh-CN' && pendingTranslation && (
+      <p class="translation-notice" role="status">{t('Some translations are pending review. Source text is shown where a current translation is unavailable.',locale)}</p>
     )}
 
     <section class="album-photos" aria-labelledby="album-photos-heading">

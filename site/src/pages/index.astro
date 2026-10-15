@@ -168,8 +168,8 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 						href,
 					}))) : undefined}
 					role={featuredSlides.length > 1 ? 'region' : undefined}
-					aria-roledescription={featuredSlides.length > 1 ? (locale === 'en' ? 'carousel' : '轮播图') : undefined}
-					aria-label={featuredSlides.length > 1 ? (locale === 'en' ? 'Featured public collection images' : '精选公开藏品图片') : undefined}
+					aria-roledescription={featuredSlides.length > 1 ? (t('carousel',locale)) : undefined}
+					aria-label={featuredSlides.length > 1 ? (t('Featured public collection images',locale)) : undefined}
 				>
 					<a
 						class="hero-record"
@@ -486,6 +486,17 @@ import '../scripts/home-featured-carousel';
 
 	:global(html[lang='en']) .masthead p {
 		letter-spacing: 0.14em;
+	}
+	:global(html[lang='th']) .masthead h1 {
+		min-width: 0;
+		font-size: clamp(1.8rem, 3.1vw, 2.5rem);
+		line-height: 1.25;
+		white-space: normal;
+		overflow-wrap: normal;
+		letter-spacing: normal;
+	}
+	:global(html[lang='th']) .masthead p {
+		letter-spacing: normal;
 	}
 
 	.masthead-mark {

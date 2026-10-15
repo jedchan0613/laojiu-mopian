@@ -1,7 +1,8 @@
 ---
 
-import { t, getLocale, localizePath, canonicalPath } from '../../i18n/ui';
+import { t, getLocale, localizePath, canonicalPath, dateLocale } from '../../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
+import {getArchiveTranslation} from '../../data/archive-localization';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveLikeButton from '../../components/ArchiveLikeButton.astro';
 import ArchiveFavoriteButton from '../../components/ArchiveFavoriteButton.astro';
@@ -83,7 +84,7 @@ const preferredPlaceFilter = preferredPlace
 const formatDisplayDate = (value: string | undefined) => {
   const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return value?.trim() ?? '';
-  if (locale === 'en') return new Intl.DateTimeFormat('en-GB', {year:'numeric',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(`${value}T00:00:00Z`));
+  if (locale !== 'zh-CN') return new Intl.DateTimeFormat(dateLocale(locale), {year:'numeric',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(`${value}T00:00:00Z`));
   return t("{0}年{1}月{2}日", locale, {0: (match[1]), 1: (Number(match[2])), 2: (Number(match[3]))});
 };
 const basicFacts = compactFacts<LinkedDisplayFact>([
@@ -172,8 +173,8 @@ const relatedRecordEntries = publishedViews
     const sameCategory = Boolean(currentCategorySlug && candidateCategorySlug === currentCategorySlug);
     const reasons = [
       explicitRelation ? t('来自同一组档案线索',locale) : '',
-      sharedTags.length ? t("共同线索：{0}", locale, {0: (sharedTags.slice(0, 2).map(tag => view.tagLabels[tag] ?? tag).join(locale === 'en' ? ', ' : '、'))}) : '',
-      sharedPlaces.length ? t("关联地点：{0}", locale, {0: (sharedPlaces.slice(0, 2).map(place => view.placeFilterLabels[place] ?? place).join(locale === 'en' ? ', ' : '、'))}) : '',
+      sharedTags.length ? t("共同线索：{0}", locale, {0: (sharedTags.slice(0, 2).map(tag => view.tagLabels[tag] ?? tag).join(locale !== 'zh-CN' ? t(', ',locale) : '、'))}) : '',
+      sharedPlaces.length ? t("关联地点：{0}", locale, {0: (sharedPlaces.slice(0, 2).map(place => view.placeFilterLabels[place] ?? place).join(locale !== 'zh-CN' ? t(', ',locale) : '、'))}) : '',
       sameDecade ? t("同属{0}年代", locale, {0: (view.decade)}) : '',
       sameCategory ? t("同属{0}", locale, {0: (t(currentCategory?.label ?? '相近类型',locale))}) : '',
     ].filter(Boolean);
@@ -257,11 +258,12 @@ const breadcrumbStructuredData = {
   image={galleryImages[0]?.src}
   pageType="article"
   structuredData={[recordStructuredData, breadcrumbStructuredData]}
-  englishAvailable={view.translationState === 'published'}
-  robots={locale === 'en' && view.translationState !== 'published' ? 'noindex,follow' : undefined}
+  englishAvailable={getArchiveTranslation(item,'en').state === 'published'}
+  thaiAvailable={getArchiveTranslation(item,'th').state === 'published'}
+  robots={locale !== 'zh-CN' && view.translationState !== 'published' ? 'noindex,follow' : undefined}
 >
   <article class="record-page" data-record-id={view.id}>
-    {locale === 'en' && view.translationState !== 'published' && <p class="translation-notice" role="status">Some English translations are pending review. Source text is shown where a current translation is unavailable.</p>}
+    {locale !== 'zh-CN' && view.translationState !== 'published' && <p class="translation-notice" role="status">{t('Some translations are pending review. Source text is shown where a current translation is unavailable.',locale)}</p>}
     <div class="record-top">
       <nav class="record-breadcrumb" aria-label={t("面包屑", locale)}>
         <a href={localizePath("/", locale)} class="breadcrumb-link">{t("首页", locale)}</a>
@@ -340,8 +342,8 @@ const breadcrumbStructuredData = {
           </div>
           <p class="letter-reading-introduction">
             {hasPublicTranscription
-              ? (locale === 'en' ? 'Original images are shown first and remain the source for verification. The transcription preserves original paragraphs and line breaks; switch views at any time.' : '默认先看原件：原件图片是最终核对依据；电子转录保留原有段落与换行，可随时切换查看方式。')
-              : (locale === 'en' ? 'No public transcription is available for this letter. Only reviewed publication copies of the original are shown.' : '这封信暂未提供公开电子转录，当前仅展示经过检查的原件发布副本。')}
+              ? (locale !== 'zh-CN' ? t('Original images are shown first and remain the source for verification. The transcription preserves original paragraphs and line breaks; switch views at any time.',locale) : '默认先看原件：原件图片是最终核对依据；电子转录保留原有段落与换行，可随时切换查看方式。')
+              : (locale !== 'zh-CN' ? t('No public transcription is available for this letter. Only reviewed publication copies of the original are shown.',locale) : '这封信暂未提供公开电子转录，当前仅展示经过检查的原件发布副本。')}
           </p>
         </header>
       )}
@@ -350,12 +352,12 @@ const breadcrumbStructuredData = {
         <article class="letter-transcription" aria-labelledby="letter-transcription-heading">
           <header>
             <div>
-              <h2 id="letter-transcription-heading">{locale === 'en' && !view.transcriptionTranslation ? 'Original text · English translation pending' : t("电子文字", locale)}</h2>
+              <h2 id="letter-transcription-heading">{locale !== 'zh-CN' && !view.transcriptionTranslation ? t('Original text · translation pending',locale) : t("电子文字", locale)}</h2>
             </div>
           </header>
-          {locale === 'en' && view.transcriptionTranslation && <div class="translation-heading">{view.transcriptionKind === 'summary' ? 'English summary' : 'English translation'}</div>}
-          <div class="letter-transcription-text" lang={locale === 'en' && view.transcriptionTranslation ? 'en' : view.originalLanguage}>{locale === 'en' && view.transcriptionTranslation ? view.transcriptionTranslation : view.originalTranscription}</div>
-          {locale === 'en' && view.transcriptionTranslation && view.originalTranscription && <details class="original-text"><summary>View original text</summary><div class="letter-transcription-text" lang={view.originalLanguage}>{view.originalTranscription}</div></details>}
+          {locale !== 'zh-CN' && view.transcriptionTranslation && <div class="translation-heading">{view.transcriptionKind === 'summary' ? t('Translation summary',locale) : t('Translation',locale)}</div>}
+          <div class="letter-transcription-text" lang={locale !== 'zh-CN' && view.transcriptionTranslation ? locale : view.originalLanguage}>{locale !== 'zh-CN' && view.transcriptionTranslation ? view.transcriptionTranslation : view.originalTranscription}</div>
+          {locale !== 'zh-CN' && view.transcriptionTranslation && view.originalTranscription && <details class="original-text"><summary>{t('View original text',locale)}</summary><div class="letter-transcription-text" lang={view.originalLanguage}>{view.originalTranscription}</div></details>}
           <footer>
             <span>{t("〔不清〕表示原件难以辨认", locale)}</span>
             <span>{t("□ 表示原件文字缺失", locale)}</span>
@@ -542,7 +544,7 @@ const breadcrumbStructuredData = {
       {
         hasNarrativeContent && (
           <section class="record-section" aria-labelledby="description-heading">
-            <h2 class="icon-heading" id="description-heading"><span>{locale === 'en' ? (isLetter ? 'Provenance and sources' : 'Story and original text') : isLetter ? '流传与来源' : '故事与原文'}</span></h2>
+            <h2 class="icon-heading" id="description-heading"><span>{locale !== 'zh-CN' ? (isLetter ? t('Provenance and sources',locale) : t('Story and original text',locale)) : isLetter ? '流传与来源' : '故事与原文'}</span></h2>
             <div class="section-content">
               {hasText(view.localizedCore.provenance_notes) && (
                 <div class="subsection">
@@ -553,9 +555,9 @@ const breadcrumbStructuredData = {
               {!isLetter && hasText(view.transcription) && (
                 <div class="subsection">
                   <h3>{t("原文 / 转录", locale)}</h3>
-                  {locale === 'en' && <p>{view.transcriptionTranslation ? (view.transcriptionKind === 'summary' ? 'English summary' : 'English translation') : 'Original text · English translation pending'}</p>}
-                  <p class="transcription" lang={locale === 'en' && view.transcriptionTranslation ? 'en' : view.originalLanguage}>{locale === 'en' && view.transcriptionTranslation ? view.transcriptionTranslation : view.originalTranscription}</p>
-                  {locale === 'en' && view.transcriptionTranslation && view.originalTranscription && <details><summary>View original text</summary><p class="transcription" lang={view.originalLanguage}>{view.originalTranscription}</p></details>}
+                  {locale !== 'zh-CN' && <p>{view.transcriptionTranslation ? (view.transcriptionKind === 'summary' ? t('Translation summary',locale) : t('Translation',locale)) : t('Original text · translation pending',locale)}</p>}
+                  <p class="transcription" lang={locale !== 'zh-CN' && view.transcriptionTranslation ? locale : view.originalLanguage}>{locale !== 'zh-CN' && view.transcriptionTranslation ? view.transcriptionTranslation : view.originalTranscription}</p>
+                  {locale !== 'zh-CN' && view.transcriptionTranslation && view.originalTranscription && <details><summary>{t('View original text',locale)}</summary><p class="transcription" lang={view.originalLanguage}>{view.originalTranscription}</p></details>}
                 </div>
               )}
             </div>

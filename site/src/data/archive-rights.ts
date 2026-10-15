@@ -1,4 +1,4 @@
-import { getCodeEntry, isEnglishArchiveLocale } from './code-dictionary';
+import { getCodeEntry, isTranslatedArchiveLocale, translateLabel } from './code-dictionary';
 
 export interface PublicUsagePolicy {
 	statusLabel: string;
@@ -51,7 +51,8 @@ const englishPolicies: Record<string, Omit<PublicUsagePolicy, 'statusLabel'>> = 
 };
 export const getPublicUsagePolicy = (rightsStatus: string | undefined, locale: string = 'zh-CN'): PublicUsagePolicy => {
   const normalizedStatus = rightsStatus?.trim() || 'UNK';
-  const selected = isEnglishArchiveLocale(locale) ? englishPolicies : policies;
-  const policy = selected[normalizedStatus] ?? selected.UNK;
-  return { statusLabel: getCodeEntry(normalizedStatus, locale)?.label ?? (isEnglishArchiveLocale(locale) ? 'Rights unknown' : '权利不明'), ...policy };
+  const selected = isTranslatedArchiveLocale(locale) ? englishPolicies : policies;
+  const originalPolicy = selected[normalizedStatus] ?? selected.UNK;
+  const policy = {...originalPolicy, ...Object.fromEntries(Object.entries(originalPolicy).filter(([,value]) => typeof value === 'string').map(([key,value]) => [key, translateLabel(value as string, locale)]))};
+  return { statusLabel: getCodeEntry(normalizedStatus, locale)?.label ?? (isTranslatedArchiveLocale(locale) ? translateLabel('Rights unknown', locale) : '权利不明'), ...policy };
 };

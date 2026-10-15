@@ -358,12 +358,14 @@ for (const page of detailPages) {
 }
 
 for (const page of htmlEntries) {
-	const isEnglish = page.relativePath.startsWith('en/');
-	check(page.html.includes(`<html lang="${isEnglish ? 'en' : 'zh-CN'}"`), `${page.relativePath} 页面语言设置不正确。`);
+	const locale=page.relativePath.startsWith('th/')?'th':page.relativePath.startsWith('en/')?'en':'zh-CN';
+ const isEnglish=locale!=='zh-CN';
+	check(page.html.includes(`<html lang="${locale}"`), `${page.relativePath} 页面语言设置不正确。`);
 	if (isEnglish && process.env.PUBLIC_SITE_URL?.trim()) {
-		const pendingArchive = /^en\/(?:archive\/LJM-|albums\/)/.test(page.relativePath) && /name="robots" content="noindex/.test(page.html);
-		check(page.html.includes('hreflang="zh-CN"') && page.html.includes('hreflang="x-default"'), `${page.relativePath} 缺少对应中文页面标记。`);
-		check(pendingArchive ? !page.html.includes('hreflang="en"') : page.html.includes('hreflang="en"'), `${page.relativePath} 英文页面关联与译文审核状态不一致。`);
+  const head = page.html.split('</head>')[0];
+		const pendingArchive = /^(?:en|th)\/(?:archive\/LJM-|albums\/)/.test(page.relativePath) && /name="robots" content="noindex/.test(page.html);
+		check(head.includes('hreflang="zh-CN"') && head.includes('hreflang="x-default"'), `${page.relativePath} 缺少对应中文页面标记。`);
+		check(pendingArchive ? !head.includes(`hreflang="${locale}"`) : head.includes(`hreflang="${locale}"`), `${page.relativePath} 英文页面关联与译文审核状态不一致。`);
 		if (pendingArchive) check(page.html.includes('class="translation-notice"'), `${page.relativePath} 缺少英文译文待复核提示。`);
 	}
 	check(page.html.includes('<meta name="viewport"'), `${page.relativePath} 缺少手机端视口设置。`);
@@ -440,7 +442,7 @@ if (configuredSiteUrl) {
 	check(sitemapExists, '配置正式域名后没有生成 sitemap.xml。');
 	if (sitemapExists) {
 		const sitemap = await readFile(join(distRoot, 'sitemap.xml'), 'utf8');
-		for (const privatePath of ['/login/', '/me/', '/en/login/', '/en/me/']) {
+		for (const privatePath of ['/login/', '/me/', '/en/login/', '/en/me/', '/th/login/', '/th/me/']) {
 			check(!sitemap.includes(privatePath), `站点地图不应收录账户页面：${privatePath}。`);
 		}
 		check(sitemap.includes('hreflang="zh-CN"') && sitemap.includes('hreflang="en"') && sitemap.includes('hreflang="x-default"'), '站点地图缺少双语对应地址。');
@@ -454,17 +456,17 @@ if (configuredSiteUrl) {
 // 相册入口必须指向本次实际生成的页面；仅“编号有值”不能证明链接可用。
 const builtPagePaths = new Set(htmlEntries.map((page) => page.relativePath));
 for (const page of htmlEntries) {
-	for (const match of page.html.matchAll(/<a\b[^>]*href="(\/(?:en\/)?albums\/[^"?#]+)"/g)) {
+	for (const match of page.html.matchAll(/<a\b[^>]*href="(\/(?:(?:en|th)\/)?albums\/[^"?#]+)"/g)) {
 		const target = decodeURIComponent(match[1]).replace(/^\//,'').replace(/\/$/,'') + '/index.html';
 		check(builtPagePaths.has(target), `${page.relativePath} 的相册入口没有对应页面：${match[1]}。`);
 	}
-	if (!/^(?:en\/)?albums\//.test(page.relativePath)) continue;
+	if (!/^(?:(?:en|th)\/)?albums\//.test(page.relativePath)) continue;
 	const photos = [...page.html.matchAll(/data-album-photo-id="([^"]+)"/g)].map((match) => match[1]);
 	const declaredCount = Number(page.html.match(/data-album-photo-count="(\d+)"/)?.[1]);
 	check(photos.length === declaredCount, `${page.relativePath} 的照片数量与目录不一致。`);
 	check(new Set(photos).size === photos.length, `${page.relativePath} 重复列出同一张照片。`);
 	check(page.html.includes('"@type":"CollectionPage"'), `${page.relativePath} 缺少相册结构化信息。`);
-	const localePrefix = page.relativePath.startsWith('en/') ? 'en/' : '';
+	const localePrefix = /^(en|th)\//.exec(page.relativePath)?.[0] ?? '';
 	for (const id of photos) check(builtPagePaths.has(`${localePrefix}archive/${id}/index.html`), `${page.relativePath} 列出不存在的照片：${id}。`);
 	if (localePrefix) {
 		const chinesePage = htmlEntries.find((entry) => entry.relativePath === page.relativePath.slice(3));
