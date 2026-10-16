@@ -20,10 +20,32 @@ export const curatedLetterAlbum = {
   description: '本辑按“明的家书”标签归集已公开的家庭书信，写作年代见各件档案。信中记下远行时与家人的通信，也谈到孩子的学习、住处、日常开支和身体照料。相隔各地的想念，常藏在这些具体的家常话里。这里是网站的主题选览，并非另有一件实物相册。',
 } as const;
 
+// 照片主题选览与信件选览同理：按已公开标签归集，不代表另有一件实物相册。
+export const curatedPhotoAlbums = [
+  {
+    id: 'LJM-CUR-SHANGHAI-VIEWS',
+    tag: '上海旧影',
+    title: '上海旧影',
+    description: '本辑按“上海旧影”标签归集已公开的城市风景照片，画面里有上海大厦、大世界、工人文化宫、国际饭店、黄浦江畔、龙华塔、闵行一号路、少年宫、豫园九曲桥和中百公司。楼、桥和街道还站在纸面上，日子已经往前走了很远。这里是网站的主题选览，并非另有一件实物相册。',
+  },
+] as const;
+
+/** 按相册编号找到对应的线上主题选览配置；实物相册返回 undefined。 */
+export const curatedAlbumForId = (albumId: string | undefined) => {
+  if (!albumId) return undefined;
+  if (albumId === curatedLetterAlbum.id) return curatedLetterAlbum;
+  return curatedPhotoAlbums.find((album) => album.id === albumId);
+};
+
 export const albumIdForItem = (item: ArchiveItem): string | undefined => {
   if (item.core.object_type === 'LET')
     return item.public_view.tags?.includes(curatedLetterAlbum.tag) ? curatedLetterAlbum.id : undefined;
-  return ['ALB', 'PHO'].includes(item.core.object_type) ? normalizeAlbumId(item.core.album_id) : undefined;
+  if (!['ALB', 'PHO'].includes(item.core.object_type)) return undefined;
+  // 实物相册归属优先；没有实物相册的照片，才按主题标签进入线上选览。
+  const physicalAlbumId = normalizeAlbumId(item.core.album_id);
+  if (physicalAlbumId) return physicalAlbumId;
+  const tags = item.public_view.tags ?? [];
+  return curatedPhotoAlbums.find((album) => tags.includes(album.tag))?.id;
 };
 
 // 编号是管理关系，不能直接作为文件路径。旧编号中的中文、空格或下划线仍可关联。

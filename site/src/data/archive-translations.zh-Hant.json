@@ -10,47 +10,23 @@
       "source_hash": "8c5f216687276f6a719792c030131d5178e2d6bbf792f2876286294bd2f7de31",
       "source_hashes": {
         "core.title": "69bf0c2fed1febcc0c0a5cc93dc3957115876d80fed5e514efd48c6230346272",
-        "core.country": "ac3da3e9f3bcd6e9b9ee193f0e443867ef7c17e6faf5799a56541c2c7d3eff57",
-        "core.province": "76bea7fefaa60afeaec6c2cde37b11c4d5f73747ce5d7fb921c966653727b724",
-        "core.city": "6d7e8ab0bba51bc86f235684046c1499ac3391c36be475a97ec88eeb64d0ff91",
         "core.source_place": "4ad6d27e53d70a5e6e3752e33989af4906fb9dcbf7a6a349ee8ff227652f8a08",
         "public_view.description": "a011ec2a6d1e1c02ff5bd018246414d4970bf03932c07e1820e69c1cc7c62a55",
         "metadata.dimensions.PC07.dispatch_place": "9f2ab3c3cbbedb6c7396ad2807334d2c7ad99614de90463936232ba269d7495d",
-        "metadata.dimensions.PC11.correspondence_relationship": "7772f3d0ca7bb5f387364145bea3d8e8d5723c5f6538ea73ec00e9d212e1ac98",
-        "metadata.dimensions.PC12.image_subject": "69bf0c2fed1febcc0c0a5cc93dc3957115876d80fed5e514efd48c6230346272",
-        "metadata.dimensions.PC18.stamp_status": "b6ed2d8e54622080e284ecb5c14b3510081a0176c2323b4c1851c744edd64ed3",
-        "metadata.dimensions.PC20.language": "6a5d39cd68826b712c116e0cdb341c56f1d919ecc32fd4ded25a96865b79fad3",
-        "image:/archive/LJM-20260808-PCD-001/front-public.jpg": "9340f4a224640f90d43a1abd5676a6ae88ec0150623ce3f28f120265ebc802a1",
-        "image:/archive/LJM-20260808-PCD-001/back-public.jpg": "657f1e43028ef8812482aa9fbb6f53b8da0045ca1a4153a9b617a0b721536f7d"
+        "metadata.dimensions.PC12.image_subject": "69bf0c2fed1febcc0c0a5cc93dc3957115876d80fed5e514efd48c6230346272"
       },
       "fields": {
         "core.title": "富士山下的新年祝福",
-        "core.country": "日本",
-        "core.province": "大阪府",
-        "core.city": "大阪市",
         "core.source_place": "北京",
         "public_view.description": "從富士山下  到一句新年快樂",
         "metadata.dimensions.PC07.dispatch_place": [
           "日本大阪"
         ],
-        "metadata.dimensions.PC11.correspondence_relationship": [
-          "具體通信關係待考"
-        ],
-        "metadata.dimensions.PC12.image_subject": "富士山下的新年祝福",
-        "metadata.dimensions.PC18.stamp_status": [
-          "現有公開圖未見郵票；是否隨信封寄送待考"
-        ],
-        "metadata.dimensions.PC20.language": [
-          "中文",
-          "日文"
-        ]
+        "metadata.dimensions.PC12.image_subject": "富士山下的新年祝福"
       },
-      "image_descriptions": {
-        "/archive/LJM-20260808-PCD-001/front-public.jpg": "富士山下的新年祝福，正面",
-        "/archive/LJM-20260808-PCD-001/back-public.jpg": "富士山下的新年祝福，背面"
-      },
+      "image_descriptions": {},
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20260808-PHO-001": {
       "schema_version": 1,
@@ -61,27 +37,22 @@
       "source_hashes": {
         "core.title": "48f2f26577798eba360da02537cf713fb94d7583f3db49ecb5a3e8a3cd65fe9e",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.city": "ca797a7ffd25c8abad471f537944bce76db5af1c56703b821432e8811cede241",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "9a197d17120cd30c9537ad301aea39e7635b54cbc247c820d4e64a7910c76192",
-        "public_view.tags": "597a64424b1149e1c7a8f9cb7447dd9b6ab897f094f43d6979d37aff3c3b0530",
-        "image:/archive/LJM-20260808-PHO-001/front-public.jpg": "02f61699464c8a9b7425ae6f4b3f865813091df55faf80b51daaab1c88142bcb"
+        "public_view.tags": "597a64424b1149e1c7a8f9cb7447dd9b6ab897f094f43d6979d37aff3c3b0530"
       },
       "fields": {
         "core.title": "海灘嬉戲",
         "core.country": "中國",
-        "core.city": "未知",
         "core.source_place": "舊貨市場",
         "public_view.description": "那年海風很輕，笑聲還沒有被時間帶走。",
         "public_view.tags": [
           "生活"
         ]
       },
-      "image_descriptions": {
-        "/archive/LJM-20260808-PHO-001/front-public.jpg": "海灘嬉戲，正面"
-      },
+      "image_descriptions": {},
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20260808-PHO-002": {
       "schema_version": 1,
@@ -96,12 +67,7 @@
         "core.city": "ab432a31235b84857d23685735993ee53971cac01b1acfc4efd30a7ff864afd0",
         "core.district": "72817b928394bd6e68d9e3a3c4cba54f8961f97909bbd355810d06b51eeb183a",
         "core.source_place": "74cb1282f66a43ed13f85fb834a72c24e5dff75ea478472b510f813ad2be5f50",
-        "public_view.tags": "9a63575ff8df3ef56157515b4e1c0ed6ffbf567c4b8d7ccb575d9d912d1da6e9",
-        "image:/archive/LJM-20260808-PHO-002/front-public.jpg": "61ed42ab89ef676cff603f5adb7870eb5191b617a90d7f9e4a0b8746455eecba",
-        "image:/archive/LJM-20260808-PHO-002/back-public.jpg": "344adb3b8270bc09e74dd6a895b8de8312fa2c3634901b2ad5c5c7cfb29c94f7",
-        "image:/archive/LJM-20260808-PHO-002/detail-01-public.jpg": "75f68ceb8f344a663ba99c935fcc7a11dcbb4d9746062766737e7be4b96c4170",
-        "image:/archive/LJM-20260808-PHO-002/detail-02-public.jpg": "6f6f0b05873c362953cfd435070cd1c362ecce0777543c9371c001b42858b1a1",
-        "image:/archive/LJM-20260808-PHO-002/detail-03-public.jpg": "abc93c801854d00440b3faf83d1fcce89b6e4409ace367fbd33512f1c3c85067"
+        "public_view.tags": "9a63575ff8df3ef56157515b4e1c0ed6ffbf567c4b8d7ccb575d9d912d1da6e9"
       },
       "fields": {
         "core.title": "80年代末的珠海",
@@ -114,125 +80,9 @@
           "珠海"
         ]
       },
-      "image_descriptions": {
-        "/archive/LJM-20260808-PHO-002/front-public.jpg": "80年代末的珠海，正面",
-        "/archive/LJM-20260808-PHO-002/back-public.jpg": "80年代末的珠海，背面",
-        "/archive/LJM-20260808-PHO-002/detail-01-public.jpg": "80年代末的珠海，細節圖 1",
-        "/archive/LJM-20260808-PHO-002/detail-02-public.jpg": "80年代末的珠海，細節圖 2",
-        "/archive/LJM-20260808-PHO-002/detail-03-public.jpg": "80年代末的珠海，細節圖 3"
-      },
+      "image_descriptions": {},
       "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260808-PHO-003": {
-      "schema_version": 1,
-      "item_id": "LJM-20260808-PHO-003",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "e503f1e35fb003f3d2f3422a087d0c372c30d0fa08a3e268e5bbdb56977de910",
-      "source_hashes": {
-        "core.title": "980e9463aa6061a6c2b1338e304010f8579b0791d282af6350b5a186e91fda7b",
-        "core.province": "91155acec28d452434be2bb340aeaea4d4e0b722b46fc7a9c5903a6fd33a0485",
-        "core.city": "e627783fd2582d85a8342f48e0f9be357187295fc400aa25e394b865ea089db5",
-        "core.source_place": "15e8bc796f1b581a48b6308d670f9ed0d758f5834604fd14a6614dee84086b98",
-        "public_view.description": "527135f1df1c6cfe7e505e6576dd2915598697bfcd1af338e32409501a885a92",
-        "public_view.tags": "1783617aaf5ea34826d0df0c40fa7c7ff9262dee17661faf40d54c3496df801b",
-        "image:/archive/LJM-20260808-PHO-003/front-public.jpg": "ed2f3f6bc8f69d2a5eb616e4468b306d9ad98983f8630feda1521c8ccb76865c"
-      },
-      "fields": {
-        "core.title": "永動機誕生了",
-        "core.province": "河南省",
-        "core.city": "呂梁市",
-        "core.source_place": "哈爾濱",
-        "public_view.description": "大中國  永動車",
-        "public_view.tags": [
-          "永動機"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260808-PHO-003/front-public.jpg": "永動機誕生了，正面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260808-PHO-004": {
-      "schema_version": 1,
-      "item_id": "LJM-20260808-PHO-004",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "5d267cf9eb184fdeba373cdb8f68e90d8a83e10a19f85e14aaaa2b072de9d48d",
-      "source_hashes": {
-        "core.title": "e435d18b57102c4a01da992ef680fce0154e4e59f17905aa50ee00abfb75fbee",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.source_place": "3dd989b1a3138379620616e2274a6f740fcdd696c905e87668d8d65ec4b1dedd",
-        "public_view.description": "6fe9260e25fa14d6210c7e2c21696de7cbec184e7f7aba260f02228832b94396",
-        "image:/archive/LJM-20260808-PHO-004/front-public.jpg": "aa2adf63b0905a350254a1160631ede859002cc9ba0a2a5a83ba6f2f244843f8",
-        "image:/archive/LJM-20260808-PHO-004/back-public.jpg": "db290857a4965366c9d643919aae6329ac5e48cd506b058fe37a2f52dff3d2ae"
-      },
-      "fields": {
-        "core.title": "機車青年",
-        "core.country": "中國",
-        "core.source_place": "舊貨市場老板",
-        "public_view.description": "車可以停，年前的時候不太會"
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260808-PHO-004/front-public.jpg": "機車青年，正面",
-        "/archive/LJM-20260808-PHO-004/back-public.jpg": "機車青年，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260808-PHO-005": {
-      "schema_version": 1,
-      "item_id": "LJM-20260808-PHO-005",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "e38b59cf743f7ffb75b7b1077e28e4e2b0f84664d6f934d5f9a5a8f9f1933b4e",
-      "source_hashes": {
-        "core.title": "4302b70b8983c627f2879cfc0875eab5f4ce9405db42c885e4ac3c31d21d0301",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "ae2bff070c5534c1942a4f10b6c9aa44e11d5eb2feb39e82867c18b97431f1f7",
-        "core.source_place": "7beb2616dc9aae7e33ec746d638915df0bf608c17da3192caec394fc13ba26c8",
-        "public_view.description": "fe39c18e4b811b09d85c31bee43da289c5f64a8947e26a6fce80d4561eb1223e",
-        "image:/archive/LJM-20260808-PHO-005/front-public.jpg": "d73528bdb44541e99710125f6bb8eaf08be00a0daccb317b6bc1dc12c2636e80",
-        "image:/archive/LJM-20260808-PHO-005/back-public.jpg": "7998564c21795f4aa63d6bd672123dbb17dfee341583da77149b605104922056"
-      },
-      "fields": {
-        "core.title": "一周歲紀念",
-        "core.province": "廣東省",
-        "core.city": "佛山市",
-        "core.source_place": "佛山天光墟",
-        "public_view.description": "一家四口，一只蛋糕"
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260808-PHO-005/front-public.jpg": "一周歲紀念，正面",
-        "/archive/LJM-20260808-PHO-005/back-public.jpg": "一周歲紀念，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260808-PHO-006": {
-      "schema_version": 1,
-      "item_id": "LJM-20260808-PHO-006",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "04c32724d875ff7c79088c00cd6a6fcb153522260a647717a8e96b80c5a10676",
-      "source_hashes": {
-        "core.title": "54f0e2911dc6428cabf5ebe059b716bf7c50ca6948c30ee7832f264ee2e4c215",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "public_view.description": "61eaa034cdbbfe29d6b56f4b9c3bf3cbf90878fce3d52fc4e8db2ffded291762",
-        "image:/archive/LJM-20260808-PHO-006/front-public.jpg": "74a001ed987d44f770c606fed8c6459384c6fd4ad6ffd2889c32c3eebc3e12e6"
-      },
-      "fields": {
-        "core.title": "當年同框",
-        "core.province": "廣東省",
-        "public_view.description": "那晚大家都朝鏡頭笑了一下，後來就各自去和命運單聊了。"
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260808-PHO-006/front-public.jpg": "當年同框，正面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20260808-PST-001": {
       "schema_version": 1,
@@ -254,10 +104,7 @@
         "metadata.dimensions.PC11.correspondence_relationship": "d70d8051fbcd939cd2e70a88a72942d017e60b93b74a0378e5970a996d10500e",
         "metadata.dimensions.PC12.image_subject": "f13b37f0d38f330203f24b1ebfa6f4d96210225518518376419e9c83826f6234",
         "metadata.dimensions.PC18.stamp_country": "88cde371f7ed97b596114c7054d09382d35606b08361eeabfd41f9db988b6cf2",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
-        "metadata.dimensions.PC20.script": "a9c02dd8d76385f92d78cd407954187ae7acd03c5d85658571b766c1eb1b1d0a",
-        "image:/archive/LJM-20260808-PST-001/front-public.jpg": "a3eecacc9dabf817de30b35a2f8bf14bf7069c5fd676f5c5072829317279e1db",
-        "image:/archive/LJM-20260808-PST-001/back-public.jpg": "69f6716e5ff47a3f0f9470cd3ea9f15bebd604a9784f909198d1af923ad748d2"
+        "metadata.dimensions.PC20.script": "a9c02dd8d76385f92d78cd407954187ae7acd03c5d85658571b766c1eb1b1d0a"
       },
       "fields": {
         "core.title": "一張從日本寄出的舊明信片照片",
@@ -289,19 +136,13 @@
         "metadata.dimensions.PC18.stamp_country": [
           "無郵票"
         ],
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ],
         "metadata.dimensions.PC20.script": [
           "漢字"
         ]
       },
-      "image_descriptions": {
-        "/archive/LJM-20260808-PST-001/front-public.jpg": "一張從日本寄出的舊明信片照片，正面",
-        "/archive/LJM-20260808-PST-001/back-public.jpg": "一張從日本寄出的舊明信片照片，背面"
-      },
+      "image_descriptions": {},
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20260808-PST-002": {
       "schema_version": 1,
@@ -310,121 +151,20 @@
       "status": "published",
       "source_hash": "55d711b47e924bb297632c5a04e38a907f9dde5903474f7bef7009c9a5dfb648",
       "source_hashes": {
-        "core.title": "2fa84a9ce740c4c49d56391a46411a286c3cfe82bc7a0f38b84fcfb5b336addc",
-        "core.country": "e4dd590fb88e1663101157249e09ebdefd76c19d7ae22cadc798585cb1f054ec",
         "core.source_place": "7a737b035123a8de34b94132c93ea494c012ae6da5b6a47a84ce6066fc24e02d",
-        "metadata.dimensions.PC06.image_place_text": "32d6bc95527cb751dd31096de8415e443da3924460c197fa116718ec3307e645",
         "metadata.dimensions.PC07.dispatch_place": "7ec2e20ff63aa2e8df89b5cdd7023f257e4948b421bba0d0897fb811456b6b06",
-        "metadata.dimensions.PC11.correspondence_relationship": "7772f3d0ca7bb5f387364145bea3d8e8d5723c5f6538ea73ec00e9d212e1ac98",
-        "metadata.dimensions.PC12.image_subject": "93409ec89e946cb0b8a2134b8c123530c7dd9b0c60795b89fb711e7c01e945c1",
-        "metadata.dimensions.PC13.publisher": "16c05df694a8ed2df54e0ef1584eecd60acc21661d4f92f1e7ca66fad3170c2e",
-        "metadata.dimensions.PC13.publisher_place": "a42ec0ea08ae676b673cfc1eb1b33e86cc8db373026aea16919d9f730ad58d19",
-        "metadata.dimensions.PC18.stamp_status": "f9b224ab3c3c8ff583f7dada828abf27f4b28d8a13c4062a5935b233eb7f8320",
-        "metadata.dimensions.PC20.language": "b129b3dc01be02dc4a61468997b448996408e386d3a4913509bd313e1b56de56",
-        "image:/archive/LJM-20260808-PST-002/front-public.jpg": "a86f22029fc27b5eb9f1da604e7403e82cc8f274dc4a1fee24b41201d877306e",
-        "image:/archive/LJM-20260808-PST-002/back-public.jpg": "d6376d0a8b8796c29f97a749a413102c1595804c64e2304bcddbcfc43dcea436"
+        "metadata.dimensions.PC12.image_subject": "93409ec89e946cb0b8a2134b8c123530c7dd9b0c60795b89fb711e7c01e945c1"
       },
       "fields": {
-        "core.title": "天鵝很肥",
-        "core.country": "瑞士",
         "core.source_place": "天光墟舊貨市場",
-        "metadata.dimensions.PC06.image_place_text": [
-          "Switzerland",
-          "Luzern"
-        ],
         "metadata.dimensions.PC07.dispatch_place": [
           "列支敦士登"
         ],
-        "metadata.dimensions.PC11.correspondence_relationship": [
-          "具體通信關係待考"
-        ],
-        "metadata.dimensions.PC12.image_subject": "旅行",
-        "metadata.dimensions.PC13.publisher": [
-          "GLOBETROTTER GmbH"
-        ],
-        "metadata.dimensions.PC13.publisher_place": [
-          "Luzern"
-        ],
-        "metadata.dimensions.PC18.stamp_status": [
-          "曾有／缺失（保留齒孔邊緣及揭除痕跡）"
-        ],
-        "metadata.dimensions.PC20.language": [
-          "中文",
-          "英文"
-        ]
+        "metadata.dimensions.PC12.image_subject": "旅行"
       },
-      "image_descriptions": {
-        "/archive/LJM-20260808-PST-002/front-public.jpg": "天鵝很肥，正面",
-        "/archive/LJM-20260808-PST-002/back-public.jpg": "天鵝很肥，背面"
-      },
+      "image_descriptions": {},
       "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260808-PST-003": {
-      "schema_version": 1,
-      "item_id": "LJM-20260808-PST-003",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "4488e943cf8a65e60e4bb199a2ee5663a71812ae5dc5528c730b8b1228743146",
-      "source_hashes": {
-        "core.title": "3b4bab3aa127d6881fd4ea8fbf9d96827edd488c3da1b8f28c6159d121a20aa1",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "8d86bff2c011ef6d0b4a7160b5c020c34df613961fb9cace2b0b9f353b77b379",
-        "core.city": "b7149fd5f648214a0e414a326f38227d5a09827514df2c35cc9b69abb1444d79",
-        "core.specific_place": "7902ba544edca0738d086bb40e9b9cb89af53c64c98e74030c96dafab86039f5",
-        "core.source_place": "7beb2616dc9aae7e33ec746d638915df0bf608c17da3192caec394fc13ba26c8",
-        "public_view.description": "f871e4ee19603d481bd2d50931bf2fc9f2b850747848a8f37200464a27d94088",
-        "public_view.tags": "58d0b5f0d7d1ad70a0a8a0e5ad5bd76c9ab856351c035ad5115f2d3d0bd663e4",
-        "metadata.dimensions.PC07.dispatch_place": "bf77b45d6eef8995193abeb08058dc6ff7b1b370fc582930863a590373af7b3c",
-        "metadata.dimensions.PC11.correspondence_relationship": "7772f3d0ca7bb5f387364145bea3d8e8d5723c5f6538ea73ec00e9d212e1ac98",
-        "metadata.dimensions.PC18.stamp_country": "2e1b2c105331e28086702525db784807a93e58d1fd268feedb7c641c467c2f78",
-        "metadata.dimensions.PC18.stamp_issue": "d97ae3645c98c6e6b1e1b6320efae99ec1f0752562c75fe8a8ad19f2628ab4c5",
-        "metadata.dimensions.PC18.stamp_value": "ae106afd53c9710b5d5e66dd6bbdc7f6576da8cecb46899aa3b127076257cfd6",
-        "metadata.dimensions.PC18.stamp_status": "c3c754fcf45228148e4e323981370a0ecb01f3c469c2e91dd7bb2b59547bd513",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
-        "image:/archive/LJM-20260808-PST-003/front-public.jpg": "5488604d900e44e3cdce76ce6fecfbece358d85edf9b43e84cbc5082e6e4f435",
-        "image:/archive/LJM-20260808-PST-003/back-public.jpg": "13515f91c0dc09422c0edf3929bd5011766133907d483f1a1a692896f9b88e07"
-      },
-      "fields": {
-        "core.title": "不停行走的人",
-        "core.country": "中國",
-        "core.province": "云南省",
-        "core.city": "麗江市",
-        "core.specific_place": "束河古城",
-        "core.source_place": "佛山天光墟",
-        "public_view.description": "你是個不停行走的人吧",
-        "public_view.tags": [
-          "旅行",
-          "友情"
-        ],
-        "metadata.dimensions.PC07.dispatch_place": [
-          "云南省麗江市"
-        ],
-        "metadata.dimensions.PC11.correspondence_relationship": [
-          "具體通信關係待考"
-        ],
-        "metadata.dimensions.PC18.stamp_country": [
-          "中國"
-        ],
-        "metadata.dimensions.PC18.stamp_issue": [
-          "鳥類圖案（版別待考）"
-        ],
-        "metadata.dimensions.PC18.stamp_value": [
-          "1元"
-        ],
-        "metadata.dimensions.PC18.stamp_status": [
-          "在位"
-        ],
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260808-PST-003/front-public.jpg": "不停行走的人，正面",
-        "/archive/LJM-20260808-PST-003/back-public.jpg": "不停行走的人，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20260828-PHO-001": {
       "schema_version": 1,
@@ -437,14 +177,7 @@
         "core.country": "93ceae94dddc7acbd506571e320d61fb6cef146695ce30415d5ec2aa017ecdef",
         "core.source_place": "5dd53acf5636d9620eef987483aeb32e9d049dc505df85f0c4f51b0859c05859",
         "public_view.tags": "6fd1dd58955b62586475bea99b8d822bdf3e3cf34012cc3e4de442814212f040",
-        "metadata.dimensions.PC07.dispatch_place": "8a6fd4b5cd913654796530c1eb90cda79840e354b71416cd25e780ec4c005d9c",
-        "metadata.dimensions.PC11.correspondence_relationship": "791e3151dd1f9fed092d4707dba3837ad3ee2314de54bc6b8ec93331b54a529c",
-        "metadata.dimensions.PC18.stamp_country": "b6be456fd8539d1191a970ea1ce7eb4808995333a75248032ed4af3fd66de1a3",
-        "metadata.dimensions.PC18.stamp_issue": "5f63882125f83263837c347745003fa52be0899f0b37bc8cc8201262e1d52fde",
-        "metadata.dimensions.PC18.stamp_value": "7f44cc81345ddad5768caf5b62f6eb9a31acbd5aa6bd947520878ed206915025",
-        "metadata.dimensions.PC18.stamp_status": "c3c754fcf45228148e4e323981370a0ecb01f3c469c2e91dd7bb2b59547bd513",
-        "metadata.dimensions.PC20.language": "6737c229c7e294d2a7271abd294597786b2518780fd978faf7f749b555bbd110",
-        "image:/archive/LJM-20260828-PHO-001/front-public.jpg": "f2d246d7d246951f88f17247ba46905173765702d296e57c8892b0ffae22314c"
+        "metadata.dimensions.PC07.dispatch_place": "8a6fd4b5cd913654796530c1eb90cda79840e354b71416cd25e780ec4c005d9c"
       },
       "fields": {
         "core.title": "歷史的笑容",
@@ -456,781 +189,11 @@
         ],
         "metadata.dimensions.PC07.dispatch_place": [
           "俄羅斯"
-        ],
-        "metadata.dimensions.PC11.correspondence_relationship": [
-          "不適用（紀念郵品，無私人通信正文）"
-        ],
-        "metadata.dimensions.PC18.stamp_country": [
-          "蘇聯（票面СССР）"
-        ],
-        "metadata.dimensions.PC18.stamp_issue": [
-          "建筑與三色旗圖案，票面年份1991"
-        ],
-        "metadata.dimensions.PC18.stamp_value": [
-          "7к（票面原文）"
-        ],
-        "metadata.dimensions.PC18.stamp_status": [
-          "在位"
-        ],
-        "metadata.dimensions.PC20.language": [
-          "俄文"
         ]
       },
-      "image_descriptions": {
-        "/archive/LJM-20260828-PHO-001/front-public.jpg": "歷史的笑容，正面"
-      },
+      "image_descriptions": {},
       "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-001": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-001",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "59dcd09ca5d1b635e80ffdd2a22487bd3c0f61f46e42e8bedff0a028589a23fc",
-      "source_hashes": {
-        "core.title": "2d1272ffa5240a7755fdcf0a159e71ff8f07b9dd75d8539cdcb9343fb43db410",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "5eb1899a1776d7b66e918f34d9e8ad126f205848624636cd51728c211fd3ccc2",
-        "core.city": "c261f86787e76d06cd5822af5d7565c843a4b971e1292ae7133b318f5fe2a6e4",
-        "core.specific_place": "c00ff10d9ca12dcd3238ffaf976a0bcee8c9c5dabf1bbdadfc663e56dbfb1cc2",
-        "core.source_place": "7beb2616dc9aae7e33ec746d638915df0bf608c17da3192caec394fc13ba26c8",
-        "public_view.description": "5665b7a984c541b95ca352bdb9e62ac11e21666f0790e917ba0f3484e040d58e",
-        "public_view.tags": "9789758fbfd082f2406b0da674ed2079ce7b4b60d5ba9cab7caadb13743a2dbd",
-        "image:/archive/LJM-20260829-LET-001/front-public.jpg": "8d202e3a495bfbec5247297197571cefa41e4c40379cffe8a064bcfff0f1d2ee",
-        "image:/archive/LJM-20260829-LET-001/back-public.jpg": "84c2292470f59ed5f52fb57c5c2fb35b67c37efc14790da344aab2075b7a4990",
-        "image:/archive/LJM-20260829-LET-001/detail-01-public.jpg": "e7ae32e1e302cca6219fa1a67adc2c852cd8c84012cdfe04e0fea47d735503b2",
-        "image:/archive/LJM-20260829-LET-001/detail-02-public.jpg": "f22a1cd8e4e1612e6812a489aa5a14b118e32730f2d3f40c9f64a75bc7d05831"
-      },
-      "fields": {
-        "core.title": "明的家書19870526",
-        "core.country": "中國",
-        "core.province": "遼寧省",
-        "core.city": "大連市",
-        "core.specific_place": "大連錨地",
-        "core.source_place": "佛山天光墟",
-        "public_view.description": "信裡沒寫多少想念。\n只是問孩子的成績，問房子租出去沒有，問這個月寄多少錢回來。\n成年人那點愛，好像總要借些不相干的事情，才好意思說出口。",
-        "public_view.tags": [
-          "明家的信",
-          "明的家書"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-001/front-public.jpg": "第1頁",
-        "/archive/LJM-20260829-LET-001/back-public.jpg": "第2頁",
-        "/archive/LJM-20260829-LET-001/detail-01-public.jpg": "第3頁",
-        "/archive/LJM-20260829-LET-001/detail-02-public.jpg": "第4頁"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-002": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-002",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "a3b236c190d15f40e9fd8a4cbf98064ea919d52b0f0c3e8f7a7a9f759294922e",
-      "source_hashes": {
-        "core.title": "1f2cf5b322772990a2f81cf43a3ed1c66380574452737b246f3dc5d758f3f268",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "afefd7df29b504b6d1373ee6467de5817422b174b26d0ec9db9abd6ce4445c2d",
-        "core.district": "b5b5f133ba5cd7ec88c0e2de0b9343c2cfb1c3c0c5d3b8bb19b87e2c81a373d1",
-        "core.source_place": "479ca9379d8c5c5773ab4868d21284109bd2dbc68681d7c2e0d857744801fb12",
-        "public_view.description": "a881c1df60d96c50b9470f89117ef5f2dc6a995b193e3aa5402001e12f0e4fbd",
-        "public_view.tags": "45f58b4c7ba97e41f187fcd862d06999c89e3819b80424e6a9206ae8731c9670",
-        "image:/archive/LJM-20260829-LET-002/front-public.jpg": "8d202e3a495bfbec5247297197571cefa41e4c40379cffe8a064bcfff0f1d2ee",
-        "image:/archive/LJM-20260829-LET-002/back-public.jpg": "84c2292470f59ed5f52fb57c5c2fb35b67c37efc14790da344aab2075b7a4990"
-      },
-      "fields": {
-        "core.title": "給叔叔的信",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "肇慶市",
-        "core.district": "封開縣",
-        "core.source_place": "天光墟舊貨市場地攤",
-        "public_view.description": "紙已經舊了，十幾歲時那點不服輸，倒還很新。",
-        "public_view.tags": [
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-002/front-public.jpg": "第1頁",
-        "/archive/LJM-20260829-LET-002/back-public.jpg": "第2頁"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-003": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-003",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "070089dd4d5bb510a3b76d521f32e02d154c3e521598110e31cfa82ee750819e",
-      "source_hashes": {
-        "core.title": "3360b072a67eca61c11fbb77bfc2c2703c9ea90b6054d85c7ae89686edfdab9b",
-        "core.date_display": "b982c9c449c39942da9ea17a10ae8a064ffd1e37bb79cfe8f08221a727720007",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
-        "core.source_place": "7beb2616dc9aae7e33ec746d638915df0bf608c17da3192caec394fc13ba26c8",
-        "public_view.description": "0e99bf66f5c37e8ec885db857aa6f4e6d456a17107d8db6bcf34a5961e777745",
-        "public_view.tags": "45f58b4c7ba97e41f187fcd862d06999c89e3819b80424e6a9206ae8731c9670",
-        "image:/archive/LJM-20260829-LET-003/front-public.jpg": "2b6e1899a6b6ea7c21fdc3adf88ff9ebd9ede66b5e144d46e8b150d58cfa999f"
-      },
-      "fields": {
-        "core.title": "新年的一封信",
-        "core.date_display": "1980s",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
-        "core.source_place": "佛山天光墟",
-        "public_view.description": "那年想買一臺十八寸彩電，也想把自己的日子過明白。前一件後來大概容易些。",
-        "public_view.tags": [
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-003/front-public.jpg": "新年的一封信，正面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-004": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-004",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "601ae01da4d28dbf1b889fb265e863a4f163a5c7fce4abd56cea8c46f6cbe078",
-      "source_hashes": {
-        "core.title": "027079549e42f7232120b1b5ff7c450b72aabe67a7fd1c5d980cab02aac2d32c",
-        "core.source_place": "7beb2616dc9aae7e33ec746d638915df0bf608c17da3192caec394fc13ba26c8",
-        "public_view.tags": "45f58b4c7ba97e41f187fcd862d06999c89e3819b80424e6a9206ae8731c9670",
-        "image:/archive/LJM-20260829-LET-004/front-public.jpg": "4d5d2bc1ca201d899791896c68571c900c2c87e13fdc54cebe1e0962a55dacd5",
-        "image:/archive/LJM-20260829-LET-004/back-public.jpg": "a6a8fbde334e1be80b3df6c3d73bf82886fdd173e600b597ea58cfdfb19913d2"
-      },
-      "fields": {
-        "core.title": "工作收入和瑣事",
-        "core.source_place": "佛山天光墟",
-        "public_view.tags": [
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-004/front-public.jpg": "工作收入和瑣事，正面",
-        "/archive/LJM-20260829-LET-004/back-public.jpg": "工作收入和瑣事，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-005": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-005",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "04652f02ad4ef6d86385c85e1e44d99d81986fb8a8fd220c402a26b946a9d3c9",
-      "source_hashes": {
-        "core.title": "cbd80dea35d526623c38ea682aef3a117212128f264d70c3420cbe97dcbe7159",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
-        "core.district": "9862c67814180dc1bd7d669f085ea9791e849866683b1229b0d9121674d8feae",
-        "core.source_place": "b9e3abfa7acca5ff4a52676daa0a6c630d0605de35096336fb9a5a19b49e8c12",
-        "public_view.tags": "c6a4c20966b0c2583afd6e559e64d5fa7177b29a0f59a1c2bd8a59622ab8f1f9",
-        "image:/archive/LJM-20260829-LET-005/front-public.jpg": "baa9d88da4651e52af8f742391006e7d28d01a842ad2b6fcd5c33a6cdc21d86d",
-        "image:/archive/LJM-20260829-LET-005/back-public.jpg": "d3d5f4cd191696c54a9c1340dd849da65da02f3482174b00e15fbdade60b90b7"
-      },
-      "fields": {
-        "core.title": "給明的回信19961109",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
-        "core.district": "荔灣區",
-        "core.source_place": "佛山天光墟護紅巷",
-        "public_view.tags": [
-          "明家的信",
-          "家書"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-005/front-public.jpg": "給明的回信19961109，正面",
-        "/archive/LJM-20260829-LET-005/back-public.jpg": "給明的回信19961109，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-006": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-006",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "14e525de1ab1c6d299e83cd62445ad656e110429cd88ef7f0d2d41b3e64064b7",
-      "source_hashes": {
-        "core.title": "7b29f4b82ee7e6238ad3e9fe3631dcc7bd801772029a0f18af40242134dd00d5",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "afefd7df29b504b6d1373ee6467de5817422b174b26d0ec9db9abd6ce4445c2d",
-        "core.district": "b5b5f133ba5cd7ec88c0e2de0b9343c2cfb1c3c0c5d3b8bb19b87e2c81a373d1",
-        "core.source_place": "392efabcc1b78e1d0a7fad0952a8a824651d3e90f9d7aa70292a4ea87773d5e5",
-        "public_view.description": "dd15e74c3a9c03c77ea9f4b4ccdfa2c359eb117ac722644fd62950a70e9c1bad",
-        "public_view.tags": "45f58b4c7ba97e41f187fcd862d06999c89e3819b80424e6a9206ae8731c9670",
-        "image:/archive/LJM-20260829-LET-006/front-public.jpg": "d7f7d3ad5de1370eb226150becfa3f8f80e03c38fe59e49452018fb7b5f7f3c8",
-        "image:/archive/LJM-20260829-LET-006/back-public.jpg": "fb6a3cb7e223ef219716a1db29270685083d6ed598430295cc1d572d0d269c1d"
-      },
-      "fields": {
-        "core.title": "不必再敘，偏偏都在信裡",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "肇慶市",
-        "core.district": "封開縣",
-        "core.source_place": "佛山護紅巷天光墟",
-        "public_view.description": "嘴上說“其他少談”，卻把婚事、春耕和惦記，一筆一畫都寄給了你。",
-        "public_view.tags": [
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-006/front-public.jpg": "不必再敘，偏偏都在信裡，正面",
-        "/archive/LJM-20260829-LET-006/back-public.jpg": "不必再敘，偏偏都在信裡，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-007": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-007",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "d6c77e88100eb7641eb537cf284f054de74fcf07412037f651ed4e59c897b295",
-      "source_hashes": {
-        "core.title": "61e2fe15d784b95854d8a2945a68a919b05615f97c48a93d9f522d1a8b6c3777",
-        "core.source_place": "392efabcc1b78e1d0a7fad0952a8a824651d3e90f9d7aa70292a4ea87773d5e5",
-        "public_view.description": "443e5146e0182c5406eac0513018062939da864aa018d4921569275778261a50",
-        "public_view.tags": "08717880a3a9e8ceec1d9a1ce504c5fe64e9b120c35700fc9a5f5f79cba2158d",
-        "image:/archive/LJM-20260829-LET-007/front-public.jpg": "10a8d290fb56b82fab5da69579da05b59d1f76daecf847d3b5ffa00058893956",
-        "image:/archive/LJM-20260829-LET-007/back-public.jpg": "3b1c468de143747d1255d9a4cde8e96e4fa80bd7ca17191eac02a663669b46a6"
-      },
-      "fields": {
-        "core.title": "電話要中午打，想念隨時都在",
-        "core.source_place": "佛山護紅巷天光墟",
-        "public_view.description": "她把想念藏進印刷廠的午休、孩子的考分和那間還沒起好的房里，句句家常，句句都在等你。",
-        "public_view.tags": [
-          "明的家書",
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-007/front-public.jpg": "電話要中午打，想念隨時都在，正面",
-        "/archive/LJM-20260829-LET-007/back-public.jpg": "電話要中午打，想念隨時都在，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-008": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-008",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "7f8a4102d4c84a96d2c7b780470b1727566cf6c318ec31d91a6e01f47e4cfb91",
-      "source_hashes": {
-        "core.title": "97b1943ac01d9172d2e289567d8581fdf5e11d1aee0b3c555b42c7560ed1fe5f",
-        "public_view.description": "c28bf46d3eda28ebc120b904d2892f13caf462bf7e7a9ba57f1d85262c584b3b",
-        "public_view.tags": "9789758fbfd082f2406b0da674ed2079ce7b4b60d5ba9cab7caadb13743a2dbd",
-        "image:/archive/LJM-20260829-LET-008/front-public.jpg": "8a98a04da64184340bcb6830140da4e4ad687d607bf69aa0b58c5a752cc9010e",
-        "image:/archive/LJM-20260829-LET-008/back-public.jpg": "c33c983e31fe2c0183b5ca7bf12cb74c949a103242c8b445c48cfa127cd821aa"
-      },
-      "fields": {
-        "core.title": "沒有什么大事",
-        "public_view.description": "沒什么大事，只是把家裡的每一件小事，都寫給你。",
-        "public_view.tags": [
-          "明家的信",
-          "明的家書"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-008/front-public.jpg": "沒有什么大事，正面",
-        "/archive/LJM-20260829-LET-008/back-public.jpg": "沒有什么大事，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-009": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-009",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "514477afc12077fa134c188c7ef2528f75b617d125d57770887e24eb2644c458",
-      "source_hashes": {
-        "core.title": "a49e1bf678c7cbe213fd03ed47c0c4b92124c04e504146b72d0b37d34a0cac86",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
-        "public_view.description": "873feb421b1a2bfe2399c2b159fe0376635e63c7804a800b2050df3c9ad6dbcf",
-        "public_view.tags": "45f58b4c7ba97e41f187fcd862d06999c89e3819b80424e6a9206ae8731c9670",
-        "image:/archive/LJM-20260829-LET-009/front-public.jpg": "6e7fc489fd8047dbcbfa9b60fb13864955710756434e433c1a6db64d123b1de0",
-        "image:/archive/LJM-20260829-LET-009/back-public.jpg": "fe60c7ca0506cfc9975d5b6dfbf788cfb6fb23787638175bca5de92a452c5959"
-      },
-      "fields": {
-        "core.title": "嘮嘮嗦嗦談家常",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
-        "public_view.description": "都是些小事，小到最後才發現，寫的其實都是掛念",
-        "public_view.tags": [
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-009/front-public.jpg": "嘮嘮嗦嗦談家常，正面",
-        "/archive/LJM-20260829-LET-009/back-public.jpg": "嘮嘮嗦嗦談家常，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-010": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-010",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "0bec7d7f81da5d19ee884ca06d3b48ae32873102df976642bdd181827e1837d7",
-      "source_hashes": {
-        "core.title": "5beb73ab53ddc827c92fbcb9d8d2ce5ae73e8c23879b4541a1ad137f400bc670",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
-        "public_view.description": "75d3a9e4dfe7223359afcab03ebf63dface05f802130d714d94088d6b33ecddc",
-        "public_view.tags": "9789758fbfd082f2406b0da674ed2079ce7b4b60d5ba9cab7caadb13743a2dbd",
-        "image:/archive/LJM-20260829-LET-010/front-public.jpg": "ade84a3373a7c4038f19f2d430b70c662a4b97127d0da42a1e747a368f47c6a5"
-      },
-      "fields": {
-        "core.title": "六月四日晚，匆匆寫下的幾句話",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
-        "public_view.description": "那些看似瑣碎的叮囑，後來都成了一個家的年月。",
-        "public_view.tags": [
-          "明家的信",
-          "明的家書"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-010/front-public.jpg": "六月四日晚，匆匆寫下的幾句話，正面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-011": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-011",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "0fc19fde41f0d41e47470719ec20c0d3c36ebebbdeecaf0423aa7e87a8d23270",
-      "source_hashes": {
-        "core.title": "1d864732f90ef8283bd8245ade8b6af6f124e17d2767c62e116ff0a0b8639cf3",
-        "public_view.description": "3058998e9aad40eb1c5e776ae16d402533fd6df05e147812c0da7a74e0179a26",
-        "public_view.tags": "45f58b4c7ba97e41f187fcd862d06999c89e3819b80424e6a9206ae8731c9670",
-        "image:/archive/LJM-20260829-LET-011/front-public.jpg": "cc064c0d0f86fbf76cc9289b1390ba8d8cc3c8aeca402536c0491dcefcb8c1f3",
-        "image:/archive/LJM-20260829-LET-011/back-public.jpg": "35ca311c984bedb5694b7828a9e68d0942fcc6df54d9bacc91f5e961e18175e9",
-        "image:/archive/LJM-20260829-LET-011/detail-01-public.jpg": "6e1623b0989e238055ff6d05e2dd7340e62db84b59d91c788e7f6691bf21bf2a"
-      },
-      "fields": {
-        "core.title": "留一點話，下封信再講",
-        "public_view.description": "其餘嘅嘢留在下次講，我怕下次寫信給你，沒有話同你講。",
-        "public_view.tags": [
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-011/front-public.jpg": "留一點話，下封信再講，正面",
-        "/archive/LJM-20260829-LET-011/back-public.jpg": "留一點話，下封信再講，背面",
-        "/archive/LJM-20260829-LET-011/detail-01-public.jpg": "留一點話，下封信再講，細節圖 1"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-012": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-012",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "a7be610e0d44791be60f61beea6749483ab873b9d3dac53614755c1e21e12459",
-      "source_hashes": {
-        "core.title": "4e2f3640d8568d0650164df4299bd2124e6dc76784168fc6f787013c862fba91",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
-        "public_view.description": "a067d83aad22ec6c8384d1b9ad1988b90fe0bc94a75fcce01536cc26fed571d7",
-        "public_view.tags": "45f58b4c7ba97e41f187fcd862d06999c89e3819b80424e6a9206ae8731c9670",
-        "image:/archive/LJM-20260829-LET-012/front-public.jpg": "b30b385e052799399ea8739f6c6cbbda72298b2311d1168f0e0441ae40824854",
-        "image:/archive/LJM-20260829-LET-012/back-public.jpg": "5492c576aaa0f1b0bee2667e45ecc7c8e37b8894a07dce6e0acd756374973d4f"
-      },
-      "fields": {
-        "core.title": "一萬元錢，和一輩子的感謝",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
-        "public_view.description": "成年人的難處，大概就是開口求人之前，先把一輩子的感謝都說完。",
-        "public_view.tags": [
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-012/front-public.jpg": "一萬元錢，和一輩子的感謝，正面",
-        "/archive/LJM-20260829-LET-012/back-public.jpg": "一萬元錢，和一輩子的感謝，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-013": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-013",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "b9300489a1abee22e6adf57b24e8b067ef35e24c7ff92cfedbcc013631d5c26a",
-      "source_hashes": {
-        "core.title": "93705f509456390bcb60c31e27091761dd6c7ddc2dc6a6a247ce12d3ae01d086",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "a0f7f63d9b49dc4e7164642983314063b370622afc8a8c5ebc8d20630698f79f",
-        "core.city": "a0f7f63d9b49dc4e7164642983314063b370622afc8a8c5ebc8d20630698f79f",
-        "core.specific_place": "fbca92957065fcdcff167ae1bb05d7843248859054a6c5aa5584dad4c9940e57",
-        "public_view.description": "e3c8c65cf74ca9c4066737bc7f0e703acc43fe4a05b9b5f36eadc38ad1ea93ff",
-        "public_view.tags": "08717880a3a9e8ceec1d9a1ce504c5fe64e9b120c35700fc9a5f5f79cba2158d",
-        "image:/archive/LJM-20260829-LET-013/front-public.jpg": "e2a60233fd34a7fa7544de7e991499caa67c4e5f7fd6e1a145dae9de1baceceb",
-        "image:/archive/LJM-20260829-LET-013/back-public.jpg": "deca4d0eac6159d16d2537d50275130ccf8ed2a1c2ad455126d62120d7339695",
-        "image:/archive/LJM-20260829-LET-013/detail-01-public.jpg": "0ed50ecacb0c3fa2e19feb595482f849f7fb8c0cf63c4683401be80fb61e0b9b",
-        "image:/archive/LJM-20260829-LET-013/detail-02-public.jpg": "a21fbc6b548c0314c7319ca5dac07bfe3321e8001ca0604696011383959d6648"
-      },
-      "fields": {
-        "core.title": "船在天津，家在信裡",
-        "core.country": "中國",
-        "core.province": "天津市",
-        "core.city": "天津市",
-        "core.specific_place": "天津錨地",
-        "public_view.description": "離家快兩年，他寫了四頁，最重的一句不是想念，是“我很對不起你和孩子”。",
-        "public_view.tags": [
-          "明的家書",
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-013/front-public.jpg": "船在天津，家在信裡，正面",
-        "/archive/LJM-20260829-LET-013/back-public.jpg": "船在天津，家在信裡，背面",
-        "/archive/LJM-20260829-LET-013/detail-01-public.jpg": "船在天津，家在信裡，細節圖 1",
-        "/archive/LJM-20260829-LET-013/detail-02-public.jpg": "船在天津，家在信裡，細節圖 2"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-014": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-014",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "6d28381df6874d80d35e11b303c52a997b80a99a93ccf7e2bdf47bf25325efbb",
-      "source_hashes": {
-        "core.title": "581ac51e8e50fc9e4c805bd58073cdc8f4693263c4d9f48702ca39e82f0b2eb8",
-        "public_view.description": "f0b0aab7a5558da2d70b389b61d515fe6efd2cb71f7d92ad0179100f0db4500a",
-        "public_view.tags": "9789758fbfd082f2406b0da674ed2079ce7b4b60d5ba9cab7caadb13743a2dbd",
-        "image:/archive/LJM-20260829-LET-014/front-public.jpg": "8aca79f9d1160533c6fafcfffb29c0e5508e36a3c83c868b10060bb99ac2d59f",
-        "image:/archive/LJM-20260829-LET-014/back-public.jpg": "f3b12e454fdc5a2758b3ee16bb5ecd52b61f84ad93d69d6fd7170829220c3ff1"
-      },
-      "fields": {
-        "core.title": "親愛的吻",
-        "public_view.description": "前面都在說胃藥、活絡油和金項鏈，臨了才想起來，還是要親一下",
-        "public_view.tags": [
-          "明家的信",
-          "明的家書"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-014/front-public.jpg": "親愛的吻，正面",
-        "/archive/LJM-20260829-LET-014/back-public.jpg": "親愛的吻，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-015": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-015",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "e1755b43f93ba913be7965fa4f5718e6ff8e5fa5c0458c7a7dcbf3faa7d3d370",
-      "source_hashes": {
-        "core.title": "352ddf4fcf0f07144c237e9b5ad562061ead7b85a7bb3fbcc77ca48af5853904",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
-        "public_view.description": "3a683a3e5702e67d2db15794c65adde0aeb1affdcb20fec22159bb347304ef49",
-        "public_view.tags": "45f58b4c7ba97e41f187fcd862d06999c89e3819b80424e6a9206ae8731c9670",
-        "image:/archive/LJM-20260829-LET-015/front-public.jpg": "873994bb9b27ababff17879aee5af9b713392860f1a6d4bfd0acfcc1d52cd73c",
-        "image:/archive/LJM-20260829-LET-015/back-public.jpg": "fd9141096e2e29ca5a589c5e00470d08b520cc6c4c9c2de24066ec9db2942c6f"
-      },
-      "fields": {
-        "core.title": "回家一個星期",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
-        "public_view.description": "人總以為回家是句號，真回來了，才發現還得繼續想下一程。",
-        "public_view.tags": [
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-015/front-public.jpg": "回家一個星期，正面",
-        "/archive/LJM-20260829-LET-015/back-public.jpg": "回家一個星期，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-016": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-016",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "03ae995ce85afea1aeda5f343227313846d4f45af2a72f45797dec67606b15ff",
-      "source_hashes": {
-        "core.title": "4837a554b4de5d2b079f04bdee38983f9f134909a9f8fa597bf5c725e8d28597",
-        "public_view.description": "123ca0921b12c713857c99469a23528d8262c986ffbcc9228c62c43506951cb5",
-        "public_view.tags": "45f58b4c7ba97e41f187fcd862d06999c89e3819b80424e6a9206ae8731c9670",
-        "image:/archive/LJM-20260829-LET-016/front-public.jpg": "368c838397645fee9fc51f4e8864304be7ad9467915f836ae4884b6a2320bd66"
-      },
-      "fields": {
-        "core.title": "想去玩都幾困難",
-        "public_view.description": "她說做人難，難到想出去玩都要掂量；可自己的日子再煩，也沒忘記叮囑弟弟——作業別粗心。",
-        "public_view.tags": [
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-016/front-public.jpg": "想去玩都幾困難，正面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260829-LET-017": {
-      "schema_version": 1,
-      "item_id": "LJM-20260829-LET-017",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "b9107393c1a1b540777e0eb6be645d6c2a810ac4ce344136d33598b6c5e9603b",
-      "source_hashes": {
-        "core.title": "475f313fd657a787a8230cb32bb529ea709f49cc5bcc4207813ee485516f64f1",
-        "core.country": "584b700bc85c9051917e51292fabe5f36b5c1019063e9802dde8f247769354d5",
-        "public_view.description": "d2ad15f52cf3515d81de3394cd1be152e89e384b66b14d1dee9549062deb772a",
-        "public_view.tags": "9789758fbfd082f2406b0da674ed2079ce7b4b60d5ba9cab7caadb13743a2dbd",
-        "image:/archive/LJM-20260829-LET-017/front-public.jpg": "c32cb49be6b3b90e1b73dd07698a53522ac9be53c8372c1d845712cbb2cab610",
-        "image:/archive/LJM-20260829-LET-017/back-public.jpg": "b7f9d73348070a35d74d8b7a76360b39226e256638f17adeebd7bb5a31c677e1"
-      },
-      "fields": {
-        "core.title": "“此致”不是“致此”",
-        "core.country": "美國",
-        "public_view.description": "他隔著半個地球寫信回來，先問成績，再教做人，最後還不忘改一個寫反的“此致”。",
-        "public_view.tags": [
-          "明家的信",
-          "明的家書"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260829-LET-017/front-public.jpg": "“此致”不是“致此”，正面",
-        "/archive/LJM-20260829-LET-017/back-public.jpg": "“此致”不是“致此”，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260906-IDC-001": {
-      "schema_version": 1,
-      "item_id": "LJM-20260906-IDC-001",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "de275621f152561640ec95a3a88b124d68ae973b7e84dc8e2bffaf2eba2a05e6",
-      "source_hashes": {
-        "core.title": "de276916e62f2d4a8e604eaa9a97fbcffb40f7ed23b8026ad040384e13a1369d",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
-        "core.source_place": "392efabcc1b78e1d0a7fad0952a8a824651d3e90f9d7aa70292a4ea87773d5e5",
-        "public_view.description": "c484af6e52cb78c809e7b029a9b6e2f9e9d3f29065f5ed26a7b3e3acc6e38479",
-        "public_view.tags": "ab10486d5707255fc2bfd9381dba724157078443f9726af966a285dc398f4cce",
-        "metadata.dimensions.ID02.credential_function": "6a687188382573d73f8dc4c012fcdd710de8d30e79c00d613c199e3e4b1c0869",
-        "metadata.dimensions.ID03.issuing_organization": "0af3e2d5ff44fed2a50201289e6bd3641b08839de87d60694a53045601a4859c",
-        "metadata.dimensions.ID04.issuing_place": "9f341be3331c14af84156efcec89324d4b4890b3ea7f08a745775ef6b6dbad31",
-        "metadata.dimensions.ID10.sex_text": "aff469d4c87407f88175dcadae635f5b0612fc7abb7c3c3c0b0f7d69f91c451e",
-        "metadata.dimensions.ID10.nationality": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "metadata.dimensions.ID14.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
-        "image:/archive/LJM-20260906-IDC-001/front-public.jpg": "5fb4be796407085bc3c04714113df8654e9677507db29e78f785b852b7aa97de",
-        "image:/archive/LJM-20260906-IDC-001/back-public.jpg": "f04ef820c1a5e80a8b828f53b64bf54391d8689353725e75eb13ee6713043703"
-      },
-      "fields": {
-        "core.title": "她與未來握過一次手",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
-        "core.source_place": "佛山護紅巷天光墟",
-        "public_view.description": "1994年，她通過了電腦操作考試。三十二年後，我們還在被電腦操作。",
-        "public_view.tags": [
-          "技能證書"
-        ],
-        "metadata.dimensions.ID02.credential_function": [
-          "電腦操作"
-        ],
-        "metadata.dimensions.ID03.issuing_organization": [
-          "中山大學大氣科學系"
-        ],
-        "metadata.dimensions.ID04.issuing_place": "廣州",
-        "metadata.dimensions.ID10.sex_text": "女",
-        "metadata.dimensions.ID10.nationality": "中國",
-        "metadata.dimensions.ID14.language": [
-          "中文"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260906-IDC-001/front-public.jpg": "她與未來握過一次手，正面",
-        "/archive/LJM-20260906-IDC-001/back-public.jpg": "她與未來握過一次手，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260906-NTB-001": {
-      "schema_version": 1,
-      "item_id": "LJM-20260906-NTB-001",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "f1c0c15a044a172786833b72dd86b6c79452105ddea3a2625ec9af9c1c9b1026",
-      "source_hashes": {
-        "core.title": "b36158db03ea72ef419ce0538f2c53bef06589905785ec31dcb870984c8b08dc",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "2bfdb91e33076d46810fa15aa5a75e1f066187dd3486563efed7b208b45cb6aa",
-        "core.district": "0b1e4d6beb20ed9f4b1a01be90a8353f1b4f6477f03d460bc60921150f333ea5",
-        "core.source_place": "392efabcc1b78e1d0a7fad0952a8a824651d3e90f9d7aa70292a4ea87773d5e5",
-        "public_view.description": "ab8ada548a2f43e00ad16d7651239e8b8b05e43c1ff705b6349c9bd30ae2f2e3",
-        "public_view.tags": "02d0d983bcd11b757bf4b10dc6eac406d69421851958fb59ccbc4187913bdfe6",
-        "metadata.dimensions.DN08.mentioned_places": "cf1efbb71449e8237f9da76556bb9ac4d97c40d4b6ba36a0ba56556153064e90",
-        "metadata.dimensions.DN09.language": "b129b3dc01be02dc4a61468997b448996408e386d3a4913509bd313e1b56de56",
-        "metadata.dimensions.DN09.writing_direction": "9b0a1dca44c744dc7d293f1a927441b83676cdddc8b2cddc264eb06e87486e79",
-        "metadata.dimensions.DN10.content_genres": "fac8b5b4415070250e8d6fb8acb102ff6e9ef1046d0f45a5d8201449f12348ec",
-        "metadata.dimensions.DN14.cover_material": "8595bbe81d837bf098ad0dec1910d43412b2e1ac37bdf0541ae27d12e10622aa",
-        "image:/archive/LJM-20260906-NTB-001/front-public.jpg": "ae17360bb89a1522cc6446376f371192bc3de29dc05669b09992db414e3b4ad0",
-        "image:/archive/LJM-20260906-NTB-001/back-public.jpg": "dbe1fd794eb5f0f945987c7b9bad661b4705bf37ced876e886bfb1f7d8b3cfe1",
-        "image:/archive/LJM-20260906-NTB-001/detail-01-public.jpg": "8547211d764c0d61c4c9983d3681aa99601e39ea28557b952f4a115ccbe784d1",
-        "image:/archive/LJM-20260906-NTB-001/detail-02-public.jpg": "0e6ff2001d5edbab4c64497e930feb691ed068b6751b96d25aa3f3a4f9f5f5b6",
-        "image:/archive/LJM-20260906-NTB-001/detail-03-public.jpg": "69e496d87d19fcd6c772f39c471269844097b12f7f2f7f8e10ea6dc8d348566f",
-        "image:/archive/LJM-20260906-NTB-001/detail-04-public.jpg": "15f71a5a722030285ca1785012ce23096cb6e94c1eb32fc429e76fd705184de4",
-        "image:/archive/LJM-20260906-NTB-001/detail-05-public.jpg": "c2f6df3686f51922125d72f3ba6e0913a3302a974bf8f4bbf79bb92757238bb3",
-        "image:/archive/LJM-20260906-NTB-001/detail-06-public.jpg": "9f2d3cf0b85d8e5e2f6481dd7f1499ae5fe2341db2737ce93a3cb7e1d616e319",
-        "image:/archive/LJM-20260906-NTB-001/detail-07-public.jpg": "a508158550e9d5023188c6dd7e3f44fff3b31796fe7e077f1d3b7aaac3f322f9",
-        "image:/archive/LJM-20260906-NTB-001/detail-08-public.jpg": "7c72959027bc17556ba3f23a099a74330b299396ddcfa36f9f1cac871cbe5395",
-        "image:/archive/LJM-20260906-NTB-001/detail-09-public.jpg": "befc0da5dd2d7d79ba674b7d1deffb1fc8326859d6fb6caaefd7c759af82f981",
-        "image:/archive/LJM-20260906-NTB-001/detail-10-public.jpg": "f10930fb0b7e9b0fdc44f256eaf8b3c9ba5ca38eaf42781d2f48ef3d1846f432",
-        "image:/archive/LJM-20260906-NTB-001/detail-11-public.jpg": "c183ac39966d1a3f7e382692068e3639ca2cd38a2f668bbd68120f80ccd890a1",
-        "image:/archive/LJM-20260906-NTB-001/detail-12-public.jpg": "cc06161087252022e931cd96cd09de8aa1a5b24a92df69cbe3c207d41ee5578d",
-        "image:/archive/LJM-20260906-NTB-001/detail-13-public.jpg": "b7fbf0aa6c058b49ef2e97b50d8cec6d6d5546265a73b8197c68579b6b2eae32",
-        "image:/archive/LJM-20260906-NTB-001/detail-14-public.jpg": "61ba3dc27b68b7785fd4b2b0639f7793c00dba1eb82c694394e94605d915673c",
-        "image:/archive/LJM-20260906-NTB-001/detail-15-public.jpg": "bac4e259a5c3c0775b925ac86074cd2f874ab2015a24d491f534dd1590e5126a",
-        "image:/archive/LJM-20260906-NTB-001/detail-16-public.jpg": "99b5533a2394fb7b9ffa245c7446b861c7066ac55e0f0e1a238b9780512d5d98",
-        "image:/archive/LJM-20260906-NTB-001/detail-17-public.jpg": "89d20e0b95ca970339fed066bc98ac6d664ae4a09ce755ae9075f1e4eac16d8c",
-        "image:/archive/LJM-20260906-NTB-001/detail-18-public.jpg": "7d5fb85ec17edca62674a467183be6a88cf158b704d6de1c255c72482b6f7783",
-        "image:/archive/LJM-20260906-NTB-001/detail-19-public.jpg": "77fa655cc4d8f770f548b6e0b69ddda5e2ce7887ac29a2b2302d4eb44bd8da4c",
-        "image:/archive/LJM-20260906-NTB-001/detail-20-public.jpg": "ec4374f45d301a081d5106f117665a8a77f65040647277a2bd6d36a3747bfecc",
-        "image:/archive/LJM-20260906-NTB-001/detail-21-public.jpg": "3f9fa0f2c5885f78b1b5532fd998b3b36b57ffe0f9960212ef63b5d9213d4881",
-        "image:/archive/LJM-20260906-NTB-001/detail-22-public.jpg": "2f372fd53464f9981967a2156aac34c6e1b4dc8c3f16ed20179442832ddb0635",
-        "image:/archive/LJM-20260906-NTB-001/detail-23-public.jpg": "8cc5e5737bd2b63e7c5ee0375c1c3190add9bfe5e8f23a6085a8ad7dc0a03e4d",
-        "image:/archive/LJM-20260906-NTB-001/detail-24-public.jpg": "b1bdb6e5564a7cc9789d42166b39277057b5ba83fbe8f122a70568226e8aeaad",
-        "image:/archive/LJM-20260906-NTB-001/detail-25-public.jpg": "89ea30bb97265c4c5baef2515e990a4a0d6dc5a2dc0cdab2f788d888906606d9",
-        "image:/archive/LJM-20260906-NTB-001/detail-26-public.jpg": "11f7307615a8dab07762e83f52b63386c6598b647c4fa68531078187ca806069",
-        "image:/archive/LJM-20260906-NTB-001/detail-27-public.jpg": "068040765784f8b918ab9fe301fa1ff05af7986762c99a772d75612a6229eaf1",
-        "image:/archive/LJM-20260906-NTB-001/detail-28-public.jpg": "e4d9c09c510347f2b58ebb89ce922fa7bc20a841c2ef8abac187dacae67c074b"
-      },
-      "fields": {
-        "core.title": "一位基層幹部的筆記本",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "梅州市",
-        "core.district": "大埔縣",
-        "core.source_place": "佛山護紅巷天光墟",
-        "public_view.description": "1993年的年輕人，一邊認真學英語、琢磨工作和處世，一邊研究男女、愛情和自己，字寫得越來越亂，心事卻越來越多。",
-        "public_view.tags": [
-          "筆記本",
-          "記錄",
-          "文字"
-        ],
-        "metadata.dimensions.DN08.mentioned_places": [
-          "工作",
-          "感悟",
-          "情感",
-          "生活"
-        ],
-        "metadata.dimensions.DN09.language": [
-          "中文",
-          "英文"
-        ],
-        "metadata.dimensions.DN09.writing_direction": [
-          "橫排，從左至右"
-        ],
-        "metadata.dimensions.DN10.content_genres": [
-          "摘抄、會議記錄、賬目、詩文"
-        ],
-        "metadata.dimensions.DN14.cover_material": [
-          "塑封"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260906-NTB-001/front-public.jpg": "一位基層幹部的筆記本，正面",
-        "/archive/LJM-20260906-NTB-001/back-public.jpg": "一位基層幹部的筆記本，背面",
-        "/archive/LJM-20260906-NTB-001/detail-01-public.jpg": "一位基層幹部的筆記本，細節圖 1",
-        "/archive/LJM-20260906-NTB-001/detail-02-public.jpg": "一位基層幹部的筆記本，細節圖 2",
-        "/archive/LJM-20260906-NTB-001/detail-03-public.jpg": "一位基層幹部的筆記本，細節圖 3",
-        "/archive/LJM-20260906-NTB-001/detail-04-public.jpg": "一位基層幹部的筆記本，細節圖 4",
-        "/archive/LJM-20260906-NTB-001/detail-05-public.jpg": "一位基層幹部的筆記本，細節圖 5",
-        "/archive/LJM-20260906-NTB-001/detail-06-public.jpg": "一位基層幹部的筆記本，細節圖 6",
-        "/archive/LJM-20260906-NTB-001/detail-07-public.jpg": "一位基層幹部的筆記本，細節圖 7",
-        "/archive/LJM-20260906-NTB-001/detail-08-public.jpg": "一位基層幹部的筆記本，細節圖 8",
-        "/archive/LJM-20260906-NTB-001/detail-09-public.jpg": "一位基層幹部的筆記本，細節圖 9",
-        "/archive/LJM-20260906-NTB-001/detail-10-public.jpg": "一位基層幹部的筆記本，細節圖 10",
-        "/archive/LJM-20260906-NTB-001/detail-11-public.jpg": "一位基層幹部的筆記本，細節圖 11",
-        "/archive/LJM-20260906-NTB-001/detail-12-public.jpg": "一位基層幹部的筆記本，細節圖 12",
-        "/archive/LJM-20260906-NTB-001/detail-13-public.jpg": "一位基層幹部的筆記本，細節圖 13",
-        "/archive/LJM-20260906-NTB-001/detail-14-public.jpg": "一位基層幹部的筆記本，細節圖 14",
-        "/archive/LJM-20260906-NTB-001/detail-15-public.jpg": "一位基層幹部的筆記本，細節圖 15",
-        "/archive/LJM-20260906-NTB-001/detail-16-public.jpg": "一位基層幹部的筆記本，細節圖 16",
-        "/archive/LJM-20260906-NTB-001/detail-17-public.jpg": "一位基層幹部的筆記本，細節圖 17",
-        "/archive/LJM-20260906-NTB-001/detail-18-public.jpg": "一位基層幹部的筆記本，細節圖 18",
-        "/archive/LJM-20260906-NTB-001/detail-19-public.jpg": "一位基層幹部的筆記本，細節圖 19",
-        "/archive/LJM-20260906-NTB-001/detail-20-public.jpg": "一位基層幹部的筆記本，細節圖 20",
-        "/archive/LJM-20260906-NTB-001/detail-21-public.jpg": "一位基層幹部的筆記本，細節圖 21",
-        "/archive/LJM-20260906-NTB-001/detail-22-public.jpg": "一位基層幹部的筆記本，細節圖 22",
-        "/archive/LJM-20260906-NTB-001/detail-23-public.jpg": "一位基層幹部的筆記本，細節圖 23",
-        "/archive/LJM-20260906-NTB-001/detail-24-public.jpg": "一位基層幹部的筆記本，細節圖 24",
-        "/archive/LJM-20260906-NTB-001/detail-25-public.jpg": "一位基層幹部的筆記本，細節圖 25",
-        "/archive/LJM-20260906-NTB-001/detail-26-public.jpg": "一位基層幹部的筆記本，細節圖 26",
-        "/archive/LJM-20260906-NTB-001/detail-27-public.jpg": "一位基層幹部的筆記本，細節圖 27",
-        "/archive/LJM-20260906-NTB-001/detail-28-public.jpg": "一位基層幹部的筆記本，細節圖 28"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260907-PHO-001": {
-      "schema_version": 1,
-      "item_id": "LJM-20260907-PHO-001",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "78eecfc262759d475865478c9aa528eeba89cf81424c62f8a9d25eb0d5922c70",
-      "source_hashes": {
-        "core.title": "eff25dbb8214a843e2cb658633727620fd0051594b6900620b5fbe35c080e77f",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "public_view.description": "f423e94e847d2aaf15770904358c62b5fa9f1bbf5cd07bfe57a51bd82ea92602",
-        "image:/archive/LJM-20260907-PHO-001/front-public.jpg": "3ab9c5496a019a3928885a53bf481d6c875c8275910b5af5c054ef47631c2ff6"
-      },
-      "fields": {
-        "core.title": "小時候就有點難搞",
-        "core.province": "廣東省",
-        "public_view.description": "椅子不大，氣場先坐滿了"
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260907-PHO-001/front-public.jpg": "小時候就有點難搞，正面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20260909-ALB-001": {
       "schema_version": 1,
@@ -1259,33 +222,6 @@
       },
       "image_descriptions": {
         "/archive/LJM-20260909-ALB-001/front-public.jpg": "冊內影像選覽，非實物封面。選取6幅發布副本組成，不代表原冊頁序。"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20260909-LET-001": {
-      "schema_version": 1,
-      "item_id": "LJM-20260909-LET-001",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "3d839b6c5dfbfcc81b45e9b9e7027254dd90b92ccb74a9e990b7b861bf260887",
-      "source_hashes": {
-        "core.title": "f0a4610333ea5f2de71f15e6c3a3f9f165236ae96322cbf1e125933e5933eb76",
-        "public_view.description": "e730dc6fa3321883ae9a1f1fd419df7fb23b2af23aea10366744f3782a48dd87",
-        "public_view.tags": "45f58b4c7ba97e41f187fcd862d06999c89e3819b80424e6a9206ae8731c9670",
-        "image:/archive/LJM-20260909-LET-001/front-public.jpg": "ef16e72df011590d790cd07de2b43d30b8b8b6e961514d475c112fd63b6cb1e4",
-        "image:/archive/LJM-20260909-LET-001/back-public.jpg": "ca336edae6fe801e53065208901ea700142e8246c55848ad4f423ee3d4c2def3"
-      },
-      "fields": {
-        "core.title": "我會慢慢改好的",
-        "public_view.description": "一個還在上學的女孩，因為成績、家庭里的爭執和自己犯過的錯，給叔叔寫了一封近乎“自我檢討”的信。她反復說“認識自己”“改正錯誤”“吸取教訓”，但又不是公文式的檢討，裡面有那種很年輕的委屈、自責和倔強。她把“對不起”寫了兩頁，也把“長大”偷偷寫在了裡面。",
-        "public_view.tags": [
-          "明家的信"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20260909-LET-001/front-public.jpg": "我會慢慢改好的，正面",
-        "/archive/LJM-20260909-LET-001/back-public.jpg": "我會慢慢改好的，背面"
       },
       "transcription_kind": "none",
       "translation_state": "published"
@@ -3173,88 +2109,6 @@
       "transcription_kind": "none",
       "translation_state": "published"
     },
-    "LJM-20261011-IDC-001": {
-      "schema_version": 1,
-      "item_id": "LJM-20261011-IDC-001",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "5716e96d12bea5c9e0ac2c78c6da1de6217648a05971d1de1a66819fdd7e7bf9",
-      "source_hashes": {
-        "core.title": "1bfd046d3207ec96b3f3a542f0f5cb0631377e2ae3f7f17681a1e16ea96113cb",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
-        "public_view.description": "61d0dd993645490c46da588ce60fea2187a55bb3e14c6c925b4ab60d548cd033",
-        "metadata.dimensions.ID02.credential_function": "014492efdbcf6c89cb1845f78f2b035bdd8d64c9dda7910b39b3b36b2e824545",
-        "metadata.dimensions.ID03.issuing_organization": "99219c246dc2b5756299f4bc177427a927ae7473b3e367be4bf7d3c0a7317192",
-        "metadata.dimensions.ID04.issuing_place": "40b426093c53ccf80c7817ef25433582b5ce19dda8167356d6ed9b4d0a01cd08",
-        "metadata.dimensions.ID10.sex_text": "aff469d4c87407f88175dcadae635f5b0612fc7abb7c3c3c0b0f7d69f91c451e",
-        "metadata.dimensions.ID10.nationality": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "image:/archive/LJM-20261011-IDC-001/front-public.jpg": "259d1fdaad18eedbb3cc05a37b22aec5e95e206f7c173104c29322d3f4360c48",
-        "image:/archive/LJM-20261011-IDC-001/back-public.jpg": "e3395701f53f1ad373cbcd2fad8fba65d150bdae317c28995609e2a1441eb1d3"
-      },
-      "fields": {
-        "core.title": "有些年月，會落在證書上",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
-        "public_view.description": "紅封皮打開，內頁還保留著當時的書寫與印章。舊物讓那些具體的時刻有了著落。",
-        "metadata.dimensions.ID02.credential_function": [
-          "職業資格證"
-        ],
-        "metadata.dimensions.ID03.issuing_organization": [
-          "廣州市衛生局"
-        ],
-        "metadata.dimensions.ID04.issuing_place": "廣東省廣州市",
-        "metadata.dimensions.ID10.sex_text": "女",
-        "metadata.dimensions.ID10.nationality": "中國"
-      },
-      "image_descriptions": {
-        "/archive/LJM-20261011-IDC-001/front-public.jpg": "有些年月，會落在證書上，正面",
-        "/archive/LJM-20261011-IDC-001/back-public.jpg": "有些年月，會落在證書上，背面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20261011-IDC-002": {
-      "schema_version": 1,
-      "item_id": "LJM-20261011-IDC-002",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "f00948d776bb6837f84b174bdead293eaf78d7374c1739026d9f9324169dc062",
-      "source_hashes": {
-        "core.title": "5498e260465835686b629727b2719b722d2ee01cbb9711a9f62a799b98e1356c",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "public_view.description": "87e0b0150ae2d951e80b53ab41be1ccfe9c2a09bc27250505280f0e89cc805f4",
-        "metadata.dimensions.ID02.credential_function": "8a7bcbdbb744862cc10bbb056e849d4fe00c9783265877314c21b3752c08acaa",
-        "image:/archive/LJM-20261011-IDC-002/front-public.jpg": "32ec2341b487d355c81598b619c172151e8b1dbc1e62da1f232a6c4fb29cdccf",
-        "image:/archive/LJM-20261011-IDC-002/back-public.jpg": "726ca89a1c4a553c6bb287d0411d8d5d74ed10bb5317b09d7dce463bbe070203",
-        "image:/archive/LJM-20261011-IDC-002/detail-01-public.jpg": "c227915717b3c76dbd82a477321a435d53d8a275e6e977d736b7de400c1f3b43",
-        "image:/archive/LJM-20261011-IDC-002/detail-02-public.jpg": "0a4f4c931793b9a8d77cc65fbd0720b4ba69488ce877376daf54384c47fbc8c0",
-        "image:/archive/LJM-20261011-IDC-002/detail-03-public.jpg": "5829fa9c87ca0a92ddcf94e09d1235bb77375e73ce49a55c95251d98d6fb3b81",
-        "image:/archive/LJM-20261011-IDC-002/detail-04-public.jpg": "c285e6defec23d736c567df7a096735a28e5270019bd90dffc86fe446e17cc28"
-      },
-      "fields": {
-        "core.title": "一本證，翻過不少日子",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "public_view.description": "封皮磨損了，會費欄還一格格留著筆跡。舊證件把那些沒有被大聲講過的日常，保存得很具體。",
-        "metadata.dimensions.ID02.credential_function": [
-          "中華全國總工會會員證"
-        ]
-      },
-      "image_descriptions": {
-        "/archive/LJM-20261011-IDC-002/front-public.jpg": "一本證，翻過不少日子，正面",
-        "/archive/LJM-20261011-IDC-002/back-public.jpg": "一本證，翻過不少日子，背面",
-        "/archive/LJM-20261011-IDC-002/detail-01-public.jpg": "一本證，翻過不少日子，細節圖 1",
-        "/archive/LJM-20261011-IDC-002/detail-02-public.jpg": "一本證，翻過不少日子，細節圖 2",
-        "/archive/LJM-20261011-IDC-002/detail-03-public.jpg": "一本證，翻過不少日子，細節圖 3",
-        "/archive/LJM-20261011-IDC-002/detail-04-public.jpg": "一本證，翻過不少日子，細節圖 4"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
     "LJM-20261011-LET-001": {
       "schema_version": 1,
       "item_id": "LJM-20261011-LET-001",
@@ -3291,10 +2145,6 @@
       "source_hashes": {
         "core.title": "58fffb5359d5688c20a7abdbd8fa215878e515c0ede76082d54e843253401f23",
         "core.date_display": "d1b581e0a64c3672fcce37ccf730321a8bc8fd845fa4aa30e12333d0bc07580a",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "a0f7f63d9b49dc4e7164642983314063b370622afc8a8c5ebc8d20630698f79f",
-        "core.city": "a0f7f63d9b49dc4e7164642983314063b370622afc8a8c5ebc8d20630698f79f",
-        "core.specific_place": "b6d4e19717ec627231f0a68fec9c421c5649594b038e5f92e78f50beed06da9c",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "fe803489906f88903604f466a743b32b330124dcdd9a2acdd06394c0cee7f842",
         "image:/archive/LJM-20261011-LET-002/front-public.jpg": "44388b5fd10a7122ffc699ede0b7dac9f3945ed976f8da3e50e580ddaf8cd0a1",
@@ -3304,10 +2154,6 @@
       "fields": {
         "core.title": "信裡沒有遠方，只有惦記",
         "core.date_display": "1993年",
-        "core.country": "中國",
-        "core.province": "天津市",
-        "core.city": "天津市",
-        "core.specific_place": "天津港",
         "core.source_place": "舊貨市場",
         "public_view.description": "家人的近況、替我問個好。一封舊信，把牽掛寫得像日常一樣輕。"
       },
@@ -3317,7 +2163,7 @@
         "/archive/LJM-20261011-LET-002/detail-01-public.jpg": "1993年友人來信與款項附記，細節圖。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-LET-003": {
       "schema_version": 1,
@@ -3328,9 +2174,6 @@
       "source_hashes": {
         "core.title": "6d5dfb920e2f70f1e172d4021b98c291f8457d4d04e2ecdeb468b010c9084f68",
         "core.date_display": "e0d290fe210685dba031785740c5f9432f3918b776874cc32dce49cd84a8d94f",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "720729164804c6c21cbc2650688ad4f84c27f0090e4232ab5348bf4add5694c0",
         "image:/archive/LJM-20261011-LET-003/front-public.jpg": "72349309c9cebb7975fd860a19c07a4b9f6f0172714f6a4d21475fad79249f70"
@@ -3338,9 +2181,6 @@
       "fields": {
         "core.title": "風浪之外，還有一張英語試卷",
         "core.date_display": "1996年",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
         "core.source_place": "舊貨市場",
         "public_view.description": "1996 年的船員英語考試通知。出海這件事，連單詞也要一起準備。"
       },
@@ -3348,7 +2188,7 @@
         "/archive/LJM-20261011-LET-003/front-public.jpg": "1996年船員英語適崗考試通知，封面/正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-LET-004": {
       "schema_version": 1,
@@ -3359,9 +2199,6 @@
       "source_hashes": {
         "core.title": "0ee84154f46afe49441b926a7a39565c1d15ae4a50e4f093fe9d99c65d9a69f0",
         "core.date_display": "6e4ac5f83377453e268a9fc2847075326709577ca3325957044e99a5d6ca7bfb",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "315ced9505eaaef3b98d68f0568d185add9dce8a9703a048c75e90c4fe5c0595",
         "image:/archive/LJM-20261011-LET-004/front-public.jpg": "1b5d9c5ebdf3eeb4bcd26ad1c74d4d4bfe739c963561b7fc221fb6e1355da999"
@@ -3369,9 +2206,6 @@
       "fields": {
         "core.title": "退休以後，仍有一張表等著填",
         "core.date_display": "2007年",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
         "core.source_place": "舊貨市場",
         "public_view.description": "2007 年的一張住房補貼申請表。勾選很輕，紙上的折痕很重。"
       },
@@ -3379,160 +2213,7 @@
         "/archive/LJM-20261011-LET-004/front-public.jpg": "2007年住房貨幣補貼支取申請表，封面/正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20261011-PHO-001": {
-      "schema_version": 1,
-      "item_id": "LJM-20261011-PHO-001",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "1ab118f0bc240c5a821f8f1fe8292703f9d66abde6512a1761539c48d41a254b",
-      "source_hashes": {
-        "core.title": "602f627842a471ff2060902661d169566c1e7b9b84f60a8dd4f9f7807b449445",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "public_view.description": "706032bb6b97c6d2b4152cd6517b4328045950ffc88d23cd9cc3e95f29bf9ae6",
-        "image:/archive/LJM-20261011-PHO-001/front-public.jpg": "f3db103930ca49dc378769f2a4eda910d2932edbbde18c3bc22b0196cc1c5796",
-        "image:/archive/LJM-20261011-PHO-001/back-public.jpg": "64018eece8e57052d6fe1b831866f849a769277d635015b1893c2cf242e5704f",
-        "image:/archive/LJM-20261011-PHO-001/detail-01-public.png": "e80bce1afa74b4038ce1971b643adaad34691875a38061c2cce590919b59321e",
-        "image:/archive/LJM-20261011-PHO-001/detail-01-public.jpg": "e80bce1afa74b4038ce1971b643adaad34691875a38061c2cce590919b59321e",
-        "image:/archive/LJM-20261011-PHO-001/detail-02-public.jpg": "e5a2c70d32cea085bfb8394e8a6b04fc8fbc8ede9fa2a1fc5e1e041edf2a7874",
-        "image:/archive/LJM-20261011-PHO-001/detail-03-public.jpg": "eb7aeb9e48b5293709d73bb5d2a1aca85efc44edb49c1703aa916aa621854d64",
-        "image:/archive/LJM-20261011-PHO-001/detail-04-public.jpg": "e6cf0da89c053e24c94afcd505b66bf9e14d1f79a03ae4f72e59bc5d5b8306e1",
-        "image:/archive/LJM-20261011-PHO-001/detail-05-public.jpg": "2b80d3c13e08ed215cd934b36726eb289efc2a19a57bf1f91d41e09b0ef2f440",
-        "image:/archive/LJM-20261011-PHO-001/detail-06-public.jpg": "66dbbceee8776ea90e6b22866524cd8598df55bebff8f73e3e83cde9eb3cf77c",
-        "image:/archive/LJM-20261011-PHO-001/detail-07-public.jpg": "47b70a9c4d0d80411cf98f952bf1c090e6a06662b219a3062ad18bb4bf3761e3",
-        "image:/archive/LJM-20261011-PHO-001/detail-02-public.png": "e5a2c70d32cea085bfb8394e8a6b04fc8fbc8ede9fa2a1fc5e1e041edf2a7874",
-        "image:/archive/LJM-20261011-PHO-001/detail-08-public.jpg": "e9a22f63956396bc3375275deaaaa884083b65ef10712c59520bfcc27d58fd91",
-        "image:/archive/LJM-20261011-PHO-001/detail-03-public.png": "eb7aeb9e48b5293709d73bb5d2a1aca85efc44edb49c1703aa916aa621854d64",
-        "image:/archive/LJM-20261011-PHO-001/detail-04-public.png": "e6cf0da89c053e24c94afcd505b66bf9e14d1f79a03ae4f72e59bc5d5b8306e1"
-      },
-      "fields": {
-        "core.title": "那天，杯子都舉起來了",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "public_view.description": "胸花、合影、桌上的菜，還有沒收住的笑。照片裡的日子很熱鬧，翻到今天，聲音卻輕輕落了下來。"
-      },
-      "image_descriptions": {
-        "/archive/LJM-20261011-PHO-001/front-public.jpg": "那天，杯子都舉起來了，正面",
-        "/archive/LJM-20261011-PHO-001/back-public.jpg": "那天，杯子都舉起來了，背面",
-        "/archive/LJM-20261011-PHO-001/detail-01-public.png": "那天，杯子都舉起來了，細節圖 1",
-        "/archive/LJM-20261011-PHO-001/detail-01-public.jpg": "那天，杯子都舉起來了，細節圖 1",
-        "/archive/LJM-20261011-PHO-001/detail-02-public.jpg": "那天，杯子都舉起來了，細節圖 2",
-        "/archive/LJM-20261011-PHO-001/detail-03-public.jpg": "那天，杯子都舉起來了，細節圖 3",
-        "/archive/LJM-20261011-PHO-001/detail-04-public.jpg": "那天，杯子都舉起來了，細節圖 4",
-        "/archive/LJM-20261011-PHO-001/detail-05-public.jpg": "那天，杯子都舉起來了，細節圖 5",
-        "/archive/LJM-20261011-PHO-001/detail-06-public.jpg": "那天，杯子都舉起來了，細節圖 6",
-        "/archive/LJM-20261011-PHO-001/detail-07-public.jpg": "那天，杯子都舉起來了，細節圖 7",
-        "/archive/LJM-20261011-PHO-001/detail-02-public.png": "那天，杯子都舉起來了，細節圖 2",
-        "/archive/LJM-20261011-PHO-001/detail-08-public.jpg": "那天，杯子都舉起來了，細節圖 8",
-        "/archive/LJM-20261011-PHO-001/detail-03-public.png": "那天，杯子都舉起來了，細節圖 3",
-        "/archive/LJM-20261011-PHO-001/detail-04-public.png": "那天，杯子都舉起來了，細節圖 4"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20261011-PHO-002": {
-      "schema_version": 1,
-      "item_id": "LJM-20261011-PHO-002",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "23e5ec97040be881630a4038dad9a25d10335230e60ebccf346fbe9195fcbda8",
-      "source_hashes": {
-        "core.title": "54db4d3dc806e5c5c61277b9a532e33931120fe680ee765b628f1d496613aa4e",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "public_view.description": "23b1078fb47ecf27a65d948eb07e589697e8535f06465626157fde39d3b0ce58",
-        "image:/archive/LJM-20261011-PHO-002/front-public.jpg": "dc8aa5b57dae372f23bb8101beadb6bfdf66188e0a22094c74a978e6cdabf1ee"
-      },
-      "fields": {
-        "core.title": "忙里，借鏡頭停一下",
-        "core.country": "中國",
-        "public_view.description": "一張辦公桌旁的舊影。紙張擺在面前，沒說完的日常留在畫面里。"
-      },
-      "image_descriptions": {
-        "/archive/LJM-20261011-PHO-002/front-public.jpg": "忙里，借鏡頭停一下，正面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20261011-PHO-003": {
-      "schema_version": 1,
-      "item_id": "LJM-20261011-PHO-003",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "200590a0f6c953e40ad39a747c0f144c5d31297acb0c1e1948a54058caa93924",
-      "source_hashes": {
-        "core.title": "bcd71cea80406399d6928e8335c4e5c9e520603944262827c1fd957fc112c352",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "public_view.description": "55fa880fac4c23815834a8936e090d89df47febf0cdd3fdfab1b2d82938f4842",
-        "image:/archive/LJM-20261011-PHO-003/front-public.png": "4a57f13fe4b3e0781cc7ff28a86b62096b5884530113302c328f403ff80d3dfe"
-      },
-      "fields": {
-        "core.title": "抱緊的這一秒",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "public_view.description": "餐桌上的杯碟很多，最先看見的卻是那雙小胳膊。一個擁抱，把整張照片都變暖了。"
-      },
-      "image_descriptions": {
-        "/archive/LJM-20261011-PHO-003/front-public.png": "抱緊的這一秒，正面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20261011-PHO-004": {
-      "schema_version": 1,
-      "item_id": "LJM-20261011-PHO-004",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "faa091fdd779a409e65e6e989ec7c8f5caf09aeff9ad0bb0bd72360a01348aa7",
-      "source_hashes": {
-        "core.title": "7cb75f6c82ab76ccb668213b6531b0fb3296d6d5dda4d01eaa54865bae1ec099",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.source_place": "950a90268d8db849a0a5c269bafc8d4ac9e30d2e435f25be61ff69baf0e4fb54",
-        "public_view.description": "1a77590dcf4b71004023e072f5decd2bfff2e37029176da3319c4ea8eb80634f",
-        "image:/archive/LJM-20261011-PHO-004/front-public.jpg": "29edec00239025cd58a42e8524da211fe79abed63a2ef4bb25bf1a4f95734e75"
-      },
-      "fields": {
-        "core.title": "這張舊影有一點風",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.source_place": "市場",
-        "public_view.description": "窗邊的光落在畫面里。人沒有走動，看著卻很像一個可以慢慢過的下午。"
-      },
-      "image_descriptions": {
-        "/archive/LJM-20261011-PHO-004/front-public.jpg": "這張舊影有一點風，正面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
-    },
-    "LJM-20261011-PHO-005": {
-      "schema_version": 1,
-      "item_id": "LJM-20261011-PHO-005",
-      "locale": "zh-Hant",
-      "status": "published",
-      "source_hash": "42859122dcae92dd6264c4ea963e582f5eaf90b8c162515effd3b8b66120331d",
-      "source_hashes": {
-        "core.title": "f21ce37b4323b0faabdb362b740b474e4840a877f97e39c942d6809023923b10",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "4ca5e7f53ca61aac8f2f4213fb6fc2cc9f9702a1220bfe0c8f5174112a35f938",
-        "core.city": "93bc1ccb7ca2f0473eef5ef9a24f3d0747902d44fd0e7d24ef3053798a0b8111",
-        "public_view.description": "fb80dfb5574d638e0de7a7b9f2b73b5365708371f734f5c34b72d283679d6769",
-        "image:/archive/LJM-20261011-PHO-005/front-public.png": "f4341ec13810ea79fa311d931cfb416321b5edac1b5a65cf1a0afee01d54c0f4"
-      },
-      "fields": {
-        "core.title": "笑意還沒褪色",
-        "core.country": "中國",
-        "core.province": "黑龍江省",
-        "core.city": "哈爾濱市",
-        "public_view.description": "紙面有了歲月，眼里的笑還很近。看一眼，就想把這一頁翻得輕一點。"
-      },
-      "image_descriptions": {
-        "/archive/LJM-20261011-PHO-005/front-public.png": "笑意還沒褪色，正面"
-      },
-      "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-006": {
       "schema_version": 1,
@@ -3615,7 +2296,7 @@
         "/archive/LJM-20261011-PHO-008/front-public.jpg": "花束旁女子室內留影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-009": {
       "schema_version": 1,
@@ -3640,7 +2321,7 @@
         "/archive/LJM-20261011-PHO-009/front-public.jpg": "綠樹道路與遠城風景，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-011": {
       "schema_version": 1,
@@ -3665,7 +2346,7 @@
         "/archive/LJM-20261011-PHO-011/front-public.jpg": "木椅上成人與幼兒合影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-012": {
       "schema_version": 1,
@@ -3717,7 +2398,7 @@
         "/archive/LJM-20261011-PHO-013/front-public.jpg": "山石邊喂猴留影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-014": {
       "schema_version": 1,
@@ -3729,9 +2410,7 @@
         "core.title": "a6b1e06ea2bd2083d5e8ee34fa7239e9b08258776bdd1fd70ab7a837d02dcdfc",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.city": "89a772bd9a255529d288130acdd221fe19dc8481f4330f7e493296062025412a",
-        "core.specific_place": "805af251ea3c5b6b3ae73ab4b5418acabff29a85a3b706c3e23c3f325d02b371",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "7270207001f15b33b8905ea2ab05ce7263ca6fe1db61d157d8d24e1e5083681e",
         "image:/archive/LJM-20261011-PHO-014/front-public.jpg": "80a3a295f5853898bd5ca996c071ee561a3163d790ba1309c56917237f2dc7ae"
@@ -3740,9 +2419,7 @@
         "core.title": "橋過去，樓還在",
         "core.date_display": "年代未知",
         "core.country": "中國",
-        "core.province": "上海市",
         "core.city": "上海",
-        "core.specific_place": "上海大廈",
         "core.source_place": "舊貨市場",
         "public_view.description": "一座鋼橋、一棟高樓，被同一張舊影連起來。路有來處，照片有余溫。"
       },
@@ -3750,7 +2427,7 @@
         "/archive/LJM-20261011-PHO-014/front-public.jpg": "上海大廈舊影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-015": {
       "schema_version": 1,
@@ -3762,9 +2439,7 @@
         "core.title": "b52c3815ff65e509cc9678700d9e91a0c3c5446de52139112bd73679b9bf426e",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.city": "89a772bd9a255529d288130acdd221fe19dc8481f4330f7e493296062025412a",
-        "core.specific_place": "06f073fcf1badd158e89eb9c15da67f1420c3136b60514bc8d80d20e900a9019",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "c650523f5bfbe66129c134eaaa91b2d0c7a1a4a5c8f6744f1f351d20b8713f24",
         "image:/archive/LJM-20261011-PHO-015/front-public.jpg": "fae23e7efe078be4c2af91da074ae791fbd6b3ce576472f70f46b695692462c1"
@@ -3773,9 +2448,7 @@
         "core.title": "大世界，小照片",
         "core.date_display": "年代未知",
         "core.country": "中國",
-        "core.province": "上海市",
         "core.city": "上海",
-        "core.specific_place": "大世界",
         "core.source_place": "舊貨市場",
         "public_view.description": "高塔、街口和路人，都裝進一張不大的舊影。世界很大，留住它的紙很薄。"
       },
@@ -3783,7 +2456,7 @@
         "/archive/LJM-20261011-PHO-015/front-public.jpg": "上海大世界舊影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-016": {
       "schema_version": 1,
@@ -3795,9 +2468,7 @@
         "core.title": "de0c836215d8885063fcb7af4ec0b6141087b8b399c150cbc6fb60b7d6ec3554",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.city": "89a772bd9a255529d288130acdd221fe19dc8481f4330f7e493296062025412a",
-        "core.specific_place": "5ba6270716db3e687b75c65901c550fb6c9353c94ba732aba1836dcf70a9eaf2",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "6dea73dbd9ca93d945eb76b7f3c7a30f81615ba92fdf0e9bf3b83ad2eaee58ae",
         "image:/archive/LJM-20261011-PHO-016/front-public.jpg": "f2fd73a960bc2b9977e28cd21397f9028fc0e7324df83573c4ddbeee3d74d185"
@@ -3806,9 +2477,7 @@
         "core.title": "拐角那棟樓",
         "core.date_display": "年代未知",
         "core.country": "中國",
-        "core.province": "上海市",
         "core.city": "上海",
-        "core.specific_place": "工人文化宮",
         "core.source_place": "舊貨市場",
         "public_view.description": "工人文化宮立在街角，窗格、電線和行人仍然清楚。日子遠了，街角沒有。"
       },
@@ -3816,7 +2485,7 @@
         "/archive/LJM-20261011-PHO-016/front-public.jpg": "上海工人文化宮舊影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-017": {
       "schema_version": 1,
@@ -3828,9 +2497,7 @@
         "core.title": "6933b1b08dc9d768770113d96ed13f9617e1a50a2bde1819976d4803e997209d",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.city": "89a772bd9a255529d288130acdd221fe19dc8481f4330f7e493296062025412a",
-        "core.specific_place": "6261cf8e5917c435d85c391b091cc20bcd9b5c3c6aa738e5ce6d3b90c7013f6d",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "d94e59741cbd2827784808ded42b20f351a6e74fbcf1ba1dab00f8b08f1aa844",
         "image:/archive/LJM-20261011-PHO-017/front-public.jpg": "7a1261e60a650602f6a6f008c3bd782df35e17ca7ffb75b69cd479399020caea"
@@ -3839,9 +2506,7 @@
         "core.title": "高樓把舊日撐了起來",
         "core.date_display": "年代未知",
         "core.country": "中國",
-        "core.province": "上海市",
         "core.city": "上海",
-        "core.specific_place": "國際飯店",
         "core.source_place": "舊貨市場",
         "public_view.description": "國際飯店立在街景中央。車輛很小，天空很高，一座城的氣勢還在。"
       },
@@ -3849,7 +2514,7 @@
         "/archive/LJM-20261011-PHO-017/front-public.jpg": "上海國際飯店舊影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-018": {
       "schema_version": 1,
@@ -3860,9 +2525,7 @@
       "source_hashes": {
         "core.title": "782f086c39553dc733cc83fc9ceb6264c584e7c99da99852b9ffd1974e0528c4",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.city": "89a772bd9a255529d288130acdd221fe19dc8481f4330f7e493296062025412a",
-        "core.specific_place": "67e5ecd4fe8ecb61f4cbc7bb6fa0667f3fc795fcecbff851194c6753690fc5c3",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "6d0080a6562d974214ab8db1c6ee037604f7355ac52f0cb4adcb39483903800f",
         "image:/archive/LJM-20261011-PHO-018/front-public.jpg": "013008fc013968c27750a1fabd711940f6d1ce90f8b79eef49f0f7ba3dd5bc5e"
@@ -3870,9 +2533,7 @@
       "fields": {
         "core.title": "江邊的風，吹進了紙里",
         "core.country": "中國",
-        "core.province": "上海市",
         "core.city": "上海",
-        "core.specific_place": "黃浦江畔",
         "core.source_place": "舊貨市場",
         "public_view.description": "黃浦江畔的樓、車和船，沿著畫面排開。黑白很靜，江邊應該很熱鬧。"
       },
@@ -3880,7 +2541,7 @@
         "/archive/LJM-20261011-PHO-018/front-public.jpg": "上海黃浦江畔舊影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-019": {
       "schema_version": 1,
@@ -3891,9 +2552,7 @@
       "source_hashes": {
         "core.title": "5558a18667039f1bb4e54a3505240a99ec7b3e34421a675112b2131116b108b9",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.city": "89a772bd9a255529d288130acdd221fe19dc8481f4330f7e493296062025412a",
-        "core.specific_place": "058a29f457c5946ece3f2c6db09ccb9533ab028caf05df9a02491d3e687f6e54",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "b5a7b08eae3c37212942dbd7a57262e9fdb33cdaab17f943d55058011ed91099",
         "image:/archive/LJM-20261011-PHO-019/front-public.jpg": "cc5e0102eda416f5cefd517936ae15180dc9213cc6fc927395b7c2f314162391"
@@ -3901,9 +2560,7 @@
       "fields": {
         "core.title": "塔很高，日子很輕",
         "core.country": "中國",
-        "core.province": "上海市",
         "core.city": "上海",
-        "core.specific_place": "龍華塔",
         "core.source_place": "舊貨市場",
         "public_view.description": "龍華塔下有人緩緩走過。遠處的時間，被這一張照片放低了聲音。"
       },
@@ -3911,7 +2568,7 @@
         "/archive/LJM-20261011-PHO-019/front-public.jpg": "上海龍華塔舊影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-020": {
       "schema_version": 1,
@@ -3922,9 +2579,7 @@
       "source_hashes": {
         "core.title": "26d5952246338a4d399c0e2b53ae8367b858fea9c081c0c39c281ddfe78fff3a",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.city": "89a772bd9a255529d288130acdd221fe19dc8481f4330f7e493296062025412a",
-        "core.specific_place": "4cc158887d05295ff085815a55450336736103f6597484e9e3fc591354c68557",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "f7f216c8a0681b1e83d47236b8610596361c3c3b08301866613c679a31d352c7",
         "image:/archive/LJM-20261011-PHO-020/front-public.jpg": "89dc3e0aadfc0925096a3de707edfe3330796afae09f090847e33e73d931670b"
@@ -3932,9 +2587,7 @@
       "fields": {
         "core.title": "路很寬，舊日很近",
         "core.country": "中國",
-        "core.province": "上海市",
         "core.city": "上海",
-        "core.specific_place": "閔行一號路",
         "core.source_place": "舊貨市場",
         "public_view.description": "照片題名上海閔行一號路。車和人都在各自的方向里，時間卻停在同一張紙上。"
       },
@@ -3942,7 +2595,7 @@
         "/archive/LJM-20261011-PHO-020/front-public.jpg": "上海閔行一號路舊影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-021": {
       "schema_version": 1,
@@ -3953,9 +2606,7 @@
       "source_hashes": {
         "core.title": "8f41ead082fe29e809ac671552b40cce9d9f4b2d8aa1968589c5b58ae29c71e9",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.city": "89a772bd9a255529d288130acdd221fe19dc8481f4330f7e493296062025412a",
-        "core.specific_place": "3110c5e31097b61f9aded875eb1a6fc821dc0257dae32cbba9d5892188ce4003",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "87e4f752b0e5a3a85c9fac2ab2e282b2ae14202649d5b6ad3ded4713939177f1",
         "image:/archive/LJM-20261011-PHO-021/front-public.jpg": "616421031e23d38789e5676b744689069cf971e8af329ba5be71a4b3878eb76f"
@@ -3963,9 +2614,7 @@
       "fields": {
         "core.title": "門前的樹還那么圓",
         "core.country": "中國",
-        "core.province": "上海市",
         "core.city": "上海",
-        "core.specific_place": "少年宮",
         "core.source_place": "舊貨市場",
         "public_view.description": "少年宮前的樹被修得整齊，臺階向屋裡延伸。舊影安靜，想象卻很熱鬧。"
       },
@@ -3973,7 +2622,7 @@
         "/archive/LJM-20261011-PHO-021/front-public.jpg": "上海少年宮舊影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-022": {
       "schema_version": 1,
@@ -3985,9 +2634,7 @@
         "core.title": "f67f95fc71698a204721e400ac41c23c9a29a7353db5bbffba86549b875263e9",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.city": "89a772bd9a255529d288130acdd221fe19dc8481f4330f7e493296062025412a",
-        "core.specific_place": "a4b5a7c591a78484169b62d77764929f1fd795a9f0ebe693960362d505b7a0ce",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "ea9c505f062afdb73745f5a4f299aaf5e1fc47bce7fb70f56243530c23b57226",
         "image:/archive/LJM-20261011-PHO-022/front-public.jpg": "2e3afa77f313aa71d6a9e0a3c03eb69cd073e4cee53b900dcb5627260fea78f3"
@@ -3996,9 +2643,7 @@
         "core.title": "橋繞幾回，心事少一句",
         "core.date_display": "年代未知",
         "core.country": "中國",
-        "core.province": "上海市",
         "core.city": "上海",
-        "core.specific_place": "豫園九曲橋",
         "core.source_place": "舊貨市場",
         "public_view.description": "九曲橋彎進亭閣與水面。照片裡沒有對白，倒很適合把話藏一會兒。"
       },
@@ -4006,7 +2651,7 @@
         "/archive/LJM-20261011-PHO-022/front-public.jpg": "上海豫園九曲橋舊影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-023": {
       "schema_version": 1,
@@ -4017,9 +2662,7 @@
       "source_hashes": {
         "core.title": "957eceeaeae0ca544eb53374ec1b054814eadd92b177df9d19d4da27986d02fb",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.city": "89a772bd9a255529d288130acdd221fe19dc8481f4330f7e493296062025412a",
-        "core.specific_place": "a4924010f35b0be863237ce71ead717da255915f402ebbb21e1243f40a9f61ad",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "37660b3e060365bab69d3aef10a2925d95f7a8e9543e950eff36d366baf2e163",
         "image:/archive/LJM-20261011-PHO-023/front-public.jpg": "c5c94aa00db6fb6f63fb57f6f73e4ebbcf10afabd1fe9519fcab8d9f8c1e50aa"
@@ -4027,9 +2670,7 @@
       "fields": {
         "core.title": "街角把時間站住了",
         "core.country": "中國",
-        "core.province": "上海市",
         "core.city": "上海",
-        "core.specific_place": "中百公司",
         "core.source_place": "舊貨市場",
         "public_view.description": "中百公司的樓影、電車和行人，一起停在這張舊照片裡。城市繼續往前，它沒有。"
       },
@@ -4037,7 +2678,7 @@
         "/archive/LJM-20261011-PHO-023/front-public.jpg": "上海中百公司舊影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-024": {
       "schema_version": 1,
@@ -4157,8 +2798,6 @@
         "core.title": "0192cc40d0203813c9b5d67a2a79728791978ba0f5740420982b41a44ae9bff1",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
         "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "4ca5e7f53ca61aac8f2f4213fb6fc2cc9f9702a1220bfe0c8f5174112a35f938",
-        "core.city": "93bc1ccb7ca2f0473eef5ef9a24f3d0747902d44fd0e7d24ef3053798a0b8111",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "b7fa143ab9d639df89ccd023995cb2eb78834eeebacd809eb425c8f1369f0484",
         "image:/archive/LJM-20261011-PHO-028/front-public.jpg": "a4ebb836dc4f2e9ba408d0c672e679aaa9ea8ff3841cafa3b53156972c183502"
@@ -4167,8 +2806,6 @@
         "core.title": "辮子編得整齊，目光很直",
         "core.date_display": "年代未知",
         "core.country": "中國",
-        "core.province": "黑龍江省",
-        "core.city": "哈爾濱市",
         "core.source_place": "舊貨市場",
         "public_view.description": "一張小小的黑白肖像，把童年的認真留了下來。看著那雙眼睛，忽然不想急著長大。"
       },
@@ -4176,7 +2813,7 @@
         "/archive/LJM-20261011-PHO-028/front-public.jpg": "雙辮女孩黑白肖像，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-029": {
       "schema_version": 1,
@@ -4417,7 +3054,7 @@
         "/archive/LJM-20261011-PHO-037/front-public.jpg": "扶梯上的多人合影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PHO-038": {
       "schema_version": 1,
@@ -4469,7 +3106,7 @@
         "/archive/LJM-20261011-PHO-039/front-public.jpg": "海浪中的舉手留影，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-004": {
       "schema_version": 1,
@@ -4479,50 +3116,26 @@
       "source_hash": "7794a94996643877b191d5093b0e57a97c8e21e897947bb9add51f0950766013",
       "source_hashes": {
         "core.title": "ae91517a23aca5f3f661e9b11bde30ba145f1d11ea4eb090abd301610e5d4f37",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "ff6fb6fcc23505385774b65580ed7256d0ba73119eb5ebb1af81e1b6c06e617c",
-        "core.city": "c47fa71df0d1a7eec5b5ba41d1faf0513204d99cd3d241d3421d0225bf5157e2",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "765234d088feb4d174e8ef2dd2e761c9118d1d5a22ef38d16a8e92b935806806",
-        "metadata.dimensions.PC07.dispatch_place": "01dde2a3449a9a502cad24f670627694a95e4f9323c3884ceb20607204b5f949",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "04dd5a6ae9aa4f33ce3ebf9cf2428743796a2b1943d7778874652b4e305b499b",
-        "metadata.dimensions.PC13.publisher": "61289467f8ee76ee806c281bcac3c0dba59d377e5888353049e455e5bb1ffaa1",
-        "metadata.dimensions.PC13.publisher_place": "ddcb3ed7ca322f489ebe7805f2cb9ae528e26e7571bb51a4f6bee572e5699d06",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-004/front-public.jpg": "3fe719c73c00c01af46bbb5c74cb41c6a902366baf5b29a3d7dd3264469e6fa0"
       },
       "fields": {
         "core.title": "來玩，好嗎",
-        "core.country": "中國",
-        "core.province": "福建省",
-        "core.city": "廈門市",
         "core.source_place": "舊貨市場",
         "public_view.description": "新年祝福寫到一半，變成了一個輕輕的邀請。最動人的詞，有時只是好嗎。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "廈門市"
-        ],
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "春節邀約明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "鷺江出版社"
-        ],
-        "metadata.dimensions.PC13.publisher_place": [
-          "廈門"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-004/front-public.jpg": "春節邀約明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-005": {
       "schema_version": 1,
@@ -4537,10 +3150,7 @@
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "b0407c796fe8e44a241517fd6286c307e66f2049c61b65d0b08c50c2a37616f3",
-        "metadata.dimensions.PC13.publisher": "46d68926f378f4f68557d04ce03a09374065c24530e7147afbbf358301aad397",
-        "metadata.dimensions.PC13.publisher_place": "57afd266e8c4b0a2d55f60db73b0cb5b4c2f5bf7cc3dfbc3bca2ee0d693680cf",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-005/front-public.jpg": "4fc6729459374c517832de58c9470a266218640eb824dc9b264154a7008d5abe"
       },
       "fields": {
@@ -4550,22 +3160,13 @@
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "大學近況與盼相聚明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "福建美術出版社"
-        ],
-        "metadata.dimensions.PC13.publisher_place": [
-          "福州"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-005/front-public.jpg": "大學近況與盼相聚明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-006": {
       "schema_version": 1,
@@ -4575,42 +3176,28 @@
       "source_hash": "bdc635f11900741cdbac0a97d5271105ee626e00c506d5d7c23bc7cce8d09d82",
       "source_hashes": {
         "core.title": "bf781d3a816c2b7c6436b6e2c0cc8510ff68ed35d70d7cbd87f0b7ce6595c842",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "f45433a48e15d77b40667940f5db1457d064a10643209a9227abdd214be03d58",
-        "metadata.dimensions.PC07.dispatch_place": "c948b20f3e9dc1302ed6601eb632922136dd304c99847dac8f4eeca195a1913c",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "0dc92d34ba112a7c5e17aff62007e055ca3ea2a7cf97d4cbfbc3a9d48808d5fb",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-006/front-public.jpg": "c76d35b1b45bf104ef28a61d9560e27e57d94029446b1b12598f69fc9cb3ec67",
         "image:/archive/LJM-20261011-PST-006/back-public.jpg": "62b04083e82719669c2b0764c99201e5f8cc4b6c8d784e4ded2a7c6873fe8299"
       },
       "fields": {
         "core.title": "那時，畫一個世界只需幾筆",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
         "core.source_place": "舊貨市場",
         "public_view.description": "手繪人物、顏色和歪歪的線條留在書信節明信片上。認真很滿，技巧可以慢慢長。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "廣州市"
-        ],
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "兒童彩繪書信節明信片_正背",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-006/front-public.jpg": "兒童彩繪書信節明信片_正背，正面。",
         "/archive/LJM-20261011-PST-006/back-public.jpg": "兒童彩繪書信節明信片_正背，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-012": {
       "schema_version": 1,
@@ -4621,45 +3208,27 @@
       "source_hashes": {
         "core.title": "318116ddbe18a51129d2eb687ff5407755e7e86a148db99282aba6f48b9081af",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "e19d63026c63cce1767b33dbc64d2d4092b8cfb456c5e2b03525e0070a650e54",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "b7966a502fe206adb928465856a5fbda146cb9534ad0220b23d71a7d71082a4b",
-        "metadata.dimensions.PC07.dispatch_place": "358c0cb0ecea99724d69b4f3abe362bbb5064ccf7759d961df7c48456b812677",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "7510b805d37e801f6c46b2e75c74d82109c81ab08737f442a477e4e09585cf0d",
-        "metadata.dimensions.PC13.publisher": "c5affa529c3095345484053a053c9dae2e03c60c96e23559d7346a453491800c",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-012/front-public.jpg": "d92452421cdac0062b2353d92781936594db2fe1e33b463cf4b4ed63a9993f66"
       },
       "fields": {
         "core.title": "寄一份思念，郵資已經付了",
         "core.date_display": "年代未知",
-        "core.country": "中國",
-        "core.province": "廣西壯族自治區",
         "core.source_place": "舊貨市場",
         "public_view.description": "舊明信片上的幾句話很短。想念沒有展開講，也已經到了紙上。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "廣西恭城"
-        ],
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "寄一份思念寄一份祝福明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "華藝出版社"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-012/front-public.jpg": "寄一份思念寄一份祝福明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-014": {
       "schema_version": 1,
@@ -4669,47 +3238,28 @@
       "source_hash": "770624d7f5f47613c290fda826bd3186a87c6e4ca53bd5ceea4cef1411293e13",
       "source_hashes": {
         "core.title": "ad314d3786d909a1b8ee43705120ffa1aa6c2ba41167100f6c52ca85be47317b",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "a2c18418756de3a42c80e6b8d817fdecfa07af4fa7ba2dd6d5986509b12a3115",
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "ccab453fedaa684d2480a63b75bb5078f99906617450e6c72dc68ec777d6e4a3",
-        "metadata.dimensions.PC13.publisher": "61289467f8ee76ee806c281bcac3c0dba59d377e5888353049e455e5bb1ffaa1",
-        "metadata.dimensions.PC13.publisher_place": "ddcb3ed7ca322f489ebe7805f2cb9ae528e26e7571bb51a4f6bee572e5699d06",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "b129b3dc01be02dc4a61468997b448996408e386d3a4913509bd313e1b56de56",
         "image:/archive/LJM-20261011-PST-014/front-public.jpg": "cd86cf88c505cbc94bab33d7ff43cd82c7d842ad72eb10057af45fdba0b63d3e"
       },
       "fields": {
         "core.title": "好久不見，寒假來找我吧",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
         "core.source_place": "舊貨市場",
         "public_view.description": "問近況、談學習，再約假期見面。明信片上的距離，被一句邀約拉近了。",
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "久別同窗與寒假邀約明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "鷺江出版社"
-        ],
-        "metadata.dimensions.PC13.publisher_place": [
-          "廈門"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文",
-          "英文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-014/front-public.jpg": "久別同窗與寒假邀約明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-015": {
       "schema_version": 1,
@@ -4720,47 +3270,29 @@
       "source_hashes": {
         "core.title": "6ac26015f576b07ff2bb1d4da97019d8315dd1a8c363cb6cb06528227fc42f2f",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "102aa6220934086a4b0ddac903ffe3741c5b98693fff091b62b3ac408d47c7e4",
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "c8e95b34df356e35179c903fb99c46153a3f1f738f9ce4e523dd3f2ee4e523f4",
-        "metadata.dimensions.PC13.publisher": "245286ee54d120f465708994920b2e23fc2187d5cff909ca0af68eacd7abe2f1",
-        "metadata.dimensions.PC13.publisher_place": "57afd266e8c4b0a2d55f60db73b0cb5b4c2f5bf7cc3dfbc3bca2ee0d693680cf",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-015/front-public.jpg": "7999b790c30da41db4f316ee820889e76e5253e956da0b197530c04108ce64d5"
       },
       "fields": {
         "core.title": "回信遲了，惦記還在",
         "core.date_display": "年代未知",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
         "core.source_place": "舊貨市場",
         "public_view.description": "幾行字先道歉，再問近況，最後說有空來坐坐。笨拙的認真，也很動人。",
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "久未回信的致歉與邀約明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "福建畫報社"
-        ],
-        "metadata.dimensions.PC13.publisher_place": [
-          "福州"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-015/front-public.jpg": "久未回信的致歉與邀約明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-016": {
       "schema_version": 1,
@@ -4771,41 +3303,27 @@
       "source_hashes": {
         "core.title": "e5c9e0304f2aaf79164fa1c8dabe2ac12c685a0e17a7739a21439c5ca71badba",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "4ca5e7f53ca61aac8f2f4213fb6fc2cc9f9702a1220bfe0c8f5174112a35f938",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "0e7a337ab852b7ff04566cdd2cf91a9fd9be8547c6232865684f5d20680c39bb",
-        "metadata.dimensions.PC07.dispatch_place": "cd5743728f7d291dea0afbc60c49319b1e8300723bb36f5b4285c0c644aaee02",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "73c0e0a573beb74ecfc9e0febc378a6c24017817d2bfc07148743a39f5a951d4",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-016/front-public.jpg": "581806fe0bda22cbb6a04cedd70f9c7f27036147e00ac5a6ad8fd78db219cf95"
       },
       "fields": {
         "core.title": "熱鬧散了，還想再聚",
         "core.date_display": "年代未知",
-        "core.country": "中國",
-        "core.province": "黑龍江省",
         "core.source_place": "舊貨市場",
         "public_view.description": "手寫字提起一次相聚，也邀請節日里再來。人群散開以後，問候接著。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "黑龍江省"
-        ],
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "劇團相聚與春節邀約郵政明信片背面",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-016/front-public.jpg": "劇團相聚與春節邀約郵政明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-017": {
       "schema_version": 1,
@@ -4816,53 +3334,31 @@
       "source_hashes": {
         "core.title": "f74702d60c4286c35377a0456e456eb822c82ec2c50710f715e48ff63645775d",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "e19d63026c63cce1767b33dbc64d2d4092b8cfb456c5e2b03525e0070a650e54",
-        "core.city": "e74ed543235819de6f2a718104db044514feeb40496d5b10a21631677a3bdce2",
-        "core.specific_place": "9da208fd60484960ef9a62a98eb9b6471b63f12d0ef7d5120ee2687fb9be1b30",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "7aab2bac56570a4baa0353577d01ae04ac26a068569f1eff5a5f1a716211991a",
-        "metadata.dimensions.PC06.image_place_text": "8ad4fb38e99f2182df564a532ca05fa92ed074468704eef87cad60c0aa6764df",
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "de1ae1cdf2bff3add8e42b2d5faa56e9f0572cb41a711427b27ab38309dab092",
-        "metadata.dimensions.PC13.publisher": "3cafc9aa29b6eb5d651b45a43ff7cd9817bf7b2e82488805648c1fbb24a3c340",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-017/front-public.jpg": "10fd461e942e378dab395818494401455c5c69725cb20c5ae23eeca1e708fabb",
         "image:/archive/LJM-20261011-PST-017/back-public.jpg": "9a276a4d6441d8e79a4a107798d5597c98ff623e544e970d5fa7edf5594a4c00"
       },
       "fields": {
         "core.title": "江很靜，信有一點著急",
         "core.date_display": "年代未知",
-        "core.country": "中國",
-        "core.province": "廣西壯族自治區",
-        "core.city": "桂林市",
-        "core.specific_place": "漓江",
         "core.source_place": "舊貨市場",
         "public_view.description": "正面是漓江，背面問寄出的信是否收到。山水慢慢的，惦記卻等不住。",
-        "metadata.dimensions.PC06.image_place_text": [
-          "漓江"
-        ],
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "漓江鸕鶿明信片_正背",
-        "metadata.dimensions.PC13.publisher": [
-          "印刷工業出版社"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-017/front-public.jpg": "漓江鸕鶿明信片_正背，正面。",
         "/archive/LJM-20261011-PST-017/back-public.jpg": "漓江鸕鶿明信片_正背，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-018": {
       "schema_version": 1,
@@ -4872,46 +3368,28 @@
       "source_hash": "9460a5253a62d67b454ad634b6beed567d026770201d4eae8802751e57118430",
       "source_hashes": {
         "core.title": "0e27740cf904e688f3785474f205a79170b83bac75c6808310985466128abb42",
-        "core.date_display": "e7f76ae81f2ce321ee4a307a9c0b65a4ddd9fe48105656ea38725ca070a4e22b",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "e19d63026c63cce1767b33dbc64d2d4092b8cfb456c5e2b03525e0070a650e54",
-        "core.city": "e74ed543235819de6f2a718104db044514feeb40496d5b10a21631677a3bdce2",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "0b547cc5cd0baa41043152f8d9d875a9cf4df97cdafcf588c44568522114886a",
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
-        "metadata.dimensions.PC12.image_subject": "fee002f40c2b2ef8a40786eda406c0c1ca4ca8db01744eab7201fdf1018ff73a",
-        "metadata.dimensions.PC13.publisher": "ac4a1d100f7c4917a3ec480794480ff2cb6c749376fec21f1b260120fa888341",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-018/front-public.jpg": "49a3eae621ed6e97ad9b5e2d19659ed58eb5a3bfec4b64ee0d4ecba5fdb2522c",
         "image:/archive/LJM-20261011-PST-018/back-public.jpg": "0df388588dd0dbe1a8d4c67b6a4b5d3f08781289c15bea71d13a6f4c1a909f2d"
       },
       "fields": {
         "core.title": "車留在紙上，祝福已經上路",
-        "core.date_display": "約1993年",
-        "core.country": "中國",
-        "core.province": "廣西壯族自治區",
-        "core.city": "桂林市",
         "core.source_place": "舊貨市場",
         "public_view.description": "正面是鈴木摩托，背面是幾句祝愿。機器很硬，寄來的人情很軟。",
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
-        "metadata.dimensions.PC12.image_subject": "鈴木 VS1400GLJ 摩托車",
-        "metadata.dimensions.PC13.publisher": [
-          "嶺南美術出版社"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-018/front-public.jpg": "鈴木VS1400GLJ摩托明信片_正背，正面。",
         "/archive/LJM-20261011-PST-018/back-public.jpg": "鈴木VS1400GLJ摩托明信片_正背，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-020": {
       "schema_version": 1,
@@ -4921,46 +3399,28 @@
       "source_hash": "b3c0d0125c4465e101dd35ef08208d8c514aa844dcab55e087653d4fb02ce695",
       "source_hashes": {
         "core.title": "e6223b6578d61f8707d4075bc11c0804ca59046ab09903ca8363e26b55f551ee",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "ff6fb6fcc23505385774b65580ed7256d0ba73119eb5ebb1af81e1b6c06e617c",
-        "core.city": "c47fa71df0d1a7eec5b5ba41d1faf0513204d99cd3d241d3421d0225bf5157e2",
-        "core.specific_place": "23cafc4578b33d23157cd6a91a36049c6f953f3f6088a10b61bce1c1bf0a5d7d",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "f4219373ca4f3b22483bc6af873338f70eb920c7cdddd9d9c8632fee160fb85d",
-        "metadata.dimensions.PC07.dispatch_place": "a2814b8e270b866f907e6373bed5f1dbd11ecdde847cc05cd17daa751761be6f",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "e685325facefcee7b9da11822203a74bb52e4e243a1c1af33ffac655142959b4",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-020/front-public.jpg": "e9de967c50af88bccc282284fa9583fd7e10ec88686a36a3048606da07565504",
         "image:/archive/LJM-20261011-PST-020/back-public.jpg": "16518ee46b8bb3e61df9638929652076ea69df1be71724aa1cd0cd09e01c64ee"
       },
       "fields": {
         "core.title": "貓很會睡，字很會暖",
-        "core.country": "中國",
-        "core.province": "福建省",
-        "core.city": "廈門市",
-        "core.specific_place": "鼓浪嶼",
         "core.source_place": "舊貨市場",
         "public_view.description": "貓島拼貼在正面，感謝陪伴的寄語在背面。可愛的外殼里，裝著認真的話。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "廈門市鼓浪嶼"
-        ],
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "貓島拼貼與同行寄語明信片_正背",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-020/front-public.jpg": "貓島拼貼與同行寄語明信片_正背，正面。",
         "/archive/LJM-20261011-PST-020/back-public.jpg": "貓島拼貼與同行寄語明信片_正背，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-022": {
       "schema_version": 1,
@@ -4970,40 +3430,26 @@
       "source_hash": "2e6cc8dd92d47979ce63527ee165cb2c0c0d0f355b16eee29e4e9a0092e7d3e9",
       "source_hashes": {
         "core.title": "237d640df72b51d30bedff46093c4ab358d601d4543e5e95583a66efccfa5bf7",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "97058f3a51ebe880b0c5586484dea5a871b7d972add5eeec54992a37f3b1f68d",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "31c667a83b88f0a9ca7641056e03956f482ed33a2dc31535b0de08f7a39cbd3f",
-        "metadata.dimensions.PC07.dispatch_place": "fa0ccf7809d6425ec8e42dc7ddef98679413e2fabd8e3f7bfa9f7aaee8f697ac",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "fae65632cbeae6ce83892e58c93a48c53a9b285759df447b70c833a3c4df2245",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-022/front-public.jpg": "c5800444c58846a6ca7062c9ca6f9a8d296bdb09724befcd3d32dbd8231f793b"
       },
       "fields": {
         "core.title": "去努力吧，我在字里陪你",
-        "core.country": "中國",
-        "core.province": "江西省",
         "core.source_place": "舊貨市場",
         "public_view.description": "一段關於理想與努力的手寫寄語，落在明信片上。鼓勵後面，還藏著對友情的認真。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "江西省豐城市"
-        ],
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "努力與友情寄語明信片背面",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-022/front-public.jpg": "努力與友情寄語明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-023": {
       "schema_version": 1,
@@ -5013,40 +3459,28 @@
       "source_hash": "262288d3b63d429ed982a2b3e3e8e041d435bd3a33951c1a4e5fb990ffa35291",
       "source_hashes": {
         "core.title": "9cf0877547781dd9229981148254b52c61a1bd2c97aacf00df206623745aec58",
-        "core.date_display": "92a7430837199f69fb52d0cd0bb27f62407c39371af316dd209e009172539709",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "16f839a5659c38b841b18adaf3783bd3f1e0618a756ae377d9d03ad770e61dc2",
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "0316cbf905d87e84e3af957b95864f893857af1358b71c0190d860759955468f",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-023/front-public.jpg": "d8df9a3fc3feedbf22e3c15f3ca637ac30ed99d0beaffdadafc4bc93ced3c26b"
       },
       "fields": {
         "core.title": "普通，也可以鄭重",
-        "core.date_display": "約1989—1990年",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
         "core.source_place": "舊貨市場",
         "public_view.description": "新年寄語寫在一張明信片背面。說自己普通，也說不愿把日子過得敷衍。",
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "普通人不做平庸事新年寄語明信片背面",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-023/front-public.jpg": "普通人不做平庸事新年寄語明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-024": {
       "schema_version": 1,
@@ -5062,10 +3496,7 @@
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "cfae9e60eeec91b05287686b0c7624e8aed11e2f1ef909d70c70b9b8b698bed9",
-        "metadata.dimensions.PC13.publisher": "61289467f8ee76ee806c281bcac3c0dba59d377e5888353049e455e5bb1ffaa1",
-        "metadata.dimensions.PC13.publisher_place": "ddcb3ed7ca322f489ebe7805f2cb9ae528e26e7571bb51a4f6bee572e5699d06",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "b129b3dc01be02dc4a61468997b448996408e386d3a4913509bd313e1b56de56",
         "image:/archive/LJM-20261011-PST-024/front-public.jpg": "89b15efc54ca917bfa7051bbb4d706dc97ff67b3ec039451a7b617668e5a08c7"
       },
       "fields": {
@@ -5076,23 +3507,13 @@
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "期末考試近況與圣誕祝福明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "鷺江出版社"
-        ],
-        "metadata.dimensions.PC13.publisher_place": [
-          "廈門"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文",
-          "英文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-024/front-public.jpg": "期末考試近況與圣誕祝福明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-027": {
       "schema_version": 1,
@@ -5102,39 +3523,28 @@
       "source_hash": "04341ecab919588ff0e09166249e026dbea8203bc86b5d7b796a652301e0f74a",
       "source_hashes": {
         "core.title": "4a1b6df64d2efa9429e1f7f3ffc9a984665a1c4d2a4fbff80186341ec5531481",
-        "core.country": "ac3da3e9f3bcd6e9b9ee193f0e443867ef7c17e6faf5799a56541c2c7d3eff57",
-        "core.province": "1e310bf3c6646b0aed6833254f38dd2c80e7201e02980655bc6f5588ad9693b5",
-        "core.city": "ced6dcf88f26881d5caba5499e064ea5adcfe07aacb49a28907c143c5e65baf7",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "6a82c0595bfbe0eb7d6cb240608fc4f7ddb3e354352dd19dc1f33126267de618",
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "0b2e3602d752a8e8375184eb6b6ce2f6d15ca5ac9a2fc68673d53a0abf305568",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "9e7e477c245b339e1ad13b10a4eb905690205c869437c14001dbf59a9b7e942e",
         "image:/archive/LJM-20261011-PST-027/front-public.jpg": "ba5f779c3bab2390a8fbaa2cd7d0beea21defa981d2fafa5a15c2ba6d79609c6"
       },
       "fields": {
         "core.title": "字換了語言，牽掛沒有",
-        "core.country": "日本",
-        "core.province": "東京都",
-        "core.city": "東京",
         "core.source_place": "舊貨市場",
         "public_view.description": "信封與兩頁日文手寫信留在同一張掃描里。筆畫不同，鄭重相同。",
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "日文手寫書信與信封_1997年10月4日",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "日文",
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-027/front-public.jpg": "日文手寫書信與信封_1997年10月4日，正面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-028": {
       "schema_version": 1,
@@ -5149,10 +3559,7 @@
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "d88ec9f8261824cb1bfdf5dbbf9c8b2f9c5f5208c0b261fc570a116281a534bd",
-        "metadata.dimensions.PC13.publisher": "61289467f8ee76ee806c281bcac3c0dba59d377e5888353049e455e5bb1ffaa1",
-        "metadata.dimensions.PC13.publisher_place": "ddcb3ed7ca322f489ebe7805f2cb9ae528e26e7571bb51a4f6bee572e5699d06",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-028/front-public.jpg": "7c8cff57acb25c9ac36387f9026b77107cd3895cec93886e8d0c097a54965158"
       },
       "fields": {
@@ -5162,22 +3569,13 @@
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "容貌與內涵寄語新年明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "鷺江出版社"
-        ],
-        "metadata.dimensions.PC13.publisher_place": [
-          "廈門"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-028/front-public.jpg": "容貌與內涵寄語新年明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-031": {
       "schema_version": 1,
@@ -5192,10 +3590,7 @@
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "4a6a3f572f5c3f7ff8864e1e6620b73b97186287faa9bef3dd23e5ce621197fd",
-        "metadata.dimensions.PC13.publisher": "46d68926f378f4f68557d04ce03a09374065c24530e7147afbbf358301aad397",
-        "metadata.dimensions.PC13.publisher_place": "57afd266e8c4b0a2d55f60db73b0cb5b4c2f5bf7cc3dfbc3bca2ee0d693680cf",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-031/front-public.jpg": "63f3e03888c788e764236baac6fcf5c942d59226a7adb5215346c19f0e3c4d4d"
       },
       "fields": {
@@ -5205,22 +3600,13 @@
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "樹與遠方隨筆明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "福建美術出版社"
-        ],
-        "metadata.dimensions.PC13.publisher_place": [
-          "福州"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-031/front-public.jpg": "樹與遠方隨筆明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-034": {
       "schema_version": 1,
@@ -5230,48 +3616,28 @@
       "source_hash": "39134b1db23962edeae04def6e2ba38a7dfa62db32b93c87365eaefb3c53b653",
       "source_hashes": {
         "core.title": "f10f6ac39ac9ed6b34f1857c048017eaae5b728d78aaf9cc089ea1e25274ce04",
-        "core.country": "584b700bc85c9051917e51292fabe5f36b5c1019063e9802dde8f247769354d5",
-        "core.province": "95b3a62cc943ff0442e450daf5f68836e7ee4abccf09b0b911fbb288a3dc716c",
-        "core.city": "2d66d380d9abc37936e722f5745fb6eaf914a7615e09a2916b4bf66552e4e748",
-        "core.specific_place": "199b18e90c379e2f5044fb92f75a68ef71956308b4760936bda562bedd896eac",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "b3630c786e52db65b3c9e36fe61cd9f153fa8d1ab68dda2113e89fdd3e58d7e1",
-        "metadata.dimensions.PC06.image_place_text": "6d727d07e694e71ce2672d6e21d078409963e7d2247b3b81d947c41e57575834",
-        "metadata.dimensions.PC07.dispatch_place": "c948b20f3e9dc1302ed6601eb632922136dd304c99847dac8f4eeca195a1913c",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "68bb377c8c466d7a6dbecbf38112225de34aef18c48ab3a81e696f58e86be855",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-034/front-public.jpg": "f62ea5344cda1fa39c43cb363e729da176889c5712e762356b9bfd1dca9d80fd",
         "image:/archive/LJM-20261011-PST-034/back-public.jpg": "e805e420d6bf6a3d87d0743ee691cd7ee1e82c522e43c325508388d68c92a812"
       },
       "fields": {
         "core.title": "借一片海，寄幾句祝福",
-        "core.country": "美國",
-        "core.province": "夏威夷州",
-        "core.city": "檀香山市",
-        "core.specific_place": "威基基海灘",
         "core.source_place": "舊貨市場",
         "public_view.description": "海灘在正面，節日問候在背面。風景很遠，手寫的幾行字卻很近。",
-        "metadata.dimensions.PC06.image_place_text": [
-          "美國威基基海灘"
-        ],
-        "metadata.dimensions.PC07.dispatch_place": [
-          "廣州市"
-        ],
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "威基基海灘節日祝福明信片_正背",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-034/front-public.jpg": "威基基海灘節日祝福明信片_正背，正面。",
         "/archive/LJM-20261011-PST-034/back-public.jpg": "威基基海灘節日祝福明信片_正背，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-035": {
       "schema_version": 1,
@@ -5281,42 +3647,26 @@
       "source_hash": "4a2be32015c8bdf5b55d406eef8030a22b9dbbdc8c7084f58d1cf39196a41542",
       "source_hashes": {
         "core.title": "098a0c673dc2606cc8e7667247dcf1a3c27e62978fb713cd46f62b8613c89c0f",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
-        "core.city": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "54023c0b7c3fc94c6e267d0018fb303cb6a4486921be550d33848d91a386df9f",
-        "metadata.dimensions.PC07.dispatch_place": "715b46430352e3e388b60798e8ef0a7793eac5dc1d75869c357eb65ecc899c74",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "b9c4c2310f54b09d2bbacaad4680ec5bd8508fcf17a24f7c98f798a46308c8e0",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-035/front-public.jpg": "f907a8c3b03e15821b394c75cd14b6327c55ea27317f38e204a192136eb12fe2"
       },
       "fields": {
         "core.title": "把這點溫馨帶在身邊",
-        "core.country": "中國",
-        "core.province": "上海市",
-        "core.city": "上海市",
         "core.source_place": "舊貨市場",
         "public_view.description": "舊明信片上的祝愿說得很直接。紙能放進口袋，心意也想跟著你走。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "上海市"
-        ],
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "溫馨祝福隨身相伴明信片背面",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-035/front-public.jpg": "溫馨祝福隨身相伴明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-036": {
       "schema_version": 1,
@@ -5331,11 +3681,7 @@
         "public_view.description": "39bb122734b20452f14fa0dcaa202616d960a4162d8b8f17a2dab807ab9aee30",
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
-        "metadata.dimensions.PC12.image_subject": "241fc9f09f4e6821e86dfc7ec747f69c0367d13dd814b14c6157ae870ed0af2f",
-        "metadata.dimensions.PC13.publisher": "0dc206517c2f02eba2bb354f835a94c86314e16f4d040a608c74b4065ee28fc9",
-        "metadata.dimensions.PC13.publisher_place": "4734951e5c127003b3533e5e7162c888dcf742e48f6cc0a8828daa096a71f10e",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "dd0e77f252bb20d32eabb2a78ad81f170b96b96cfb4ba02afb6432c8a9dc8559",
         "image:/archive/LJM-20261011-PST-036/front-public.jpg": "60550151d026c9e3ebe5339df3e3b0db58c714a811277fe63c69d2f8d8c51c18",
         "image:/archive/LJM-20261011-PST-036/back-public.jpg": "991ad15d2686bdff76994f2e5a252bfe94cd0475bf6c104065d16790346de633"
       },
@@ -5346,25 +3692,14 @@
         "public_view.description": "藍瓶、細花和小擺件在正面，英文圣誕問候在背面。私人角落也能成為寄出的溫柔。",
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
-        "metadata.dimensions.PC12.image_subject": "室內花束與陳設",
-        "metadata.dimensions.PC13.publisher": [
-          "錦州市郵電局報刊零售公司"
-        ],
-        "metadata.dimensions.PC13.publisher_place": [
-          "錦州市"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "英文",
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-036/front-public.jpg": "我的房間裝飾明信片_正背，正面。",
         "/archive/LJM-20261011-PST-036/back-public.jpg": "我的房間裝飾明信片_正背，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-040": {
       "schema_version": 1,
@@ -5380,7 +3715,6 @@
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "6e0c6f0f5e075065a03302b1ed6b35b9107bd47a53a9b959e449a36235dfb27e",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-040/front-public.jpg": "5af1eeb799a8d506c2a82e27e596dfbbbb04f4689ed925fc93c7d217547790f1"
       },
       "fields": {
@@ -5390,16 +3724,13 @@
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "相信自己放手一搏寄語卡背面",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-040/front-public.jpg": "相信自己放手一搏寄語卡背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-041": {
       "schema_version": 1,
@@ -5413,12 +3744,9 @@
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "fb18850295ede3455072c985a79d374b048b444a6b700850713d2f60b01f8c67",
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "b62fce3f665a5f285fbd6223b0c8c2ad5d7d4f88f54e09466d0963c8c1a76ea9",
-        "metadata.dimensions.PC13.publisher": "84854f6b434cfd2adb1a18b94494077f884d60f8153960a8298a77a20cbfc3df",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-041/front-public.jpg": "c5f0b9971fc4acd6552ca3ecea3c220e294afcf928144a7acfe27292a3a21e1f"
       },
       "fields": {
@@ -5427,22 +3755,15 @@
         "core.source_place": "舊貨市場",
         "public_view.description": "幾行手寫字，把新年問候比作敲窗。聲音很小，來意很清楚。",
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "心靈之窗新年祝福明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "太原市郵政局"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-041/front-public.jpg": "心靈之窗新年祝福明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-042": {
       "schema_version": 1,
@@ -5452,42 +3773,26 @@
       "source_hash": "ea4362fb77bc0723f1430cb558681db146d2c0c1cd4cc46bfa7f5a5875fa7b0f",
       "source_hashes": {
         "core.title": "b2377bc556c17409404e7738a355c7e6583b528b46585b71d2edd6f5c1215ca8",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "bc891dd655962cfb1dca79fa5eeab29d5d0a49c9995ad0d84206785c59d0ea0e",
-        "core.city": "563da2f839a54f5ac8af414bee61061b21c99cc5b92826744537894ff57692ac",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "22a5994c8651443099c9c387ed50f10cb0f159959bd86b09dc11ba7051be4002",
-        "metadata.dimensions.PC07.dispatch_place": "e7f7ac0f8a36b609c715c1f7ee12c8ee8109307183ac529b7c37c742ce5e4ef0",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "81540b750923907575fcf7a6c3e313a6c1e07a26c990552dbeae40690c59b9cd",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-042/front-public.jpg": "61db699ab663e97ea5529c5f8db6545d1fcffb09de8db78c4e56d726afee9811"
       },
       "fields": {
         "core.title": "別哭，下一年也陪你",
-        "core.country": "中國",
-        "core.province": "湖南省",
-        "core.city": "長沙市",
         "core.source_place": "舊貨市場",
         "public_view.description": "新年祝愿旁邊貼著小熊和別哭。卡片沒有說很多，已經像輕輕抱了一下。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "長沙市"
-        ],
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "新年祝愿與別哭貼紙明信片背面",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-042/front-public.jpg": "新年祝愿與別哭貼紙明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-043": {
       "schema_version": 1,
@@ -5498,48 +3803,29 @@
       "source_hashes": {
         "core.title": "2607949b08376d88185258f3fed6dda70da24a727471b15e22a83fa6dc91b9cf",
         "core.date_display": "e518a36ce0ee6edc0121ba53445e2764af8dc79608ccf6bcf9a61f089275305d",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "e19d63026c63cce1767b33dbc64d2d4092b8cfb456c5e2b03525e0070a650e54",
-        "core.city": "e74ed543235819de6f2a718104db044514feeb40496d5b10a21631677a3bdce2",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "5db54682019e69b69bc0fd14aafe776ba2f5b76b05cae8618a590ead68894b5f",
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
-        "metadata.dimensions.PC12.image_subject": "1a895991253f73e607809198f1884584535c832d615326e7262c4e6f367a5997",
-        "metadata.dimensions.PC13.publisher": "509504adaf05301ae0ce3d7948886d10657ff36ff06367785224b4ffa13b8bed",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "b129b3dc01be02dc4a61468997b448996408e386d3a4913509bd313e1b56de56",
         "image:/archive/LJM-20261011-PST-043/front-public.jpg": "e307b138003068f5eb8e49b4944887594b4e01257644ae6493b3ae88243e1ec1",
         "image:/archive/LJM-20261011-PST-043/back-public.jpg": "2ce1e3bde35ba4f890817f274d46046c5fa9478c0cbe34693d2f4da49a489e15"
       },
       "fields": {
         "core.title": "黃色的花，替人說新年好",
         "core.date_display": "年代未知",
-        "core.country": "中國",
-        "core.province": "廣西壯族自治區",
-        "core.city": "桂林市",
         "core.source_place": "舊貨市場",
         "public_view.description": "姚黃牡丹立在瓶中，背面是中英文新年問候。祝愿沒有鋪張，顏色已經夠暖。",
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
-        "metadata.dimensions.PC12.image_subject": "瓶插黃色牡丹，圖注姚黃",
-        "metadata.dimensions.PC13.publisher": [
-          "中國圖片社"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文",
-          "英文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-043/front-public.jpg": "姚黃牡丹新年祝福明信片_正背，正面。",
         "/archive/LJM-20261011-PST-043/back-public.jpg": "姚黃牡丹新年祝福明信片_正背，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-044": {
       "schema_version": 1,
@@ -5549,45 +3835,26 @@
       "source_hash": "c57aaf87c4ead15e0a844c446ee96b77a16645f391b66e882aee9505ff1ccaf2",
       "source_hashes": {
         "core.title": "0d6d4a255dc830c42aa4f96bc440fcafa75bb1ea67411cd0dcee2f9facadb6c8",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "78d710ac4230f000bfb1197b8b061142b2b8a6b4be72e8a9d02cf2137efe102b",
-        "core.city": "6f050bda3a0ec7903e33ebe9ac91652eb0027bcba5acd388d557d7ca74cba355",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "2d23c81784c47a3a9de446eacf3f9fdaff45694ed518ec82590a63cb8e31de95",
-        "metadata.dimensions.PC07.dispatch_place": "abc0aa88cf8f3ed00d3506881dafd5825716347b50bfe990d1e624108ceb6dec",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "daf201cda69f99a46784da018d5f40f6cbbcbcf8b468d049c12f0ff81972fc1a",
-        "metadata.dimensions.PC13.publisher": "2f49a3a5f13e2038d50fcb344e89b1189702f1f46b655bbe8bc278eda4e87258",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-044/front-public.jpg": "77d5211bd96f47c4fa5074431562e0eafadd93c0b1c945594a339296005dde48"
       },
       "fields": {
         "core.title": "又一年了，你呢",
-        "core.country": "中國",
-        "core.province": "湖北省",
-        "core.city": "宜昌市",
         "core.source_place": "舊貨市場",
         "public_view.description": "舊明信片先交代自己的近況，再把問題交給遠處的人。想知道你過得怎么樣，仍很認真。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "宜昌市"
-        ],
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "宜昌近況與新年問候明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "湖南畫報社",
-          "湖南美術出版社"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-044/front-public.jpg": "宜昌近況與新年問候明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-045": {
       "schema_version": 1,
@@ -5597,42 +3864,26 @@
       "source_hash": "6d834298e92100af77d397db7afada991990395a520d30fad5ccde831a6e1070",
       "source_hashes": {
         "core.title": "815f65fd6220d3479cab666f363ea689af9b3249514e75a1bc34a1431b0202e1",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "8aee998463a93a0312c274af499ac04982f920446841fcad6b3f3f910d6ea71c",
-        "metadata.dimensions.PC07.dispatch_place": "c948b20f3e9dc1302ed6601eb632922136dd304c99847dac8f4eeca195a1913c",
-        "metadata.dimensions.PC08.destination_place": "432f80464c3ff7ccec37b8fb70fd8c702e1a0b102968bb81e482ee5dfbe8bc04",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "828aa1aeb4547c43ebdfb2f8766fd1842adc1a0fbd1e0bcfa3b60e28d0285887",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-045/front-public.jpg": "da56d4169097eb67dc0a58e9492c4afbc82502e72c0d5d034c588a92c0d872ce"
       },
       "fields": {
         "core.title": "把技術問題，也寫得很認真",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
         "core.source_place": "舊貨市場",
         "public_view.description": "一張郵政明信片上，密密寫著通信與手機的問題。興趣很具體，字也很投入。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "廣州市"
-        ],
-        "metadata.dimensions.PC08.destination_place": "上海市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "移動通信技術詢問郵政明信片背面",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-045/front-public.jpg": "移動通信技術詢問郵政明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-046": {
       "schema_version": 1,
@@ -5642,36 +3893,28 @@
       "source_hash": "a9ee3d760c5a3f561dc25b766f9565a77f3fcb4adee778260d349c1450d6631f",
       "source_hashes": {
         "core.title": "f3c183b45d86b36c7e65e670cc4a67f06ea3fa0b490a6f7ae1a2804d9517ae85",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "dca766cb422d1e113310f1adff861d181f02fe44d39f5bb51f41d33489a62122",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "73399a5283e3f9227048aa962858490c575c86235c41e111f9be7c0f12599506",
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "2d75a052df47506df656268520e36d2a1f594d0fbd7992100f672c4838aa4a93",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-046/front-public.jpg": "944d9ecf51fb41e1d80382cff9f04382f1f412f18ea04b8237555a26290193c7"
       },
       "fields": {
         "core.title": "一張卡，也能問一件認真事",
-        "core.country": "中國",
-        "core.province": "江蘇省",
         "core.source_place": "舊貨市場",
         "public_view.description": "舊明信片上是一段對郵政資料的咨詢。興趣有多具體，字就寫得多仔細。",
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "郵政匯票圖譜咨詢明信片背面",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-046/front-public.jpg": "郵政匯票圖譜咨詢明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-048": {
       "schema_version": 1,
@@ -5687,9 +3930,7 @@
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "bfb6a814b66ef3042059edd25b38726748684e98a514952248513442824f6a7e",
-        "metadata.dimensions.PC13.publisher": "8eaf0704740dd69ea4a3c72ae09c7695bf795ef036507bb983c554a08c9bc4bc",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-048/front-public.jpg": "7eff1af32b8249ae7dc33e2306455212dcf07e1aa5f8a98b4108a51b4c8ba26c"
       },
       "fields": {
@@ -5700,19 +3941,13 @@
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "元旦與家人祝愿明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "江蘇郵電報社"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-048/front-public.jpg": "元旦與家人祝愿明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-050": {
       "schema_version": 1,
@@ -5722,46 +3957,26 @@
       "source_hash": "5008d78af1392ffbe7d7c58392dad5896f1968fdf358d8d75dfb1592344d8bcb",
       "source_hashes": {
         "core.title": "d8dc412f0670255ceec367e46e0c44984da2fa3ff10746c2b2540fba799f6df1",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "e19d63026c63cce1767b33dbc64d2d4092b8cfb456c5e2b03525e0070a650e54",
-        "core.city": "e74ed543235819de6f2a718104db044514feeb40496d5b10a21631677a3bdce2",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "7df45763f2703d3ff9ef7d010c120e81e80d905322a0dd201617c7b64e86fefb",
-        "metadata.dimensions.PC07.dispatch_place": "d6b47a70d618220663ca52645185b2e4283a33fb76e73f2acac5e82cc7899fd8",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "35116a5707eacca7ba35bcd4161acb06507383ba98179a11337514434dc404c7",
-        "metadata.dimensions.PC13.publisher": "bc644583c26c7ed37d1c5a64a41e006a099dd55ce6f4b9dcdc8716fcb8848a67",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-050/front-public.jpg": "9880003e8b23545d90ada8dfde29bbcf132c84f7622c5a843d3321373f7bc00b"
       },
       "fields": {
         "core.title": "把計劃，一點點變成現實",
-        "core.country": "中國",
-        "core.province": "廣西壯族自治區",
-        "core.city": "桂林市",
         "core.source_place": "舊貨市場",
         "public_view.description": "舊明信片先問近況，再談新一年。祝福不飄在天上，落在了具體的生活里。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "桂林市"
-        ],
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "愿新一年把計劃變現實明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "上海人民美術出版社"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-050/front-public.jpg": "愿新一年把計劃變現實明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-051": {
       "schema_version": 1,
@@ -5778,7 +3993,6 @@
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "d4a0dcefef6bf9e6251537b8141bd447ed50fa6e8fa1b57b0dc4f11f3c96ec4e",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "b129b3dc01be02dc4a61468997b448996408e386d3a4913509bd313e1b56de56",
         "image:/archive/LJM-20261011-PST-051/front-public.jpg": "ea271bde730d4f1ddd835082b0b0b27e03b4ed08dc1257779d6a4f5143d11935"
       },
       "fields": {
@@ -5789,17 +4003,13 @@
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "愿學業進步與來家玩明信片背面",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文",
-          "英文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-051/front-public.jpg": "愿學業進步與來家玩明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-052": {
       "schema_version": 1,
@@ -5815,9 +4025,7 @@
         "metadata.dimensions.PC07.dispatch_place": "52beee56815e314cf8170d8acc160ba81bfbb2603f3b42e9a0cf2b733a0c8920",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "ce24d3603d6103261d6d0602a90515ed767639741930ef579c520ea2e7faea98",
-        "metadata.dimensions.PC13.publisher": "94d3fe59fd53b9cc3d29e5301b8038afea9ea1d352ac1ac44ee1b77e89bc6519",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-052/front-public.jpg": "76dda94b3b26ea927c1d3aedee22a9fe59669d50d8608542a802d59326bb03fe"
       },
       "fields": {
@@ -5828,19 +4036,13 @@
         "metadata.dimensions.PC07.dispatch_place": "寄出地點待確認",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "愿做遠方風鈴的祝福明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "Sun greeting cards／太陽賀卡"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-052/front-public.jpg": "愿做遠方風鈴的祝福明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-054": {
       "schema_version": 1,
@@ -5850,42 +4052,26 @@
       "source_hash": "3bf208fea12525e590c26fdb753b95f9c637f72f74f499b0e6b7c61484e15453",
       "source_hashes": {
         "core.title": "ca5962d9222eaca85be3fa70c12f34d2805108577f7b66d757ebc0630f929aed",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "179c1f383f577b8e7bcc2b163724420a4439e3207c89ac2b2b56b5af2cfc5450",
-        "core.city": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "5b215b4f7dec138ebd6efcc57c3f9651cd09e74bf3dd4c4e5a53c1e28f4962b9",
-        "metadata.dimensions.PC07.dispatch_place": "c948b20f3e9dc1302ed6601eb632922136dd304c99847dac8f4eeca195a1913c",
-        "metadata.dimensions.PC08.destination_place": "8947e99b36f71e280a846d8f23dac940f069b9a5f416d5de013b4c81a1f822d0",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "5d8293ca19411c043e587af793ff46c9a7195eca3191bacb3190dff7411f5f58",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-054/front-public.jpg": "81940ae4d7c1eec2a67fa1b0239f01e45480767b3464098f30865be751dca4c2"
       },
       "fields": {
         "core.title": "你最近點樣啊",
-        "core.country": "中國",
-        "core.province": "廣東省",
-        "core.city": "廣州市",
         "core.source_place": "舊貨市場",
         "public_view.description": "手寫問候帶著口語的親近。明信片不大，熟悉的語氣剛好裝得下。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "廣州市"
-        ],
-        "metadata.dimensions.PC08.destination_place": "武漢市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "粵語近況與圣誕祝福明信片背面",
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-054/front-public.jpg": "粵語近況與圣誕祝福明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     },
     "LJM-20261011-PST-056": {
       "schema_version": 1,
@@ -5895,48 +4081,26 @@
       "source_hash": "1ba90892e0dad20d9c177d46b841bcd5130ba05a0365c6c2c9f0285d596b2c3e",
       "source_hashes": {
         "core.title": "5ae9514678159c49ea37f66be5bea8fab304835c0d6ef2cd08dbbe26fa25de67",
-        "core.country": "c6f035d028e05e3d1cf3fbaca15bf0b6420c27befc804e15552f81b8d94dcc52",
-        "core.province": "ff6fb6fcc23505385774b65580ed7256d0ba73119eb5ebb1af81e1b6c06e617c",
-        "core.city": "c47fa71df0d1a7eec5b5ba41d1faf0513204d99cd3d241d3421d0225bf5157e2",
-        "core.specific_place": "23cafc4578b33d23157cd6a91a36049c6f953f3f6088a10b61bce1c1bf0a5d7d",
         "core.source_place": "811ea0d41e881b175ca7db501dca32f1b2b996d5f30aa64b4b44e7aa155de78d",
         "public_view.description": "7b996a9ace94d86e4f0b58c0dbe569a7ce93634f44448ccc7801e25c0d27d651",
-        "metadata.dimensions.PC07.dispatch_place": "a2814b8e270b866f907e6373bed5f1dbd11ecdde847cc05cd17daa751761be6f",
-        "metadata.dimensions.PC08.destination_place": "5099c74ead50f7cf261b798d160ef368b3551c07498e644d7947ee51955b7829",
         "metadata.dimensions.PC11.correspondence_relationship": "dec89f9d246fefc10164ab90b9a89236c727f1116ac1081e2e0b68d941f5f197",
         "metadata.dimensions.PC12.image_subject": "ebcfe4d7ef999a073bdefc7995662541205cf891011c32cb779fe21e76d8b147",
-        "metadata.dimensions.PC13.publisher": "68e5b6734f8d52fdda671c40b595c68a4898d91a6c15d278c50162689a516b00",
         "metadata.dimensions.PC18.stamp_status": "d061cff55e6b2ed1e8e685edc04d8ffc603db3c33415eda65210946340c31865",
-        "metadata.dimensions.PC20.language": "65bcb1a065d8b11ec83cecd06be6e3aeda3220f46aacd7aa101bf94236b95bb0",
         "image:/archive/LJM-20261011-PST-056/front-public.jpg": "3e2710bb99d663115d23d8365eea8543985cc4e04bbc295d141b2ef29aeae312"
       },
       "fields": {
         "core.title": "這裡很美，差一個你",
-        "core.country": "中國",
-        "core.province": "福建省",
-        "core.city": "廈門市",
-        "core.specific_place": "鼓浪嶼",
         "core.source_place": "舊貨市場",
         "public_view.description": "明信片只寫了短短的邀約。再好的地方，也會讓人想叫上一個人。",
-        "metadata.dimensions.PC07.dispatch_place": [
-          "廈門市鼓浪嶼"
-        ],
-        "metadata.dimensions.PC08.destination_place": "廣州市",
         "metadata.dimensions.PC11.correspondence_relationship": "通信關係待確認",
         "metadata.dimensions.PC12.image_subject": "這裡很美快點來航空邊框明信片背面",
-        "metadata.dimensions.PC13.publisher": [
-          "皇後社工作室"
-        ],
-        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認",
-        "metadata.dimensions.PC20.language": [
-          "中文"
-        ]
+        "metadata.dimensions.PC18.stamp_status": "郵票情況待確認"
       },
       "image_descriptions": {
         "/archive/LJM-20261011-PST-056/front-public.jpg": "這裡很美快點來航空邊框明信片背面，背面。"
       },
       "transcription_kind": "none",
-      "translation_state": "published"
+      "translation_state": "partial"
     }
   }
 }

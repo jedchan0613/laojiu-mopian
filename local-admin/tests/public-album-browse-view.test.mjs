@@ -31,7 +31,7 @@ const createArchiveRecordViewStub = (item) => {
 const translateStub = (text, _locale, values = {}) => text.replace(/\{(\d+)\}/g, (_, key) => String(values[key]));
 const browseSource = (await readFile(sourceUrl('album-browse.ts'), 'utf8'))
   .replace(/import type \{ ArchiveItem \} from '\.\/archive';/, '')
-  .replace(/import \{ buildAlbumGroups, albumDateSummary, curatedLetterAlbum \} from '\.\/album-groups';/, `import { buildAlbumGroups, albumDateSummary, curatedLetterAlbum } from '${groupModuleUrl}';`)
+  .replace(/import \{ buildAlbumGroups, albumDateSummary, curatedAlbumForId, curatedLetterAlbum \} from '\.\/album-groups';/, `import { buildAlbumGroups, albumDateSummary, curatedAlbumForId, curatedLetterAlbum } from '${groupModuleUrl}';`)
   .replace(/import \{ createArchiveRecordView \} from '\.\/archive-view';/, `const createArchiveRecordView = ${createArchiveRecordViewStub.toString()};`)
   .replace(/import \{ t, type Locale \} from '\.\.\/i18n\/ui';/, `const t = ${translateStub.toString()};`);
 const { createAlbumBrowseViews } = await import(moduleUrl(browseSource));
@@ -117,6 +117,27 @@ test('信件选览使用主题说明与公开信件封面，不把非公开信�
   assert.equal(letterView.photoCount, 0);
   assert.equal(letterView.coverPath, '/published/L1.jpg');
   assert.doesNotMatch(JSON.stringify(letterView), /hidden|private|L2/);
+});
+
+test('照片主题选览使用主题说明与公开照片封面，实物相册归属优先于主题标签', () => {
+  const taggedPhoto = (id, changes = {}, view = {}) => record(id, 'PHO', {
+    album_id: undefined, publication_file_path: ['/published/' + id + '.jpg'], ...changes,
+  }, { tags: ['上海旧影'], image_descriptions: ['照片公开副本'], ...view });
+  const views = createAlbumBrowseViews([
+    taggedPhoto('P1'),
+    taggedPhoto('P2', { privacy_level: 'Y', publication_file_path: ['/private/hidden.jpg'] }),
+    taggedPhoto('P3', { album_id: '家庭相册' }),
+  ], 'zh-CN');
+  const shanghaiView = views.find((view) => view.title === '上海旧影');
+  assert.ok(shanghaiView, '应生成上海旧影主题选览');
+  assert.match(shanghaiView.description, /网站的主题选览/);
+  assert.deepEqual(shanghaiView.memberIds, ['P1']);
+  assert.equal(shanghaiView.photoCount, 1);
+  assert.equal(shanghaiView.isLetterCollection, false);
+  assert.equal(shanghaiView.coverPath, '/published/P1.jpg');
+  assert.doesNotMatch(JSON.stringify(shanghaiView), /hidden|private|P2|P3/);
+  const physicalView = views.find((view) => view.title === '相册 家庭相册');
+  assert.deepEqual(physicalView.memberIds, ['P3'], '有实物相册归属的照片不进入主题选览');
 });
 
 test('公开总册没有图片时保留总册文字，并回退到首个有图的公开照片', () => {

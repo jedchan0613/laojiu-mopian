@@ -21,7 +21,7 @@ import {
 import { getCodeLabel } from '../../data/code-dictionary';
 import { getPublicUsagePolicy } from '../../data/archive-rights';
 import { getResponsiveImage } from '../../data/responsive-images';
-import { publishedAlbumGroups } from '../../data/album-groups';
+import { publishedAlbumGroups, curatedAlbumForId } from '../../data/album-groups';
 import { compareAlbumPositions } from '../../data/album-position.mjs';
 
 export function getStaticPaths() {
@@ -210,7 +210,9 @@ const previousBrowseView = albumPhotoIndex >= 0
 const nextBrowseView = albumPhotoIndex >= 0
   ? (nextAlbumPhoto ? createArchiveRecordView(nextAlbumPhoto, locale) : undefined) : nextView;
 const albumLinkLabel = albumGroup
-  ? (isLetterCollection ? t("查看《明的家书》信件选览（共 {0} 件） →", locale, { 0: albumMateCount }) : item.core.object_type === 'ALB'
+  ? (isLetterCollection ? t("查看《明的家书》信件选览（共 {0} 件） →", locale, { 0: albumMateCount }) : curatedAlbumForId(albumGroup!.albumId)
+    ? t(`查看《${curatedAlbumForId(albumGroup!.albumId)!.title}》主题选览（共 {0} 件） →`, locale, { 0: albumMateCount })
+    : item.core.object_type === 'ALB'
     ? t("翻阅本册档案（共 {0} 件） →", locale, { 0: albumMateCount })
     : t("查看整本相册（共 {0} 件照片档案） →", locale, { 0: albumMateCount }))
   : '';

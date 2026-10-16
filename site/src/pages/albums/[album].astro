@@ -8,7 +8,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { type ArchiveItem } from '../../data/archive';
 import { createArchiveRecordView } from '../../data/archive-view';
 import { getResponsiveImage } from '../../data/responsive-images';
-import { publishedAlbumGroups, albumHref, albumDateSummary, curatedLetterAlbum } from '../../data/album-groups';
+import { publishedAlbumGroups, albumHref, albumDateSummary, curatedAlbumForId, curatedLetterAlbum } from '../../data/album-groups';
 import { compareAlbumPositions } from '../../data/album-position.mjs';
 
 export function getStaticPaths() {
@@ -24,6 +24,7 @@ interface Props {
 }
 
 const { albumId, members } = Astro.props;
+const curatedAlbum = curatedAlbumForId(albumId);
 const isLetterCollection = albumId === curatedLetterAlbum.id;
 const albumRecord = members.find((item) => item.core.object_type === 'ALB');
 const albumView = albumRecord ? createArchiveRecordView(albumRecord, locale) : undefined;
@@ -45,8 +46,8 @@ const galleryEntries = entries.map((entry) => ({
   ...entry,
   cover: entry.view.images[0] ? getResponsiveImage(entry.view.images[0]) : undefined,
 }));
-const albumTitle = isLetterCollection ? t(curatedLetterAlbum.title, locale) : albumView?.title || t("相册 {0}", locale, { 0: albumId });
-const albumLead = isLetterCollection ? t(curatedLetterAlbum.description, locale) : albumView?.description ?? '';
+const albumTitle = curatedAlbum ? t(curatedAlbum.title, locale) : albumView?.title || t("相册 {0}", locale, { 0: albumId });
+const albumLead = curatedAlbum ? t(curatedAlbum.description, locale) : albumView?.description ?? '';
 const albumCover = albumView?.images[0] ? getResponsiveImage(albumView.images[0]) : undefined;
 const dateSummary = albumDateSummary(members);
 const yearRange = dateSummary.range;
@@ -54,7 +55,7 @@ const photoCount = photoEntries.length;
 const imageCount = photoEntries.reduce((count, entry) => count + entry.view.images.length, 0);
 const letterImageCount = letterEntries.reduce((count, entry) => count + entry.view.images.length, 0);
 const albumSummary = albumLead || t("已公开 {0} 件照片档案，共 {1} 幅附图。", locale, { 0: photoCount, 1: imageCount });
-const pendingTranslation = (isLetterCollection && ['en','th'].includes(locale)) || entries.some((entry) => entry.view.translationState !== 'published') ||
+const pendingTranslation = (Boolean(curatedAlbum) && ['en','th'].includes(locale)) || entries.some((entry) => entry.view.translationState !== 'published') ||
   (Boolean(albumView) && albumView!.translationState !== 'published');
 const albumUrl = Astro.site ? new URL(localizePath(albumHref(albumId), locale), Astro.site) : undefined;
 const albumStructuredData = {
