@@ -1,6 +1,8 @@
+import {fixedText} from '../shared/fixed-text.mjs';
+import {normalizeLocale} from '../shared/locale-config.mjs';
 import {thaiText} from '../shared/thai-text.mjs';
 // Locale changes presentation only. No state code, permissions or personal text is changed.
-export const normalizeAccountLanguage = value => ['en','th'].includes(value) ? value : 'zh-CN';
+export const normalizeAccountLanguage = value => normalizeLocale(value);
 const labels = {
   '正常': 'Active', '已暂停': 'Suspended', '注销处理中': 'Deletion in progress',
   '数据导出申请': 'Data export request', '账号注销申请': 'Account deletion request', '账号恢复申诉': 'Account reinstatement appeal',
@@ -53,6 +55,7 @@ const errors = {
 };
 export const localizeAccountError = (text, locale, status = 400) => {
   if (normalizeAccountLanguage(locale) === 'zh-CN' || typeof text !== 'string') return text;
+  if(['ja','ko','zh-Hant'].includes(normalizeLocale(locale)))return fixedText(localizeAccountError(text,'en',status),locale,text);
   if (locale==='th') { const english=localizeAccountError(text,'en',status); return thaiText(english) !== english ? thaiText(english) : !/[\u3400-\u9fff]/.test(text) && !errors[text] ? text : 'ดำเนินการไม่สำเร็จ โปรดตรวจสอบข้อมูลแล้วลองอีกครั้ง'; }
   if (errors[text]) return errors[text];
   const rules = [
@@ -71,7 +74,7 @@ export const localizeAccountPayload = (value, locale, status = 200) => {
   if (Array.isArray(value)) return value.map(entry => localizeAccountPayload(entry, locale, status));
   return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key,
     key === 'error' ? localizeAccountError(entry, locale, status)
-      : ['status_label', 'kind_label'].includes(key) ? locale==='th' ? thaiText(labels[entry] ?? entry) : labels[entry] ?? entry
+      : ['status_label', 'kind_label'].includes(key) ? fixedText(labels[entry] ?? entry,locale,entry)
       : entry && typeof entry === 'object' ? localizeAccountPayload(entry, locale, status) : entry,
   ]));
 };

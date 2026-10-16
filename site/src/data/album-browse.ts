@@ -14,8 +14,8 @@ export const createAlbumBrowseViews = (items: ArchiveItem[], locale: Locale) =>
     return {
       slug: group.slug,
       href: group.href,
-      title: isLetterCollection ? curatedLetterAlbum.title : albumView?.title || t('相册 {0}', locale, { 0: group.albumId }),
-      description: isLetterCollection ? curatedLetterAlbum.description : albumView?.description || '',
+      title: isLetterCollection ? t(curatedLetterAlbum.title, locale) : albumView?.title || t('相册 {0}', locale, { 0: group.albumId }),
+      description: isLetterCollection ? t(curatedLetterAlbum.description, locale) : albumView?.description || '',
       isLetterCollection,
       coverPath: coverView?.images[0],
       coverDescription: coverView?.imageDescriptions[0],

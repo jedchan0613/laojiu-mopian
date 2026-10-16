@@ -2,6 +2,12 @@
 
 import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
+const contributionCategoryLabel=(label:string)=>{
+  if(locale==='zh-CN')return label;
+  if(label==='证件与卡片')return t('Identification documents',locale)+' / '+t('Old cards',locale);
+  const names:Record<string,string>={'照片':'Photographs','明信片':'Postcards','信件':'Letters','日记与笔记':'Diaries and notebooks','其他':'Other'};
+  return t(names[label]??label,locale);
+};
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 <BaseLayout title={t("我要投稿｜老旧默片", locale)} description={t("不必注册。提交筛选后的图片副本与资料介绍，经私密审核后再决定是否公开。", locale)}>
@@ -26,7 +32,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
      <section class="form-section" aria-labelledby="story-heading">
       <div class="section-title"><span class="section-number">01</span><div><h2 id="story-heading">{t("讲讲这份资料", locale)}</h2><p>{t("不确定的年代和细节，可以直接写“不详”。带 * 的为必填。", locale)}</p></div></div>
       <label for="submission-title">{t("资料标题", locale)} <span aria-hidden="true">*</span></label><input id="submission-title" name="title" required minlength="2" maxlength="80" placeholder={t("例如：外婆留下的一本生活笔记", locale)} />
-      <div class="field-pair"><div><label for="submission-category">{t("资料类型", locale)} <span aria-hidden="true">*</span></label><select id="submission-category" name="category" required><option value="">{t("请选择", locale)}</option>{['照片', '明信片', '信件', '证件与卡片', '日记与笔记', '其他'].map(label => <option>{label}</option>)}</select></div><div><label for="submission-era">{t("大致年代", locale)} <small>{t("选填", locale)}</small></label><input id="submission-era" name="era" maxlength="80" placeholder={t("例如：约 20 世纪 80 年代 / 不详", locale)} /></div></div>
+      <div class="field-pair"><div><label for="submission-category">{t("资料类型", locale)} <span aria-hidden="true">*</span></label><select id="submission-category" name="category" required><option value="">{t("请选择", locale)}</option>{['照片', '明信片', '信件', '证件与卡片', '日记与笔记', '其他'].map(label => <option value={label}>{contributionCategoryLabel(label)}</option>)}</select></div><div><label for="submission-era">{t("大致年代", locale)} <small>{t("选填", locale)}</small></label><input id="submission-era" name="era" maxlength="80" placeholder={t("例如：约 20 世纪 80 年代 / 不详", locale)} /></div></div>
       <label for="submission-description">{t("资料介绍", locale)} <span aria-hidden="true">*</span></label><textarea id="submission-description" name="description" required minlength="10" maxlength="3000" rows="5" placeholder={t("它从哪里来？记录了什么？您为什么想留下它？请区分亲历的事实与自己的推测，不必写得很正式。", locale)} aria-describedby="story-hint"></textarea><div class="field-bottom"><p id="story-hint" class="hint">{t("请勿填写完整号码、私人地址或其他人的联系方式。", locale)}</p><span id="story-count" class="hint">0 / 3000</span></div>
       <label for="submission-people">{t("图片或文字是否涉及可以识别的真实人物？", locale)} <span aria-hidden="true">*</span></label><select id="submission-people" name="people" required><option value="">{t("请选择", locale)}</option><option value="none">{t("没有", locale)}</option><option value="yes">{t("有，需要人工确认", locale)}</option><option value="unsure">{t("不确定，请协助判断", locale)}</option></select><p id="people-hint" class="hint">{t("有真实人物的资料会交由站主人工判断，不会自动公开。", locale)}</p>
      </section>

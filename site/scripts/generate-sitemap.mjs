@@ -1,3 +1,4 @@
+import {localeDefinitions,pathForLocale,stripLocalePath} from '../../shared/locale-config.mjs';
 import { readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,7 +34,7 @@ const listFiles = async (directory) => {
 };
 
 // 账户页面（登录、用户中心）不进站点地图：它们是私密入口，不应被搜索引擎收录或收录进索引。
-const accountPagePattern = /^(?:(?:en|th)\/)?(?:login|me)(?:\/|\.html)/;
+const accountPagePattern = /^(?:(?:en|th|ja|ko|zh-hant)\/)?(?:login|me)(?:\/|\.html)/;
 const isAccountPage = (path) => accountPagePattern.test(relative(distRoot, path).split(sep).join('/'));
 
 const candidates = (await listFiles(distRoot))
@@ -65,9 +66,9 @@ const publicPaths = new Set(paths);
 const urls = paths.map((path) => new URL(path, siteUrl).href);
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${paths
 	.map((path) => {
-		const chinesePath = path.replace(/^\/(en|th)(?=\/|$)/,'') || '/';
+		const chinesePath = path.replace(/^\/(en|th|ja|ko|zh-hant)(?=\/|$)/,'') || '/';
 		const englishPath = chinesePath === '/' ? '/en/' : `/en${chinesePath}`;
-		const candidates = [['zh-CN',chinesePath],['en',englishPath],['th',chinesePath==='/'?'/th/':'/th'+chinesePath]].filter(([,p])=>publicPaths.has(p));
+		const candidates=localeDefinitions.map(entry=>[entry.locale,pathForLocale(chinesePath,entry.locale)]).filter(([,p])=>publicPaths.has(p));
  const alternatives = candidates.length > 1 && publicPaths.has(chinesePath) ? [...candidates,['x-default',chinesePath]].map(([language,p])=>`<xhtml:link rel="alternate" hreflang="${language}" href="${escapeXml(new URL(p,siteUrl).href)}"/>`).join('') : '';
 		return `  <url><loc>${escapeXml(new URL(path, siteUrl).href)}</loc>${alternatives}</url>`;
 	})
@@ -80,7 +81,7 @@ try {
 } catch {
 	// 构建中没有 robots.txt 时使用最小的公开规则。
 }
-const privateAccountRules = ['/login/', '/me/', '/en/login/', '/en/me/', '/th/login/', '/th/me/']
+const privateAccountRules = localeDefinitions.flatMap(entry=>['/login/','/me/'].map(p=>pathForLocale(p,entry.locale)))
 	.filter((path) => !robots.includes(`Disallow: ${path}`)).map((path) => `Disallow: ${path}`).join('\n');
 robots = `${robots.replace(/^Sitemap:.*$/gim, '').trim()}\n${privateAccountRules ? `${privateAccountRules}\n` : ''}Sitemap: ${new URL('/sitemap.xml', siteUrl).href}\n`;
 await writeFile(robotsPath, robots, 'utf8');

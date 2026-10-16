@@ -7,3 +7,9 @@ Disallow: /en/me/
 
 Disallow: /th/login/
 Disallow: /th/me/
+Disallow: /ja/login/
+Disallow: /ja/me/
+Disallow: /ko/login/
+Disallow: /ko/me/
+Disallow: /zh-hant/login/
+Disallow: /zh-hant/me/

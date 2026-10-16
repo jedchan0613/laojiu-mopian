@@ -513,7 +513,7 @@ import '../scripts/home-featured-carousel';
 		gap: var(--masthead-gap);
 	}
 
-	:global(html[lang='en']) .masthead h1 {
+	:global(html:is([lang='en'],[lang='ja'],[lang='ko'])) .masthead h1 {
 		min-width: 0;
 		white-space: normal;
 		text-wrap: balance;
@@ -521,7 +521,7 @@ import '../scripts/home-featured-carousel';
 		letter-spacing: 0.01em;
 	}
 
-	:global(html[lang='en']) .masthead p {
+	:global(html:is([lang='en'],[lang='ja'],[lang='ko'])) .masthead p {
 		letter-spacing: 0.14em;
 	}
 	:global(html[lang='th']) .masthead h1 {

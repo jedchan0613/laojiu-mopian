@@ -1,6 +1,7 @@
 import source from './standards/code-dictionary.json';
 import english from '../i18n/archive-labels.en.json';
-import { thaiText } from '../../../shared/thai-text.mjs';
+import {fixedText} from '../../../shared/fixed-text.mjs';
+import {translationLocales,normalizeLocale} from '../../../shared/locale-config.mjs';
 
 export interface CodeDictionaryEntry {
   dictionary_key: string; dimension_category: string; code: string; label: string;
@@ -11,8 +12,8 @@ export const enabledCodeDictionary = codeDictionary.filter((entry) => entry.enab
 const entriesByCode = new Map(enabledCodeDictionary.map((entry) => [entry.code, entry]));
 const englishCodes = english.codes as Record<string, string>;
 export const isEnglishArchiveLocale = (locale: string = 'zh-CN') => typeof locale === 'string' && (locale === 'en' || locale.startsWith('en-'));
-export const isTranslatedArchiveLocale = (locale: string = 'zh-CN') => isEnglishArchiveLocale(locale) || locale === 'th' || locale.startsWith('th-');
-export const translateLabel = (englishText: string, locale: string) => locale.startsWith('th') ? thaiText(englishText) : englishText;
+export const isTranslatedArchiveLocale = (locale: string = 'zh-CN') => translationLocales.includes(normalizeLocale(locale));
+export const translateLabel = (englishText: string, locale: string) => fixedText(englishText,locale);
 export const getCodeEntry = (code: string, locale: string = 'zh-CN') => {
   const entry = entriesByCode.get(code);
   return entry && isTranslatedArchiveLocale(locale) ? { ...entry, label: translateLabel(englishCodes[code] ?? entry.label, locale) } : entry;

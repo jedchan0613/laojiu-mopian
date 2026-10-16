@@ -2,6 +2,7 @@
 
 import { t, getLocale, localizePath } from '../../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
+import {translationLocales} from '../../../../shared/locale-config.mjs';
 import {getArchiveTranslation} from '../../data/archive-localization';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { type ArchiveItem } from '../../data/archive';
@@ -44,8 +45,8 @@ const galleryEntries = entries.map((entry) => ({
   ...entry,
   cover: entry.view.images[0] ? getResponsiveImage(entry.view.images[0]) : undefined,
 }));
-const albumTitle = isLetterCollection ? curatedLetterAlbum.title : albumView?.title || t("相册 {0}", locale, { 0: albumId });
-const albumLead = isLetterCollection ? curatedLetterAlbum.description : albumView?.description ?? '';
+const albumTitle = isLetterCollection ? t(curatedLetterAlbum.title, locale) : albumView?.title || t("相册 {0}", locale, { 0: albumId });
+const albumLead = isLetterCollection ? t(curatedLetterAlbum.description, locale) : albumView?.description ?? '';
 const albumCover = albumView?.images[0] ? getResponsiveImage(albumView.images[0]) : undefined;
 const dateSummary = albumDateSummary(members);
 const yearRange = dateSummary.range;
@@ -53,7 +54,7 @@ const photoCount = photoEntries.length;
 const imageCount = photoEntries.reduce((count, entry) => count + entry.view.images.length, 0);
 const letterImageCount = letterEntries.reduce((count, entry) => count + entry.view.images.length, 0);
 const albumSummary = albumLead || t("已公开 {0} 件照片档案，共 {1} 幅附图。", locale, { 0: photoCount, 1: imageCount });
-const pendingTranslation = (isLetterCollection && locale !== 'zh-CN') || entries.some((entry) => entry.view.translationState !== 'published') ||
+const pendingTranslation = (isLetterCollection && ['en','th'].includes(locale)) || entries.some((entry) => entry.view.translationState !== 'published') ||
   (Boolean(albumView) && albumView!.translationState !== 'published');
 const albumUrl = Astro.site ? new URL(localizePath(albumHref(albumId), locale), Astro.site) : undefined;
 const albumStructuredData = {
@@ -87,6 +88,7 @@ const breadcrumbStructuredData = {
   image={albumCover?.src ?? galleryEntries.find((entry) => entry.cover)?.cover?.src}
   pageType="website"
   structuredData={[albumStructuredData, breadcrumbStructuredData]}
+  translationAvailability={Object.fromEntries(translationLocales.map(language=>[language,!(isLetterCollection&&['en','th'].includes(language))&&members.every(item=>getArchiveTranslation(item,language).state==='published')]))}
   englishAvailable={!isLetterCollection && !members.some(item=>getArchiveTranslation(item,'en').state!=='published')}
   thaiAvailable={!isLetterCollection && !members.some(item=>getArchiveTranslation(item,'th').state!=='published')}
   robots={locale !== 'zh-CN' && pendingTranslation ? 'noindex,follow' : undefined}
@@ -184,7 +186,7 @@ const breadcrumbStructuredData = {
   try {
     const state = JSON.parse(window.sessionStorage.getItem('ljm-archive-browse-state') ?? 'null');
     const slug = window.location.pathname.split('/').filter(Boolean).at(-1);
-    if (state?.targetAlbumSlug === slug && typeof state.href === 'string' && /^\/(?:(?:en|th)\/)?archive\/(?:[?#]|$)/.test(state.href)) {
+    if (state?.targetAlbumSlug === slug && typeof state.href === 'string' && /^\/(?:(?:en|th|ja|ko|zh-hant)\/)?archive\/(?:[?#]|$)/.test(state.href)) {
       const localized = { ...state, href: clientPath(state.href), restorePending: true };
       window.sessionStorage.setItem('ljm-archive-browse-state', JSON.stringify(localized));
       const link = document.querySelector<HTMLAnchorElement>('.record-top .back-link');

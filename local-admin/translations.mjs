@@ -1,3 +1,4 @@
+import {translationLocales} from '../shared/locale-config.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -21,7 +22,7 @@ const safeId = (itemId) => {
 
 // 译文草稿、已审核版本和历史均留在私有管理目录。只有公开层导出函数可以向网站写入内容。
 export const createTranslationStore = ({ root, locale = 'en' }) => {
- if (!['en','th'].includes(locale)) fail('不支持的译文语言。');
+ if (!translationLocales.includes(locale)) fail('不支持的译文语言。');
 	const filePath = (itemId) => path.join(root, `${safeId(itemId)}.json`);
 	const readRaw = async (itemId) => {
 		try { return await fs.readFile(filePath(itemId), 'utf8'); }

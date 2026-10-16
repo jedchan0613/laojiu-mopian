@@ -2,6 +2,7 @@
 
 import { t, getLocale, localizePath, canonicalPath, dateLocale } from '../../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
+import {translationLocales} from '../../../../shared/locale-config.mjs';
 import {getArchiveTranslation} from '../../data/archive-localization';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveLikeButton from '../../components/ArchiveLikeButton.astro';
@@ -261,6 +262,7 @@ const breadcrumbStructuredData = {
   image={galleryImages[0]?.src}
   pageType="article"
   structuredData={[recordStructuredData, breadcrumbStructuredData]}
+  translationAvailability={Object.fromEntries(translationLocales.map(language=>[language,getArchiveTranslation(item,language).state==='published']))}
   englishAvailable={getArchiveTranslation(item,'en').state === 'published'}
   thaiAvailable={getArchiveTranslation(item,'th').state === 'published'}
   robots={locale !== 'zh-CN' && view.translationState !== 'published' ? 'noindex,follow' : undefined}
@@ -984,7 +986,7 @@ import '../../scripts/archive-likes';
     if (
       browseState?.targetId === recordPage?.dataset.recordId &&
       typeof browseState.href === 'string' &&
-      /^\/(?:(?:en|th)\/)?archive\/(?:[?#]|$)/.test(browseState.href)
+      /^\/(?:(?:en|th|ja|ko|zh-hant)\/)?archive\/(?:[?#]|$)/.test(browseState.href)
     ) {
       const localizedBrowseState = { ...browseState, href: clientPath(browseState.href), restorePending: true };
       window.sessionStorage.setItem(

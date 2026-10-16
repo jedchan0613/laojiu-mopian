@@ -1,3 +1,4 @@
+import {translationLocales} from './locale-config.mjs';
 import { createHash } from 'node:crypto';
 import dictionary from '../site/src/data/standards/code-dictionary.json' with { type: 'json' };
 import photo from '../site/src/data/standards/photo-dimensions.json' with { type: 'json' };
@@ -91,7 +92,7 @@ export const validateTranslationRecord = (item, translation) => {
   const warning = (message, field) => { warnings.push(message); issues.push({ level: 'warning', field, message }); };
   const source = getPublicTranslationSource(item);
   if (!isRecord(translation)) return { valid: false, errors: ['译文记录格式无效。'], warnings, issues, state: 'invalid' };
-  if (translation.schema_version !== 1 || !['en', 'th'].includes(translation.locale) || translation.item_id !== source.item_id) error('译文版本、语言或永久编号不匹配。');
+  if (translation.schema_version !== 1 || !translationLocales.includes(translation.locale) || translation.item_id !== source.item_id) error('译文版本、语言或永久编号不匹配。');
   if (!['draft', 'review', 'published'].includes(translation.status)) error('译文状态无效。');
   if (!/^[a-f0-9]{64}$/.test(translation.source_hash ?? '')) error('译文来源指纹无效。');
   if (!isRecord(translation.fields) || !isRecord(translation.image_descriptions ?? {})) error('译文内容必须使用字段映射。');
@@ -132,7 +133,7 @@ export const validateTranslationRecord = (item, translation) => {
   return { valid: errors.length === 0, errors, warnings, issues, state: errors.length ? 'invalid' : getTranslationState(item, translation), source_hash: getTranslationSourceHash(item) };
 };
 export const createPublicTranslationLayer = (items, translations, locale = 'en') => {
-  if (!['en','th'].includes(locale)) throw new Error('不支持的译文语言');
+  if (!translationLocales.includes(locale)) throw new Error('不支持的译文语言');
   const list = Array.isArray(translations) ? translations : Object.values(translations?.records ?? translations ?? {});
   const byId = new Map();
   for (const translation of list) {

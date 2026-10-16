@@ -1,3 +1,4 @@
+import {translationLocales,supportedLocales} from '../../../shared/locale-config.mjs';
 import type { ArchiveItem, ObjectType } from './archive-schema';
 import { getCodeEntry, getCodeLabel, getArchiveTermLabel, isTranslatedArchiveLocale } from './code-dictionary';
 import { getDimensionsForItem } from './dimension-definitions';
@@ -22,6 +23,8 @@ export const getDecade = (dateDisplay: string) => { const match = dateDisplay.ma
 const viewCache = new WeakMap<ArchiveItem, Map<string, ArchiveRecordView>>();
 export const createArchiveRecordView = (item: ArchiveItem, requestedLocale: string | number = 'zh-CN'): ArchiveRecordView => {
   const locale = typeof requestedLocale === 'string' ? requestedLocale : 'zh-CN';
+  const cached=viewCache.get(item)?.get(locale);
+  if(cached)return cached;
   const english = isTranslatedArchiveLocale(locale);
   const translation = getArchiveTranslation(item, locale);
   const localizedCore = getLocalizedArchiveCore(item, locale);
@@ -45,6 +48,9 @@ export const createArchiveRecordView = (item: ArchiveItem, requestedLocale: stri
     const maintained = item.public_view.image_descriptions?.[index]?.trim();
     if (maintained) return maintained;
     const filename = image.split('/').at(-1)?.toLowerCase() ?? '';
+    if (locale === 'ja')return `${title}、画像 ${index+1}`;
+    if (locale === 'ko')return `${title}, 이미지 ${index+1}`;
+    if (locale === 'zh-Hant')return `${title}，附圖 ${index+1}`;
     if (locale === 'th') return `${title}, ${filename.startsWith('front-') ? 'ด้านหน้า' : filename.startsWith('back-') ? 'ด้านหลัง' : `ภาพประกอบ ${index + 1}`}`;
     if (images.length === 1) return english ? `${title}, archive image` : `${title}的档案图片`;
     if (filename.startsWith('front-')) return english ? `${title}, front` : `${title}，正面`;
@@ -54,12 +60,12 @@ export const createArchiveRecordView = (item: ArchiveItem, requestedLocale: stri
   const typeLabel = getObjectTypeLabel(item.core.object_type, locale);
   const collectionCode = item.core.collection_code?.trim() ?? '';
   const joinSearch = (...values: (string | string[])[]) => [...new Set(values.flat().filter(Boolean))].join(' ').toLocaleLowerCase('en-US');
-  const translations = ['en','th'].map(language => getArchiveTranslation(item,language).fields);
+  const translations = translationLocales.map(language => getArchiveTranslation(item,language).fields);
   const translatedValues = (key: string) => translations.flatMap(f => f[key] ?? []);
   const searchFields: ArchiveSearchFields = {
     title:joinSearch(item.core.title,...translatedValues('core.title')),
     identifiers:joinSearch(item.core.item_id,collectionCode,item.core.object_type),
-    typeLabel:joinSearch(...['zh-CN','en','th'].map(language=>getObjectTypeLabel(item.core.object_type,language))),
+    typeLabel:joinSearch(...supportedLocales.map(language=>getObjectTypeLabel(item.core.object_type,language))),
     dateDisplay:joinSearch(item.core.date_display ?? '',...translatedValues('core.date_display')),
     place:joinSearch(canonicalPlaceFilters,...fields.flatMap(field=>translatedValues('core.'+field)),canonicalPlaceFilters.join(' / '),...translations.map(f=>fields.map(field=>String(f['core.'+field] ?? item.core[field] ?? '')).filter(Boolean).join(' / '))),
     description:joinSearch(item.public_view.description ?? '',...translatedValues('public_view.description')),

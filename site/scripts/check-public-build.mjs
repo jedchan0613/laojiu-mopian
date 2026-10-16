@@ -1,3 +1,4 @@
+import {localeDefinitions,pathForLocale} from '../../shared/locale-config.mjs';
 import { access, readdir, readFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -194,6 +195,22 @@ if (englishArchiveIndex) {
 	check(ids.length === detailPages.length && ids.every((id) => chineseRecordIds.has(id)), '英语档案列表与中文公开集合不一致。');
 	check(englishArchiveIndex.html.includes('id="archive-search-index"'), '英语档案列表缺少搜索索引。');
 }
+// 每个语言版本共用同一资料、图片与权限身份；缺译文页按语言独立禁止收录。
+for(const definition of localeDefinitions.filter(entry=>entry.prefix)){
+ const prefix=definition.prefix+'/',translatedHome=htmlEntries.find(entry=>entry.relativePath===prefix+'index.html'),translatedIndex=htmlEntries.find(entry=>entry.relativePath===prefix+'archive/index.html');
+ const translatedDetails=htmlEntries.filter(entry=>entry.relativePath.startsWith(prefix+'archive/')&&/^LJM-[^/]+\/index\.html$/.test(entry.relativePath.slice((prefix+'archive/').length)));
+ check(Boolean(translatedHome)&&Boolean(translatedIndex),definition.locale+' 缺少首页或目录');
+ check(translatedDetails.length===detailPages.length,definition.locale+' 档案详情数量不一致');
+ for(const page of translatedDetails){
+  const id=page.relativePath.split('/')[2];check(chineseRecordIds.has(id),page.relativePath+' 资料身份不一致');
+  check(page.html.includes('lang="'+definition.locale+'"'),page.relativePath+' 页面语言不正确');
+  check(page.html.includes('data-record-citation')&&page.html.includes('data-record-usage'),page.relativePath+' 缺少引用或使用说明');
+ }
+ const accounts=htmlEntries.filter(entry=>entry.relativePath===prefix+'login/index.html'||entry.relativePath.startsWith(prefix+'me/'));
+ check(accounts.length===htmlEntries.filter(entry=>entry.relativePath==='login/index.html'||entry.relativePath.startsWith('me/')).length,definition.locale+' 账户页不完整');
+ for(const page of accounts)check(page.html.includes('name="robots"')&&page.html.includes('noindex'),page.relativePath+' 账户页未禁止收录');
+ if(translatedHome)check(extractRandomIndexIds(translatedHome.html).length===detailPages.length,definition.locale+' 随机档案集合不一致');
+}
 check(homeSource.includes('const view = views[0];'), '首页精选没有固定为每种分类取一件藏品。');
 check(homeSource.includes('Boolean(view.images[0])'), '首页精选没有排除缺少图片的藏品。');
 check(homeSource.includes('const source = view?.images[0];'), '首页精选没有固定使用每件藏品的首张图片。');
@@ -385,12 +402,12 @@ for (const page of detailPages) {
 }
 
 for (const page of htmlEntries) {
-	const locale=page.relativePath.startsWith('th/')?'th':page.relativePath.startsWith('en/')?'en':'zh-CN';
+	const locale=localeDefinitions.find(entry=>entry.prefix&&page.relativePath.startsWith(entry.prefix+'/'))?.locale??'zh-CN';
  const isEnglish=locale!=='zh-CN';
 	check(page.html.includes(`<html lang="${locale}"`), `${page.relativePath} 页面语言设置不正确。`);
 	if (isEnglish && process.env.PUBLIC_SITE_URL?.trim()) {
   const head = page.html.split('</head>')[0];
-		const pendingArchive = /^(?:en|th)\/(?:archive\/LJM-|albums\/)/.test(page.relativePath) && /name="robots" content="noindex/.test(page.html);
+		const pendingArchive = /^(?:en|th|ja|ko|zh-hant)\/(?:archive\/LJM-|albums\/)/.test(page.relativePath) && /name="robots" content="noindex/.test(page.html);
 		check(head.includes('hreflang="zh-CN"') && head.includes('hreflang="x-default"'), `${page.relativePath} 缺少对应中文页面标记。`);
 		check(pendingArchive ? !head.includes(`hreflang="${locale}"`) : head.includes(`hreflang="${locale}"`), `${page.relativePath} 英文页面关联与译文审核状态不一致。`);
 		if (pendingArchive) check(page.html.includes('class="translation-notice"'), `${page.relativePath} 缺少英文译文待复核提示。`);
@@ -469,7 +486,7 @@ if (configuredSiteUrl) {
 	check(sitemapExists, '配置正式域名后没有生成 sitemap.xml。');
 	if (sitemapExists) {
 		const sitemap = await readFile(join(distRoot, 'sitemap.xml'), 'utf8');
-		for (const privatePath of ['/login/', '/me/', '/en/login/', '/en/me/', '/th/login/', '/th/me/']) {
+		for (const privatePath of localeDefinitions.flatMap(entry=>['/login/','/me/'].map(p=>pathForLocale(p,entry.locale)))) {
 			check(!sitemap.includes(privatePath), `站点地图不应收录账户页面：${privatePath}。`);
 		}
 		check(sitemap.includes('hreflang="zh-CN"') && sitemap.includes('hreflang="en"') && sitemap.includes('hreflang="x-default"'), '站点地图缺少双语对应地址。');
@@ -483,11 +500,11 @@ if (configuredSiteUrl) {
 // 相册入口必须指向本次实际生成的页面；仅“编号有值”不能证明链接可用。
 const builtPagePaths = new Set(htmlEntries.map((page) => page.relativePath));
 for (const page of htmlEntries) {
-	for (const match of page.html.matchAll(/<a\b[^>]*href="(\/(?:(?:en|th)\/)?albums\/[^"?#]+)"/g)) {
+	for (const match of page.html.matchAll(/<a\b[^>]*href="(\/(?:(?:en|th|ja|ko|zh-hant)\/)?albums\/[^"?#]+)"/g)) {
 		const target = decodeURIComponent(match[1]).replace(/^\//,'').replace(/\/$/,'') + '/index.html';
 		check(builtPagePaths.has(target), `${page.relativePath} 的相册入口没有对应页面：${match[1]}。`);
 	}
-	if (!/^(?:(?:en|th)\/)?albums\//.test(page.relativePath)) continue;
+	if (!/^(?:(?:en|th|ja|ko|zh-hant)\/)?albums\//.test(page.relativePath)) continue;
 	const photos = [...page.html.matchAll(/data-album-photo-id="([^"]+)"/g)].map((match) => match[1]);
 	const letters = [...page.html.matchAll(/data-album-letter-id="([^"]+)"/g)].map((match) => match[1]);
 	const declaredCount = Number(page.html.match(/data-album-photo-count="(\d+)"/)?.[1]);
@@ -498,10 +515,10 @@ for (const page of htmlEntries) {
 	check(new Set(letters).size === letters.length, `${page.relativePath} 重复列出同一封信件。`);
 	check(!(photos.length && letters.length), `${page.relativePath} 混合了照片与信件选览。`);
 	check(page.html.includes('"@type":"CollectionPage"'), `${page.relativePath} 缺少相册结构化信息。`);
-	const localePrefix = /^(en|th)\//.exec(page.relativePath)?.[0] ?? '';
+	const localePrefix = /^(en|th|ja|ko|zh-hant)\//.exec(page.relativePath)?.[0] ?? '';
 	for (const id of [...photos, ...letters]) check(builtPagePaths.has(`${localePrefix}archive/${id}/index.html`), `${page.relativePath} 列出不存在的档案：${id}。`);
 	if (localePrefix) {
-		const chinesePage = htmlEntries.find((entry) => entry.relativePath === page.relativePath.slice(3));
+		const chinesePage = htmlEntries.find((entry) => entry.relativePath === page.relativePath.slice(localePrefix.length));
 		const chinesePhotos = [...(chinesePage?.html ?? '').matchAll(/data-album-photo-id="([^"]+)"/g)].map((match) => match[1]);
 		check(JSON.stringify(photos) === JSON.stringify(chinesePhotos), `${page.relativePath} 的照片数量或顺序与中文版不一致。`);
 		const chineseLetters = [...(chinesePage?.html ?? '').matchAll(/data-album-letter-id="([^"]+)"/g)].map((match) => match[1]);

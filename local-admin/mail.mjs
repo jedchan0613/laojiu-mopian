@@ -1,3 +1,4 @@
+import {additionalMailTemplates} from './mail-languages.mjs';
 // 邮件发送层：零依赖。
 //
 // 三种通道：
@@ -134,7 +135,7 @@ export function createMailer({
 	const render = (template, variables) => {
 		const builder = mailTemplates[template];
 		if (!builder) throw new MailError(`未知的邮件模板：${template}。`);
-		return (normalizeAccountLanguage(variables?.language) === 'th' ? thaiMailTemplates[template] : normalizeAccountLanguage(variables?.language) === 'en' ? englishMailTemplates[template] : builder)(variables ?? {});
+		return (additionalMailTemplates[normalizeAccountLanguage(variables?.language)]?.[template] ?? (normalizeAccountLanguage(variables?.language) === 'th' ? thaiMailTemplates[template] : normalizeAccountLanguage(variables?.language) === 'en' ? englishMailTemplates[template] : builder))(variables ?? {});
 	};
 
 	return {

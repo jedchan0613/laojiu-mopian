@@ -5,7 +5,7 @@ import { defineConfig } from 'astro/config';
 const publicSiteUrl = process.env.PUBLIC_SITE_URL?.trim();
 
 export default defineConfig({
-	i18n: { locales: ['zh-CN', 'en', 'th'], defaultLocale: 'zh-CN', routing: { prefixDefaultLocale: false } },
+	i18n: { locales: ['zh-CN','en','th','ja','ko',{path:'zh-hant',codes:['zh-Hant']}], defaultLocale: 'zh-CN', routing: { prefixDefaultLocale: false } },
 	...(publicSiteUrl ? { site: publicSiteUrl } : {}),
 	vite: {
 		build: {

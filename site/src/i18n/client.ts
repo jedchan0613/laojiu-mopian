@@ -1,5 +1,5 @@
 import { getLocale, localizePath, t, type Locale } from './ui';
-import { thaiText } from '../../../shared/thai-text.mjs';
+import {fixedText} from '../../../shared/fixed-text.mjs';
 // Only fixed interface messages are translated. Values supplied by visitors or
 // curators remain unchanged when inserted into a translated message.
 const dictionary: Record<string, string> = {
@@ -234,7 +234,7 @@ export const clientLocale = () => getLocale();
 export const clientPath = (href: string) => localizePath(href, clientLocale());
 export const interfaceText = (text: string, locale: Locale, params: Record<string, unknown> = {}) => {
   let template = locale === 'zh-CN' ? text : dictionary[text] ?? t(text, 'en');
-  if (locale === 'th') template = thaiText(template);
+  if(locale!=='zh-CN'&&locale!=='en')template=fixedText(template,locale,text);
   // Singular applies to this fixed interface template only, never visitor text.
   if (locale === 'en' && text === '{0} {1} 件档案{2}' && Number(params['1']) === 1) template = '{0} {1} record{2}';
   return template.replace(/\{(\w+)\}/g, (match, key) => Object.prototype.hasOwnProperty.call(params, key) ? String(params[key] ?? '') : match);
@@ -243,5 +243,5 @@ export const clientText = (text: string, params: Record<string, unknown> = {}) =
 export const clientError = (message: unknown, fallback = '暂时无法完成操作，请稍后再试。') => {
   const value = typeof message === 'string' && message ? message : fallback;
   const translated = clientText(value);
-  return clientLocale() !== 'zh-CN' && /[\u3400-\u9fff]/.test(translated) ? clientText(fallback) : translated;
+  return ['en','th','ko'].includes(clientLocale()) && /[\u3400-\u9fff]/.test(translated) ? clientText(fallback) : translated;
 };

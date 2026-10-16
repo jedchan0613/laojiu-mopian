@@ -9,9 +9,11 @@ import { promisify } from 'node:util';
 test('站点地图为中英文公开页成对标记，四类账号路径与两种404均不收录', async (t) => {
 	const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ljm-bilingual-sitemap-'));
 	t.after(() => fs.rm(root, { recursive: true, force: true }));
-	const scripts = path.join(root, 'scripts');
-	const dist = path.join(root, 'dist');
+	const scripts = path.join(root, 'site', 'scripts');
+	const dist = path.join(root, 'site', 'dist');
 	await fs.mkdir(scripts, { recursive: true });
+	await fs.mkdir(path.join(root, 'shared'));
+	await fs.copyFile(new URL('../../shared/locale-config.mjs', import.meta.url), path.join(root, 'shared', 'locale-config.mjs'));
 	await fs.copyFile(new URL('../../site/scripts/generate-sitemap.mjs', import.meta.url), path.join(scripts, 'generate-sitemap.mjs'));
 	const pages = ['index.html', 'en/index.html', 'archive/one/index.html', 'en/archive/one/index.html', 'login/index.html', 'en/login/index.html', 'me/settings/index.html', 'en/me/settings/index.html', '404.html', 'en/404/index.html'];
 	for (const page of pages) {

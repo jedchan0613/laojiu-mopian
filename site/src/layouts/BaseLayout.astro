@@ -2,6 +2,7 @@
 
 import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
+import {localeDefinitions} from '../../../shared/locale-config.mjs';
 import LanguagePicker from '../components/LanguagePicker.astro';
 import ContactWidget from '../components/ContactWidget.astro';
 import SocialLinks from '../components/SocialLinks.astro';
@@ -11,6 +12,7 @@ import '../assets/fonts/brand-subsets.css';
 import '../assets/fonts/complete/complete.css';
 
 interface Props {
+ translationAvailability?: Record<string,boolean>;
 	englishAvailable?: boolean;
  thaiAvailable?: boolean;
 	title?: string;
@@ -31,7 +33,9 @@ const {
 	robots,
 	englishAvailable = true,
  thaiAvailable = true,
+ translationAvailability = {},
 } = Astro.props;
+const availability={en:englishAvailable,th:thaiAvailable,...translationAvailability};
 const currentPath = Astro.url.pathname;
 const pathWithoutLocale = canonicalPath(currentPath);
 const title = t(originalTitle, locale);
@@ -62,8 +66,8 @@ const serializedStructuredData = structuredData
 		<meta name="description" content={description} />
 		{robots && <meta name="robots" content={robots} />}
 		<meta name="theme-color" content="#eee9de" />
-		<meta property="og:locale" content={locale === 'en' ? 'en_US' : locale === 'th' ? 'th_TH' : 'zh_CN'} />
-		{['zh_CN','en_US','th_TH'].filter(code=>code!==(locale==='th'?'th_TH':locale==='en'?'en_US':'zh_CN')).map(code=><meta property="og:locale:alternate" content={code} />)}
+		<meta property="og:locale" content={localeDefinitions.find(entry=>entry.locale===locale)?.og} />
+ {localeDefinitions.filter(entry=>entry.locale!==locale&&availability[entry.locale]!==false).map(entry=><meta property="og:locale:alternate" content={entry.og} />)}
 		<meta property="og:site_name" content={t('老旧默片',locale)} />
 		<meta property="og:type" content={pageType} />
 		<meta property="og:title" content={title} />
@@ -72,10 +76,8 @@ const serializedStructuredData = structuredData
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
 		{canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
-		{chineseUrl && <link rel="alternate" hreflang="zh-CN" href={chineseUrl} />}
-		{englishUrl && englishAvailable && <link rel="alternate" hreflang="en" href={englishUrl} />}
- {thaiUrl && thaiAvailable && <link rel="alternate" hreflang="th" href={thaiUrl} />}
-		{chineseUrl && <link rel="alternate" hreflang="x-default" href={chineseUrl} />}
+		{Astro.site && localeDefinitions.filter(entry=>availability[entry.locale]!==false).map(entry=><link rel="alternate" hreflang={entry.locale} href={new URL(localizePath(currentPath,entry.locale),Astro.site)} />)}
+ {chineseUrl && <link rel="alternate" hreflang="x-default" href={chineseUrl} />}
 		{canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
 		{shareImageUrl && <meta property="og:image" content={shareImageUrl} />}
 		{shareImageUrl && <meta name="twitter:image" content={shareImageUrl} />}
@@ -137,7 +139,12 @@ const serializedStructuredData = structuredData
 </html>
 
 <style is:global>
-	html:lang(en) { --site-brand-font: Georgia, 'Times New Roman', serif; --site-text-font: Georgia, 'Times New Roman', serif; --site-ui-font: system-ui, Arial, sans-serif; }
+	html:lang(ja) {--site-brand-font:'Yu Gothic','Meiryo',system-ui,sans-serif;--site-text-font:'Yu Mincho','Hiragino Mincho ProN',serif;--site-ui-font:'Yu Gothic','Meiryo',system-ui,sans-serif;}
+ html:lang(ko) {--site-brand-font:'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;--site-text-font:'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;--site-ui-font:'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;}
+ html:lang(zh-Hant) {--site-brand-font:'Microsoft JhengHei','PingFang TC',serif;--site-text-font:'Microsoft JhengHei','PingFang TC',serif;--site-ui-font:'Microsoft JhengHei','PingFang TC',system-ui,sans-serif;}
+ html:lang(ja) :where(h1,h2,h3,p,a,button,small,label),html:lang(ko) :where(h1,h2,h3,p,a,button,small,label){letter-spacing:normal;overflow-wrap:break-word;}
+ html:lang(ko) p{word-break:keep-all;overflow-wrap:anywhere;}
+ html:lang(en) { --site-brand-font: Georgia, 'Times New Roman', serif; --site-text-font: Georgia, 'Times New Roman', serif; --site-ui-font: system-ui, Arial, sans-serif; }
 	html:lang(en) :where(h1,h2,h3,p,a,button,small,label) { letter-spacing:normal; overflow-wrap:break-word; }
 	html:lang(th) { --site-brand-font: Tahoma, 'Leelawadee UI', system-ui, sans-serif; --site-text-font: Tahoma, 'Leelawadee UI', system-ui, sans-serif; --site-ui-font: Tahoma, 'Leelawadee UI', system-ui, sans-serif; }
  html:lang(th) :where(h1,h2,h3,p,a,button,small,label,summary) { letter-spacing:normal; line-height:1.7; word-break:normal; overflow-wrap:break-word; }

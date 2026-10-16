@@ -1,6 +1,10 @@
 import type { ArchiveItem } from './archive-schema';
 import source from './archive-translations.json';
 import thaiSource from './archive-translations.th.json';
+import japaneseSource from './archive-translations.ja.json';
+import koreanSource from './archive-translations.ko.json';
+import traditionalSource from './archive-translations.zh-Hant.json';
+import {translationLocales,normalizeLocale} from '../../../shared/locale-config.mjs';
 import { getEffectiveTranslation, getTranslationState } from '../../../shared/archive-translations.mjs';
 import { isTranslatedArchiveLocale } from './code-dictionary';
 
@@ -14,14 +18,18 @@ interface PublishedTranslation {
   transcription_kind?: 'none' | 'full' | 'summary';
   translation_state?: string;
 }
-const layers = {en: source.records as Record<string, PublishedTranslation>, th: thaiSource.records as Record<string, PublishedTranslation>};
-const caches = {en: new WeakMap(), th: new WeakMap()};
+const layers: Record<string,Record<string,PublishedTranslation>> = {en:source.records,th:thaiSource.records,ja:japaneseSource.records,ko:koreanSource.records,'zh-Hant':traditionalSource.records};
+const caches=Object.fromEntries(translationLocales.map(locale=>[locale,new WeakMap()]));
 export const getArchiveTranslation = (item: ArchiveItem, locale: ArchiveLocale = 'en') => {
- const selected = locale.startsWith('th') ? 'th' : 'en';
+ const selected=translationLocales.includes(normalizeLocale(locale))?normalizeLocale(locale):'en';
  const records = layers[selected], cache = caches[selected];
+ // 构建中的档案与公开译文模块不可变；来源变化会重新加载模块并清空缓存。
  let effective = cache.get(item);
- if (!effective) { effective = getEffectiveTranslation(item, records[item.core.item_id]); cache.set(item,effective); }
- return {...effective, state:getTranslationState(item,records[item.core.item_id]), transcriptionKind:records[item.core.item_id]?.transcription_kind ?? 'none'};
+ if (!effective) {
+  effective = {...getEffectiveTranslation(item,records[item.core.item_id]),state:getTranslationState(item,records[item.core.item_id]),transcriptionKind:records[item.core.item_id]?.transcription_kind??'none'};
+  cache.set(item,effective);
+ }
+ return effective;
 };
 export const getOriginalArchiveValue = (item: ArchiveItem, path: string): unknown => path.split('.').reduce<unknown>((value, key) => value !== null && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined, item);
 export const getLocalizedArchiveValue = (item: ArchiveItem, path: string, locale: ArchiveLocale = 'zh-CN'): unknown => isTranslatedArchiveLocale(locale)

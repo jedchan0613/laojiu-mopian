@@ -1,3 +1,4 @@
+import {translationLocales} from '../shared/locale-config.mjs';
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import { constants as fsConstants } from 'node:fs';
@@ -224,7 +225,7 @@ const publicSubmissions = createPublicSubmissionHandler({ store: submissionStore
 const contactStore = createContactStore({ root: contactDirectory });
 const translationStore = createTranslationStore({ root: translationDirectory });
 const thaiTranslationStore = createTranslationStore({root:path.join(translationDirectory,'th'),locale:'th'});
-const translationStores = {en:translationStore,th:thaiTranslationStore};
+const translationStores = Object.fromEntries(translationLocales.map(locale=>[locale,locale==='en'?translationStore:locale==='th'?thaiTranslationStore:createTranslationStore({root:path.join(translationDirectory,locale),locale})]));
 const publicContacts = createPublicContactHandler({ store: contactStore, origin: localAdminOrigin, local: true });
 
 // 账户服务：本地模式在同一个本机服务里挂载账户处理器，账户数据仍只写入自己的私密目录。
@@ -1927,10 +1928,12 @@ const generateSiteArchiveSource = async () => {
 };
 
 const generateSiteTranslationLayer = async () => {
-	const layer = await translationStore.publicLayer(await loadPublicTranslationRecords());
-	await fs.writeFile(siteTranslationDataFile, `${JSON.stringify(layer, null, 2)}\n`, 'utf8');
- const thaiLayer=await thaiTranslationStore.publicLayer(await loadPublicTranslationRecords());
- await fs.writeFile(path.join(siteDirectory,'src','data','archive-translations.th.json'),`${JSON.stringify(thaiLayer,null,2)}\n`,'utf8');
+ const records=await loadPublicTranslationRecords();
+ for(const locale of translationLocales){
+  const layer=await translationStores[locale].publicLayer(records);
+  const filename=locale==='en'?'archive-translations.json':'archive-translations.'+locale+'.json';
+  await fs.writeFile(path.join(siteDirectory,'src','data',filename),JSON.stringify(layer,null,2)+'\n','utf8');
+ }
 };
 
 const loadTranslationItem = async (itemId) => {
@@ -2172,7 +2175,7 @@ const runSiteBuild = async (options = {}) => {
 
 const publishEnglishTranslation = async (itemId, payload, options = {}) => {
  const locale=options.locale ?? 'en';
- if(!['en','th'].includes(locale))throw new RequestError('不支持的译文语言。');
+ if(!translationLocales.includes(locale))throw new RequestError('不支持的译文语言。');
  const translationStore=translationStores[locale];
 	const { signal = null } = options;
 	if (publishInProgress) throw new RequestError('已有一项网站更新正在进行，请稍候。', 409);
@@ -2539,7 +2542,7 @@ const adminServer = http.createServer(async (request, response) => {
 		if (translationRoute) {
 			const [, itemId, action] = translationRoute;
  const locale=url.searchParams.get('locale') ?? 'en';
- if (!['en','th'].includes(locale)) throw new RequestError('不支持的译文语言。');
+ if (!translationLocales.includes(locale)) throw new RequestError('不支持的译文语言。');
  const translationStore=translationStores[locale];
 			if (!action && request.method === 'GET') {
 				sendJson(response, 200, await translationStore.detail(await loadTranslationItem(itemId)), { request }); return;

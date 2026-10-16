@@ -153,7 +153,7 @@ form.addEventListener('submit', async event => {
  } catch (error) { announce(error instanceof Error ? clientError(error.message) : ct('投稿未完成，请稍后重试。')); if (receipt) showReceipt(receipt); }
  finally { busy = false; submit.disabled = !available; fields.disabled = false; progress.hidden = true; }
 });
-const receiptText = () => receipt ? ct("老旧默片 · 投稿回执\n投稿编号：{0}\n查询密钥：{1}\n查询页面：{2}/contribute/#submission-lookup\n接收状态：{3}\n请勿公开分享查询密钥。", {"0": (receipt.id), "1": (receipt.key), "2": (location.origin + (clientLocale() !== 'zh-CN' ? '/'+clientLocale() : '')), "3": (receipt.confirmed ? ct('已收到') : ct('待查询确认'))}) : '';
+const receiptText = () => receipt ? ct("老旧默片 · 投稿回执\n投稿编号：{0}\n查询密钥：{1}\n查询页面：{2}/contribute/#submission-lookup\n接收状态：{3}\n请勿公开分享查询密钥。", {"0": (receipt.id), "1": (receipt.key), "2": (location.origin + (clientLocale() !== 'zh-CN' ? '/'+clientLocale().toLowerCase() : '')), "3": (receipt.confirmed ? ct('已收到') : ct('待查询确认'))}) : '';
 $('#download-receipt').addEventListener('click', () => {
  if (!receipt) return; const url = URL.createObjectURL(new Blob([receiptText()], { type: 'text/plain;charset=utf-8' }));
  const anchor = document.createElement('a'); anchor.href = url; anchor.download = ct("{0}-回执.txt", {"0": (receipt.id)}); anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);

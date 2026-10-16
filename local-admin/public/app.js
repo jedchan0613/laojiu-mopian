@@ -2592,7 +2592,7 @@ elements.editorSurface.addEventListener('click', async (event) => {
 	}
 });
 
-const renderTranslation = () => `<section class="form-section"><label>译文语言 <select data-translation-locale><option value="en" ${state.translation.locale!=='th'?'selected':''}>英语 English</option><option value="th" ${state.translation.locale==='th'?'selected':''}>泰语 ไทย</option></select></label></section>`+renderTranslationBody();
+const renderTranslation = () => `<section class="form-section"><label>译文语言 <select data-translation-locale><option value="en" ${state.translation.locale==='en'?'selected':''}>英语 English</option><option value="th" ${state.translation.locale==='th'?'selected':''}>泰语 ไทย</option><option value="ja" ${state.translation.locale==='ja'?'selected':''}>日语 日本語</option><option value="ko" ${state.translation.locale==='ko'?'selected':''}>韩语 한국어</option><option value="zh-Hant" ${state.translation.locale==='zh-Hant'?'selected':''}>繁體中文</option></select></label></section>`+renderTranslationBody();
 
 const renderSpecific = () => {
 	activeFieldIssueMap = buildFieldIssueMap('specific');
@@ -4831,4 +4831,15 @@ loadBootstrap(itemIdPattern.test(requestedItem ?? '') ? requestedItem : undefine
 	console.error(error);
 	elements.recordCount.textContent = '读取失败';
 	elements.editorSurface.innerHTML = `<div class="empty-state">${escapeHtml(error.message || '暂时无法读取档案，请刷新页面后重试。')}</div>`;
+});
+
+// 切换译文使用独立状态对象；旧请求不能覆盖新语言的草稿。
+elements.editorSurface.addEventListener('change',async event=>{
+ const control=event.target;
+ if(!control.matches('[data-translation-locale]'))return;
+ const locale=control.value,previous=state.translation;
+ if(!['en','th','ja','ko','zh-Hant'].includes(locale)||locale===previous.locale)return;
+ if(previous.dirty&&!await confirmUnsavedChanges('切换语言会放弃尚未保存的译文修改，确定切换吗？')){control.value=previous.locale;return;}
+ state.translation={...previous,locale,previewLocale:locale,data:null,draft:null,dirty:false,loading:false,error:'',confirmed:new Set()};
+ renderEditor();updateHeader();
 });
