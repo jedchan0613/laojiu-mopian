@@ -142,3 +142,11 @@ test('自动保存前置检查：组词中、离线、有待传图片都不发�
 	await vm.runInContext('autoSaveDraft()', api);
 	assert.equal(api.state.savePhase, 'offline');
 });
+
+test('服务端JSON登录拒绝也显示重新登录，未执行请求不误标结果未知', async () => {
+	for (const status of [401, 403]) {
+		const api = createContext({ fetch: async () => ({ ok: false, status, headers: { get: () => 'application/json' }, json: async () => ({ error: '需要管理员登录' }) }) });
+		await assert.rejects(vm.runInContext("apiPost('/api/save-draft', {isNew:true, expectedRevision:'new'})", api), { code: 'AUTH_EXPIRED' });
+		assert.equal(vm.runInContext('pendingWriteReview', api), null);
+	}
+});

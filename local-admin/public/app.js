@@ -936,7 +936,7 @@ const apiPost = async (url, payload, options = {}) => {
 		const error = new Error(data.error ?? '管理操作没有完成。');
 		error.issues = data.issues ?? [];
 		error.cancelled = Boolean(data.cancelled);
-		error.code = data.code;
+		error.code = [401, 403].includes(response.status) ? 'AUTH_EXPIRED' : data.code;
 		error.operation = data.operation;
 		throw error;
 	}
@@ -1991,7 +1991,7 @@ const updateHeader = () => {
 	elements.saveState.textContent = saveStateText;
 	elements.saveState.classList.toggle('is-dirty', state.dirty || waitingForExactType || savePhaseIsProblem());
 	elements.reloginButton.hidden = state.savePhase !== 'auth';
-	elements.reviewButton.hidden = state.savePhase !== 'unknown';
+	elements.reviewButton.hidden = !pendingWriteReview;
 	const readonly = isWithdrawn();
 	elements.saveDraftButton.hidden = readonly;
 	elements.publishButton.hidden = readonly || state.activeTab !== 'privacy';
@@ -4185,7 +4185,7 @@ const stageImageUpload = async (image, operation, position, total) => {
 	if (image.uploadStepId) {
 		const checkResponse = await fetch(`/api/operations/${operation.id}`, { cache: 'no-store' });
 		const checked = await readApiJson(checkResponse);
-		if (!checkResponse.ok) throw new Error(checked.error ?? '尚不能核对图片上传结果，请保留页面。');
+		if (!checkResponse.ok) throw Object.assign(new Error(checked.error ?? '尚不能核对图片上传结果，请保留页面。'), { code: [401, 403].includes(checkResponse.status) ? 'AUTH_EXPIRED' : checked.code });
 		const previous = checked.operations?.find(entry => entry.stepId === image.uploadStepId);
 		if (previous?.status === 'succeeded') {
 			const token = previous.result?.upload?.token;
@@ -4220,7 +4220,7 @@ const stageImageUpload = async (image, operation, position, total) => {
 	if (!response.ok) {
 		const error = new Error(data.error ?? `图片上传失败：${image.file.name}`);
 		error.cancelled = Boolean(data.cancelled);
-		error.code = data.code;
+		error.code = [401, 403].includes(response.status) ? 'AUTH_EXPIRED' : data.code;
 		error.operation = data.operation;
 		throw error;
 	}
@@ -4606,7 +4606,8 @@ const publishCurrent = async () => {
 				? `发布完成：线上网站已切换到新版本 ${result.deployment.releaseName}。`
 				: '发布完成：字段、隐私、图片路径和网站构建均已通过。', Boolean(result.warnings?.length));
 	} catch (error) {
-		if (pendingWriteReview) setSavePhase(error.code === 'AUTH_EXPIRED' ? 'auth' : 'unknown');
+		if (error.code === 'AUTH_EXPIRED') setSavePhase('auth');
+		else if (pendingWriteReview) setSavePhase('unknown');
 		if (error.code === 'PUBLICATION_REVIEW_REQUIRED') { state.publicationReview = null; renderEditor(); }
 		if (error.issues?.length) {
 			state.validationIssues = error.issues;
@@ -5509,7 +5510,7 @@ elements.reviewButton.addEventListener('click', async () => {
 	try {
 		const response = await fetch(`/api/operations/${pendingWriteReview.operationId}`, { cache: 'no-store' });
 		const data = await readApiJson(response);
-		if (!response.ok) throw new Error(data.error ?? '核对失败。');
+		if (!response.ok) throw Object.assign(new Error(data.error ?? '核对失败。'), { code: [401, 403].includes(response.status) ? 'AUTH_EXPIRED' : data.code });
 		const operations = data.operations ?? [];
 		const mainStep = operations.find(entry => entry.stepId === pendingWriteReview.stepId);
 		if (!mainStep || ['queued', 'running'].includes(mainStep.status)) {
@@ -5581,6 +5582,7 @@ elements.reviewButton.addEventListener('click', async () => {
 		setSavePhase('failed', '上次保存在服务器未完成');
 		showToast('服务器确认这次保存未完成；修改仍保留在本页，可以直接重试保存。');
 	} catch (error) {
+		if (error.code === 'AUTH_EXPIRED') setSavePhase('auth');
 		showToast(`尚未核对到结果：${error.message}`, true);
 	} finally {
 		button.disabled = false;
