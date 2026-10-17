@@ -214,6 +214,7 @@ for(const definition of localeDefinitions.filter(entry=>entry.prefix)){
 check(homeSource.includes('const view = views[0];'), '首页精选没有固定为每种分类取一件藏品。');
 check(homeSource.includes('Boolean(view.images[0])'), '首页精选没有排除缺少图片的藏品。');
 check(homeSource.includes('const source = view?.images[0];'), '首页精选没有固定使用每件藏品的首张图片。');
+check(/views:\s*publishedViews/.test(homeSource) && !homeSource.includes('homeAlbumByRecordId'), '首页精选应逐件选择，不能把档案替换成相册卡。');
 check(homeSource.includes('item.core.created_date?.trim()'), '首页排序没有优先使用首次录入日期。');
 check(!homeSource.includes('homeCarouselMaximumSlides'), '首页精选仍受旧的轮播总数上限限制。');
 check(!homeSource.includes('homeCarouselExcludedImagePaths'), '首页精选仍使用旧的单张图片排除清单。');
@@ -318,14 +319,40 @@ if (home) {
 	);
 }
 
+// 六语言首页都必须完整保留有图分类、逐件链接和可切换控件，不能让单帧相册蒙混通过。
+if (archiveIndex) {
+	const categoriesById = new Map([...archiveIndex.html.matchAll(/<li\b[^>]*data-archive-id="([^"]+)"[^>]*>/g)]
+		.map((match) => [match[1], match[0].match(/data-archive-category="([^"]+)"/)?.[1]]));
+	const summary = JSON.parse(await readFile(join(distRoot, 'records.json'), 'utf8'));
+	const availableCategories = new Set(summary.records.filter((record) => record.cover).map((record) => categoriesById.get(record.id)));
+	const expectedCategories = ['photos', 'postcards', 'letters', 'credentials', 'cards', 'notes', 'other'].filter((category) => availableCategories.has(category));
+	const decodeAttribute = (value) => value.replace(/&(quot|amp|lt|gt|apos|#39);/g, (_, key) => ({ quot: '"', amp: '&', lt: '<', gt: '>', apos: "'", '#39': "'" })[key]);
+	for (const definition of localeDefinitions) {
+		const relativeHome = definition.prefix ? `${definition.prefix}/index.html` : 'index.html';
+		const localeHome = htmlEntries.find((page) => page.relativePath === relativeHome);
+		if (!localeHome) continue;
+		const actualCategories = localeHome.html.match(/data-carousel-category-order="([^"]*)"/)?.[1].split(',').filter(Boolean) ?? [];
+		check(JSON.stringify(actualCategories) === JSON.stringify(expectedCategories), `${relativeHome} 轮播遗漏有图分类或顺序错误。`);
+		if (expectedCategories.length < 2) continue;
+		check((localeHome.html.match(/data-home-carousel-dot="/g) ?? []).length === expectedCategories.length && localeHome.html.includes('data-home-carousel-next') && localeHome.html.includes('data-home-carousel-previous'), `${relativeHome} 轮播箭头或圆点不完整。`);
+		check(pageLoadsScriptMarker(localeHome, 'carouselReady'), `${relativeHome} 未加载轮播初始化程序。`);
+		check([...localeHome.html.matchAll(/<script\b[^>]*type="module"[^>]*>([\s\S]*?)<\/script>/g)]
+			.some((match) => match[1].includes('carouselReady') && !/\bimport\b/.test(match[1])), `${relativeHome} 轮播必须独立初始化，不等待共享翻译或其他首页脚本。`);
+		const itemsAttribute = localeHome.html.match(/data-carousel-items="([^"]*)"/)?.[1] ?? '';
+		try {
+			const items = JSON.parse(decodeAttribute(itemsAttribute));
+			check(items.length === expectedCategories.length, `${relativeHome} 轮播数据不完整。`);
+			check(items.every((item) => item.href === pathForLocale(`/archive/${item.itemId}/`, definition.locale)), `${relativeHome} 轮播应进入对应语言的单件详情，不能替换成相册入口。`);
+		} catch { check(false, `${relativeHome} 轮播数据无法解析。`); }
+	}
+}
+
 if (archiveIndex) {
 	const archiveIds = [...archiveIndex.html.matchAll(/data-archive-id="([^"]+)"/g)].map((match) => match[1]);
 	const albumMembers = new Map();
-	const albumByItemId = new Map();
 	for (const match of archiveIndex.html.matchAll(/<li\b[^>]*data-archive-id="([^"]+)"[^>]*>/g)) {
 		const albumKey = match[0].match(/data-archive-album-key="([^"]+)"/)?.[1];
 		if (!albumKey) continue;
-		albumByItemId.set(match[1], albumKey);
 		albumMembers.set(albumKey, (albumMembers.get(albumKey) ?? 0) + 1);
 		check(/\shidden(?:\s|=|>)/.test(match[0]), `入册档案 ${match[1]} 在默认目录中没有收拢。`);
 	}
@@ -339,14 +366,7 @@ if (archiveIndex) {
 	check(albumKeys.length === albumMembers.size, '相册入口与入册档案的归属不一致。');
 	for (const mode of ['grouped', 'albums', 'items']) check(archiveIndex.html.includes(`data-archive-view="${mode}"`), `档案目录缺少 ${mode} 浏览方式。`);
 	check(home?.html.includes('id="home-albums-heading"'), '首页缺少清楚的按相册浏览入口。');
-	if (home) {
-		const homeRecordIds = [
-			...(home.html.match(/data-carousel-record-order="([^"]*)"/)?.[1].split(',').filter(Boolean) ?? []),
-			...[...home.html.matchAll(/data-home-recent-record="([^"]+)"/g)].map((match) => match[1]),
-		];
-		const homeAlbums = homeRecordIds.map((id) => albumByItemId.get(id)).filter(Boolean);
-		check(new Set(homeAlbums).size === homeAlbums.length, '首页精选与继续浏览重复分散展示了同册档案。');
-	}
+	// 上下区域按永久编号去重（前文已检查），同册的不同档案仍按逐件规则参与精选。
 	const likeIds = [...archiveIndex.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
 	check(archiveIds.length === detailPages.length, '档案列表数量与公开详情页数量不一致。');
 	check(likeIds.length === 0, '档案列表不应再显示点赞入口。');

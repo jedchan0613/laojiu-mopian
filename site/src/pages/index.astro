@@ -17,23 +17,8 @@ import { getResponsiveImage } from '../data/responsive-images';
 const publishedItems = archiveItems.filter(isPublishedArchiveItem);
 const publishedViews = publishedItems.map(item => createArchiveRecordView(item, locale));
 const albumBrowseViews = createAlbumBrowseViews(publishedItems, locale);
-const homeAlbumByRecordId = new Map(albumBrowseViews.map((album) => {
-	const representative = publishedViews.find((view) => album.memberIds.includes(view.id) && view.objectType === 'ALB')
-		?? publishedViews.find((view) => album.memberIds.includes(view.id))!;
-	return [representative.id, album] as const;
-}));
-const albumMemberIds = new Set(albumBrowseViews.flatMap((album) => album.memberIds));
-// 首页每册只保留一个入口；展示用题名和封面来自公开册卡，不改变真实档案数据。
-const homepageViews = publishedViews.flatMap((view) => {
-	const album = homeAlbumByRecordId.get(view.id);
-	if (!album) return albumMemberIds.has(view.id) ? [] : [view];
-	return [{ ...view, title: album.title, typeLabel: album.isLetterCollection ? t('信件选览', locale) : t('相册', locale),
-		description: album.description || t('{0} 件公开档案', locale, { 0: album.recordCount }),
-		images: album.coverPath ? [album.coverPath] : [],
-		imageDescriptions: album.coverDescription ? [album.coverDescription] : [album.title],
-	}];
-});
-const homepageRecordHref = (id: string) => localizePath(homeAlbumByRecordId.get(id)?.href ?? `/archive/${id}/`, locale);
+// 精选与继续浏览沿用逐件规则；整册入口只在下方独立的按相册浏览区展示。
+const homepageRecordHref = (id: string) => localizePath(`/archive/${id}/`, locale);
 const categoryCounts = new Map<string, number>();
 for (const item of publishedItems) {
 	const slug = getArchiveCategorySlug(item.core.object_type);
@@ -55,7 +40,7 @@ const compareViewsByCreatedDate = (left: (typeof publishedViews)[number], right:
 };
 const categoryViewGroups = archiveCategories.map((category) => ({
 	category,
-		views: homepageViews
+		views: publishedViews
 			.filter((view) => getArchiveCategorySlug(view.objectType) === category.slug && Boolean(view.images[0]))
 			.sort((left, right) => {
 				const completeness = (view: (typeof publishedViews)[number]) =>
@@ -175,6 +160,9 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 					data-home-featured-carousel={featuredSlides.length > 1 ? '' : undefined}
 					data-carousel-category-order={featuredSlides.map((slide) => slide.categorySlug).join(',')}
 					data-carousel-record-order={featuredSlides.map((slide) => slide.itemId).join(',')}
+					data-carousel-view-label={t('查看精选档案：{0}', locale)}
+					data-carousel-like-label={t('为"{0}"点赞', locale)}
+					data-carousel-announcement-label={t('已显示第 {0} 张精选图片：{1}', locale)}
 					data-carousel-items={featuredSlides.length > 1 ? JSON.stringify(featuredSlides.map(({ image, description, itemId, title, dateDisplay, recordInfo, href }) => ({
 						src: image.src,
 						srcset: image.srcset ?? '',
@@ -386,9 +374,12 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 	</div>
 	<script type="application/json" id="random-record-index" set:html={JSON.stringify(randomRecordIds)} />
 	<script>
+		// 独立的轻量轮播入口：不等待随机浏览、足迹或整套客户端翻译字典。
+		import '../scripts/home-featured-carousel';
+	</script>
+	<script>
 import {clientText as ct,clientPath,clientLocale} from '../i18n/client';
 
-import '../scripts/home-featured-carousel';
 		import '../scripts/random-record';
 		import { clearViewHistory, readLocalizedViewHistory } from '../scripts/view-history';
 

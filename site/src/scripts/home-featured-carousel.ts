@@ -1,4 +1,3 @@
-import { clientText as ct, clientPath } from '../i18n/client';
 interface FeaturedCarouselItem {
 	src: string;
 	srcset: string;
@@ -27,6 +26,12 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 		: [];
 	const announcement = carousel.querySelector<HTMLElement>('[data-home-carousel-announcement]');
 	const controls = carousel.querySelector<HTMLElement>('.hero-carousel-controls');
+	// 题名、链接和固定提示已在构建时按页面语言生成，无需加载整套翻译字典。
+	const formatLabel = (template: string, values: Record<string, string | number>) =>
+		template.replace(/\{(\w+)\}/g, (match, key) => Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
+	const viewLabel = carousel.dataset.carouselViewLabel || recordLink?.getAttribute('aria-label')?.replace(recordTitle?.textContent ?? '', '{0}') || '{0}';
+	const likeLabel = carousel.dataset.carouselLikeLabel || '{0}';
+	const announcementLabel = carousel.dataset.carouselAnnouncementLabel || '{0} / {1}';
 
 	let items: FeaturedCarouselItem[] = [];
 	try {
@@ -74,21 +79,21 @@ document.querySelectorAll<HTMLElement>('[data-home-featured-carousel]').forEach(
 		image.alt = item.description;
 		image.width = item.width;
 		image.height = item.height;
-		recordLink.href = clientPath(item.href);
-		recordLink.setAttribute('aria-label', ct("查看精选档案：{0}", {"0": (item.title)}));
+		recordLink.href = item.href;
+		recordLink.setAttribute('aria-label', formatLabel(viewLabel, { 0: item.title }));
 		if (recordDate) recordDate.textContent = item.dateDisplay;
 		if (recordTitle) recordTitle.textContent = item.title;
 		if (recordInfo) recordInfo.textContent = item.recordInfo;
 		if (likeButton) {
 			likeButton.dataset.itemId = item.itemId;
-			likeButton.setAttribute('aria-label', ct("为\"{0}\"点赞", {"0": (item.title)}));
+			likeButton.setAttribute('aria-label', formatLabel(likeLabel, { 0: item.title }));
 			likeButton.dispatchEvent(new CustomEvent('archive-like-target-change'));
 		}
 		syncDots();
 		if (announce && announcement) {
-			announcement.textContent = ct("已显示第 {0} 张精选图片：{1}", {"0": (activeIndex + 1), "1": (item.description)});
+			announcement.textContent = formatLabel(announcementLabel, { 0: activeIndex + 1, 1: item.description });
 		}
-		if (!prefersReducedMotion.matches) {
+		if (!prefersReducedMotion.matches && typeof image.animate === 'function') {
 			image.animate(
 				[{ opacity: 0.58 }, { opacity: 1 }],
 				{ duration: 260, easing: 'ease-out' },
