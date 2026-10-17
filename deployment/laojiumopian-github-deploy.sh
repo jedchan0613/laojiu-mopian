@@ -80,7 +80,8 @@ switch_link() {
 }
 
 run_as_admin() {
-	"$RUNUSER" -u "$ADMIN_USER" -- env HOME="$NPM_HOME" "$@"
+	"$RUNUSER" -u "$ADMIN_USER" -- env HOME="$NPM_HOME" \
+		PATH="/snap/node/current/bin:/usr/local/bin:/usr/bin:/bin" "$@"
 }
 
 run_git_as_admin() {
