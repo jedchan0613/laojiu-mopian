@@ -6,7 +6,7 @@
 		<meta name="color-scheme" content="light" />
 		<meta name="robots" content="noindex, nofollow" />
 		<title>档案管理｜老旧默片</title>
-		<link rel="stylesheet" href="./styles.css?v=20261015-album-browse-3" />
+		<link rel="stylesheet" href="./styles.css?v=20261018-mobile-stage4-3" />
 	</head>
 	<body class="admin-v2">
 		<a class="skip-link" href="#main-editor">跳到档案编辑区</a>
@@ -90,9 +90,16 @@
 			<aside class="records-pane" aria-label="档案列表" hidden>
 				<div class="records-pane-heading">
 					<div><strong>档案列表</strong><span>选择一条查看速览</span></div>
+					<button class="quiet-button mobile-only" id="mobile-new-record-button" type="button">新建档案</button>
 					<button class="records-pane-close" id="records-pane-close" type="button" aria-label="收起档案列表">×</button>
 				</div>
 				<div class="record-browser-content" id="record-browser-content" hidden aria-hidden="true">
+					<label class="search-box">
+						<span class="sr-only">搜索藏品</span>
+						<input id="record-search" type="search" placeholder="编号、题名、人物、地点或来源" />
+					</label>
+					<button class="quiet-button mobile-filter-toggle mobile-only" id="mobile-filter-toggle" type="button" aria-expanded="false" aria-controls="record-filter-panel">筛选与浏览方式</button>
+					<div class="record-filter-panel" id="record-filter-panel">
 					<nav class="record-status-nav" id="record-status-nav" aria-label="档案状态">
 						<button class="record-status-button is-active" data-record-status="normal" type="button">
 							<span>正常档案</span><small id="normal-records-badge">0</small>
@@ -107,11 +114,6 @@
 						<button data-record-browse="records" type="button" aria-pressed="false">逐件查看</button>
 					</nav>
 					<p class="record-browse-help">已归册档案从相册进入；未归册档案逐件显示。每件档案仍单独计数。</p>
-
-				<label class="search-box">
-					<span class="sr-only">搜索藏品</span>
-					<input id="record-search" type="search" placeholder="编号、题名、人物、地点或来源" />
-				</label>
 
 				<div class="record-tools">
 					<label>
@@ -163,6 +165,7 @@
 					<p id="record-query-state" role="status"></p>
 					<button class="text-button" id="record-query-refresh" type="button">刷新图片结构</button>
 				</details>
+					</div>
 					<section class="record-album-context" id="record-album-context" aria-label="当前相册" hidden></section>
 					<div class="record-filter-summary"><div class="record-count" id="record-count" role="status" aria-live="polite" aria-atomic="true">正在读取档案…</div><button class="text-button" id="record-filters-clear" type="button" hidden>清除条件</button></div>
 					<p class="record-browser-notice" id="record-browser-notice" role="status" hidden></p>
@@ -177,12 +180,16 @@
 						<button class="back-to-library-button" id="back-to-library-button" type="button" aria-label="返回档案列表" hidden>
 							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
 						</button>
-						<div>
-							<p class="eyebrow" id="record-kicker"></p>
-							<h2 id="record-title">读取中…</h2>
-							<p class="record-id" id="record-id"></p>
-							<p class="save-state" id="save-state" role="status" aria-live="polite" aria-atomic="true"></p>
+					<div>
+						<p class="eyebrow" id="record-kicker"></p>
+						<h2 id="record-title">读取中…</h2>
+						<p class="record-id" id="record-id"></p>
+						<p class="save-state" id="save-state" role="status" aria-live="polite" aria-atomic="true"></p>
+						<div class="save-state-actions">
+							<button class="quiet-button save-relogin-button" id="relogin-button" type="button" hidden>重新登录</button>
+							<button class="quiet-button save-review-button" id="review-save-button" type="button" hidden>核对保存结果</button>
 						</div>
+					</div>
 					</div>
 					<div class="header-actions" id="header-actions">
 						<a class="quiet-button" id="preview-link" href="/">查看网站首页</a>
@@ -212,6 +219,12 @@
 					<div class="task-chips" id="task-chips" aria-label="档案完成情况"></div>
 				</section>
 
+				<nav class="mobile-editor-tabs mobile-only" id="mobile-editor-tabs" aria-label="手机编辑步骤" hidden>
+					<button id="mobile-tab-quick" data-mobile-tab="quick" type="button">常用信息</button>
+					<button data-mobile-tab="images" type="button">图片</button>
+					<button data-mobile-tab="basic" type="button">完整资料</button>
+					<button data-mobile-tab="preview" type="button">发布检查</button>
+				</nav>
 				<nav class="tabs" aria-label="编辑分区" role="tablist">
 					<button class="tab is-active" id="tab-basic" data-tab="basic" type="button" role="tab" aria-controls="editor-surface" aria-selected="true"><span>基本信息</span><small data-tab-status></small></button>
 					<button class="tab" id="tab-images" data-tab="images" type="button" role="tab" aria-controls="editor-surface" aria-selected="false"><span>发布图片</span><small data-tab-status></small></button>
@@ -235,11 +248,28 @@
 					</div>
 					<div class="record-action-dock-buttons">
 						<button class="quiet-button" id="dock-save-draft-button" type="button">保存草稿</button>
+						<button class="quiet-button mobile-only" id="mobile-next-button" type="button">下一步</button>
 						<button class="publish-button" id="dock-publish-button" type="button" hidden>检查并发布</button>
 					</div>
 				</aside>
 			</main>
 		</div>
+		<nav class="mobile-navigation mobile-only" id="mobile-navigation" aria-label="手机工作区">
+			<button data-mobile-workspace="records" type="button" aria-current="page">档案</button>
+			<button data-mobile-workspace="drafts" type="button">草稿 <small id="mobile-drafts-count">0</small></button>
+			<button data-mobile-workspace="more" type="button">更多</button>
+		</nav>
+		<dialog class="action-dialog mobile-more-dialog" id="mobile-more-dialog" aria-labelledby="mobile-more-title">
+			<div class="action-dialog-card">
+				<div class="mobile-more-heading"><h2 id="mobile-more-title">更多管理入口</h2><button class="quiet-button" id="mobile-more-close" type="button">关闭</button></div>
+				<button class="quiet-button" data-mobile-target="maintenance" type="button">维护概览</button>
+				<button class="quiet-button" data-mobile-target="recovery" type="button">历史与回收</button>
+				<a class="quiet-button" href="/admin/submissions.html">投稿审核</a>
+				<a class="quiet-button" href="/admin/contacts.html">联系收件箱</a>
+				<a class="quiet-button" href="/admin/accounts.html">账号与申请</a>
+				<a class="quiet-button" href="/admin/preview/">注册模块预览</a>
+			</div>
+		</dialog>
 
 		<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 		<div class="busy-overlay" id="busy-overlay" role="status" aria-live="polite" aria-atomic="true" aria-busy="true" hidden>
@@ -287,6 +317,7 @@
 				</div>
 				<div class="action-dialog-actions">
 					<button class="quiet-button" id="confirm-dialog-cancel" value="cancel" type="submit">取消</button>
+					<button class="quiet-button" id="confirm-dialog-save" type="button" hidden>保存草稿并继续</button>
 					<button class="danger-button" id="confirm-dialog-accept" type="button">确定</button>
 				</div>
 			</form>
@@ -308,6 +339,6 @@
 		<datalist id="administrative-city-options"></datalist>
 		<datalist id="administrative-district-options"></datalist>
 
-		<script type="module" src="./app.js?v=20261015-album-browse-3"></script>
+		<script type="module" src="./app.js?v=20261018-mobile-stage4-3"></script>
 	</body>
 </html>

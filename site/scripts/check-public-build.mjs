@@ -480,10 +480,10 @@ if (contributionPage) {
 	check(pageLoadsScriptMarker(contributionPage, '/api/submissions/lookup'), '投稿页缺少私密回执查询程序。');
 }
 const publicCode = publicText + scriptEntries.map((entry) => entry.contents).join('\n');
-for (const marker of ['/api/admin/submissions', '/api/admin/contacts', '/api/admin/translations', 'reviewed_by', 'confirmed_fields', 'LJM_SUBMISSION_DATA_DIR', 'key_hash', 'source_submission_id', 'PRIVATE-NOTE-ONLY', 'synthetic@example.invalid', 'synthetic-contact@example.invalid']) {
+for (const marker of ['/api/admin/submissions', '/api/admin/contacts', '/api/admin/translations', '/api/operations/', 'OPERATION_NEEDS_REVIEW', 'reviewed_by', 'confirmed_fields', 'LJM_SUBMISSION_DATA_DIR', 'key_hash', 'source_submission_id', 'PRIVATE-NOTE-ONLY', 'synthetic@example.invalid', 'synthetic-contact@example.invalid']) {
 	check(!publicCode.includes(marker), `公开构建混入私密投稿信息或管理程序：${marker}。`);
 }
-for (const privateName of ['submissions', '_contacts', 'drafts', 'history', 'recycle-bin', 'local-admin', 'accounts', 'translations']) {
+for (const privateName of ['submissions', '_contacts', 'drafts', 'history', 'recycle-bin', 'local-admin', 'accounts', 'translations', 'operations']) {
 	check(!distFiles.some((file) => relative(distRoot, file).split(sep).includes(privateName)), `公开构建混入私密目录：${privateName}。`);
 }
 

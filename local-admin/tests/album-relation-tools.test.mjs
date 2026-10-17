@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
@@ -116,8 +117,12 @@ test('相册关联在真实服务中保持草稿隔离、输入安全与发布�
 	}
 	assert.ok(ready, `测试服务未能启动：${processOutput}`);
 	const post = async (route, payload, headers = {}) => {
+		payload = { ...payload };
+		if (['/api/save-draft', '/api/publish'].includes(route)) {
+			payload.expectedRevision = payload.isNew ? 'new' : (await fetch(`${origin}/api/record-version/${payload.itemId ?? payload.record.core.item_id}`).then(response => response.json())).revision;
+		}
 		const response = await fetch(`${origin}${route}`, { method: 'POST', headers: {
-			'content-type': 'application/json', 'x-ljm-admin-request': '1', origin, ...headers }, body: JSON.stringify(payload) });
+			'content-type': 'application/json', 'x-ljm-admin-request': '1', 'x-ljm-operation-id': randomUUID(), 'x-ljm-step-id': randomUUID(), origin, ...headers }, body: JSON.stringify(payload) });
 		return { status: response.status, body: await response.json() };
 	};
 	const save = (record, isNew = true) => post('/api/save-draft', { record, isNew, images: [] });
@@ -239,6 +244,21 @@ test('相册关联在真实服务中保持草稿隔离、输入安全与发布�
 		assert.deepEqual(['record_status', 'privacy_level', 'use_status'].map(field => draft.record.core[field]), ['SUS','Y','U0']);
 		assert.deepEqual((await readdir(path.join(privateRoot, 'inbox', itemId))).sort(), [...names].sort());
 		assert.equal(await readFile(sourcePath, 'utf8'), sourceBefore);
+		// 模拟保存已完成但本地结果未落盘：重新执行必须凭私密收据恢复，不能再建一件。
+		const beforeRecovery = (await readdir(path.join(privateRoot, 'drafts'))).sort();
+		await rm(path.join(batch, '_result.csv'));
+		const retry = spawn(process.execPath, [fileURLToPath(new URL('local-admin/batch-intake.mjs', projectRoot)), batch, '--apply', '--confirmed-publication-copies'], {
+			env: { ...process.env, LJM_ADMIN_URL: origin }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
+		});
+		let retryOutput = ''; retry.stdout.on('data', chunk => { retryOutput += chunk; }); retry.stderr.on('data', chunk => { retryOutput += chunk; });
+		assert.equal((await once(retry, 'exit'))[0], 0, retryOutput);
+		assert.match(retryOutput, /全部已在草稿中/);
+		assert.match(await readFile(path.join(batch, '_result.csv'), 'utf8'), new RegExp(itemId));
+		assert.deepEqual((await readdir(path.join(privateRoot, 'drafts'))).sort(), beforeRecovery);
+		assert.deepEqual((await readdir(path.join(batch, '_operations'))).length, 1);
+		const operationFile = (await readdir(path.join(batch, '_operations')))[0];
+		const operationText = await readFile(path.join(batch, '_operations', operationFile), 'utf8');
+		assert.doesNotMatch(operationText, /合成测试小组|第一幅|base64|T001/);
 	});
 	await t.test('显式图片命名拒绝路径、格式错误和覆盖，并回滚本次新图', async () => {
 		const pngData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j8WQAAAAASUVORK5CYII=';

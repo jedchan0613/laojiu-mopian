@@ -221,6 +221,10 @@ run_as_admin git --git-dir="$REPOSITORY_DIR" archive --format=tar --output="$arc
 	':(exclude)local-admin/history/**' \
 	':(exclude)local-admin/recycle-bin/**' \
 	':(exclude)local-admin/translations/**' \
+	':(exclude)local-admin/operations/**' \
+	':(exclude)local-admin/uploads/**' \
+	':(exclude)local-admin/accounts/**' \
+	':(exclude)local-admin/submissions/**' \
 	':(exclude)site/node_modules/**' \
 	':(exclude)site/dist/**' \
 	':(exclude)site/.astro/**' \
@@ -235,6 +239,10 @@ for forbidden_path in \
 	"$staging_directory/local-admin/drafts" \
 	"$staging_directory/local-admin/history" \
 	"$staging_directory/local-admin/recycle-bin" \
+	"$staging_directory/local-admin/operations" \
+	"$staging_directory/local-admin/uploads" \
+	"$staging_directory/local-admin/accounts" \
+	"$staging_directory/local-admin/submissions" \
 	"$staging_directory/site/dist" \
 	"$staging_directory/site/public/archive-responsive"; do
 	[[ ! -e "$forbidden_path" ]] || fail "程序版本混入了运行数据或生成目录：$forbidden_path"
@@ -292,24 +300,14 @@ build_staged_application() {
 		"$NODE" "$staging_directory/local-admin/server.mjs" --check-config
 }
 
-log '接入服务器现有公开资料并执行正式构建；旧管理服务继续在线。'
+log '程序检查通过，停止接收管理写入并等待当前操作完成；原公开网站继续在线。'
+# 管理服务持有私有数据的全生命周期占用；同步命令也必须取得同一占用。
+# 先安全停止，再同步和构建，避免两个程序并行写同一套资料。失败由 cleanup 恢复旧服务。
+service_stopped=true
+systemctl stop "$ADMIN_SERVICE"
+log '管理服务已停止，接入服务器当前公开资料并执行正式构建。'
 sync_runtime_site_data
 build_staged_application
-
-log '新版本构建通过，短暂停止管理服务并核对档案快照。'
-systemctl stop "$ADMIN_SERVICE"
-service_stopped=true
-
-if ! cmp -s -- \
-	"$previous_app_directory/site/src/data/archive.ts" \
-	"$staging_directory/site/src/data/archive.ts" || \
-	! diff -qr -- \
-	"$previous_app_directory/site/public/archive" \
-	"$staging_directory/site/public/archive" >/dev/null; then
-	log '构建期间档案发布层发生变化，重新同步并构建，避免遗漏最新内容。'
-	sync_runtime_site_data
-	build_staged_application
-fi
 
 mv -- "$staging_directory" "$release_directory"
 staging_directory=''

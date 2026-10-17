@@ -42,6 +42,8 @@ install -d -o ljmadmin -g ljmadmin -m 0700 \
 install -d -o ljmadmin -g ljmadmin -m 0750 \
 	/srv/laojiumopian-admin/build-work/npm-cache \
 	/srv/laojiumopian-admin/build-work/npm-home
+install -d -o ljmadmin -g ljmadmin -m 0700 \
+	/srv/laojiumopian-admin/data/operations
 
 systemd-analyze verify \
 	/etc/systemd/system/laojiumopian-github-deploy.service \

@@ -198,6 +198,7 @@ const state = {
 	records: [], standards: null, dictionary: new Map(), commonFields: new Map(), activeId: null,
 	current: null, isNew: false, dirty: false, search: '', activeTab: 'basic', images: [],
 	officialSnapshot: null,
+	publicationReview: null, publicationResult: null,
 	confirmedPublicationCopies: false, workspaceMode: 'records', recordViewMode: 'overview', drafts: [], history: [], recycleBin: [],
 	pendingRemovedImages: [], validationIssues: [], pendingObjectCategory: '', recordStatusFilter: 'normal',
 	recordSort: 'updated-desc', recordTypeFilter: '', recordDecadeFilter: '', recordQuickStatus: '', recordAlbumFilter: '',
@@ -207,6 +208,9 @@ const state = {
 	recoveryTab: 'history', recordReferenceOpen: false,
 	integrityReport: null, integrityLoading: false, imagePreflight: [], adminMode: 'local', publicSiteUrl: '',
 	autoSaveNotice: '',
+	savePhase: '', savePhaseDetail: '', savePhaseAt: 0,
+	editSequence: 0, composing: false, lastInputAt: 0, lastAutoSaveAt: 0, saveOperationId: '',
+	mobileScreen: 'list', mobileListScroll: 0,
 	translation: { itemId: '', loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en', locale:'en' },
 	query: {
 		loaded: false, loading: false, error: '', records: [], generation: 0,
@@ -275,6 +279,9 @@ const elements = {
 	confirmDialogNoticeTitle: document.querySelector('#confirm-dialog-notice-title'),
 	confirmDialogNoticeText: document.querySelector('#confirm-dialog-notice-text'),
 	confirmDialogAccept: document.querySelector('#confirm-dialog-accept'),
+	confirmDialogSave: document.querySelector('#confirm-dialog-save'),
+	reloginButton: document.querySelector('#relogin-button'),
+	reviewButton: document.querySelector('#review-save-button'),
 	imageLightbox: document.querySelector('#image-lightbox'), imageLightboxMain: document.querySelector('#image-lightbox-main'),
 	imageLightboxCaption: document.querySelector('#image-lightbox-caption'),
 	imageLightboxCounter: document.querySelector('#image-lightbox-counter'),
@@ -284,6 +291,47 @@ const elements = {
 };
 
 const deepClone = (value) => JSON.parse(JSON.stringify(value));
+const mobileLayout = window.matchMedia('(max-width: 760px)');
+const isMobileLayout = () => mobileLayout.matches;
+const mobileEditorGroup = () => ['basic', 'specific', 'translation'].includes(state.activeTab)
+	? 'full' : ['preview', 'privacy'].includes(state.activeTab) ? 'check' : state.activeTab;
+const syncMobileLayout = () => {
+	const editing = state.workspaceMode === 'records' && state.recordViewMode === 'editor' && Boolean(state.current);
+	document.body.dataset.mobileScreen = state.workspaceMode === 'records' ? state.mobileScreen : 'center';
+	document.body.dataset.mobileEditorGroup = mobileEditorGroup();
+	document.querySelector('#mobile-editor-tabs').hidden = !editing;
+	document.querySelector('#mobile-navigation').hidden = editing;
+	document.querySelector('#mobile-drafts-count').textContent = String(state.drafts.length);
+	document.querySelectorAll('[data-mobile-workspace]').forEach((button) => {
+		const active = button.dataset.mobileWorkspace === state.workspaceMode ||
+			(button.dataset.mobileWorkspace === 'more' && ['maintenance', 'recovery'].includes(state.workspaceMode));
+		if (active) button.setAttribute('aria-current', 'page');
+		else button.removeAttribute('aria-current');
+	});
+	document.querySelectorAll('[data-mobile-tab]').forEach((button) => {
+		const group = button.dataset.mobileTab === 'basic' ? 'full' : button.dataset.mobileTab === 'preview' ? 'check' : button.dataset.mobileTab;
+		button.setAttribute('aria-pressed', String(group === mobileEditorGroup()));
+		button.disabled = isWithdrawn() && !['basic', 'images'].includes(button.dataset.mobileTab);
+	});
+	const next = document.querySelector('#mobile-next-button');
+	next.hidden = !editing || isWithdrawn() || ['privacy', 'translation'].includes(state.activeTab);
+	next.textContent = state.activeTab === 'preview' ? '隐私检查' : '下一步';
+};
+const rememberMobileListPosition = () => {
+	if (isMobileLayout() && state.mobileScreen === 'list') state.mobileListScroll = window.scrollY;
+};
+const returnToMobileList = () => {
+	state.workspaceMode = 'records';
+	state.mobileScreen = 'list';
+	state.recordViewMode = 'overview';
+	state.activeId = null;
+	state.current = null;
+	state.dirty = false;
+	state.translation.dirty = false;
+	renderRecordList(); renderWorkspaceNavigation(); updateHeader(); renderEditor();
+	setMobileRecordBrowserOpen(true);
+	requestAnimationFrame(() => window.scrollTo({ top: state.mobileListScroll }));
+};
 const setMobileRecordBrowserOpen = (open) => {
 	if (!elements.mobileRecordBrowserToggle || !elements.recordBrowserContent) return;
 	elements.recordBrowserContent.classList.toggle('is-open', open);
@@ -647,8 +695,9 @@ const setBusy = (busy, title = '正在处理…', detail = '请保持这个窗�
 
 // 统一的自定义确认弹窗：替代 window.confirm 的系统原生小弹窗，与撤销档案弹窗同一套视觉。
 // 返回 Promise<boolean>，确定时 true；取消或按 Esc 关闭时 false。
+// 提供 saveLabel 时增加第三个按钮，返回 'save' | 'accept' | 'cancel'。
 let confirmDialogResolve = null;
-const confirmAction = ({ title = '确认操作', message = '', noticeTitle = '', notice = '', acceptLabel = '确定', danger = false }) =>
+const confirmAction = ({ title = '确认操作', message = '', noticeTitle = '', notice = '', acceptLabel = '确定', danger = false, saveLabel = '' }) =>
 	new Promise((resolve) => {
 		if (elements.confirmDialog.open) {
 			resolve(false);
@@ -664,21 +713,33 @@ const confirmAction = ({ title = '确认操作', message = '', noticeTitle = '',
 		elements.confirmDialogAccept.textContent = acceptLabel;
 		elements.confirmDialogAccept.classList.toggle('danger-button', danger);
 		elements.confirmDialogAccept.classList.toggle('publish-button', !danger);
+		elements.confirmDialogSave.hidden = !saveLabel;
+		elements.confirmDialogSave.textContent = saveLabel || '保存草稿并继续';
 		elements.confirmDialog.dataset.accepted = 'false';
+		elements.confirmDialog.dataset.choice = 'cancel';
 		confirmDialogResolve = resolve;
 		elements.confirmDialog.showModal();
-		requestAnimationFrame(() => elements.confirmDialogAccept.focus());
+		requestAnimationFrame(() => (saveLabel ? elements.confirmDialogSave : elements.confirmDialogAccept).focus());
 	});
 
 elements.confirmDialogAccept.addEventListener('click', () => {
 	elements.confirmDialog.dataset.accepted = 'true';
+	elements.confirmDialog.dataset.choice = 'accept';
+	elements.confirmDialog.close();
+});
+
+elements.confirmDialogSave.addEventListener('click', () => {
+	elements.confirmDialog.dataset.choice = 'save';
 	elements.confirmDialog.close();
 });
 
 elements.confirmDialog.addEventListener('close', () => {
 	const resolve = confirmDialogResolve;
 	confirmDialogResolve = null;
-	resolve?.(elements.confirmDialog.dataset.accepted === 'true');
+	if (!resolve) return;
+	const accepted = elements.confirmDialog.dataset.accepted === 'true';
+	const choice = elements.confirmDialog.dataset.choice;
+	resolve(elements.confirmDialogSave.hidden ? accepted : choice === 'save' ? 'save' : accepted ? 'accept' : 'cancel');
 });
 
 // 各处“有尚未保存的修改”共用的确认文案。
@@ -690,7 +751,46 @@ const confirmUnsavedChanges = (question) => confirmAction({
 	danger: true,
 });
 
+// 离开编辑页的三选：保存并继续 / 继续编辑 / 放弃本次未保存修改。
+const confirmUnsavedChoices = (question) => confirmAction({
+	title: '当前有尚未保存的修改',
+	message: question,
+	notice: '可以先保存草稿再离开；放弃只丢本次未保存的修改，已保存草稿仍会保留。',
+	acceptLabel: '放弃修改并继续',
+	danger: true,
+	saveLabel: '保存草稿并继续',
+});
+
+// 统一的离开前处理：返回 true 表示可以离开（已保存或已放弃），false 表示留在当前页面。
+const resolveUnsavedBeforeLeave = async (question) => {
+	if (!hasUnsavedChanges()) return true;
+	if (state.dirty) {
+		if (['saving', 'saving-auto'].includes(state.savePhase) || activeOperation) {
+			showToast('正在保存，请稍候再离开。', true);
+			return false;
+		}
+		const choice = await confirmUnsavedChoices(question);
+		if (choice === 'cancel') return false;
+		if (choice === 'accept') {
+			state.dirty = false;
+			state.translation.dirty = false;
+			setSavePhase('');
+			return true;
+		}
+		try {
+			await saveDraft();
+			return !hasUnsavedChanges();
+		} catch (error) {
+			showToast(`尚未保存成功：${error.message}；仍在当前页面，输入已保留。`, true);
+			return false;
+		}
+	}
+	// 只有译文未保存时保持原有两选：译文独立保存，不混入档案草稿流程。
+	return confirmUnsavedChanges(question);
+};
+
 let activeOperation = null;
+let pendingWriteReview = null;
 
 const operationCancelledError = () => {
 	const error = new Error('操作已取消，页面中填写的内容仍然保留。');
@@ -706,9 +806,21 @@ const throwIfOperationCancelled = (operation) => {
 const beginCancellableOperation = (kind, title, detail) => {
 	if (activeOperation) throw new Error('已有一项操作正在进行，请稍候。');
 	activeOperation = {
-		id: crypto.randomUUID(), kind, controller: new AbortController(), cancelRequested: false,
+		// 保存草稿沿用本次编辑会话的父编号：失败重试可以直接沿用仍有效的已暂存图片令牌。
+		id: ['save-draft', 'publish'].includes(kind) ? (state.saveOperationId ||= crypto.randomUUID()) : crypto.randomUUID(),
+		kind, controller: new AbortController(), cancelRequested: false,
 	};
 	setBusy(true, title, detail, { cancellable: true });
+	return activeOperation;
+};
+
+// 自动保存使用的静默操作：同样进入服务端写入保护队列，但不遮挡页面、不打断输入。
+const beginQuietOperation = (kind) => {
+	if (activeOperation) return null;
+	activeOperation = {
+		id: kind === 'save-draft' ? (state.saveOperationId ||= crypto.randomUUID()) : crypto.randomUUID(),
+		kind, controller: new AbortController(), cancelRequested: false, quiet: true,
+	};
 	return activeOperation;
 };
 
@@ -727,31 +839,112 @@ const readApiJson = async (response) => {
 	const contentType = response.headers.get('content-type') ?? '';
 	if (!contentType.includes('application/json')) {
 		if (response.redirected || response.status === 401 || response.status === 403) {
-			throw new Error('登录状态已失效，请刷新页面并重新登录。');
+			const error = new Error('登录状态已失效，请重新登录后再核对保存结果。');
+			error.code = 'AUTH_EXPIRED';
+			throw error;
 		}
 		throw new Error('管理服务返回了无法识别的内容，请刷新页面重试。');
 	}
 	return response.json();
 };
 
+// —— 保存状态持续显示（第三阶段）——
+// 保存结果不再只靠转瞬即逝的提示：状态栏与底部操作栏持续显示当前保存阶段，
+// 失败、断网、登录失效和版本冲突都保留文字说明和可执行的下一步。
+const saveStatusTimeLabel = () => new Intl.DateTimeFormat('zh-CN', {
+	timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit',
+}).format(new Date());
+const savePhaseIsProblem = () => ['failed', 'offline', 'auth', 'conflict', 'unknown', 'pending-images'].includes(state.savePhase);
+const describeSaveState = () => {
+	const draftLabel = state.adminMode === 'online' ? '线上草稿' : '本机草稿';
+	switch (state.savePhase) {
+		case 'saving': return '正在保存草稿…';
+		case 'saving-auto': return '正在自动保存…';
+		case 'saved': return `已保存到${draftLabel} · ${state.savePhaseDetail}`;
+		case 'pending-images': return '有图片待上传，请点“保存草稿”统一上传并保存';
+		case 'failed': return `尚未保存：${state.savePhaseDetail || '保存未完成'}；修改保留在本页，请核对后点“保存草稿”重试`;
+		case 'offline': return '尚未保存：网络连接中断；修改保留在本页，网络恢复后需重新核对';
+		case 'auth': return '需要重新登录，当前修改尚未保存；请在同一浏览器另开登录页，返回后先核对再保存';
+		case 'conflict': return '此档案已在其他页面更新；当前输入已保留，请核对差异，不能直接覆盖';
+		case 'unknown': return '请求已发出，正在核对是否保存成功；请先核对结果，不要重复提交';
+		case 'unknown-cleared': return '上次保存已确认成功；请刷新或重新打开档案核对最新内容';
+		default: return '';
+	}
+};
+const setSavePhase = (phase, detail = '') => {
+	state.savePhase = phase;
+	state.savePhaseDetail = detail;
+	state.savePhaseAt = Date.now();
+	updateHeader();
+};
+// 每次用户实际修改都推进编辑序号：保存只确认当时的快照，保存期间的继续输入不算作已保存。
+const noteRecordEdit = () => {
+	state.editSequence += 1;
+	state.publicationReview = null;
+	state.publicationResult = null;
+	state.lastInputAt = Date.now();
+	if (['saving', 'saving-auto', 'saved', 'failed', 'offline', 'pending-images'].includes(state.savePhase)) {
+		state.savePhase = '';
+		state.savePhaseDetail = '';
+	}
+};
+
+const replayedOperationError = (data) => {
+	const error = new Error('这项操作已经执行过，当前输入已保留。请先刷新核对已保存结果，再决定下一步。');
+	error.code = 'OPERATION_REPLAYED';
+	error.operation = data.operation;
+	return error;
+};
+
 const apiPost = async (url, payload, options = {}) => {
-	const response = await fetch(url, {
+	const managedWrite = ['/api/save-draft', '/api/publish', '/api/withdraw-record', '/api/restore-withdrawn', '/api/restore-recycle', '/api/restore-history'].includes(url) || /^\/api\/admin\/translations\/.+\/(save|publish)\?/.test(url);
+	if (managedWrite && pendingWriteReview) throw new Error(`上次写入结果尚待核对，当前输入已保留，本页不会再次执行。请刷新核对。操作编号：${pendingWriteReview.operationId}`);
+	if (managedWrite && state.writeProtocol !== 2) throw new Error('当前管理服务尚未启用写入保护，请更新并重启管理服务，再刷新页面核对。当前输入已保留。');
+	if (['/api/save-draft', '/api/publish', '/api/withdraw-record', '/api/restore-withdrawn', '/api/restore-recycle', '/api/restore-history'].includes(url)) {
+		if (!(url === '/api/save-draft' && payload.isNew && payload.expectedRevision === 'new') && !/^[a-f0-9]{64}$/.test(payload.expectedRevision ?? '')) {
+			throw new Error('当前页面缺少档案版本，已停止保存。请保留输入并刷新核对当前档案。');
+		}
+	}
+	const operationId = options.operation?.id ?? crypto.randomUUID();
+	const stepId = options.stepId ?? crypto.randomUUID();
+	const recoveryRequest = { operationId, stepId, url, payload: JSON.parse(JSON.stringify(payload)), recovery: options.recovery };
+	let response;
+	try { response = await fetch(url, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
 			'X-LJM-Admin-Request': '1',
-			...(options.operation?.id ? { 'X-LJM-Operation-Id': options.operation.id } : {}),
+			'X-LJM-Operation-Id': operationId,
+			'X-LJM-Step-Id': stepId,
 		},
 		body: JSON.stringify(payload),
 		...(options.operation ? { signal: options.operation.controller.signal } : {}),
-	});
-	const data = await readApiJson(response);
+	}); } catch (error) {
+		if (!managedWrite) throw error;
+		pendingWriteReview = recoveryRequest;
+		const message = new Error(`尚未收到写入结果，当前输入已保留，本页不会重新执行。可点“核对保存结果”查询服务器记录。操作编号：${operationId}`);
+		message.code = 'RESULT_UNKNOWN';
+		throw message;
+	}
+	let data;
+	try { data = await readApiJson(response); }
+	catch (error) {
+		if (managedWrite) pendingWriteReview = recoveryRequest;
+		throw error;
+	}
 	if (!response.ok) {
 		const error = new Error(data.error ?? '管理操作没有完成。');
 		error.issues = data.issues ?? [];
 		error.cancelled = Boolean(data.cancelled);
+		error.code = data.code;
+		error.operation = data.operation;
 		throw error;
 	}
+	if (data.replayed) {
+		if (managedWrite) pendingWriteReview = recoveryRequest;
+		throw replayedOperationError(data);
+	}
+	if (options.operation && data.operation) options.operation.lastCompleted = data.operation;
 	return data;
 };
 
@@ -759,17 +952,33 @@ const cancelActiveOperation = async () => {
 	const operation = activeOperation;
 	if (!operation || operation.cancelRequested) return;
 	operation.cancelRequested = true;
-	updateCancellableOperation(operation, '正在安全取消…', '正在停止上传或恢复到操作前状态，请稍候');
+	updateCancellableOperation(operation, '正在核对取消结果…', '等待服务确认当前步骤是否已完成，请保留页面');
 	try {
 		const result = await apiPost('/api/cancel-operation', { operationId: operation.id });
-		if (!result.cancelled) operation.controller.abort();
+		operation.cancelResult = result;
+		const mainStep = [...(result.operations ?? [])].reverse().find((entry) => entry.kind === operation.kind);
+		if (mainStep?.status === 'succeeded') showToast('当前步骤已经完成，取消请求没有撤销成功结果。请核对保存或发布状态。');
+		else if (mainStep?.status === 'needs_review') showToast('当前步骤的结果需要人工核对，尚不能确认已取消。请保留页面并刷新核对。', true);
 	} catch {
-		operation.controller.abort();
+		showToast('尚未收到取消结果，不能确认已停止。请保留页面并核对操作结果。', true);
 	}
 };
 
 const isOperationCancellation = (error, operation = null) =>
-	Boolean(error?.cancelled || error?.name === 'AbortError' || error?.name === 'OperationCancelledError' || operation?.cancelRequested);
+	Boolean(error?.cancelled || error?.name === 'OperationCancelledError') &&
+	!['succeeded', 'needs_review'].includes(error?.operation?.status);
+
+const operationErrorMessage = (error, operation = null) => {
+	if (!isOperationCancellation(error, operation)) return error.message;
+	const completed = operation?.lastCompleted;
+	if (completed?.kind === 'save-draft' && completed.status === 'succeeded') return '草稿已保存；后续步骤已停止，请核对当前草稿。';
+	return '当前步骤已取消，填写内容仍保留在当前页面。';
+};
+
+const expectedRecordRevision = (itemId = state.current?.core?.item_id) => {
+	const record = state.current?.core?.item_id === itemId ? state.current : state.records.find((entry) => entry.core.item_id === itemId);
+	return record?._admin?.revision;
+};
 
 const isWithdrawn = () => state.current?.core?.record_status === 'WDR' && !state.current?._admin?.hasDraft;
 
@@ -1223,9 +1432,10 @@ const renderRecordOverview = (record) => {
 				<div class="record-overview-actions">
 					${isReadonly
 						? `<button class="publish-button" data-record-overview-action="restore" type="button" ${record._admin?.canRestoreWithdrawn ? '' : 'disabled'}>恢复为草稿</button>`
-						: '<button class="publish-button" data-record-overview-action="edit" type="button">继续编辑</button><button class="quiet-button" data-record-overview-action="preview" type="button">发布前预览</button>'}
+						: '<button class="publish-button mobile-only" data-record-overview-action="quick" type="button">快捷编辑</button><button class="quiet-button" data-record-overview-action="edit" type="button">完整编辑</button><button class="quiet-button" data-record-overview-action="preview" type="button">发布前预览</button>'}
 					${hasPublicPage ? `<a class="quiet-button" href="${escapeHtml(publicPreviewUrl(`/archive/${encodeURIComponent(itemId)}/`))}">查看公开档案</a>` : ''}
 				</div>
+				${record._admin?.hasDraft ? '<p class="draft-version-note">正在查看草稿 · 这些修改尚未发布</p>' : ''}
 				${isReadonly && !record._admin?.canRestoreWithdrawn ? `<p class="record-overview-readonly-note">${escapeHtml(record._admin?.restoreWithdrawnReason || '这条撤销记录继续作为只读追溯记录保留。')}</p>` : ''}
 			</div>
 		</section>
@@ -1453,9 +1663,11 @@ const renderWorkspaceNavigation = () => {
 	elements.mobileRecordBrowserToggle.hidden = !recordsWorkspaceActive;
 	elements.recordBrowserContent.hidden = !recordsWorkspaceActive;
 	if (recordsWorkspaceActive) {
+		if (isMobileLayout()) setMobileRecordBrowserOpen(state.mobileScreen === 'list');
 		const isCompactLayout = window.matchMedia('(max-width: 900px)').matches;
 		elements.recordBrowserContent.setAttribute('aria-hidden', String(isCompactLayout && !elements.recordBrowserContent.classList.contains('is-open')));
 	} else setMobileRecordBrowserOpen(false);
+	syncMobileLayout();
 };
 
 const renderDraftCenter = () => {
@@ -1605,6 +1817,7 @@ const setWorkspaceMode = (mode) => {
 	if (!['records', 'maintenance', 'drafts', 'recovery'].includes(mode)) return;
 	const previousMode = state.workspaceMode;
 	state.workspaceMode = mode;
+	if (mode === 'records' && isMobileLayout()) state.mobileScreen = 'list';
 	renderWorkspaceNavigation();
 	if (mode === 'records') {
 		state.recordViewMode = 'overview';
@@ -1662,13 +1875,14 @@ const showRecordActionDock = ({ status, disabled, showPublish }) => {
 	elements.recordActionDock.hidden = false;
 	document.body.classList.add('has-record-action-dock');
 	elements.dockSaveState.textContent = status;
-	elements.dockSaveState.classList.toggle('is-dirty', state.dirty || disabled);
+	elements.dockSaveState.classList.toggle('is-dirty', state.dirty || disabled || savePhaseIsProblem());
 	elements.dockSaveDraftButton.disabled = disabled;
 	elements.dockPublishButton.disabled = disabled;
 	elements.dockPublishButton.hidden = !showPublish;
 };
 
 const updateHeader = () => {
+	syncMobileLayout();
 	refreshAlbumRelationState();
 	refreshAlbumBrowserActions();
 	const centerTitles = {
@@ -1682,7 +1896,7 @@ const updateHeader = () => {
 		elements.recordKicker.hidden = true;
 		elements.recordTitle.textContent = title;
 		elements.recordId.textContent = detail;
-		elements.saveState.textContent = '这些内容只保存在本机';
+		elements.saveState.textContent = state.adminMode === 'online' ? '这些内容保存在私有管理区' : '这些内容只保存在本机';
 		elements.saveState.classList.remove('is-dirty');
 		elements.saveDraftButton.disabled = true;
 		elements.publishButton.disabled = true;
@@ -1697,12 +1911,16 @@ const updateHeader = () => {
 		elements.previewLink.href = publicPreviewUrl('/');
 		elements.previewLink.textContent = '查看网站首页';
 		elements.tabs.classList.add('is-hidden');
+		elements.reloginButton.hidden = true;
+		elements.reviewButton.hidden = true;
 		return;
 	}
 	if (state.recordViewMode === 'overview') {
+		elements.reloginButton.hidden = true;
+		elements.reviewButton.hidden = true;
 		const normalCount = state.records.filter((record) => !recordIsWithdrawn(record)).length;
 		const withdrawnCount = state.records.length - normalCount;
-		elements.recordKicker.textContent = '本地档案库';
+		elements.recordKicker.textContent = state.adminMode === 'online' ? '线上档案库' : '本地档案库';
 		elements.recordKicker.hidden = false;
 		elements.recordTitle.textContent = '档案管理';
 		elements.recordId.textContent = `${normalCount} 条正常档案${withdrawnCount ? ` · ${withdrawnCount} 条已撤销` : ''}`;
@@ -1721,6 +1939,12 @@ const updateHeader = () => {
 		elements.previewLink.href = publicPreviewUrl('/');
 		elements.previewLink.textContent = '查看网站首页';
 		elements.tabs.classList.add('is-hidden');
+		if (isMobileLayout() && state.current) {
+			elements.recordTitle.textContent = state.current.core.title || '档案速览';
+			elements.recordId.textContent = state.current.core.item_id;
+			elements.backToLibraryButton.hidden = false;
+			elements.saveState.textContent = state.current._admin?.hasDraft ? '正在查看草稿 · 尚未发布' : '当前档案速览';
+		}
 		return;
 	}
 	if (!state.current) {
@@ -1742,6 +1966,8 @@ const updateHeader = () => {
 		elements.previewLink.href = publicPreviewUrl('/');
 		elements.previewLink.textContent = '查看网站首页';
 		elements.tabs.classList.add('is-hidden');
+		elements.reloginButton.hidden = true;
+		elements.reviewButton.hidden = true;
 		return;
 	}
 	elements.backToLibraryButton.hidden = false;
@@ -1751,17 +1977,21 @@ const updateHeader = () => {
 	elements.recordTitle.textContent = state.current.core.title || '未命名藏品';
 	elements.recordId.textContent = state.current.core.item_id || '保存草稿时自动生成永久编号';
 	const waitingForExactType = Boolean(state.pendingObjectCategory);
+	const phaseText = describeSaveState();
 	const saveStateText = waitingForExactType
 		? '请先选择精确类型'
-		: state.dirty
-			? '有尚未保存的修改'
-			: state.autoSaveNotice
-				? state.autoSaveNotice
+		: phaseText
+			|| (state.isNew
+				? '尚未建立草稿 · 填写后保存'
+			: state.dirty
+				? '有尚未保存的修改'
 				: state.current._admin?.hasDraft
 					? `草稿已保存${state.current._admin.savedAt ? ` · ${formatDateTime(state.current._admin.savedAt)}` : ''}`
-					: state.current.core.use_status === 'U3' ? '当前为已发布版本' : '当前没有未保存修改';
+					: state.current.core.use_status === 'U3' ? '当前为已发布版本' : '当前没有未保存修改');
 	elements.saveState.textContent = saveStateText;
-	elements.saveState.classList.toggle('is-dirty', state.dirty || waitingForExactType);
+	elements.saveState.classList.toggle('is-dirty', state.dirty || waitingForExactType || savePhaseIsProblem());
+	elements.reloginButton.hidden = state.savePhase !== 'auth';
+	elements.reviewButton.hidden = state.savePhase !== 'unknown';
 	const readonly = isWithdrawn();
 	elements.saveDraftButton.hidden = readonly;
 	elements.publishButton.hidden = readonly || state.activeTab !== 'privacy';
@@ -1820,6 +2050,11 @@ const updateHeader = () => {
 const openRecord = (itemId, viewMode = 'editor') => {
 	const record = state.records.find((candidate) => candidate.core.item_id === itemId);
 	if (!record) return;
+	rememberMobileListPosition();
+	if (isMobileLayout()) {
+		state.mobileScreen = viewMode === 'editor' ? 'editor' : 'detail';
+		if (viewMode === 'editor' && state.activeId !== itemId && !recordIsWithdrawn(record)) state.activeTab = 'quick';
+	}
 	if (state.translation.itemId !== itemId || state.translation.dirty) state.translation = {
 		itemId, loading: false, data: null, draft: null, dirty: false, error: '', confirmed: new Set(), previewLocale: 'en', locale:'en',
 	};
@@ -1827,6 +2062,8 @@ const openRecord = (itemId, viewMode = 'editor') => {
 	state.workspaceMode = 'records';
 	state.recordViewMode = viewMode;
 	state.recordStatusFilter = recordIsWithdrawn(record) ? 'withdrawn' : 'normal';
+	resetSaveSession();
+	if (viewMode === 'editor') armReturnGuard();
 	state.current = deepClone(record);
 	state.officialSnapshot = record._admin?.officialSnapshot
 		? deepClone(record._admin.officialSnapshot) : null;
@@ -1851,6 +2088,7 @@ const openRecord = (itemId, viewMode = 'editor') => {
 	updateHeader();
 	renderTabs();
 	renderEditor();
+	if (isMobileLayout()) window.scrollTo({ top: 0 });
 };
 
 const selectRecord = (itemId) => openRecord(itemId, 'editor');
@@ -1859,6 +2097,7 @@ const previewRecord = (itemId) => openRecord(itemId, 'overview');
 const enterRecordEditor = (tab = 'basic', targetField = '') => {
 	if (!state.current) return;
 	state.recordViewMode = 'editor';
+	state.mobileScreen = 'editor';
 	state.activeTab = isWithdrawn() && !['basic', 'images'].includes(tab) ? 'basic' : tab;
 	renderWorkspaceNavigation();
 	updateHeader();
@@ -1879,12 +2118,26 @@ const similarCoreFieldCodes = [
 	'country', 'province', 'city', 'district',
 ];
 
+const resetSaveSession = () => {
+	state.savePhase = '';
+	state.savePhaseDetail = '';
+	state.saveOperationId = '';
+	state.editSequence = 0;
+	state.lastInputAt = 0;
+	state.lastAutoSaveAt = 0;
+	state.composing = false;
+	state.publicationReview = null;
+};
 const startNewRecord = (templateRecord = null) => {
+	rememberMobileListPosition();
+	state.mobileScreen = 'editor';
 	state.activeId = null;
 	state.workspaceMode = 'records';
 	state.recordViewMode = 'editor';
 	state.isNew = true;
 	setMobileRecordBrowserOpen(false);
+	resetSaveSession();
+	armReturnGuard();
 	state.dirty = false;
 	state.images = [];
 	state.pendingRemovedImages = [];
@@ -1900,7 +2153,7 @@ const startNewRecord = (templateRecord = null) => {
 	const objectType = reusableCore.object_type ?? 'PHO';
 	state.current = {
 		core: {
-			record_status: 'SUS', item_id: '', accession_date: today(), object_type: 'PHO', title: '',
+			record_status: 'SUS', item_id: '', accession_date: '', object_type: 'PHO', title: '',
 			date_display: '', privacy_level: 'Y', rights_status: 'UNK', research_status: 'R0',
 			evidence_level: 'D', digitization_status: 'DG0', transcription_status: 'TX0', use_status: 'U0',
 			publication_file_path: [], ...reusableCore, object_type: objectType,
@@ -1909,13 +2162,14 @@ const startNewRecord = (templateRecord = null) => {
 		public_view: { description: '', transcription: '', revision_note: '', tags: [], image_descriptions: [] },
 	};
 	updateDerivedCollectionCode();
-	state.activeTab = 'basic';
+	state.activeTab = isMobileLayout() ? 'quick' : 'basic';
 	renderRecordList();
 	renderWorkspaceNavigation();
 	updateHeader();
 	renderTabs();
 	renderEditor();
 	if (templateRecord) showToast(`已复用“${templateRecord.core.title || templateRecord.core.item_id}”的类型、批次、来源和行政区域；编号、题名、年代、图片、专属信息与隐私确认均未复制。`);
+	if (isMobileLayout()) window.scrollTo({ top: 0 });
 };
 
 const startSimilarRecord = async () => {
@@ -2235,6 +2489,24 @@ const refreshAlbumRelationState = () => {
 	}
 };
 
+// 快捷页直接绑定已完整加载的同一条记录；未展示字段不参与裁剪或重建。
+const renderQuick = () => {
+	activeFieldIssueMap = buildFieldIssueMap('basic');
+	const coreField = (fieldCode) => renderField({ fieldCode, definition: commonDefinition(fieldCode),
+		value: state.current.core[fieldCode], required: ['title', 'date_display', 'accession_date', 'object_type'].includes(fieldCode) });
+	return `<section class="form-section quick-editor"><div class="section-heading"><div><h3>${state.isNew ? '建立档案草稿' : '常用信息'}</h3>
+		<p>${state.isNew ? '先填写实际入藏日期、分类和题名，再保存草稿。' : '修改后先保存草稿，公开内容须经过发布检查。'}</p></div></div>
+		<div class="record-identifiers"><div><span>永久编号 · 只读</span><output>${escapeHtml(state.current.core.item_id || '首次保存后分配')}</output></div></div>
+		${state.isNew ? `<div class="form-grid">${coreField('accession_date')}${coreField('object_type')}</div>
+		<p class="quick-date-help">入藏日期是实际接收／获得日期。<button class="text-button" data-use-today type="button">使用今天</button></p>` : ''}
+		<div class="form-grid quick-fields">${coreField('title')}${coreField('date_display')}
+		<div class="quick-field-action"><button class="text-button" data-date-unknown type="button">年代未知</button></div>
+		${renderField({ scope: 'public', fieldCode: 'description', value: state.current.public_view.description })}
+		${renderField({ scope: 'public', fieldCode: 'tags', value: state.current.public_view.tags ?? [] })}</div>
+		<button class="quiet-button" data-mobile-tab="basic" type="button">查看完整资料与专属必填项</button>
+	</section>`;
+};
+
 const renderBasic = () => {
 	activeFieldIssueMap = buildFieldIssueMap('basic');
 	const primaryDefinitions = primaryCoreFields.map((fieldCode) => commonDefinition(fieldCode)).filter(Boolean)
@@ -2341,6 +2613,7 @@ const renderBasic = () => {
 		<div class="record-identifiers"><div><span>永久编号</span><output>${escapeHtml(state.current.core.item_id || '首次保存后分配')}</output></div>
 		<div><span>收藏品编码 · 自动生成</span><output data-collection-code-output>${escapeHtml(state.current.core.collection_code || '待填写编码组成字段')}</output></div></div>
 	<div class="form-grid common-info-grid">${objectTypeField}${primary}</div>
+	${state.isNew ? '<p class="quick-date-help">请填写实际接收／获得日期。<button class="text-button" data-use-today type="button">使用今天</button></p>' : ''}
 	</section>
 	${renderAlbumRelations()}
 	<section class="basic-code-logic-panel" aria-label="编码生成逻辑">
@@ -2355,20 +2628,35 @@ const renderBasic = () => {
 	<section class="form-section"><div class="section-heading"><div><h3>补充档案信息</h3><p>通用信息只填写一次；尚未完成的必填组自动展开，其余按需填写。</p></div></div>${moreFields}</section>`;
 };
 
+// 逐张图片的保存状态：已选择未保存 / 已暂存 / 已保存到草稿 / 失败，与保存流程逐张核对的结果一致。
+const imageSaveStateLabel = (image) => {
+	if (image.kind === 'existing') {
+		return state.current._admin?.hasDraft ? '已保存到草稿' : '当前公开图片';
+	}
+	switch (image.upload?.state) {
+		case 'staging': return '正在上传…';
+		case 'staged': return '已暂存，将随草稿保存';
+		case 'failed': return `上传失败：${image.upload.error ?? '请重试'}；下次保存只重试这张`;
+		case 'saved': return '已保存到草稿';
+		default: return '已选择，未保存';
+	}
+};
 const renderImages = () => {
 	const hasUnsavedImages = state.images.some((image) => image.kind === 'new');
 	const needsPublicationCopyConfirmation = hasUnsavedImages && !state.confirmedPublicationCopies;
 	const imageCards = state.images.map((image, index) => {
 		const altText = displayedImageDescription(state.current, image, index, state.images.length);
 		return `
-		<article class="image-card"><div class="image-preview"><button class="image-preview-open" type="button" data-image-lightbox="${escapeHtml(image.id)}" aria-label="放大查看第 ${index + 1} 张图片：${escapeHtml(altText)}"><img src="${escapeHtml(image.previewUrl)}" alt="${escapeHtml(altText)}" />
+	<article class="image-card"><div class="image-preview"><button class="image-preview-open" type="button" data-image-lightbox="${escapeHtml(image.id)}" aria-label="放大查看第 ${index + 1} 张图片：${escapeHtml(altText)}"><img src="${escapeHtml(image.previewUrl)}" alt="${escapeHtml(altText)}" />
 		<span class="image-preview-hint">放大查看</span></button></div>
 		<div class="image-meta"><strong>${escapeHtml(image.filename ?? image.file?.name ?? '新图片')}</strong>
-		<span>页面显示顺序：${index + 1}${image.kind === 'new' ? ' · 尚未保存' : ''}</span>
+		<span class="image-order-label">第 ${index + 1} 张${index === 0 ? ' · 首图' : ''}</span>
+		<span class="image-save-label ${image.upload?.state === 'failed' ? 'is-upload-failed' : image.upload?.state === 'staged' ? 'is-upload-staged' : ''}">${escapeHtml(imageSaveStateLabel(image))} · 排序和说明修改后需保存草稿</span>
 		<label class="image-description-field"><span>图片说明 <small>访客和屏幕阅读器可见</small></span>
 		<textarea data-image-description data-image-id="${escapeHtml(image.id)}" maxlength="180" rows="3" placeholder="例如：明信片正面，富士山风景图">${escapeHtml(image.description ?? '')}</textarea>
 		<small class="image-description-counter"><output data-image-counter="${escapeHtml(image.id)}">${(image.description ?? '').length}/180</output> · 只描述画面中能够确认的内容，不推断人物身份；不填时使用题名加正面、背面或细节图。</small></label>
 		<div class="image-actions">
+		<button class="small-button" data-image-action="first" data-image-id="${escapeHtml(image.id)}" type="button" ${index === 0 ? 'disabled title="当前已是首图"' : ''}>设为首图</button>
 		<button class="small-button" data-image-action="up" data-image-id="${escapeHtml(image.id)}" type="button" ${index === 0 ? 'disabled' : ''}>向前</button>
 		<button class="small-button" data-image-action="down" data-image-id="${escapeHtml(image.id)}" type="button" ${index === state.images.length - 1 ? 'disabled' : ''}>向后</button>
 		${image.kind === 'existing' ? `<label class="replacement-label">替换<input class="replacement-input" data-image-id="${escapeHtml(image.id)}" type="file" accept="image/jpeg,image/png,image/webp" /></label>` : ''}
@@ -2716,6 +3004,8 @@ const renderSpecific = () => {
 
 const renderPrivacy = () => {
 	const core = state.current.core;
+	const review = state.publicationReview;
+	const ready = Boolean(review?.reviewId && review.revision === expectedRecordRevision() && !state.dirty && review.expiresAt > Date.now());
 	const qualityWarnings = contentQualityWarnings();
 	const officialForCompare = state.officialSnapshot && pvIsPublished(state.officialSnapshot)
 		? state.officialSnapshot : null;
@@ -2731,11 +3021,34 @@ const renderPrivacy = () => {
 		<div class="status-card"><span>使用状态</span><strong>${escapeHtml(core.use_status === 'U3' ? '已发布' : '未发布')}</strong></div></div>
 		${renderContentQualityPanel(qualityWarnings, '发布前内容质量提示')}
 		${changeSummaryMarkup}
-		<label class="privacy-select-all"><input id="privacy-select-all" type="checkbox" checked /><span><strong>全选</strong><small>我已逐项阅读并确认以下全部检查内容。</small></span></label>
-		<ol class="privacy-list">${privacyChecks.map((text, index) => `<li><label class="privacy-item"><input type="checkbox" data-privacy-index="${index}" checked /><span>${index + 1}. ${escapeHtml(text)}</span></label></li>`).join('')}</ol>
-		<div class="privacy-warning">以下项目按你的设置默认选中。如果任何一项不能确认，请先取消该项，也不要发布。保存草稿不会把图片复制到网站公开目录。</div>
+		${state.publicationResult?.itemId === core.item_id ? `<p class="publication-result" role="status">${escapeHtml(state.publicationResult.message)} <a href="${escapeHtml(publicPreviewUrl(`/archive/${encodeURIComponent(core.item_id)}/`))}">查看当前公开页</a></p>` : ''}
+		<button class="quiet-button" type="button" data-prepare-publication>保存并生成本次检查清单</button>
+		<p class="privacy-warning">${ready ? '清单已绑定当前草稿、图片内容和顺序。请逐项人工确认；任何文字或图片变动后都须重新生成清单。' : '请先保存并生成检查清单，再逐项确认。没有完成或无法确定的项目应保持未选中。'}</p>
+		<ol class="privacy-list">${privacyChecks.map((text, index) => `<li><label class="privacy-item"><input type="checkbox" data-privacy-index="${index}" ${ready && review.checked?.[index] ? 'checked' : ''} ${ready ? '' : 'disabled'} /><span>${index + 1}. ${escapeHtml(text)}</span></label></li>`).join('')}</ol>
+		<div class="privacy-warning">保存草稿不会公开；必须由你本人确认本次图文版本，系统再执行正式检查与构建。</div>
 	</section>`;
 };
+
+const preparePublicationReview = async () => {
+	if (activeOperation) { showToast('当前操作仍在进行，请稍候。', true); return; }
+	try {
+		if (state.dirty || state.isNew || !state.current?._admin?.hasDraft) await saveDraft({ reload: false, silent: true });
+		if (state.dirty) throw new Error('保存期间又有新输入，请先保存这些修改，再逐项确认。');
+		const record = state.current, sequence = state.editSequence;
+		setBusy(true, '正在生成本次检查清单…', '核对当前草稿、图片内容和顺序');
+		const review = await apiPost('/api/publication-review', { itemId: record.core.item_id, expectedRevision: expectedRecordRevision() });
+		if (state.current !== record || state.editSequence !== sequence || state.dirty) throw new Error('生成期间内容已改变，请重新生成清单。');
+		state.publicationReview = review.reviewId ? { ...review, checked: privacyChecks.map(() => false) } : null;
+		state.validationIssues = review.issues ?? [];
+		if (state.validationIssues.length) {
+			state.activeTab = 'preview';
+			showToast('仍有待补项目，请按清单定位并补齐，当前不会发布。', true);
+		} else showToast('清单已生成，请人工逐项确认本次图文内容。');
+		renderTabs(); renderEditor(); updateHeader();
+	} catch (error) { showToast(error.message, true); }
+	finally { setBusy(false); }
+};
+document.addEventListener('click', event => { if (event.target.closest('[data-prepare-publication]')) void preparePublicationReview(); });
 
 const currentPreviewIssues = () => {
 	const issues = [];
@@ -3029,7 +3342,8 @@ const pvNormalizePlaceLabel = (value) => value.trim().replace(/[省市区县]$/,
 // —— 发布前变更对照 ————————————————————————————————————————————
 // 只对照编辑器实际维护的字段：发布时服务器派生的地点显示文字、地点筛选值
 // （public_view.place_display / place_filters）不在草稿中维护，跳过不比。
-const compareSkipCoreFields = new Set(['updated_date']);
+// 草稿隔离状态在发布时统一恢复；图片在专门的清单中对照，避免重复计数。
+const compareSkipCoreFields = new Set(['updated_date', 'record_status', 'privacy_level', 'use_status', 'id_check', 'required_check', 'publication_file_path']);
 const comparePublicViewFields = [
 	['description', '公开简介'],
 	['transcription', '公开转录'],
@@ -3139,8 +3453,8 @@ const renderPublicationChangeReview = (title = '本次修改对照') => {
 				<tr class="publication-change-group"><td colspan="3">${escapeHtml(label)}</td></tr>
 				${entries.filter((entry) => entry.group === group).map((entry) => `
 				<tr><th scope="row">${escapeHtml(entry.label)}</th>
-					<td>${escapeHtml(compareValueText(entry.from))}</td>
-					<td>${escapeHtml(compareValueText(entry.to))}</td></tr>`).join('')}`).join('')}
+					<td data-compare-label="已发布版本">${escapeHtml(compareValueText(entry.from))}</td>
+					<td data-compare-label="本次修改">${escapeHtml(compareValueText(entry.to))}</td></tr>`).join('')}`).join('')}
 			</tbody></table>` : ''}
 	</section>`;
 };
@@ -3479,6 +3793,7 @@ const startAlbumPhoto = (sourceRecord, albumId) => {
 	state.current.core.album_id = albumId;
 	state.current.core.accession_date = source.core.accession_date || today();
 	state.dirty = true;
+	noteRecordEdit();
 	renderEditor(); updateHeader();
 	showToast('已新建同册照片。请分别填写题名、年代、位置和图片，再保存草稿。');
 };
@@ -3606,7 +3921,8 @@ function renderEditor() {
 		refreshAdministrativeRegionOptions();
 		return;
 	}
-	if (state.activeTab === 'images') elements.editorSurface.innerHTML = renderImages();
+	if (state.activeTab === 'quick') elements.editorSurface.innerHTML = renderQuick();
+	else if (state.activeTab === 'images') elements.editorSurface.innerHTML = renderImages();
 	else if (state.activeTab === 'specific') elements.editorSurface.innerHTML = renderSpecific();
 	else if (state.activeTab === 'translation') elements.editorSurface.innerHTML = renderTranslation();
 	else if (state.activeTab === 'preview') elements.editorSurface.innerHTML = renderPreview();
@@ -3676,7 +3992,7 @@ const renderTabs = () => {
 		tab.tabIndex = isActive ? 0 : -1;
 		tab.title = unavailableForWithdrawn ? '撤销追溯记录只提供基本信息和原发布图片查看' : '';
 	});
-	elements.editorSurface.setAttribute('aria-labelledby', `tab-${state.activeTab}`);
+	elements.editorSurface.setAttribute('aria-labelledby', state.activeTab === 'quick' ? 'mobile-tab-quick' : `tab-${state.activeTab}`);
 	updateTabCompletionBadges();
 };
 
@@ -3727,6 +4043,7 @@ const setFieldValue = (scope, dimension, fieldCode, value) => {
 	updateDerivedCollectionCode();
 	updateCollectionCodeDisplays();
 	state.dirty = true;
+	noteRecordEdit();
 	state.validationIssues = [];
 	updateTabCompletionBadges();
 	updateHeader();
@@ -3863,6 +4180,24 @@ const handleFieldChange = async (control) => {
 
 const stageImageUpload = async (image, operation, position, total) => {
 	throwIfOperationCancelled(operation);
+	if (state.writeProtocol !== 2 || pendingWriteReview) throw new Error('请先刷新并核对管理服务与上次操作结果；当前图片和输入已保留。');
+	const imageStepCandidate = String(image.id ?? '').replace(/^new-/, '');
+	if (image.uploadStepId) {
+		const checkResponse = await fetch(`/api/operations/${operation.id}`, { cache: 'no-store' });
+		const checked = await readApiJson(checkResponse);
+		if (!checkResponse.ok) throw new Error(checked.error ?? '尚不能核对图片上传结果，请保留页面。');
+		const previous = checked.operations?.find(entry => entry.stepId === image.uploadStepId);
+		if (previous?.status === 'succeeded') {
+			const token = previous.result?.upload?.token;
+			const status = await apiPost('/api/staged-uploads/status', { tokens: [token] });
+			if (status.statuses?.[token] === 'available') return { kind: 'staged', uploadToken: token, originalName: image.file.name };
+			if (status.statuses?.[token] === 'consumed') throw new Error('这张图片已随草稿保存，请先核对保存结果。');
+			image.uploadStepId = crypto.randomUUID();
+		} else if (previous && ['failed', 'cancelled'].includes(previous.status)) image.uploadStepId = crypto.randomUUID();
+		else if (previous) throw new Error('这张图片仍在处理或待核对，请稍后核对后再试。');
+	}
+	image.uploadStepId ??= /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(imageStepCandidate)
+		? imageStepCandidate : crypto.randomUUID();
 	updateCancellableOperation(
 		operation,
 		`正在上传图片 ${position} / ${total}…`,
@@ -3874,6 +4209,7 @@ const stageImageUpload = async (image, operation, position, total) => {
 			'Content-Type': image.file.type,
 			'X-LJM-Admin-Request': '1',
 			'X-LJM-Operation-Id': operation.id,
+			'X-LJM-Step-Id': image.uploadStepId,
 			'X-LJM-File-Name': encodeURIComponent(image.file.name),
 			'X-LJM-File-Sha256': image.sha256,
 		},
@@ -3884,8 +4220,11 @@ const stageImageUpload = async (image, operation, position, total) => {
 	if (!response.ok) {
 		const error = new Error(data.error ?? `图片上传失败：${image.file.name}`);
 		error.cancelled = Boolean(data.cancelled);
+		error.code = data.code;
+		error.operation = data.operation;
 		throw error;
 	}
+	// 服务端已核对同一步骤的实际字节，重放可继续使用其仍有效的原暂存令牌。
 	return {
 		kind: 'staged', uploadToken: data.upload.token, originalName: image.file.name,
 	};
@@ -3954,39 +4293,84 @@ const preflightSelectedImages = async (files) => {
 	return { results, accepted };
 };
 
-// —— 自动保存草稿 ——
-// 停止编辑约半分钟后自动保存一次草稿；结果写在状态栏（“已自动保存 14:32”），
-// 不弹提示、不打断当前操作。保存失败时状态栏保持“有尚未保存的修改”，不会误报。
-const AUTO_SAVE_DELAY_MS = 30000;
+// —— 自动保存草稿（第三阶段调整）——
+// 纯文字修改：停止输入约 5 秒保存一次；连续输入时约每 30 秒保存一次完整快照。
+// 中文输入法组词期间不打断；有待上传的新图片时暂停自动保存，由用户点“保存草稿”统一提交。
+// 自动保存不遮挡页面；成功不打断输入，失败保留持续状态和重试入口。
+const AUTO_SAVE_IDLE_MS = 5000;
+const AUTO_SAVE_INTERVAL_MS = 30000;
 let autoSaveTimer = null;
 const autoSaveTimeLabel = () => new Intl.DateTimeFormat('zh-CN', {
 	timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit',
 }).format(new Date());
+const hasPendingImageUploads = () =>
+	state.images.some((image) => image.kind !== 'existing');
 const scheduleAutoSaveDraft = () => {
-	if (!state.dirty || !state.current || isWithdrawn() || state.pendingObjectCategory) return;
 	clearTimeout(autoSaveTimer);
+	autoSaveTimer = null;
+	if (!state.dirty || !state.current || isWithdrawn() || state.pendingObjectCategory) return;
+	if (pendingWriteReview || ['conflict', 'auth', 'unknown'].includes(state.savePhase)) return;
+	if (hasPendingImageUploads()) {
+		// 新增／替换图片不随自动保存发出，避免移动网络下意外开始大批传输或只保存一半图文状态。
+		setSavePhase('pending-images');
+		return;
+	}
+	const sinceInput = Date.now() - state.lastInputAt;
+	if (!state.lastAutoSaveAt) state.lastAutoSaveAt = state.lastInputAt || Date.now();
+	const sinceSave = Date.now() - state.lastAutoSaveAt;
+	const delay = sinceSave >= AUTO_SAVE_INTERVAL_MS ? 250 : Math.max(AUTO_SAVE_IDLE_MS - sinceInput, 250);
 	autoSaveTimer = setTimeout(() => {
 		autoSaveTimer = null;
 		void autoSaveDraft();
-	}, AUTO_SAVE_DELAY_MS);
+	}, delay);
+};
+const classifySaveError = (error) => {
+	if (!error) return ['failed', ''];
+	if (error.code === 'AUTH_EXPIRED') return ['auth', ''];
+	if (error.code === 'REVISION_CONFLICT') return ['conflict', ''];
+	if (error.code === 'SAVE_BUSY') return ['busy', ''];
+	if (pendingWriteReview || error.code === 'OPERATION_NEEDS_REVIEW') return ['unknown', ''];
+	// 浏览器网络失败是 TypeError；跨上下文时 instanceof 不可靠，同时按名称判断。
+	if (error.name === 'TypeError' || error instanceof TypeError || error.code === 'OFFLINE') return ['offline', ''];
+	return ['failed', error.message ?? ''];
 };
 const autoSaveDraft = async () => {
 	if (!state.dirty || !state.current || isWithdrawn() || state.pendingObjectCategory) return;
+	// 中文输入法组词期间不保存，等组词结束后的修改事件重新安排。
+	if (state.composing) { scheduleAutoSaveDraft(); return; }
+	if (hasPendingImageUploads()) { setSavePhase('pending-images'); return; }
+	if (typeof navigator !== 'undefined' && navigator.onLine === false) { setSavePhase('offline'); return; }
 	// 正在执行其他操作或确认弹窗打开时先等一等，避免与“放弃修改”确认、撤销等流程相互穿插。
 	if (activeOperation || elements.confirmDialog.open || elements.withdrawDialog.open) {
+		state.lastAutoSaveAt = 0;
 		scheduleAutoSaveDraft();
 		return;
 	}
+	state.lastAutoSaveAt = Date.now();
 	try {
 		await saveDraft({ reload: false, silent: true, autoSave: true });
 	} catch (error) {
-		// 自动保存失败不打断用户：状态栏仍显示“有尚未保存的修改”，下一次编辑会重新安排。
+		const [phase, detail] = classifySaveError(error);
+		if (phase === 'busy') {
+			state.lastAutoSaveAt = 0;
+			scheduleAutoSaveDraft();
+			return;
+		}
+		// 已有更具体的登录失效或版本冲突提示时，不被自动保存的通用待核对覆盖。
+		if (['auth', 'conflict'].includes(state.savePhase) && phase === 'unknown') return;
+		if (error.code === 'DRAFT_PREREQUISITE') {
+			// 草稿最低条件不齐时不反复请求：保持现有编辑提示，等下一次修改。
+			console.error('[auto-save] 草稿最低条件未齐，暂不自动保存', error);
+			return;
+		}
+		setSavePhase(phase, detail);
 		console.error('[auto-save] 草稿自动保存失败', error);
 	}
 };
 
 const saveDraft = async ({ reload = true, silent = false, operation = null, autoSave = false } = {}) => {
 	if (!state.current) throw new Error('请先选择或新建一条记录。');
+	if (state.writeProtocol !== 2 || pendingWriteReview) throw new Error('请先刷新并核对管理服务与上次操作结果；当前输入已保留。');
 	const prerequisiteIssues = draftSavePrerequisiteIssues();
 	if (prerequisiteIssues.length) {
 		state.validationIssues = [
@@ -3994,61 +4378,180 @@ const saveDraft = async ({ reload = true, silent = false, operation = null, auto
 			...state.validationIssues.filter((issue) =>
 				!prerequisiteIssues.some((candidate) => candidate.code === issue.code)),
 		];
-		state.activeTab = prerequisiteIssues[0].tab;
+		state.activeTab = state.activeTab === 'quick' ? 'quick' : prerequisiteIssues[0].tab;
 		renderTabs();
 		renderEditor();
 		updateHeader();
-		throw new Error(prerequisiteIssues[0].message);
+		const error = new Error(prerequisiteIssues[0].message);
+		error.code = 'DRAFT_PREREQUISITE';
+		throw error;
 	}
 	const wasNewRecord = state.isNew;
 	const ownsOperation = !operation;
-	const currentOperation = operation ?? beginCancellableOperation(
-		'save-draft', '正在保存草稿…', '图片只会进入私有待入站区；可以随时取消',
-	);
+	let currentOperation = operation;
+	if (!currentOperation) {
+		if (autoSave) {
+			currentOperation = beginQuietOperation('save-draft');
+			if (!currentOperation) {
+				const error = new Error('已有操作进行中');
+				error.code = 'SAVE_BUSY';
+				throw error;
+			}
+		} else {
+			currentOperation = beginCancellableOperation(
+				'save-draft', '正在保存草稿…', '图片只会进入私有待入站区；可以随时取消',
+			);
+		}
+	}
+	// 固定本次保存的内容快照与编辑序号：保存期间的继续输入只能由下一次保存确认。
+	const snapshotSequence = state.editSequence;
+	const recordAtStart = state.current;
+	const snapshotRecord = deepClone(state.current);
+	const snapshotImages = state.images.map(image => ({ ...image, upload: image.upload ? { ...image.upload } : undefined }));
+	const snapshotRemoved = deepClone(state.pendingRemovedImages);
+	const snapshotRevision = state.isNew ? 'new' : expectedRecordRevision();
+	const snapshotCopiesConfirmed = state.confirmedPublicationCopies;
+	setSavePhase(autoSave ? 'saving-auto' : 'saving');
 	try {
 		throwIfOperationCancelled(currentOperation);
-		const imageDescriptions = state.images.map((image) => image.description?.trim() ?? '');
-		if (imageDescriptions.some(Boolean)) state.current.public_view.image_descriptions = imageDescriptions;
-		else delete state.current.public_view.image_descriptions;
-		const images = [];
-		const newImages = state.images.filter((image) => image.kind !== 'existing');
-		let uploadIndex = 0;
-		for (const image of state.images) {
-			if (image.kind === 'existing') images.push({ kind: 'existing', filename: image.filename });
-			else {
-				uploadIndex += 1;
-				if (!image.sha256) image.sha256 = await fileSha256(image.file);
-				images.push(await stageImageUpload(image, currentOperation, uploadIndex, newImages.length));
+		const imageDescriptions = snapshotImages.map((image) => image.description?.trim() ?? '');
+		if (imageDescriptions.some(Boolean)) snapshotRecord.public_view.image_descriptions = imageDescriptions;
+		else delete snapshotRecord.public_view.image_descriptions;
+		const newImages = snapshotImages.filter((image) => image.kind !== 'existing');
+		// 重试前先核对已暂存令牌：仍有效的直接沿用，已失效的回到待上传并重新上传。
+		const stagedImages = newImages.filter((image) => image.upload?.state === 'staged' && image.upload.token);
+		if (stagedImages.length) {
+			const status = await apiPost('/api/staged-uploads/status', {
+				tokens: stagedImages.map((image) => image.upload.token),
+			});
+			for (const image of stagedImages) {
+				const tokenState = status.statuses?.[image.upload.token];
+				if (tokenState === 'available') continue;
+				if (tokenState === 'consumed') {
+					const info = status.uploads?.[image.upload.token];
+					if (info?.itemId !== snapshotRecord.core.item_id || !info.filename) throw new Error('图片已被保存，请先核对所属草稿。');
+					image.kind = 'existing'; image.filename = info.filename;
+					image.upload = { state: 'saved' };
+					continue;
+				}
+				image.upload = { state: 'selected' };
 			}
 		}
+		const images = [];
+		const sentImages = [];
+		const failures = [];
+		let uploadIndex = 0;
+		for (const image of snapshotImages) {
+			if (image.kind === 'existing') images.push({ kind: 'existing', filename: image.filename });
+			else if (image.upload?.state === 'staged' && image.upload.token) {
+				uploadIndex += 1;
+				images.push({ kind: 'staged', uploadToken: image.upload.token, originalName: image.upload.originalName ?? image.file?.name });
+				sentImages.push(image);
+			} else if (image.upload?.state === 'saved' && image.filename) {
+				images.push({ kind: 'existing', filename: image.filename });
+			} else if (image.upload?.state === 'saved') {
+				failures.push(image);
+			} else {
+				uploadIndex += 1;
+				image.upload = { state: 'staging' };
+				try {
+					if (!image.sha256) image.sha256 = await fileSha256(image.file);
+					const staged = await stageImageUpload(image, currentOperation, uploadIndex, newImages.length);
+					image.upload = { state: 'staged', token: staged.uploadToken, originalName: staged.originalName };
+					images.push({ kind: 'staged', uploadToken: staged.uploadToken, originalName: staged.originalName });
+					sentImages.push(image);
+				} catch (error) {
+					if (isOperationCancellation(error, currentOperation)) throw error;
+					image.upload = { state: 'failed', error: error.message };
+					failures.push(image);
+				}
+			}
+		}
+		for (const image of snapshotImages) {
+			const live = state.images.find(candidate => candidate.id === image.id);
+			if (live && live.file === image.file) { live.upload = image.upload; live.uploadStepId = image.uploadStepId; }
+		}
+		// 某张失败时保留页面和每张处理结果：不提交半成品草稿，重试只传失败的图片。
+		if (failures.length) {
+			setSavePhase('failed', `${failures.length} 张图片上传失败`);
+			if (state.activeTab === 'images' && !autoSave) renderEditorPreservingViewport(null);
+			const error = new Error(`${failures.length} 张图片上传失败，其余已暂存的内容保留；点“保存草稿”只重试失败的图片。`);
+			error.code = 'IMAGE_UPLOAD_FAILED';
+			throw error;
+		}
 		throwIfOperationCancelled(currentOperation);
-		updateCancellableOperation(currentOperation, '正在写入草稿…', '正在核对编号和隐私规则，原表单内容会一直保留');
+		if (!currentOperation.quiet) {
+			updateCancellableOperation(currentOperation, '正在写入草稿…', '正在核对编号和隐私规则，原表单内容会一直保留');
+		}
 		const data = await apiPost('/api/save-draft', {
-			record: state.current, images, isNew: state.isNew,
-			confirmedPublicationCopies: state.confirmedPublicationCopies,
-			removedImages: state.pendingRemovedImages.map((image) => image.filename),
-			removedImageDescriptions: Object.fromEntries(state.pendingRemovedImages
+			record: snapshotRecord, images, isNew: wasNewRecord,
+			expectedRevision: snapshotRevision,
+			confirmedPublicationCopies: snapshotCopiesConfirmed,
+			removedImages: snapshotRemoved.map((image) => image.filename),
+			removedImageDescriptions: Object.fromEntries(snapshotRemoved
 				.filter((image) => image.description?.trim())
 				.map((image) => [image.filename, image.description.trim()])),
-		}, { operation: currentOperation });
+		}, { operation: currentOperation, recovery: { recordAtStart, snapshotSequence, snapshotRecord, snapshotImages } });
 		const assignedItemId = data.draft?.record?.core?.item_id ?? '';
 		if (!itemIdPattern.test(assignedItemId)) {
 			throw new Error('草稿没有返回有效的永久编号，已停止继续处理。');
 		}
-		state.current = data.draft.record;
-		state.activeId = assignedItemId;
-		state.isNew = false;
-		state.dirty = false;
-		state.autoSaveNotice = autoSave ? `已自动保存 ${autoSaveTimeLabel()}` : '';
-		state.images = recordImages(data.draft.record);
-		state.pendingRemovedImages = (data.draft.removed_images ?? []).map((filename) => ({
-			filename,
-			previewUrl: `/api/image/${encodeURIComponent(data.draft.record.core.item_id)}/${encodeURIComponent(filename)}?variant=preview`,
-			description: data.draft.removed_image_descriptions?.[filename] ?? '',
-		}));
-		state.imagePreflight = [];
-		if (reload) {
-			updateCancellableOperation(currentOperation, '草稿已保存，正在刷新…', '正在重新读取轻量档案列表');
+		const returnedPaths = data.draft.record.core.publication_file_path ?? [];
+		if (recordAtStart !== state.current) return data.draft;
+		const concurrentEdits = state.editSequence !== snapshotSequence;
+		if (!concurrentEdits) {
+			// 保存期间没有新输入：以服务器确认的草稿为准更新页面。
+			const previousAdmin = state.current._admin ?? {};
+			state.current = data.draft.record;
+			state.current._admin = { ...previousAdmin, ...(state.current._admin ?? {}), revision: data.revision,
+				hasDraft: true, savedAt: data.draft.saved_at,
+				pendingRemovedImages: data.draft.removed_images ?? [],
+				pendingRemovedImageDescriptions: data.draft.removed_image_descriptions ?? {} };
+			state.activeId = assignedItemId;
+			state.isNew = false;
+			state.dirty = false;
+			state.autoSaveNotice = '';
+			state.images = recordImages(data.draft.record);
+			state.pendingRemovedImages = (data.draft.removed_images ?? []).map((filename) => ({
+				filename,
+				previewUrl: `/api/image/${encodeURIComponent(data.draft.record.core.item_id)}/${encodeURIComponent(filename)}?variant=preview`,
+				description: data.draft.removed_image_descriptions?.[filename] ?? '',
+			}));
+			state.imagePreflight = [];
+			setSavePhase('saved', autoSaveTimeLabel());
+		} else {
+			// 保存期间用户继续输入：旧响应只确认旧快照的版本信息，不覆盖新输入、不标成全部已保存。
+			state.current._admin = { ...(state.current._admin ?? {}), revision: data.revision,
+				hasDraft: true, savedAt: data.draft.saved_at };
+			state.activeId = assignedItemId;
+			state.isNew = false;
+			// 已随旧快照写入的图片按服务器返回的文件名转为已保存引用；说明和顺序的新修改保留。
+			let sentIndex = 0;
+			for (const [payloadIndex, entry] of images.entries()) {
+				if (entry.kind !== 'staged') continue;
+				const filename = returnedPaths[payloadIndex]?.split('/').pop() ?? '';
+				const image = sentImages[sentIndex];
+				sentIndex += 1;
+				const position = image ? state.images.findIndex(candidate => candidate.id === image.id) : -1;
+				if (position < 0 || !filename) continue;
+				URL.revokeObjectURL(image.previewUrl);
+				state.images[position] = {
+					...state.images[position], kind: 'existing', filename,
+					previewUrl: `/api/image/${encodeURIComponent(assignedItemId)}/${encodeURIComponent(filename)}?variant=preview`,
+					file: undefined, upload: { state: 'saved' },
+				};
+			}
+			state.current.core.item_id = assignedItemId;
+			state.current.core.publication_file_path = state.images.filter(image => image.kind === 'existing').map(image => `/archive/${assignedItemId}/${image.filename}`);
+			state.dirty = true;
+			setSavePhase('');
+			showToast('上一次保存已确认；之后的新修改尚未保存。');
+			scheduleAutoSaveDraft();
+		}
+		if (reload && !concurrentEdits) {
+			if (!currentOperation.quiet) {
+				updateCancellableOperation(currentOperation, '草稿已保存，正在刷新…', '正在重新读取轻量档案列表');
+			}
 			await loadBootstrap(state.activeId, { operation: currentOperation, keepSelectedRecord: true });
 		}
 		else updateHeader();
@@ -4056,6 +4559,13 @@ const saveDraft = async ({ reload = true, silent = false, operation = null, auto
 			? `草稿已保存，永久编号 ${assignedItemId} 已生成。`
 			: `草稿已保存，永久编号 ${assignedItemId} 保持不变。`);
 		return data.draft;
+	} catch (error) {
+		if (!isOperationCancellation(error, currentOperation)) {
+			const [phase, detail] = classifySaveError(error);
+			if (phase !== 'busy' && error.code !== 'DRAFT_PREREQUISITE') setSavePhase(phase, detail);
+		}
+		if (state.activeTab === 'images' && !autoSave) renderEditorPreservingViewport(null);
+		throw error;
 	} finally {
 		if (ownsOperation) finishCancellableOperation(currentOperation);
 	}
@@ -4069,6 +4579,11 @@ const publishCurrent = async () => {
 		showToast('请先逐项完成 13 项隐私与发布检查。', true);
 		return;
 	}
+	const review = state.publicationReview;
+	if (state.dirty || !review?.reviewId || review.revision !== expectedRecordRevision() || review.expiresAt <= Date.now()) {
+		state.publicationReview = null; renderEditor();
+		showToast('请先生成当前版本的检查清单，再逐项确认。', true); return;
+	}
 	const confirmations = privacyChecks.map((_, index) =>
 		Boolean(elements.editorSurface.querySelector(`[data-privacy-index="${index}"]`)?.checked));
 	if (confirmations.some((value) => !value)) {
@@ -4077,11 +4592,12 @@ const publishCurrent = async () => {
 	}
 	let operation;
 	try {
-		operation = beginCancellableOperation('publish', '正在保存并提交档案…', '先保存草稿，再执行发布检查；可以安全取消');
-		await saveDraft({ reload: false, silent: true, operation });
+		operation = beginCancellableOperation('publish', '正在提交已确认的档案…', '仅发布刚才逐项确认的图文版本');
 		throwIfOperationCancelled(operation);
-		updateCancellableOperation(operation, '正在检查并构建网站…', '取消时会停止构建，并恢复到提交前的公开状态');
-		const result = await apiPost('/api/publish', { itemId: state.current.core.item_id, confirmations }, { operation });
+		updateCancellableOperation(operation, '正在检查并构建网站…', '取消时须等当前构建结束并核对回滚结果，请保留页面');
+		const result = await apiPost('/api/publish', { itemId: state.current.core.item_id, confirmations, expectedRevision: expectedRecordRevision(), reviewId: review.reviewId }, { operation, recovery: { recordAtStart: state.current, snapshotSequence: state.editSequence } });
+		state.publicationReview = null;
+		state.publicationResult = { itemId: state.current.core.item_id, message: '发布已完成，公开网站使用本次已确认的版本。' };
 		setBusy(true, '发布已完成，正在刷新…', '公开版本已经安全切换，请稍候');
 		await loadBootstrap(state.current.core.item_id);
 		showToast(result.warnings?.length
@@ -4090,6 +4606,8 @@ const publishCurrent = async () => {
 				? `发布完成：线上网站已切换到新版本 ${result.deployment.releaseName}。`
 				: '发布完成：字段、隐私、图片路径和网站构建均已通过。', Boolean(result.warnings?.length));
 	} catch (error) {
+		if (pendingWriteReview) setSavePhase(error.code === 'AUTH_EXPIRED' ? 'auth' : 'unknown');
+		if (error.code === 'PUBLICATION_REVIEW_REQUIRED') { state.publicationReview = null; renderEditor(); }
 		if (error.issues?.length) {
 			state.validationIssues = error.issues;
 			// 发布失败时直接切到第一个出错的分区，并滚动定位到第一个出错的字段；
@@ -4106,7 +4624,7 @@ const publishCurrent = async () => {
 				control?.focus();
 			});
 		}
-		showToast(isOperationCancellation(error, operation) ? '操作已取消，填写内容仍保留在当前页面。' : error.message,
+		showToast(operationErrorMessage(error, operation),
 			!isOperationCancellation(error, operation));
 	} finally {
 		if (operation) finishCancellableOperation(operation);
@@ -4141,7 +4659,7 @@ const withdrawCurrent = async () => {
 	elements.withdrawDialog.close();
 	setBusy(true, '正在安全撤销档案…', '保存历史版本并重新构建公开网站');
 	try {
-		const result = await apiPost('/api/withdraw-record', { itemId, reason, confirmed: true });
+		const result = await apiPost('/api/withdraw-record', { itemId, reason, confirmed: true, expectedRevision: expectedRecordRevision(itemId) });
 		state.recordStatusFilter = 'withdrawn';
 		state.activeTab = 'basic';
 		await loadBootstrap(itemId);
@@ -4171,7 +4689,7 @@ const restoreWithdrawnCurrent = async () => {
 	const itemId = state.current.core.item_id;
 	setBusy(true, '正在恢复为草稿…', '撤销记录仍保持只读，恢复内容不会直接公开');
 	try {
-		await apiPost('/api/restore-withdrawn', { itemId });
+		await apiPost('/api/restore-withdrawn', { itemId, expectedRevision: expectedRecordRevision(itemId) });
 		state.recordStatusFilter = 'normal';
 		state.activeTab = 'basic';
 		await loadBootstrap(itemId);
@@ -4210,6 +4728,8 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	]);
 	const data = await readApiJson(response);
 	if (!response.ok) throw new Error(data.error ?? '无法读取档案。');
+	state.writeProtocol = data.writeProtocol;
+	if (data.writeProtocol !== 2) throw new Error('当前管理服务尚未启用写入保护，请更新并重启管理服务后刷新；当前输入已保留。');
 	const standards = separatelyLoadedStandards ?? data.standards;
 	if (!standards?.commonFields?.fields || !standards?.codeDictionary?.entries) {
 		throw new Error('档案填写标准没有完整加载，请刷新页面后重试。');
@@ -4248,6 +4768,11 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 		: selectionVisible || (options.keepSelectedRecord && state.records.some((record) => record.core.item_id === selectedId))
 			? selectedId
 			: null;
+	// 刷新列表的响应可能晚于继续输入，不能用它覆盖仍在编辑的内容。
+	if (hasUnsavedChanges()) {
+		updateHeader();
+		return;
+	}
 	if (targetId) {
 		selectRecord(targetId);
 		if (options.keepSelectedRecord && !selectionVisible) {
@@ -4268,6 +4793,55 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	if (elements.recordAdvanced.open || state.recordReferenceOpen) void loadQueryRecords();
 };
 
+document.querySelector('#mobile-filter-toggle').addEventListener('click', (event) => {
+	const open = event.currentTarget.getAttribute('aria-expanded') !== 'true';
+	event.currentTarget.setAttribute('aria-expanded', String(open));
+	document.querySelector('#record-filter-panel').classList.toggle('is-open', open);
+});
+document.querySelector('#mobile-new-record-button').addEventListener('click', () => elements.newRecordButton.click());
+document.querySelector('#mobile-more-close').addEventListener('click', () => document.querySelector('#mobile-more-dialog').close());
+document.querySelector('#mobile-navigation').addEventListener('click', async (event) => {
+	const target = event.target.closest('[data-mobile-workspace]')?.dataset.mobileWorkspace;
+	if (!target) return;
+	if (target === 'more') { document.querySelector('#mobile-more-dialog').showModal(); return; }
+	if (!await resolveUnsavedBeforeLeave('确定要离开编辑页面并切换工作区吗？')) return;
+	if (target === 'records') returnToMobileList();
+	else { state.dirty = false; state.translation.dirty = false; setWorkspaceMode(target); window.scrollTo({ top: 0 }); }
+});
+document.querySelector('#mobile-more-dialog').addEventListener('click', async (event) => {
+	const button = event.target.closest('[data-mobile-target]');
+	const link = event.target.closest('a');
+	if (!button && !link) return;
+	if (link) event.preventDefault();
+	document.querySelector('#mobile-more-dialog').close();
+	if (!await resolveUnsavedBeforeLeave('确定要离开编辑页面前往这里吗？')) return;
+	if (link) window.location.assign(link.href);
+	else { state.dirty = false; state.translation.dirty = false; setWorkspaceMode(button.dataset.mobileTarget); window.scrollTo({ top: 0 }); }
+});
+document.addEventListener('click', (event) => {
+	const button = event.target.closest('[data-mobile-tab]');
+	if (!button || button.disabled || !state.current) return;
+	enterRecordEditor(button.dataset.mobileTab);
+	window.scrollTo({ top: 0 });
+});
+document.querySelector('#mobile-next-button').addEventListener('click', () => {
+	const next = { quick: 'images', images: 'basic', basic: 'preview', specific: 'preview', preview: 'privacy' }[state.activeTab];
+	if (next) { enterRecordEditor(next); window.scrollTo({ top: 0 }); }
+});
+elements.editorSurface.addEventListener('click', (event) => {
+	if (isWithdrawn()) return;
+	if (event.target.closest('[data-use-today]')) {
+		setFieldValue('core', '', 'accession_date', today()); renderEditor();
+	} else if (event.target.closest('[data-date-unknown]')) {
+		setFieldValue('core', '', 'date_display', '年代未知'); renderEditor();
+	}
+});
+mobileLayout.addEventListener('change', () => {
+	if (!isMobileLayout() && state.activeTab === 'quick') state.activeTab = 'basic';
+	if (isMobileLayout()) state.mobileScreen = state.current ? state.recordViewMode === 'editor' ? 'editor' : 'detail' : 'list';
+	renderWorkspaceNavigation(); updateHeader(); renderTabs(); renderEditor();
+});
+
 elements.recordList.addEventListener('click', async (event) => {
 	const albumButton = event.target.closest('[data-open-album]');
 	if (albumButton) {
@@ -4276,7 +4850,7 @@ elements.recordList.addEventListener('click', async (event) => {
 	}
 	const button = event.target.closest('.record-card');
 	if (!button) return;
-	if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定先放弃这些修改并打开另一条记录吗？')) return;
+	if (!await resolveUnsavedBeforeLeave('确定要打开另一条记录吗？当前记录的修改可以先保存为草稿。')) return;
 	previewRecord(button.dataset.id);
 });
 
@@ -4296,7 +4870,7 @@ elements.recordAlbumContext.addEventListener('click', async (event) => {
 	const action = button.dataset.albumBrowserAction;
 	if (action === 'back') returnToRecordOverview();
 	else if (action === 'parent') {
-		if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定先放弃这些修改并打开相册总档案吗？')) return;
+		if (!await resolveUnsavedBeforeLeave('确定要打开相册总档案吗？当前记录的修改可以先保存为草稿。')) return;
 		previewRecord(button.dataset.id);
 	} else if (action === 'new-photo' && state.recordStatusFilter !== 'withdrawn') {
 		const group = buildAdminAlbumGroups(recordsInCurrentStatusTab()).get(state.recordOpenAlbum);
@@ -4382,7 +4956,7 @@ elements.recordPagination.addEventListener('click', (event) => {
 });
 
 elements.newRecordButton.addEventListener('click', async () => {
-	if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定先放弃这些修改并新建藏品吗？')) return;
+	if (!await resolveUnsavedBeforeLeave('确定要新建藏品吗？当前记录的修改可以先保存为草稿。')) return;
 	startNewRecord();
 });
 
@@ -4393,7 +4967,12 @@ elements.mobileRecordBrowserToggle.addEventListener('click', () => {
 elements.recordsPaneClose.addEventListener('click', () => setMobileRecordBrowserOpen(false));
 
 elements.backToLibraryButton.addEventListener('click', async () => {
-	if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定放弃这些修改并返回档案速览吗？')) return;
+	if (isMobileLayout()) {
+		if (!await resolveUnsavedBeforeLeave('确定要返回档案列表吗？当前修改可以先保存为草稿。')) return;
+		returnToMobileList();
+		return;
+	}
+	if (!await resolveUnsavedBeforeLeave('确定要返回档案速览吗？当前修改可以先保存为草稿。')) return;
 	const targetId = state.activeId ?? sortedRecords(filteredRecords())[0]?.core.item_id;
 	if (targetId) previewRecord(targetId);
 	else {
@@ -4414,7 +4993,7 @@ document.querySelectorAll('.desk-nav a[href$="/admin/submissions.html"], .desk-n
 	link.addEventListener('click', async (event) => {
 		if (!hasUnsavedChanges()) return;
 		event.preventDefault();
-		if (await confirmUnsavedChanges('确定先离开编辑页面前往这里吗？')) window.location.assign(link.href);
+		if (await resolveUnsavedBeforeLeave('确定要离开编辑页面前往这里吗？')) window.location.assign(link.href);
 	});
 });
 
@@ -4424,15 +5003,14 @@ document.querySelector('.desk-nav').addEventListener('click', async (event) => {
 	// 点击“档案管理”按钮，绕过未保存提醒并静默重置编辑器。
 	const button = event.target.closest('.desk-nav-button[data-workspace]');
 	if (!button) return;
-	if (hasUnsavedChanges() && button.dataset.workspace !== 'records' &&
-		!await confirmUnsavedChanges('确定先离开编辑页面吗？')) return;
+	if (button.dataset.workspace !== 'records' && !await resolveUnsavedBeforeLeave('确定要离开编辑页面切换工作区吗？')) return;
 	setWorkspaceMode(button.dataset.workspace);
 });
 
 elements.recordStatusNav.addEventListener('click', async (event) => {
 	const button = event.target.closest('[data-record-status]');
 	if (!button) return;
-	if (hasUnsavedChanges() && !await confirmUnsavedChanges('确定放弃这些修改并切换档案状态吗？')) return;
+	if (!await resolveUnsavedBeforeLeave('确定要切换档案状态列表吗？当前修改可以先保存为草稿。')) return;
 	setRecordStatusFilter(button.dataset.recordStatus);
 });
 
@@ -4485,6 +5063,7 @@ elements.editorSurface.addEventListener('input', (event) => {
 		if (!image) return;
 		image.description = event.target.value;
 		state.dirty = true;
+		noteRecordEdit();
 		state.validationIssues = [];
 		updateHeader();
 		const counter = elements.editorSurface.querySelector(`[data-image-counter="${CSS.escape(image.id)}"]`);
@@ -4523,18 +5102,8 @@ elements.editorSurface.addEventListener('change', async (event) => {
 		if (control.checked) scheduleAutoSaveDraft();
 		return;
 	}
-	if (control.id === 'privacy-select-all') {
-		elements.editorSurface.querySelectorAll('[data-privacy-index]').forEach((checkbox) => {
-			checkbox.checked = control.checked;
-		});
-		control.indeterminate = false;
-	}
 	if (control.matches('[data-privacy-index]')) {
-		const checkboxes = [...elements.editorSurface.querySelectorAll('[data-privacy-index]')];
-		const selectAll = elements.editorSurface.querySelector('#privacy-select-all');
-		const checkedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
-		selectAll.checked = checkedCount === checkboxes.length;
-		selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+		if (state.publicationReview?.checked) state.publicationReview.checked[Number(control.dataset.privacyIndex)] = control.checked;
 	}
 	if (control.matches('.replacement-input')) {
 		const file = control.files?.[0];
@@ -4561,6 +5130,7 @@ elements.editorSurface.addEventListener('change', async (event) => {
 		state.confirmedPublicationCopies = false;
 		state.validationIssues = [];
 		state.dirty = true;
+		noteRecordEdit();
 		updateHeader();
 		renderEditor();
 		scheduleAutoSaveDraft();
@@ -4579,6 +5149,7 @@ elements.editorSurface.addEventListener('change', async (event) => {
 		for (const candidate of preflight.accepted) state.images.push(createNewImage(candidate.file, '', candidate.sha256));
 		if (preflight.accepted.length) {
 			state.dirty = true;
+			noteRecordEdit();
 			state.confirmedPublicationCopies = false;
 		}
 		state.validationIssues = [];
@@ -4608,6 +5179,7 @@ elements.editorSurface.addEventListener('click', async (event) => {
 			enterRecordEditor('preview');
 			return;
 		}
+		if (action === 'quick') { enterRecordEditor('quick'); return; }
 		if (action === 'task') {
 			enterRecordEditor(overviewActionButton.dataset.targetTab || 'basic', overviewActionButton.dataset.targetField || '');
 			return;
@@ -4671,7 +5243,7 @@ elements.editorSurface.addEventListener('click', async (event) => {
 		}
 		setBusy(true, action === 'restore-recycle' ? '正在恢复图片…' : '正在恢复历史版本…', '恢复内容只会进入本地草稿');
 		try {
-			await apiPost(action === 'restore-recycle' ? '/api/restore-recycle' : '/api/restore-history', { itemId, entryId });
+			await apiPost(action === 'restore-recycle' ? '/api/restore-recycle' : '/api/restore-history', { itemId, entryId, expectedRevision: expectedRecordRevision(itemId) });
 			await loadBootstrap(itemId);
 			state.activeTab = 'preview';
 			renderTabs();
@@ -4715,6 +5287,7 @@ elements.editorSurface.addEventListener('click', async (event) => {
 			previewUrl: image.previewUrl || `/api/image/${encodeURIComponent(state.current.core.item_id)}/${encodeURIComponent(filename)}`,
 			description: image.description ?? '' });
 		state.dirty = true;
+		noteRecordEdit();
 		state.validationIssues = [];
 		updateHeader();
 		renderEditorPreservingViewport(null);
@@ -4734,13 +5307,15 @@ elements.editorSurface.addEventListener('click', async (event) => {
 		// 移除后把焦点送回同一位置的那张图片，键盘操作不用从头再找。
 		if (state.images.length) focusIndex = Math.min(index, state.images.length - 1);
 	} else {
-		const targetIndex = action === 'up' ? index - 1 : index + 1;
+		const targetIndex = action === 'first' ? 0 : action === 'up' ? index - 1 : index + 1;
 		if (targetIndex < 0 || targetIndex >= state.images.length) return;
-		[state.images[index], state.images[targetIndex]] = [state.images[targetIndex], state.images[index]];
+		if (action === 'first') state.images.splice(0, 0, state.images.splice(index, 1)[0]);
+		else [state.images[index], state.images[targetIndex]] = [state.images[targetIndex], state.images[index]];
 		// 排序后焦点跟随刚移动的那张图片。
 		focusIndex = targetIndex;
 	}
 	state.dirty = true;
+	noteRecordEdit();
 	state.validationIssues = [];
 	updateHeader();
 	renderEditorPreservingViewport(() => {
@@ -4751,7 +5326,7 @@ elements.editorSurface.addEventListener('click', async (event) => {
 			.querySelector(`[data-image-action="${action}"][data-image-id="${CSS.escape(image.id)}"]`);
 		if (preferred && !preferred.disabled) return preferred;
 		// 图片移到列表边界后原方向按钮会禁用：改为聚焦同一张图片另一方向的按钮，键盘操作不丢位置。
-		const fallbackAction = action === 'up' ? 'down' : 'up';
+		const fallbackAction = ['up', 'first'].includes(action) ? 'down' : 'up';
 		return elements.editorSurface
 			.querySelector(`[data-image-action="${fallbackAction}"][data-image-id="${CSS.escape(image.id)}"]`);
 	});
@@ -4790,7 +5365,7 @@ elements.imageLightbox.addEventListener('keydown', (event) => {
 const saveDraftWithFeedback = async () => {
 	try { await saveDraft(); }
 	catch (error) {
-		showToast(isOperationCancellation(error) ? '操作已取消，填写内容仍保留在当前页面。' : error.message,
+		showToast(operationErrorMessage(error),
 			!isOperationCancellation(error));
 		setBusy(false);
 	}
@@ -4824,6 +5399,193 @@ window.addEventListener('beforeunload', (event) => {
 	if (!hasUnsavedChanges()) return;
 	event.preventDefault();
 	event.returnValue = '';
+});
+
+// —— 第三阶段：浏览器返回键、输入法、前后台与网络状态 ——
+// 返回键纳入与页面内返回相同的未保存处理；布防一条历史记录，popstate 时先确认再离开。
+let returnGuardArmed = false;
+function armReturnGuard() {
+	if (returnGuardArmed) return;
+	returnGuardArmed = true;
+	history.pushState({ ljmReturnGuard: true }, '');
+}
+window.addEventListener('popstate', () => {
+	if (!returnGuardArmed) return;
+	if (!hasUnsavedChanges() || state.workspaceMode !== 'records' || state.recordViewMode !== 'editor') {
+		returnGuardArmed = false;
+		history.back();
+		return;
+	}
+	// 先重新布防拦住这次返回，再按用户选择决定是否真正离开。
+	history.pushState({ ljmReturnGuard: true }, '');
+	void (async () => {
+		if (await resolveUnsavedBeforeLeave('检测到浏览器返回。当前修改可以先保存为草稿再离开。')) {
+			returnGuardArmed = false;
+			history.go(-2);
+		}
+	})();
+});
+
+// 中文输入法组词期间不触发自动保存，组词结束再按空闲节奏安排。
+elements.editorSurface.addEventListener('compositionstart', () => {
+	state.composing = true;
+});
+elements.editorSurface.addEventListener('compositionend', () => {
+	state.composing = false;
+	noteRecordEdit();
+	scheduleAutoSaveDraft();
+});
+
+// 切后台尽力保存轻量文字草稿（不启动图片上传或发布）；回前台先核对再继续。
+document.addEventListener('visibilitychange', () => {
+	if (document.visibilityState === 'hidden') {
+		if (state.workspaceMode === 'records' && state.recordViewMode === 'editor' && state.dirty && state.current
+			&& !isWithdrawn() && !state.pendingObjectCategory && !state.composing && !activeOperation
+			&& !hasPendingImageUploads() && !pendingWriteReview
+			&& !elements.confirmDialog.open && !elements.withdrawDialog.open) {
+			state.lastAutoSaveAt = Date.now();
+			void saveDraft({ reload: false, silent: true, autoSave: true }).catch(() => {});
+		}
+		return;
+	}
+	void recheckAfterForeground();
+});
+
+// 回到前台或网络恢复：先核对登录、操作结果与服务器版本，再继续保存。
+const recheckAfterForeground = async () => {
+	if (activeOperation) return false;
+	if (pendingWriteReview) {
+		showToast('有操作结果尚未核对；请核对后再继续保存。', true);
+		return false;
+	}
+	if (!state.current) return false;
+	const record = state.current, revision = expectedRecordRevision();
+	try {
+		const route = state.isNew ? `/api/operations/${state.saveOperationId ||= crypto.randomUUID()}` : `/api/record-version/${encodeURIComponent(record.core.item_id)}`;
+		const response = await fetch(route, { cache: 'no-store' });
+		const data = await readApiJson(response);
+		if ([401, 403].includes(response.status)) { setSavePhase('auth'); return false; }
+		if (!response.ok || record !== state.current || activeOperation) return false;
+		if (!state.isNew && data.revision !== revision) {
+			if (hasUnsavedChanges()) setSavePhase('conflict');
+			else await loadBootstrap(state.activeId, { keepSelectedRecord: true });
+			return false;
+		}
+		if (state.savePhase === 'auth' || state.savePhase === 'offline') {
+			setSavePhase('');
+			showToast('已核对当前档案版本，可以继续编辑。');
+		}
+		return true;
+	} catch (error) {
+		if (error.code === 'AUTH_EXPIRED') setSavePhase('auth');
+		// 核对失败时保持当前提示，不假定成功也不反复请求。
+		return false;
+	}
+};
+
+window.addEventListener('offline', () => {
+	if (hasUnsavedChanges() && (state.dirty || state.translation.dirty)) setSavePhase('offline');
+});
+window.addEventListener('online', () => {
+	if (state.savePhase !== 'offline') return;
+	showToast('网络已恢复，正在核对档案状态…');
+	void recheckAfterForeground().then(verified => {
+		if (verified && state.dirty) scheduleAutoSaveDraft();
+	});
+});
+
+// 登录失效时的明确入口：同一浏览器另开登录页，原编辑页保留，返回后先核对再保存。
+elements.reloginButton.addEventListener('click', () => {
+	window.open(window.location.href, '_blank', 'noopener');
+});
+
+// “结果未知”的核对入口：查询服务器操作收据。已成功则解除阻塞并提示以服务器草稿为准；
+// 未开始（请求没到达服务器）则解除阻塞允许直接重试；进行中或待核对则维持停止。
+elements.reviewButton.addEventListener('click', async () => {
+	if (!pendingWriteReview) return;
+	const button = elements.reviewButton;
+	button.disabled = true;
+	button.textContent = '正在核对保存结果…';
+	try {
+		const response = await fetch(`/api/operations/${pendingWriteReview.operationId}`, { cache: 'no-store' });
+		const data = await readApiJson(response);
+		if (!response.ok) throw new Error(data.error ?? '核对失败。');
+		const operations = data.operations ?? [];
+		const mainStep = operations.find(entry => entry.stepId === pendingWriteReview.stepId);
+		if (!mainStep || ['queued', 'running'].includes(mainStep.status)) {
+			showToast('服务器仍在处理或尚未收到这项操作；请稍候再核对。', true);
+			return;
+		}
+		if (mainStep.status === 'succeeded') {
+			const pending = pendingWriteReview;
+			const itemId = mainStep.result?.itemId;
+			if (mainStep.kind === 'publish' && itemIdPattern.test(itemId ?? '') && itemId === pending.payload.itemId) {
+				const currentResponse = await fetch(`/api/record-version/${itemId}`, { cache: 'no-store' });
+				const current = await readApiJson(currentResponse);
+				if (!currentResponse.ok || current.revision !== mainStep.result.revision) {
+					setSavePhase('conflict'); throw new Error('发布已完成，但随后又有新版本；请保留输入并核对最新档案。');
+				}
+				if (pending.recovery?.recordAtStart !== state.current) throw new Error('请回到原档案核对发布结果。');
+				state.publicationReview = null;
+				state.publicationResult = { itemId, message: '已通过服务器收据核对：这次发布已完成。' };
+				pendingWriteReview = null;
+				if (!hasUnsavedChanges()) await loadBootstrap(itemId, { keepSelectedRecord: true });
+				else state.current._admin = { ...(state.current._admin ?? {}), revision: current.revision, hasDraft: false, hasOfficial: true, officialRecordStatus: 'ACT' };
+				setSavePhase(state.dirty ? '' : 'saved', '发布结果已核对'); renderEditor();
+				showToast('已确认发布成功，没有重新执行发布。'); return;
+			}
+			if (mainStep.kind !== 'save-draft' || !itemIdPattern.test(itemId ?? '')) {
+				// 发布等结果需要核对当前公开版本；不拿其他步骤的收据解除保存限制。
+				setSavePhase('unknown');
+				showToast('服务器确认该操作已完成，请重新打开档案核对最新状态；当前输入仍保留。');
+				return;
+			}
+			const resultResponse = await fetch(`/api/save-result/${itemId}`, { cache: 'no-store' });
+			const result = await readApiJson(resultResponse);
+			if (!resultResponse.ok || !result.draft) throw new Error('未读到对应草稿，请保留页面继续核对。');
+			if (pending.recovery?.recordAtStart !== state.current) throw new Error('当前已切换档案，请在原档案核对该操作。');
+			// 先补回已分配的永久编号，任何后续请求都不能再次以“新建”提交。
+			state.current.core.item_id = itemId; state.activeId = itemId; state.isNew = false;
+			if (result.revision !== mainStep.result.revision) {
+				setSavePhase('conflict');
+				throw new Error('成功后服务器又有新版本，请先对照，当前输入不会覆盖后来的修改。');
+			}
+			if (state.editSequence === pending.recovery.snapshotSequence) {
+				state.current = result.draft.record;
+			state.current._admin = { ...(pending.recovery.recordAtStart._admin ?? {}), revision: result.revision, hasDraft: true, savedAt: result.draft.saved_at };
+				state.images = recordImages(state.current);
+				state.dirty = false;
+			} else {
+				state.current._admin = { ...(state.current._admin ?? {}), revision: result.revision, hasDraft: true, savedAt: result.draft.saved_at };
+				for (const [index, sent] of (pending.payload.images ?? []).entries()) {
+					if (sent.kind !== 'staged') continue;
+					const id = pending.recovery.snapshotImages[index]?.id;
+					const live = state.images.find(image => image.id === id);
+					const filename = result.draft.record.core.publication_file_path[index]?.split('/').pop();
+					if (live && filename) Object.assign(live, { kind: 'existing', filename, file: undefined, upload: { state: 'saved' }, previewUrl: `/api/image/${itemId}/${filename}?variant=preview` });
+				}
+				state.dirty = true;
+			}
+			pendingWriteReview = null;
+			setSavePhase(state.dirty ? '' : 'saved', autoSaveTimeLabel());
+			renderEditor();
+			showToast(state.dirty ? '已核对上次保存；之后输入的内容仍待保存，永久编号保持不变。' : '已核对服务器草稿，本次保存成功。');
+			return;
+		}
+		if (mainStep.status === 'needs_review') {
+			showToast('这项操作的结果待人工核对；写入保持停止。', true);
+			return;
+		}
+		// failed / cancelled：请求已到服务器但没有写入，解除阻塞后可直接重试保存。
+		pendingWriteReview = null;
+		setSavePhase('failed', '上次保存在服务器未完成');
+		showToast('服务器确认这次保存未完成；修改仍保留在本页，可以直接重试保存。');
+	} catch (error) {
+		showToast(`尚未核对到结果：${error.message}`, true);
+	} finally {
+		button.disabled = false;
+		button.textContent = '核对保存结果';
+	}
 });
 
 const requestedItem = new URLSearchParams(window.location.search).get('item');

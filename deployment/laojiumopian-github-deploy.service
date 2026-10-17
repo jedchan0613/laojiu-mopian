@@ -24,6 +24,7 @@ ReadWritePaths=/srv/laojiumopian-admin/app
 ReadWritePaths=/srv/laojiumopian-admin/build-work
 ReadWritePaths=/srv/laojiumopian-admin/github-deploy
 ReadWritePaths=/srv/laojiumopian-admin/github-source.git
+ReadWritePaths=/srv/laojiumopian-admin/data/operations
 ReadWritePaths=/srv/laojiumopian/releases
 ReadWritePaths=/run/lock
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

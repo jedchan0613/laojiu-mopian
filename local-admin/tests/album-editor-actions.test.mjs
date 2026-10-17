@@ -8,7 +8,7 @@ const declaration = (name) => {
   assert.notEqual(start, -1);
   return script.slice(start, script.indexOf('\n\n', start));
 };
-const setup = (record) => {
+const setup = (record, mobile = false) => {
   const state = { current: structuredClone(record), records: [], isNew: false, dirty: false,
     translation: {dirty: false}, search: '旧搜索', recordTypeFilter: 'ALB', recordDecadeFilter: '1990',
     recordQuickStatus: '已发布', recordFilters: {category:'photo'}, recordStatusFilter:'withdrawn', recordPage:3,
@@ -16,18 +16,20 @@ const setup = (record) => {
   const calls = [];
   const elements = { recordSearch:{value:'旧搜索'}, editorSurface:{querySelector:()=>null} };
   const scope = {state, elements, deepClone:structuredClone, today:()=> '2026-10-14',
+    rememberMobileListPosition:()=>{}, isMobileLayout:()=>mobile, window:{scrollTo:()=>{}},
     isWithdrawn:()=>state.current?.core.record_status==='WDR',
     hasUnsavedChanges:()=>state.dirty || state.translation.dirty,
     recordIsWithdrawn:(record)=>record?.core.record_status==='WDR' && !record?._admin?.hasDraft,
     updateDerivedCollectionCode:()=>{}, schemaForType:()=> 'photo',
     setFieldValue:(_scope,_dimension,key,value)=>{state.current.core[key]=value;state.dirty=true;},
     renderEditorPreservingViewport:()=>{},
+    resetSaveSession:()=>{}, armReturnGuard:()=>{}, noteRecordEdit:()=>{},
   };
   for (const name of ['renderRecordList','renderWorkspaceNavigation','setMobileRecordBrowserOpen','renderEditor','updateHeader','renderTabs','showToast']) scope[name]=(...args)=>calls.push([name,...args]);
   const functions = new Function(...Object.keys(scope), [
     declaration('similarCoreFieldCodes'), declaration('startNewRecord'), declaration('openRecordAlbum'),
     declaration('startAlbumPhoto'), declaration('handleAlbumAction'),
-    'return {handleAlbumAction};',
+    'return {handleAlbumAction,startNewRecord};',
   ].join('\n'))(...Object.values(scope));
   return {...functions,state,elements,calls};
 };
@@ -68,6 +70,18 @@ test('同册新增只复制入藏信息，清空逐张年代、地点、图片�
   assert.equal(c.state.confirmedPublicationCopies,false);
   assert.equal(c.state.dirty,true);
   assert.equal(album.core.object_type,'ALB');
+});
+
+test('普通新建要求明确入藏日期，手机先进入快捷页，电脑仍进入基本资料', () => {
+  for (const mobile of [false, true]) {
+    const c = setup(album, mobile);
+    c.startNewRecord();
+    assert.equal(c.state.current.core.accession_date, '');
+    assert.equal(c.state.current.core.item_id, '');
+    assert.equal(c.state.activeTab, mobile ? 'quick' : 'basic');
+    assert.equal(c.state.current.core.privacy_level, 'Y');
+    assert.equal(c.state.current.core.use_status, 'U0');
+  }
 });
 
 test('未保存或已撤销档案不能通过相册动作覆盖当前编辑', () => {

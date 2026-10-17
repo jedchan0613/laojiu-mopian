@@ -77,7 +77,7 @@ export const createTranslationStore = ({ root, locale = 'en' }) => {
 			stale_fields: staleFields, stale_images: staleImages,
 		};
 	};
-	const saveDraft = async (item, payload) => {
+	const saveDraft = async (item, payload, options = {}) => {
 		assertPublic(item);
 		const itemId = item.core.item_id;
 		const current = await read(itemId);
@@ -105,10 +105,11 @@ export const createTranslationStore = ({ root, locale = 'en' }) => {
 		};
 		const validation = validateTranslationRecord(item, draft);
 		if (!validation.valid) fail(validation.errors.join('；'));
+		options.markChanged?.();
 		await write(itemId, { ...current, revision: current.revision + 1, draft });
 		return detail(item);
 	};
-	const publish = async (item, payload, reviewedBy) => {
+	const publish = async (item, payload, reviewedBy, options = {}) => {
 		assertPublic(item);
 		const itemId = item.core.item_id;
 		const current = await read(itemId);
@@ -124,6 +125,7 @@ export const createTranslationStore = ({ root, locale = 'en' }) => {
 		const validation = validateTranslationRecord(item, published);
 		if (!validation.valid) fail(validation.errors.join('；'));
 		if (!Object.keys(published.fields).length && !Object.keys(published.image_descriptions).length) fail('请至少填写一项译文内容。');
+		options.markChanged?.();
 		if (current.published) {
 			const history = path.join(root, 'history', safeId(itemId));
 			await fs.mkdir(history, { recursive: true });

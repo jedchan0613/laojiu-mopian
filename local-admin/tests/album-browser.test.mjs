@@ -40,7 +40,7 @@ const setup = (records, overrides = {}) => {
     scope[name] = (...args) => calls.push([name, ...args]);
   }
   scope.fetch = async () => ({ ok: true });
-  scope.readApiJson = async () => ({ records: state.nextRecords ?? state.records });
+  scope.readApiJson = async () => ({ writeProtocol: 2, records: state.nextRecords ?? state.records });
   scope.loadAdminStandards = async () => ({ commonFields: { fields: [] }, codeDictionary: { entries: [] } });
   scope.publicPreviewUrl = (value) => value;
   scope.selectRecord = (itemId) => {

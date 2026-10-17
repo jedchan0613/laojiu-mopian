@@ -28,7 +28,15 @@
 
 已保存图片的移除或替换先写入草稿，只有正式发布和构建成功后，旧发布副本才进入本地回收区；不会永久删除，也不会修改原始档案主文件。
 
+## 手机维护第一阶段隔离样例
+
+在项目根目录执行 `node local-admin/mobile-preview.mjs`，访问 `http://127.0.0.1:4193/admin/`。该入口使用完整程序副本和合成资料，保存只影响 `outputs/mobile-maintenance-stage1/` 内的样例；重复启动保留样例草稿。原有 4173 不参与验收，手机真机访问与上线留待后续阶段。
+
+窗口宽度不超过 760px 时显示手机列表、快捷编辑和底部导航，较宽窗口显示原有电脑布局。测试结果、截图与阶段边界见 [第一阶段验收记录](../docs/mobile-archive-maintenance-phase1-review.md)。
+
 ## 线上安全模式
+
+手机维护第二阶段已增加共同写入队列、版本比较及私密操作收据。隔离样例使用 `node local-admin/mobile-preview.mjs --stage=2`，访问 `http://127.0.0.1:4194/admin/`。具体检查、收据容量、待核对处理及升级时停止旧进程的要求见 [第二阶段验收记录](../docs/mobile-archive-maintenance-phase2-review.md)。实际上线状态见第五阶段记录。
 
 - 线上模式默认使用 `127.0.0.1:4174`，只能由服务器本机上的 Cloudflare Tunnel 转发，不能把端口直接开放到公网。
 - 所有管理页面、管理接口和图片预览都会再次核验 Cloudflare Access JWT，包括签名、团队域名、应用 AUD、有效期和管理员邮箱白名单；`/healthz` 只返回服务是否存活，不返回档案内容。
@@ -40,3 +48,9 @@
 - 配置模板见 `online-admin.env.example`。真实配置必须放在服务器的 `/etc/laojiumopian-admin.env`，不能提交到项目或放入公开网站目录。
 - 配置完成后可执行 `node local-admin/server.mjs --check-config` 做只读检查；检查结果不会显示 Access AUD 或邮箱正文。
 - 当前实现不增加 npm 依赖，Access 公钥从团队证书地址读取并短时缓存；遇到签名密钥轮换时会自动重新读取。
+
+## 手机维护复查与发布检查
+
+前三阶段复查与第四阶段已完成，见[验收记录](../docs/mobile-archive-maintenance-phase4-review.md)。手机日常先保存草稿；正式发布时先保存并生成清单，再逐项确认13项，改图文后须重新确认。遇到结果未知先核对，冲突时保留本页输入。手机不会持久保存离线副本，网页被强制关闭后的未确认输入可能丢失。
+
+完整隔离演示：`node local-admin/mobile-preview.mjs --stage=4`，访问 `http://127.0.0.1:4196/admin/`；仅用合成资料。线上入口与回退见[第五阶段记录](../docs/mobile-archive-maintenance-phase5-rollout.md)，真实安卓验证见[试用清单](../docs/mobile-archive-maintenance-android-checklist.md)。

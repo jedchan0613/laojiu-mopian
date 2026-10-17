@@ -2,11 +2,23 @@ const $ = selector => document.querySelector(selector);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const date = value => new Date(value).toLocaleString('zh-CN', { hour12: false });
 let records = [], states = {}, checks = [], active = null, page = 0, dirty = false, busy = false, loading = 0;
+let pendingTransferReview = null;
 const notify = message => { $('#desk-message').textContent = message; };
 const api = async (url, payload) => {
- const response = await fetch(url, payload === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-LJM-Admin-Request': '1' }, body: JSON.stringify(payload) });
- const result = await response.json().catch(() => { throw new Error('无法读取审核区，线上模式请检查是否需要重新登录。'); });
- if (!response.ok) throw new Error(result.error || '操作失败。'); return result;
+ const transferWrite = payload !== undefined && url.endsWith('/transfer');
+ if (transferWrite) {
+  if (pendingTransferReview) throw new Error(`上次转入结果尚待核对，当前输入已保留。请刷新核对关联草稿。本页不会重新执行。操作编号：${pendingTransferReview}`);
+  const health = await fetch('/healthz', { cache: 'no-store' }).then(response => response.json());
+  if (health.capabilities?.writeProtocol !== 2) throw new Error('当前管理服务尚未启用写入保护，请更新并重启管理服务后再转入草稿。当前审核输入已保留。');
+ }
+ const operationId = crypto.randomUUID(), stepId = crypto.randomUUID();
+ let response;
+ try { response = await fetch(url, payload === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-LJM-Admin-Request': '1', 'X-LJM-Operation-Id': operationId, 'X-LJM-Step-Id': stepId }, body: JSON.stringify(payload) }); }
+ catch (error) { if (transferWrite) { pendingTransferReview = operationId; throw new Error(`尚未收到转入结果，当前输入已保留。请刷新核对关联草稿，本页不会重新执行。操作编号：${operationId}`); } throw error; }
+ const result = await response.json().catch(() => { if (transferWrite) pendingTransferReview = operationId; throw new Error('无法读取审核区，当前输入已保留，线上模式请检查是否需要重新登录并核对操作结果。'); });
+ if (!response.ok) throw Object.assign(new Error(result.error || '操作失败。'), { code: result.code, operation: result.operation });
+ if (result.replayed) { if (transferWrite) pendingTransferReview = operationId; throw Object.assign(new Error('这项操作已经执行过，当前审核输入已保留。请刷新核对关联草稿后再继续。'), { code: 'OPERATION_REPLAYED', operation: result.operation }); }
+ return result;
 };
 const badge = r => `<span class="badge${r.withdrawal_requested ? ' alert' : ''}">${esc(r.withdrawal_requested ? '停止处理申请' : states[r.status] || (r.status === 'draft' ? '草稿（未提交）' : r.status))}</span>`;
 // 账号投稿与免注册投稿必须一眼可分；账号已被暂停或正在注销时一并提示。

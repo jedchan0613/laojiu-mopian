@@ -51,7 +51,8 @@ test('侧栏投稿与联系入口在有未保存修改时先确认再跳转', as
 	assert.match(html, /href="\/admin\/submissions\.html"/);
 	assert.match(html, /href="\/admin\/contacts\.html"/);
 	assert.match(script, /\.desk-nav a\[href\$="\/admin\/submissions\.html"\], \.desk-nav a\[href\$="\/admin\/contacts\.html"\]/);
-	assert.match(script, /event\.preventDefault\(\);\s*\n\s*if \(await confirmUnsavedChanges/);
+	// 第三阶段起：离开入口统一走三选（保存并继续／继续编辑／放弃），不再直接两步确认。
+	assert.match(script, /event\.preventDefault\(\);\s*\n\s*if \(await resolveUnsavedBeforeLeave/);
 	// 回归保护：body 上也带有 data-workspace（布局状态），工作区切换只能匹配真正的侧栏按钮，
 	// 否则点击侧栏链接或空白处会被误判为切换工作区并绕过未保存提醒。
 	assert.match(script, /closest\('\.desk-nav-button\[data-workspace\]'\)/);
@@ -138,15 +139,20 @@ test('字段提示隐藏内部维度编号并去除重复操作说明', async ()
 	assert.match(styles, /\.field-error \{[\s\S]{0,260}white-space: nowrap;/);
 });
 
-test('停止编辑约半分钟后自动保存草稿并更新状态栏', async () => {
+test('自动保存按第三阶段节奏执行并持续显示保存状态', async () => {
 	const script = await readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8');
 
-	assert.match(script, /const AUTO_SAVE_DELAY_MS = 30000;/);
+	// 纯文字停止输入约 5 秒保存；连续编辑约 30 秒保存完整快照。
+	assert.match(script, /const AUTO_SAVE_IDLE_MS = 5000;/);
+	assert.match(script, /const AUTO_SAVE_INTERVAL_MS = 30000;/);
 	assert.match(script, /const scheduleAutoSaveDraft = \(\) => \{/);
 	assert.match(script, /await saveDraft\(\{ reload: false, silent: true, autoSave: true \}\);/);
-	assert.match(script, /state\.autoSaveNotice = autoSave \? `已自动保存 \$\{autoSaveTimeLabel\(\)\}` : '';/);
-	// 状态栏优先显示自动保存提示
-	assert.match(script, /: state\.autoSaveNotice\s*\n\s*\? state\.autoSaveNotice/);
+	// 有待上传图片时暂停自动保存并持续提示
+	assert.match(script, /const hasPendingImageUploads = \(\) =>/);
+	assert.match(script, /setSavePhase\('pending-images'\)/);
+	// 保存状态持续显示在状态栏：阶段文字由 describeSaveState 提供。
+	assert.match(script, /const describeSaveState = \(\) => \{/);
+	assert.match(script, /const phaseText = describeSaveState\(\);/);
 	// 字段编辑、图片说明、图片增删都会安排自动保存
 	const setFieldValueBlock = script.slice(
 		script.indexOf('const setFieldValue ='),

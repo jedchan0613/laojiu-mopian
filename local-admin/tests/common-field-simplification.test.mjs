@@ -14,7 +14,8 @@ test('低频通用字段只改变显示，已有值和数组仍随整条草稿�
 	const script = await readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8');
 	for (const fieldCode of hiddenFieldCodes) assert.match(script, new RegExp(`['"]${fieldCode}['"]`));
 	assert.match(script, /return hasMeaningfulValue\(value\) \? '已保存的扩展字段' : null/);
-	assert.match(script, /record: state\.current, images, isNew: state\.isNew/);
+	assert.match(script, /const snapshotRecord = deepClone\(state\.current\)/);
+	assert.match(script, /record: snapshotRecord, images, isNew: wasNewRecord/);
 
 	const original = Object.fromEntries(hiddenFieldCodes.map((code) => [code,
 		code === 'related_item_ids' ? ['LJM-20260101-PHO-001'] : `保留值-${code}`]));

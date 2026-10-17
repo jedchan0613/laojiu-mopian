@@ -18,6 +18,8 @@ import { createMailer } from './mail.mjs';
 import { enqueueProgressNotification } from './notification-queue.mjs';
 import { createTranslationStore } from './translations.mjs';
 import { filterApprovedMetadataIssues } from '../shared/publication-metadata-approvals.mjs';
+import { createWriteCoordinator, acquireWriteLease, atomicWrite, recordRevision, WriteSafetyError } from './write-coordinator.mjs';
+import { createPublicationReviews } from './publication-review.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
@@ -65,6 +67,7 @@ const siteResponsiveArchiveDirectory = path.join(siteDirectory, 'public', 'archi
 const siteArchiveDataFile = path.join(siteDirectory, 'src', 'data', 'archive.ts');
 const siteTranslationDataFile = path.join(siteDirectory, 'src', 'data', 'archive-translations.json');
 const translationDirectory = path.join(adminDataRoot, 'translations');
+const operationDirectory = path.join(adminDataRoot, 'operations');
 const responsiveImageManifestFile = path.join(siteDirectory, 'src', 'data', 'generated', 'image-manifest.json');
 const archiveCategoryFile = path.join(siteDirectory, 'src', 'data', 'archive-categories.json');
 const siteDistDirectory = path.join(siteDirectory, 'dist');
@@ -206,7 +209,10 @@ for (const publicRoot of [siteDirectory, publicDirectory, path.join(projectRoot,
 	if (pathIsInside(publicRoot, uploadStagingDirectory)) throw new Error('临时上传目录不能位于网站、管理页面或公开素材目录内。');
 	if (pathIsInside(publicRoot, accountDataRoot)) throw new Error('账户私密数据目录不能位于网站、管理页面或公开素材目录内。');
 	if (pathIsInside(publicRoot, translationDirectory)) throw new Error('英文草稿与审核数据目录不能位于公开目录内。');
+	if (pathIsInside(publicRoot, operationDirectory)) throw new Error('私密操作记录不能位于公开目录内。');
 }
+const releaseWriteLease = process.argv.includes('--check-config') ? null : await acquireWriteLease(operationDirectory);
+const writes = process.argv.includes('--check-config') ? null : await createWriteCoordinator({ directory: operationDirectory });
 // 投稿进度通知：只有投稿人主动开启通知偏好时才发信；发送失败只记录，不回退审核或发布结果。
 const notifier = async ({ accountId, event, title }) => {
 	const service = accountService;
@@ -398,8 +404,18 @@ const sendJson = (response, status, value, options = {}) => {
 const safeMessage = (error) =>
 	error instanceof Error && error.message ? error.message : '发生了未知错误。';
 
-const managedOperations = new Map();
 const stagedUploads = new Map();
+const lookupStagedUpload = async (token) => {
+	if (!operationIdPattern.test(token ?? '')) return null;
+	const upload = stagedUploads.get(token.toLowerCase());
+	if (!upload) return null;
+	const file = upload.consumed ? path.join(inboxDirectory, upload.assignedItemId, upload.assignedName) : upload.filePath;
+	const stat = await fs.stat(file).catch(() => null);
+	if (!stat?.isFile() || stat.size !== upload.size || (!upload.consumed && stat.mtimeMs < Date.now() - 6 * 60 * 60 * 1000)) {
+		stagedUploads.delete(token.toLowerCase()); return null;
+	}
+	return upload;
+};
 
 const throwIfOperationCancelled = (signal) => {
 	if (signal?.aborted) throw new OperationCancelledError();
@@ -407,9 +423,9 @@ const throwIfOperationCancelled = (signal) => {
 
 const requestOperationId = (request) => {
 	const value = String(request.headers['x-ljm-operation-id'] ?? '').trim();
-	if (!value) return randomUUID();
+	if (!value) throw new WriteSafetyError('页面或工具版本过旧，请刷新页面或更新工具后重试。', 428, 'CLIENT_REFRESH_REQUIRED');
 	if (!operationIdPattern.test(value)) throw new RequestError('操作编号无效。');
-	return value;
+	return value.toLowerCase();
 };
 
 const cleanupStagedUploads = async (operationId) => {
@@ -420,24 +436,83 @@ const cleanupStagedUploads = async (operationId) => {
 	}
 };
 
-const runManagedOperation = async (request, kind, callback) => {
-	const operationId = requestOperationId(request);
-	if (managedOperations.has(operationId)) throw new RequestError('同一项操作仍在进行，请稍候。', 409);
-	const controller = new AbortController();
-	managedOperations.set(operationId, { controller, kind, startedAt: Date.now() });
-	try {
-		return await callback({ operationId, signal: controller.signal });
-	} finally {
-		managedOperations.delete(operationId);
+// 手机保存恢复（第三阶段）：服务重启后，从操作收据核对并恢复仍完整有效的暂存图片，
+// 页面重试时可直接沿用有效令牌；文件缺失或摘要不一致的令牌明确报失效，由页面重新上传。
+const detectImageSignature = (buffer) => {
+	if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
+	if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+	if (buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'image/webp';
+	return '';
+};
+const restoreStagedUploads = async () => {
+	let restored = 0;
+	for (const record of writes.all()) {
+		if (record.kind !== 'stage-image' || record.status !== 'succeeded' || !record.result?.upload) continue;
+		const { token, sha256, size } = record.result.upload;
+		if (stagedUploads.has(token)) continue;
+		const filePath = path.join(uploadStagingDirectory, `${token}.upload`);
+		const stat = await fs.stat(filePath).catch(() => null);
+		if (!stat || !stat.isFile() || stat.size !== size || stat.mtimeMs < Date.now() - 6 * 60 * 60 * 1000) continue;
+		const contents = await fs.readFile(filePath).catch(() => null);
+		if (!contents || createHash('sha256').update(contents).digest('hex') !== sha256) continue;
+		const mimeType = detectImageSignature(contents.subarray(0, 16));
+		if (!allowedImageTypes.has(mimeType)) continue;
+		stagedUploads.set(token, { token, operationId: record.operationId, filePath, originalName: '重启后恢复的暂存图片', mimeType, sha256, size });
+		restored += 1;
+	}
+	if (restored) console.log(`已从操作收据恢复 ${restored} 张仍有效的暂存图片。`);
+};
+if (writes) await restoreStagedUploads();
+
+const readRecordState = async (itemId) => {
+	if (!itemIdPattern.test(itemId ?? '')) throw new RequestError('永久编号无效。');
+	const optional = async (file) => { try { return await readJson(file); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
+	const [official, draft] = await Promise.all([
+		optional(path.join(archiveDataDirectory, `${itemId}.json`)), optional(path.join(draftDirectory, `${itemId}.json`)),
+	]);
+	return { official, draft, revision: recordRevision(official, draft) };
+};
+const assertRecordRevision = async (itemId, expected) => {
+	if (typeof expected !== 'string' || !/^[a-f0-9]{64}$/.test(expected)) {
+		throw new WriteSafetyError('页面或工具缺少档案版本，请刷新后重新核对；当前输入尚未保存。', 428, 'CLIENT_REFRESH_REQUIRED');
+	}
+	if ((await readRecordState(itemId)).revision !== expected) {
+		throw new WriteSafetyError('这件档案已在其他页面更新，已停止覆盖。当前输入仍在页面，请核对最新版本后再保存。', 409, 'REVISION_CONFLICT');
 	}
 };
-
-const cancelManagedOperation = async (operationId) => {
-	if (!operationIdPattern.test(operationId ?? '')) throw new RequestError('操作编号无效。');
-	const operation = managedOperations.get(operationId);
-	if (operation) operation.controller.abort();
-	await cleanupStagedUploads(operationId);
-	return Boolean(operation);
+const readPublicationImages = async (record) => {
+	const itemId = record.core.item_id;
+	return Promise.all((record.core.publication_file_path ?? []).map(async publicPath => {
+		const filename = path.basename(publicPath);
+		if (publicPath !== `/archive/${itemId}/${filename}` || !/^[-A-Za-z0-9_.]+$/.test(filename)) throw new RequestError('图片路径与永久编号不一致。');
+		return { filename, sha256: await fileSha256(path.join(inboxDirectory, itemId, filename)) };
+	}));
+};
+const publicationReviews = createPublicationReviews({ readState: readRecordState, readImages: readPublicationImages });
+const assertWriteVersion = async (kind, payload) => {
+	if (kind === 'save-draft' && payload.isNew) {
+		if (payload.expectedRevision !== 'new') throw new WriteSafetyError('新建请求缺少版本标记，请刷新页面或更新工具。', 428, 'CLIENT_REFRESH_REQUIRED');
+	} else if (kind === 'publish-batch') {
+		if (!Array.isArray(payload.itemIds) || !payload.itemIds.length || payload.itemIds.length > 200 || new Set(payload.itemIds).size !== payload.itemIds.length) throw new RequestError('请提交 1 至 200 个不重复的档案编号。');
+		for (const id of payload.itemIds) await assertRecordRevision(id, payload.expectedRevisions?.[id]);
+	} else await assertRecordRevision(kind === 'save-draft' ? payload.record?.core?.item_id : payload.itemId, payload.expectedRevision);
+};
+const operationReceipt = async (result) => {
+	const itemId = result.draft?.record?.core?.item_id ?? result.record?.core?.item_id ?? result.linked_item_id ?? result.item_id;
+	return {
+		...(itemIdPattern.test(itemId ?? '') ? { itemId, revision: (await readRecordState(itemId)).revision } : {}),
+		...(result.upload ? { upload: { token: result.upload.token, sha256: result.upload.sha256, size: result.upload.size } } : {}),
+		...(result.results ? { results: result.results.map(row => ({ itemId: row.itemId, ok: row.ok })) } : {}),
+		...(Number.isInteger(result.revision) ? { translationRevision: result.revision } : {}),
+	};
+};
+const runManagedOperation = async (request, kind, payload, callback, { target, checkVersion = true } = {}) => {
+	return writes.perform({ operationId: requestOperationId(request), stepId: request.headers['x-ljm-step-id'], kind,
+		target: target ?? (kind === 'publish-batch' ? payload.itemIds : payload.itemId || payload.record?.core?.item_id || 'new'), payload }, async (context) => {
+		if (checkVersion) await assertWriteVersion(kind, payload);
+		try { return await callback(context); }
+		finally { bootstrapCache = null; }
+	}, operationReceipt);
 };
 
 const safeEntryId = (value) => {
@@ -1274,6 +1349,7 @@ const loadBootstrap = async (standards) => {
 			message: `${commonFieldNames.get(conflict.field_code) ?? '该字段'}的旧基本信息值与专属信息不一致，已保留原值并停止自动覆盖。`,
 		}));
 		record._admin = {
+			revision: recordRevision(official, draft),
 			hasDraft: Boolean(draft),
 			hasOfficial: Boolean(official),
 			officialRecordStatus: official?.core.record_status ?? null,
@@ -1303,6 +1379,8 @@ const loadBootstrap = async (standards) => {
 		),
 	);
 	return {
+		writeProtocol: 2,
+		publicationReviewVersion: 1,
 		records,
 		drafts: records
 			.filter((record) => record._admin.hasDraft)
@@ -1652,7 +1730,10 @@ const stageUploadedImage = async (request, operationId, signal) => {
 	let total = 0;
 	let signatureBytes = Buffer.alloc(0);
 	let keepFile = false;
+	const abortRead = () => request.destroy(new OperationCancelledError());
+	signal?.addEventListener('abort', abortRead, { once: true });
 	try {
+		throwIfOperationCancelled(signal);
 		for await (const chunk of request) {
 			throwIfOperationCancelled(signal);
 			total += chunk.length;
@@ -1672,6 +1753,7 @@ const stageUploadedImage = async (request, operationId, signal) => {
 		keepFile = true;
 		return { token, originalName, mimeType, sha256, size: total };
 	} finally {
+		signal?.removeEventListener('abort', abortRead);
 		await fileHandle.close().catch(() => {});
 		if (!keepFile) await fs.rm(filePath, { force: true }).catch(() => {});
 	}
@@ -1777,6 +1859,8 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 	const stagedTokens = new Set((payload.images ?? [])
 		.filter((image) => image.kind === 'staged' && typeof image.uploadToken === 'string')
 		.map((image) => image.uploadToken));
+	options.markChanged?.();
+	let saved = false;
 	try {
 		for (const [position, image] of (payload.images ?? []).entries()) {
 			throwIfOperationCancelled(signal);
@@ -1791,17 +1875,31 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 				publicationPaths.push(`/archive/${itemId}/${filename}`);
 				continue;
 			}
-			if (image.kind === 'staged') {
-				const staged = stagedUploads.get(image.uploadToken);
-				if (!staged || staged.operationId !== operationId) throw new Error('临时图片已经失效，请重新保存。');
-				const filename = await nextImageName(itemId, reservedNames, position, allowedImageTypes.get(staged.mimeType), image.publicationName);
-				const targetPath = path.join(inboxItemDirectory, filename);
-				await fs.copyFile(staged.filePath, targetPath, fsConstants.COPYFILE_EXCL);
-				newlyWrittenFiles.push(targetPath);
-				reservedNames.add(filename);
-				publicationPaths.push(`/archive/${itemId}/${filename}`);
+		if (image.kind === 'staged') {
+			const staged = await lookupStagedUpload(image.uploadToken);
+			if (!staged) throw new Error('临时图片已经失效，请重新上传这张图片后再保存。');
+			if (staged.operationId !== operationId) throw new Error('临时图片不属于本次编辑会话，请重新核对上传结果。');
+			// 同一暂存图片已写入过（例如保存中断后重试）：核对首次写入结果并沿用，不重复复制。
+			if (staged.consumed) {
+				if (!staged.assignedName || staged.assignedItemId !== itemId || reservedNames.has(staged.assignedName)
+					|| !(await pathExists(path.join(inboxItemDirectory, staged.assignedName)))) {
+					throw new Error('临时图片的首次写入结果无法核对，请重新上传这张图片后再保存。');
+				}
+				reservedNames.add(staged.assignedName);
+				publicationPaths.push(`/archive/${itemId}/${staged.assignedName}`);
 				continue;
 			}
+			const filename = await nextImageName(itemId, reservedNames, position, allowedImageTypes.get(staged.mimeType), image.publicationName);
+			const targetPath = path.join(inboxItemDirectory, filename);
+			await fs.copyFile(staged.filePath, targetPath, fsConstants.COPYFILE_EXCL);
+			staged.consumed = true;
+			staged.assignedName = filename;
+			staged.assignedItemId = itemId;
+			newlyWrittenFiles.push(targetPath);
+			reservedNames.add(filename);
+			publicationPaths.push(`/archive/${itemId}/${filename}`);
+			continue;
+		}
 			if (image.kind !== 'new') throw new Error('图片列表包含无法识别的项目。');
 			const decoded = decodeUploadedImage(image);
 			const filename = await nextImageName(itemId, reservedNames, position, decoded.extension, image.publicationName);
@@ -1830,7 +1928,7 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 				: [];
 		}));
 		const draft = {
-			version: 2,
+			version: 2, write_revision: randomUUID(),
 			...(payload.sourceSubmissionId ? { source_submission_id: payload.sourceSubmissionId } : existingDraft?.source_submission_id ? { source_submission_id: existingDraft.source_submission_id } : {}),
 			saved_at: new Date().toISOString(),
 			removed_images: cleanRemovedImages,
@@ -1841,32 +1939,37 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 		};
 		await fs.mkdir(draftDirectory, { recursive: true });
 		throwIfOperationCancelled(signal);
-		await fs.writeFile(path.join(draftDirectory, `${itemId}.json`), `${JSON.stringify(draft, null, 2)}\n`, 'utf8');
+		await atomicWrite(path.join(draftDirectory, `${itemId}.json`), `${JSON.stringify(draft, null, 2)}\n`);
 		bootstrapCache = null;
 		inboxHashCache = new Map();
+		saved = true;
 		return draft;
 	} catch (error) {
 		for (const filePath of newlyWrittenFiles) await fs.rm(filePath, { force: true });
-		throw error;
-	} finally {
+		// 保存未完成：已暂存图片保留有效令牌，重试只带同一份暂存结果，不重复上传。
 		for (const token of stagedTokens) {
 			const staged = stagedUploads.get(token);
-			if (!staged) continue;
-			stagedUploads.delete(token);
-			await fs.rm(staged.filePath, { force: true }).catch(() => {});
+			if (staged) { staged.consumed = false; staged.assignedName = ''; staged.assignedItemId = ''; }
+		}
+		// 业务校验／正常取消已回收本次新图；底层文件错误可能留下未完成写入，需要核对。
+		error.safeToRetry = !error.code;
+		throw error;
+	} finally {
+		// 保存成功才结算暂存图片：令牌标记为已消费并移除暂存文件；失败时保留供重试。
+		if (saved) {
+			for (const token of stagedTokens) {
+				const staged = stagedUploads.get(token);
+				if (!staged) continue;
+				await fs.rm(staged.filePath, { force: true }).catch(() => {});
+			}
 		}
 	}
 };
 
-// 草稿编号分配与写入依次完成，防止同时操作占用同一永久编号。
-let draftSaveQueue = Promise.resolve();
-const saveDraft = (payload, options = {}) => {
-	const task = draftSaveQueue.then(() => saveDraftUnlocked(payload, options));
-	draftSaveQueue = task.catch(() => {});
-	return task;
-};
+// 所有调用者已由共同写入队列包住，包括编号分配、投稿转入与发布。
+const saveDraft = saveDraftUnlocked;
 
-const submissionToDraft = async (input) => {
+const submissionToDraft = async (input, options = {}) => {
 	const previous = (await loadDrafts()).find((draft) => draft.source_submission_id === input.id);
 	if (previous) return previous.record.core.item_id;
 	if (!objectSchema[input.object_type]) throw new RequestError('请选择正式的藏品类型。');
@@ -1878,7 +1981,7 @@ const submissionToDraft = async (input) => {
 			metadata: { schema: objectSchema[input.object_type], dimensions: {} },
 			public_view: { description: input.description, transcription: '', tags: [] },
 		},
-	});
+	}, options);
 	return draft.record.core.item_id;
 };
 
@@ -2050,7 +2153,7 @@ const writeRestoredDraft = async (
 	normalizeSharedCoreFields(record, fieldRouting, commonFields);
 	applyCollectionCode(record, collectionCodeRules, codeDictionary);
 	const draft = {
-		version: 2,
+		version: 2, write_revision: randomUUID(),
 		saved_at: new Date().toISOString(),
 		removed_images: removedImages,
 		restored_from_history: restoredFromHistory,
@@ -2058,11 +2161,11 @@ const writeRestoredDraft = async (
 		record,
 	};
 	await fs.mkdir(draftDirectory, { recursive: true });
-	await fs.writeFile(path.join(draftDirectory, `${record.core.item_id}.json`), `${JSON.stringify(draft, null, 2)}\n`, 'utf8');
+	await atomicWrite(path.join(draftDirectory, `${record.core.item_id}.json`), `${JSON.stringify(draft, null, 2)}\n`);
 	return draft;
 };
 
-const restoreRecycleEntry = async (payload) => {
+const restoreRecycleEntry = async (payload, options = {}) => {
 	const itemId = payload.itemId;
 	const entryId = safeEntryId(payload.entryId);
 	if (!itemIdPattern.test(itemId ?? '')) throw new Error('永久编号无效。');
@@ -2079,6 +2182,7 @@ const restoreRecycleEntry = async (payload) => {
 	const record = structuredClone(currentDraft?.record ?? official);
 	if (!record) throw new Error('找不到要恢复图片的档案。');
 	const source = path.join(entryDirectory, manifest.filename);
+	options.markChanged?.();
 	const restoredName = await copyRestoredImage(itemId, source, manifest.filename);
 	const restoredPath = `/archive/${itemId}/${restoredName}`;
 	record.core.publication_file_path ??= [];
@@ -2097,7 +2201,7 @@ const restoreRecycleEntry = async (payload) => {
 	return draft;
 };
 
-const restoreHistoryEntry = async (payload) => {
+const restoreHistoryEntry = async (payload, options = {}) => {
 	const itemId = payload.itemId;
 	const entryId = safeEntryId(payload.entryId);
 	if (!itemIdPattern.test(itemId ?? '')) throw new Error('永久编号无效。');
@@ -2112,6 +2216,7 @@ const restoreHistoryEntry = async (payload) => {
 		throw new Error('撤销记录保持只读；请从“已撤销”列表恢复为草稿。');
 	}
 	const currentDraft = (await loadDrafts()).find((draft) => draft.record.core.item_id === itemId);
+	options.markChanged?.();
 	if (currentDraft) {
 		const safetySnapshot = await createHistorySnapshot(currentDraft.record, {
 			snapshotKind: 'draft-before-history-restore',
@@ -2136,7 +2241,7 @@ const restoreHistoryEntry = async (payload) => {
 	return writeRestoredDraft(record, manifest.removed_images ?? [], entryId);
 };
 
-const restoreWithdrawnRecord = async (payload) => {
+const restoreWithdrawnRecord = async (payload, options = {}) => {
 	const itemId = payload.itemId;
 	if (!itemIdPattern.test(itemId ?? '')) throw new Error('永久编号无效。');
 	const [officialRecords, drafts] = await Promise.all([loadOfficialRecords(), loadDrafts()]);
@@ -2146,6 +2251,7 @@ const restoreWithdrawnRecord = async (payload) => {
 	if (drafts.some((draft) => draft.record.core.item_id === itemId)) throw new Error('这条档案已经有恢复草稿。');
 	const eligibility = await withdrawnRestoreEligibility(official);
 	if (!eligibility.allowed) throw new Error(eligibility.reason || '这条撤销记录不能自动恢复。');
+	options.markChanged?.();
 	return writeRestoredDraft(structuredClone(official), [], null, {
 		item_id: itemId,
 		restored_at: new Date().toISOString(),
@@ -2167,7 +2273,7 @@ const runSiteBuild = async (options = {}) => {
 			: process.env,
 		windowsHide: true,
 		maxBuffer: 10 * 1024 * 1024,
-		...(signal ? { signal } : {}),
+		// 等 npm 与其子命令真正结束后才处理取消，避免 Windows 中 shell 已退出、构建仍在写入。
 	});
 	throwIfOperationCancelled(signal);
 	return `${stdout}\n${stderr}`.trim();
@@ -2186,7 +2292,7 @@ const publishEnglishTranslation = async (itemId, payload, options = {}) => {
 		previous = await translationStore.readRaw(itemId);
 		throwIfOperationCancelled(signal);
 		const item = await loadTranslationItem(itemId);
-		await translationStore.publish(item, payload, options.reviewedBy || '本地档案维护者');
+		await translationStore.publish(item, payload, options.reviewedBy || '本地档案维护者', options);
 		changed = true;
 		const buildOutput = await runSiteBuild({ signal });
 		throwIfOperationCancelled(signal);
@@ -2198,13 +2304,14 @@ const publishEnglishTranslation = async (itemId, payload, options = {}) => {
 			let rollbackMessage = '';
 			try { await runSiteBuild(); }
 			catch (rollbackError) { rollbackMessage = `；恢复后的构建未完成：${safeMessage(rollbackError)}`; }
-			throw new RequestError(`译文发布未完成，已恢复上次正式译文版本：${safeMessage(error)}${rollbackMessage}`);
+			const message = `译文发布未完成，已恢复上次正式译文版本：${safeMessage(error)}${rollbackMessage}`;
+			throw Object.assign(signal?.aborted ? new OperationCancelledError(message) : new RequestError(message), { safeToRetry: !rollbackMessage });
 		}
 		throw error;
 	} finally { publishInProgress = false; }
 };
 
-const withdrawOfficialRecord = async (payload) => {
+const withdrawOfficialRecord = async (payload, options = {}) => {
 	if (publishInProgress) throw new Error('已有一项网站更新正在进行，请稍候。');
 	publishInProgress = true;
 	const itemId = payload.itemId;
@@ -2230,6 +2337,7 @@ const withdrawOfficialRecord = async (payload) => {
 
 		const previousOfficial = await fs.readFile(officialPath);
 		const previousArchiveSource = await fs.readFile(siteArchiveDataFile);
+		options.markChanged?.();
 		const historySnapshot = await createHistorySnapshot(official, {
 			snapshotKind: 'published-before-withdrawal',
 			withdrawalReason: reason,
@@ -2244,8 +2352,8 @@ const withdrawOfficialRecord = async (payload) => {
 		let buildOutput = '';
 		let deployment = null;
 		try {
-			await fs.writeFile(officialPath, `${JSON.stringify(withdrawn, null, 2)}\n`, 'utf8');
-			await fs.writeFile(siteArchiveDataFile, await generateSiteArchiveSource(), 'utf8');
+			await atomicWrite(officialPath, `${JSON.stringify(withdrawn, null, 2)}\n`);
+			await atomicWrite(siteArchiveDataFile, await generateSiteArchiveSource());
 			for (const publicPath of official.core.publication_file_path ?? []) {
 				const filename = path.basename(publicPath);
 				const siteFile = path.join(siteArchiveDirectory, itemId, filename);
@@ -2257,8 +2365,8 @@ const withdrawOfficialRecord = async (payload) => {
 			buildOutput = await runSiteBuild();
 			if (onlineMode) deployment = await releaseDeployer.deploy();
 		} catch (error) {
-			await fs.writeFile(officialPath, previousOfficial);
-			await fs.writeFile(siteArchiveDataFile, previousArchiveSource);
+			await atomicWrite(officialPath, previousOfficial);
+			await atomicWrite(siteArchiveDataFile, previousArchiveSource);
 			for (const siteFile of removedSiteFiles) {
 				const source = path.join(historySnapshot.imageDirectory, path.basename(siteFile));
 				if (await pathExists(source)) await fs.copyFile(source, siteFile);
@@ -2274,7 +2382,7 @@ const withdrawOfficialRecord = async (payload) => {
 			} catch (rollbackError) {
 				rollbackBuildMessage = `；恢复后的构建也未完成：${safeMessage(rollbackError)}`;
 			}
-			throw new Error(`撤销后的网站构建或安全切换没有完成，已恢复原发布状态：${safeMessage(error)}${rollbackBuildMessage}`);
+			throw Object.assign(new Error(`撤销后的网站构建或安全切换没有完成，已恢复原发布状态：${safeMessage(error)}${rollbackBuildMessage}`), { safeToRetry: !rollbackBuildMessage });
 		}
 		const warnings = [];
 		try {
@@ -2293,12 +2401,10 @@ const withdrawOfficialRecord = async (payload) => {
 };
 
 const publishDraftUnlocked = async (payload, options = {}) => {
-	const { signal = null, skipBuild = false, batchLock = false } = options;
+	const { signal = null } = options;
 	throwIfOperationCancelled(signal);
-	if (!batchLock) {
-		if (publishInProgress) throw new Error('已有一项发布检查正在进行，请稍候。');
-		publishInProgress = true;
-	}
+	if (publishInProgress) throw new Error('已有一项发布检查正在进行，请稍候。');
+	publishInProgress = true;
 	const itemId = payload.itemId;
 	try {
 		if (!itemIdPattern.test(itemId ?? '')) throw new Error('永久编号无效。');
@@ -2325,6 +2431,13 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 			throw new Error('恢复草稿与撤销记录不匹配，已停止发布。');
 		}
 		await validateForPublication(record, payload.confirmations);
+		const reviewedImages = await publicationReviews.verify(payload);
+		for (const image of reviewedImages) {
+			const destination = path.join(siteArchiveDirectory, itemId, image.filename);
+			if (await pathExists(destination) && await fileSha256(destination) !== image.sha256) {
+				throw new RequestError('同名公开图片内容不同，请通过“替换”建立新副本，不能覆盖旧发布图片。');
+			}
+		}
 		throwIfOperationCancelled(signal);
 
 		record.core.record_status = 'ACT';
@@ -2340,6 +2453,7 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 		const officialPath = path.join(archiveDataDirectory, `${itemId}.json`);
 		const previousOfficial = (await pathExists(officialPath)) ? await fs.readFile(officialPath) : null;
 		const previousArchiveSource = await fs.readFile(siteArchiveDataFile);
+		options.markChanged?.();
 		const historySnapshot = await createHistorySnapshot(previousOfficialRecord, {
 			snapshotKind: previousOfficialRecord?.core.record_status === 'WDR'
 				? 'withdrawn-before-reactivation'
@@ -2359,7 +2473,11 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 				const filename = path.basename(publicPath);
 				const destination = path.join(siteItemDirectory, filename);
 				if (!(await pathExists(destination))) copiedNewFiles.push(destination);
-				await fs.copyFile(path.join(inboxDirectory, itemId, filename), destination);
+				const reviewed = reviewedImages.find(image => image.filename === filename);
+				if (await pathExists(destination)) {
+					if (await fileSha256(destination) !== reviewed?.sha256) throw new Error('同名公开图片内容不同，请通过“替换”建立新副本，不能覆盖旧发布图片。');
+				} else await fs.copyFile(path.join(inboxDirectory, itemId, filename), destination, fsConstants.COPYFILE_EXCL);
+				if (await fileSha256(destination) !== reviewed?.sha256) throw new Error('复制后的图片与已确认版本不一致，已停止发布。');
 			}
 			for (const filename of removedImages) {
 				const siteFile = path.join(siteItemDirectory, path.basename(filename));
@@ -2369,18 +2487,17 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 				}
 			}
 			throwIfOperationCancelled(signal);
-			await fs.writeFile(officialPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
-			await fs.writeFile(siteArchiveDataFile, await generateSiteArchiveSource(), 'utf8');
-			if (!skipBuild) {
-				buildOutput = await runSiteBuild({ signal });
-				throwIfOperationCancelled(signal);
-				if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
-			}
+			await assertRecordRevision(itemId, payload.expectedRevision);
+			await atomicWrite(officialPath, `${JSON.stringify(record, null, 2)}\n`);
+			await atomicWrite(siteArchiveDataFile, await generateSiteArchiveSource());
+			buildOutput = await runSiteBuild({ signal });
+			throwIfOperationCancelled(signal);
+			if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
 		} catch (error) {
 			const operationWasCancelled = signal?.aborted || error?.name === 'AbortError' || error?.name === 'OperationCancelledError';
-			if (previousOfficial) await fs.writeFile(officialPath, previousOfficial);
+			if (previousOfficial) await atomicWrite(officialPath, previousOfficial);
 			else await fs.rm(officialPath, { force: true });
-			await fs.writeFile(siteArchiveDataFile, previousArchiveSource);
+			await atomicWrite(siteArchiveDataFile, previousArchiveSource);
 			for (const filePath of copiedNewFiles) await fs.rm(filePath, { force: true });
 			if (historySnapshot) {
 				for (const siteFile of removedSiteFiles) {
@@ -2394,17 +2511,15 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 				});
 			}
 			let rollbackBuildMessage = '';
-			if (!skipBuild) {
-				try {
-					await runSiteBuild();
-				} catch (rollbackError) {
-					rollbackBuildMessage = `；恢复后的构建也未完成：${safeMessage(rollbackError)}`;
-				}
+			try {
+				await runSiteBuild();
+			} catch (rollbackError) {
+				rollbackBuildMessage = `；恢复后的构建也未完成：${safeMessage(rollbackError)}`;
 			}
 			if (operationWasCancelled) {
-				throw new OperationCancelledError(`发布已取消，公开网站已恢复到操作前状态${rollbackBuildMessage}。`);
+				throw Object.assign(new OperationCancelledError(`发布已取消，公开网站已恢复到操作前状态${rollbackBuildMessage}。`), { safeToRetry: !rollbackBuildMessage });
 			}
-			throw new Error(`网站构建或安全切换没有完成，已恢复发布前状态：${safeMessage(error)}${rollbackBuildMessage}`);
+			throw Object.assign(new Error(`网站构建或安全切换没有完成，已恢复发布前状态：${safeMessage(error)}${rollbackBuildMessage}`), { safeToRetry: !rollbackBuildMessage });
 		}
 
 		const warnings = [];
@@ -2425,10 +2540,12 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 				warnings.push(`历史版本记录失败：${safeMessage(error)}`);
 			}
 		}
-		await fs.rm(draftPath, { force: true });
+		if (recordRevision(null, await readJson(draftPath)) === recordRevision(null, draft)) await fs.rm(draftPath, { force: true });
+		else warnings.push('草稿在发布期间发生变化，已保留新的草稿，请重新核对。');
+		publicationReviews.complete(payload.reviewId);
 		return { record, buildOutput, deployment, warnings };
 	} finally {
-		if (!batchLock) publishInProgress = false;
+		publishInProgress = false;
 	}
 };
 
@@ -2491,39 +2608,27 @@ const publishDraft = async (payload, options = {}) => {
 	return result;
 };
 
-// 批量发布：逐件沿用单件发布的全部校验、历史快照与回滚，整批结束后只构建一次。
+// 批量发布逐件完成构建后才清理该件草稿；整批占用同一写入队列。
 const publishDraftsBatch = async (payload, options = {}) => {
 	const { signal = null } = options;
 	const itemIds = Array.isArray(payload.itemIds) ? payload.itemIds : [];
 	if (!itemIds.length || itemIds.length > 200) throw new Error('请一次提交 1 至 200 件进行批量发布。');
-	if (publishInProgress) throw new Error('已有一项发布正在进行，请稍候。');
-	publishInProgress = true;
 	const results = [];
-	try {
 		for (const itemId of itemIds) {
 			throwIfOperationCancelled(signal);
+			let changed = false;
 			try {
 				const result = await publishDraft(
-					{ itemId, confirmations: payload.confirmations },
-					{ signal, skipBuild: true, batchLock: true },
+					{ itemId, confirmations: payload.confirmations, expectedRevision: payload.expectedRevisions?.[itemId], reviewId: payload.reviewIds?.[itemId] },
+					{ ...options, markChanged: () => { changed = true; options.markChanged?.(); } },
 				);
 				results.push({ itemId, ok: true, warnings: result.warnings ?? [] });
 			} catch (error) {
+				if (changed && !error.safeToRetry) throw error;
 				results.push({ itemId, ok: false, error: safeMessage(error) });
 			}
 		}
-		let buildOutput = '';
-		let deployment = null;
-		if (results.some((row) => row.ok)) {
-			await fs.writeFile(siteArchiveDataFile, await generateSiteArchiveSource(), 'utf8');
-			buildOutput = await runSiteBuild({ signal });
-			throwIfOperationCancelled(signal);
-			if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
-		}
-		return { results, buildOutput, deployment };
-	} finally {
-		publishInProgress = false;
-	}
+		return { results };
 };
 
 const adminServer = http.createServer(async (request, response) => {
@@ -2534,10 +2639,37 @@ const adminServer = http.createServer(async (request, response) => {
 		if (!onlineMode && await publicContacts(request, response, url.pathname)) return;
 		if (!onlineMode && accountService && await accountService.handler(request, response, url.pathname)) return;
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/healthz') {
-			sendJson(response, 200, { ok: true, capabilities: { publicationImageNames: true } });
+			sendJson(response, 200, { ok: true, capabilities: { publicationImageNames: true, writeProtocol: 2, publicationReviewVersion: 1 } });
 			return;
 		}
 		const adminIdentity = onlineMode ? await accessAuthenticator.verifyRequest(request) : null;
+		if (request.method === 'POST' && url.pathname === '/api/publication-review') {
+			requireSafeMutation(request);
+			const payload = await readRequestJson(request);
+			const result = await writes.read(async () => {
+				await assertRecordRevision(payload.itemId, payload.expectedRevision);
+				const current = await readRecordState(payload.itemId);
+				if (!current.draft) throw new WriteSafetyError('请先保存草稿，再开始逐项确认。', 428, 'PUBLICATION_REVIEW_REQUIRED');
+				const { standards } = await getAdminStandards();
+				const issues = (await getPublicationIssues(current.draft.record, standards.commonFields, null, standards.collectionCodeRules, standards.codeDictionary)).filter(issue => issue.code !== 'privacy_confirmation');
+				return issues.length ? { issues } : { ...await publicationReviews.prepare(payload.itemId, payload.expectedRevision), issues: [] };
+			});
+			sendJson(response, 200, result, { request }); return;
+		}
+		const operationRoute = /^\/api\/operations\/([a-f0-9-]{36})$/i.exec(url.pathname);
+		if (operationRoute && request.method === 'GET') {
+			sendJson(response, 200, { operations: writes.query(operationRoute[1]) }, { request }); return;
+		}
+		const versionRoute = /^\/api\/record-version\/(LJM-\d{8}-[A-Z]{3}-\d{3})$/.exec(url.pathname);
+		const saveResultRoute = /^\/api\/save-result\/(LJM-\d{8}-[A-Z]{3}-\d{3})$/.exec(url.pathname);
+		if (saveResultRoute && request.method === 'GET') {
+			const result = await writes.read(() => readRecordState(saveResultRoute[1]));
+			sendJson(response, 200, { draft: result.draft, revision: result.revision }, { request }); return;
+		}
+		if (versionRoute && request.method === 'GET') {
+			const { revision } = await writes.read(() => readRecordState(versionRoute[1]));
+			sendJson(response, 200, { itemId: versionRoute[1], revision }, { request }); return;
+		}
 		const translationRoute = /^\/api\/admin\/translations\/(LJM-\d{8}-[A-Z]{3}-\d{3})(?:\/(save|publish))?$/.exec(url.pathname);
 		if (translationRoute) {
 			const [, itemId, action] = translationRoute;
@@ -2545,23 +2677,16 @@ const adminServer = http.createServer(async (request, response) => {
  if (!translationLocales.includes(locale)) throw new RequestError('不支持的译文语言。');
  const translationStore=translationStores[locale];
 			if (!action && request.method === 'GET') {
-				sendJson(response, 200, await translationStore.detail(await loadTranslationItem(itemId)), { request }); return;
+				sendJson(response, 200, await writes.read(async () => translationStore.detail(await loadTranslationItem(itemId))), { request }); return;
 			}
 			if (request.method === 'POST' && ['save', 'publish'].includes(action)) {
 				requireSafeMutation(request);
-				if (publishInProgress) throw new RequestError('已有一项网站更新正在进行，请稍候。', 409);
-				if (action === 'save') {
-					const payload = await readSubmissionJson(request, 512 * 1024);
-					if (publishInProgress) throw new RequestError('已有一项网站更新正在进行，请稍候。', 409);
-					publishInProgress = true;
-					try { sendJson(response, 200, await translationStore.saveDraft(await loadTranslationItem(itemId), payload)); }
-					finally { publishInProgress = false; }
-					return;
-				}
-				const result = await runManagedOperation(request, 'publish-translation', async ({ signal }) =>
-					publishEnglishTranslation(itemId, await readSubmissionJson(request, 32 * 1024), {
-						signal, locale, reviewedBy: adminIdentity?.email || '本地档案维护者',
-					}));
+				const payload = await readSubmissionJson(request, action === 'save' ? 512 * 1024 : 32 * 1024);
+				const result = await runManagedOperation(request, `${action}-translation`, payload, async (context) => {
+					if (!Number.isInteger(payload.revision)) throw new WriteSafetyError('缺少译文版本，请刷新面板。', 428, 'CLIENT_REFRESH_REQUIRED');
+					return action === 'save' ? translationStore.saveDraft(await loadTranslationItem(itemId), payload, context)
+						: publishEnglishTranslation(itemId, payload, { ...context, locale, reviewedBy: adminIdentity?.email || '本地档案维护者' });
+				}, { target: `${itemId}:${locale}`, checkVersion: false });
 				sendJson(response, 200, result); return;
 			}
 			sendJson(response, 405, { error: '不支持此操作。' }); return;
@@ -2595,7 +2720,7 @@ const adminServer = http.createServer(async (request, response) => {
 				const result = action === 'review'
 					? await submissionStore.review(id, payload)
 					: action === 'transfer'
-						? await submissionStore.transfer(id, payload, submissionToDraft)
+						? await runManagedOperation(request, 'transfer-submission', payload, context => submissionStore.transfer(id, payload, input => submissionToDraft(input, context)), { target: id, checkVersion: false })
 						: await submissionStore.reviewAccountChange({ id, revision: payload.revision, status: payload.status, publicMessage: payload.public_message });
 				sendJson(response, 200, result); return;
 			}
@@ -2615,12 +2740,12 @@ const adminServer = http.createServer(async (request, response) => {
 			sendJson(response, 405, { error: '不支持此操作。' }); return;
 		}
 		if (request.method === 'GET' && url.pathname === '/api/bootstrap') {
-			await getBootstrap();
+			const snapshot = await writes.read(() => getBootstrap());
 			const splitResponse = url.searchParams.get('format') === 'split-v1';
 			const standardsResult = splitResponse ? null : await getAdminStandards();
 			sendJson(response, 200, splitResponse
-				? bootstrapCache
-				: { ...bootstrapCache, standards: standardsResult.standards }, {
+				? snapshot
+				: { ...snapshot, standards: standardsResult.standards }, {
 				etag: `W/"ljm-bootstrap-${splitResponse ? 'split' : 'full'}-${bootstrapSignature}"`,
 				request,
 			});
@@ -2635,11 +2760,11 @@ const adminServer = http.createServer(async (request, response) => {
 			return;
 		}
 		if (request.method === 'GET' && url.pathname === '/api/query-records') {
-			sendJson(response, 200, { records: await createQueryRecords() }, { request });
+			sendJson(response, 200, { records: await writes.read(() => createQueryRecords()) }, { request });
 			return;
 		}
 		if (request.method === 'GET' && url.pathname === '/api/integrity-report') {
-			sendJson(response, 200, { integrity: await loadIntegrityReport() }, { request });
+			sendJson(response, 200, { integrity: await writes.read(() => loadIntegrityReport()) }, { request });
 			return;
 		}
 		if (request.method === 'GET' && url.pathname.startsWith('/api/image/')) {
@@ -2676,24 +2801,53 @@ const adminServer = http.createServer(async (request, response) => {
 			});
 			return;
 		}
-		if (request.method === 'POST' && url.pathname === '/api/save-draft') {
+		const recordMutations = {
+			'/api/save-draft': ['save-draft', async (payload, context) => { const draft = await saveDraft(payload, context); return { draft, revision: (await readRecordState(draft.record.core.item_id)).revision }; }],
+			'/api/publish': ['publish', publishDraft], '/api/publish-batch': ['publish-batch', publishDraftsBatch],
+			'/api/withdraw-record': ['withdraw-record', withdrawOfficialRecord],
+			'/api/restore-withdrawn': ['restore-withdrawn', async (payload, context) => ({ draft: await restoreWithdrawnRecord(payload, context) })],
+			'/api/restore-recycle': ['restore-recycle', async (payload, context) => ({ draft: await restoreRecycleEntry(payload, context) })],
+			'/api/restore-history': ['restore-history', async (payload, context) => ({ draft: await restoreHistoryEntry(payload, context) })],
+		};
+		if (request.method === 'POST' && recordMutations[url.pathname]) {
 			requireSafeMutation(request);
-			const draft = await runManagedOperation(request, 'save-draft', async ({ operationId, signal }) =>
-				saveDraft(await readRequestJson(request, signal), { operationId, signal }));
-			sendJson(response, 200, { draft });
+			const payload = await readRequestJson(request);
+			const [kind, callback] = recordMutations[url.pathname];
+			sendJson(response, 200, await runManagedOperation(request, kind, payload, context => callback(payload, context)));
 			return;
 		}
 		if (request.method === 'POST' && url.pathname === '/api/stage-image') {
 			requireSafeImageMutation(request);
-			const upload = await runManagedOperation(request, 'stage-image', ({ operationId, signal }) =>
-				stageUploadedImage(request, operationId, signal));
-			sendJson(response, 200, { upload });
+			const metadata = Object.fromEntries(['content-type', 'content-length', 'x-ljm-file-name', 'x-ljm-file-sha256'].map(key => [key, request.headers[key] ?? '']));
+			let consumed = false;
+			const result = await runManagedOperation(request, 'stage-image', metadata, async ({ operationId, signal }) => {
+				consumed = true;
+				return { upload: await stageUploadedImage(request, operationId, signal) };
+			}, { target: 'upload', checkVersion: false });
+			if (!consumed) {
+				// 重放仍核对实际字节，不能仅凭客户端自报的文件摘要认作同一图片。
+				const hash = createHash('sha256'); let size = 0;
+				for await (const chunk of request) {
+					size += chunk.length;
+					if (size > maximumImageBytes) throw new RequestError('图片超过 30 MB。', 413);
+					hash.update(chunk);
+				}
+				if (String(size) !== String(metadata['content-length']) || hash.digest('hex') !== metadata['x-ljm-file-sha256']) throw new WriteSafetyError('重放图片与原操作内容不一致。', 409, 'OPERATION_MISMATCH');
+			}
+			if (result.replayed) {
+			const upload = await lookupStagedUpload(result.operation.result.upload.token);
+				if (!upload) throw new WriteSafetyError('原上传已结束或临时图片已失效；请核对草稿后重新选图。', 410, 'UPLOAD_EXPIRED');
+				result.upload = { token: upload.token, sha256: upload.sha256, size: upload.size };
+			}
+			sendJson(response, 200, result);
 			return;
 		}
 		if (request.method === 'POST' && url.pathname === '/api/cancel-operation') {
 			requireSafeMutation(request);
 			const payload = await readRequestJson(request);
-			sendJson(response, 200, { cancelled: await cancelManagedOperation(payload.operationId) });
+			const result = await writes.cancel(payload.operationId);
+			await cleanupStagedUploads(payload.operationId.toLowerCase());
+			sendJson(response, 200, result);
 			return;
 		}
 		if (request.method === 'POST' && url.pathname === '/api/preflight-images') {
@@ -2701,38 +2855,22 @@ const adminServer = http.createServer(async (request, response) => {
 			sendJson(response, 200, await preflightImageFiles(await readRequestJson(request)));
 			return;
 		}
-		if (request.method === 'POST' && url.pathname === '/api/publish') {
+		if (request.method === 'POST' && url.pathname === '/api/staged-uploads/status') {
+			// 只读核对暂存令牌：available 可直接沿用；consumed 已随草稿保存；missing 需重新上传。
 			requireSafeMutation(request);
-			const result = await runManagedOperation(request, 'publish', async ({ operationId, signal }) =>
-				publishDraft(await readRequestJson(request, signal), { operationId, signal }));
-			sendJson(response, 200, result);
-			return;
-		}
-		if (request.method === 'POST' && url.pathname === '/api/publish-batch') {
-			requireSafeMutation(request);
-			const result = await runManagedOperation(request, 'publish-batch', async ({ operationId, signal }) =>
-				publishDraftsBatch(await readRequestJson(request, signal), { signal }));
-			sendJson(response, 200, result);
-			return;
-		}
-		if (request.method === 'POST' && url.pathname === '/api/withdraw-record') {
-			requireSafeMutation(request);
-			sendJson(response, 200, await withdrawOfficialRecord(await readRequestJson(request)));
-			return;
-		}
-		if (request.method === 'POST' && url.pathname === '/api/restore-withdrawn') {
-			requireSafeMutation(request);
-			sendJson(response, 200, { draft: await restoreWithdrawnRecord(await readRequestJson(request)) });
-			return;
-		}
-		if (request.method === 'POST' && url.pathname === '/api/restore-recycle') {
-			requireSafeMutation(request);
-			sendJson(response, 200, { draft: await restoreRecycleEntry(await readRequestJson(request)) });
-			return;
-		}
-		if (request.method === 'POST' && url.pathname === '/api/restore-history') {
-			requireSafeMutation(request);
-			sendJson(response, 200, { draft: await restoreHistoryEntry(await readRequestJson(request)) });
+			const payload = await readRequestJson(request);
+			const tokens = Array.isArray(payload?.tokens) ? payload.tokens.slice(0, 200) : [];
+			const result = await writes.read(async () => {
+				const statuses = Object.create(null), uploads = Object.create(null);
+				for (const token of tokens) {
+					if (typeof token !== 'string' || !operationIdPattern.test(token)) continue;
+					const staged = await lookupStagedUpload(token);
+					statuses[token] = !staged ? 'missing' : staged.consumed ? 'consumed' : 'available';
+					if (staged?.consumed) uploads[token] = { itemId: staged.assignedItemId, filename: staged.assignedName };
+				}
+				return { statuses, uploads };
+			});
+			sendJson(response, 200, result, { request });
 			return;
 		}
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/admin') {
@@ -2781,6 +2919,8 @@ const adminServer = http.createServer(async (request, response) => {
 		}
 		sendJson(response, Number.isInteger(error?.statusCode) ? error.statusCode : 400, {
 			error: safeMessage(error),
+			...(error?.code ? { code: error.code } : {}),
+			...(error?.operation ? { operation: error.operation, replayed: Boolean(error.replayed) } : {}),
 			...(error?.name === 'OperationCancelledError' ? { cancelled: true } : {}),
 			...(Array.isArray(error?.issues) ? { issues: error.issues } : {}),
 		});
@@ -2793,9 +2933,15 @@ if (process.argv.includes('--check-config')) {
 	printConfigurationSummary();
 	console.log('配置和必要目录检查通过。');
 } else if (process.argv.includes('--sync-site-data')) {
-	await fs.writeFile(siteArchiveDataFile, await generateSiteArchiveSource(), 'utf8');
-	await generateSiteTranslationLayer();
-	console.log('网站档案数据已根据正式 JSON 重新生成。');
+	try {
+		writes.assertReady();
+		await atomicWrite(siteArchiveDataFile, await generateSiteArchiveSource());
+		await generateSiteTranslationLayer();
+		console.log('网站档案数据已根据正式 JSON 重新生成。');
+	} finally {
+		accountService?.store.close(); accountReader?.close();
+		await releaseWriteLease();
+	}
 } else {
 	let shutdownRequested = false;
 	const requestGracefulShutdown = (signal) => {
@@ -2806,10 +2952,12 @@ if (process.argv.includes('--check-config')) {
 			console.error('等待当前操作完成超时，管理服务退出。');
 			process.exit(1);
 		}, 270_000);
-		adminServer.close(() => {
-			clearTimeout(forceTimer);
+		adminServer.close(async () => {
+			await writes.drain();
 			accountService?.store.close();
 			accountReader?.close();
+			await releaseWriteLease();
+			clearTimeout(forceTimer);
 			console.log('当前操作已经完成，管理服务安全停止。');
 		});
 	};

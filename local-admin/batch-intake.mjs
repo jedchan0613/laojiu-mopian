@@ -345,16 +345,16 @@ const adminHeaders = {
 	'X-Ljm-Admin-Request': '1',
 };
 
-const postJson = async (requestPath, payload, { retries = 0 } = {}) => {
+const postJson = async (requestPath, payload, { retries = 0, operationId = randomUUID(), stepId = randomUUID() } = {}) => {
 	for (let attempt = 0; attempt <= retries; attempt += 1) {
 		try {
 			const response = await fetch(`${serverUrl}${requestPath}`, {
 				method: 'POST',
-				headers: adminHeaders,
+				headers: { ...adminHeaders, 'X-LJM-Operation-Id': operationId, 'X-LJM-Step-Id': stepId },
 				body: JSON.stringify(payload),
 			});
 			const body = await response.json().catch(() => ({}));
-			if (!response.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
+			if (!response.ok) throw Object.assign(new Error(body.error ?? `HTTP ${response.status}`), { code: body.code, operation: body.operation });
 			return body;
 		} catch (error) {
 			const isNetworkError = ['TypeError', 'SystemError'].includes(error?.constructor?.name) || error?.cause?.code;
@@ -398,6 +398,7 @@ const buildDraftPayload = (item, confirmedPublicationCopies) => {
 	const core = { ...draftCoreDefaults, ...item.parsed.core, item_id: '' };
 	return {
 		isNew: true,
+		expectedRevision: 'new',
 		confirmedPublicationCopies,
 		record: {
 			core,
@@ -435,6 +436,41 @@ const encodeItemImages = async (item) => {
 // ---------- 结果记录 ----------
 
 const resultPath = (batchDirectory) => path.join(batchDirectory, '_result.csv');
+
+// 编号与摘要写在批次私密目录；不保存题名、正文、图片或其他档案内容。
+// 先以独占创建方式固定编号，再发请求。即使未收到响应或两个进程同时启动，也会使用同一项操作。
+const operationPath = (batchDirectory, tempId) => path.join(batchDirectory, '_operations', `${createHash('sha256').update(tempId).digest('hex')}.json`);
+const readBatchOperation = async (batchDirectory, tempId) => {
+	try {
+		const operation = JSON.parse(await fs.readFile(operationPath(batchDirectory, tempId), 'utf8'));
+		if (operation.version !== 1 || operation.server !== serverUrl || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(operation.operationId ?? '') ||
+			!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(operation.stepId ?? '') || !/^[a-f0-9]{64}$/.test(operation.payloadHash ?? '')) {
+			throw new Error('批次操作记录与当前服务不一致或已损坏，已停止重新建档。请先人工核对。');
+		}
+		return operation;
+	} catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+};
+const getBatchOperation = async (batchDirectory, tempId, payload) => {
+	const payloadHash = createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+	const previous = await readBatchOperation(batchDirectory, tempId);
+	if (previous) {
+		if (previous.payloadHash !== payloadHash) throw new Error('该临时编号曾发起保存，本次内容与原操作不同。请先核对原操作结果，再为修正后的资料建立新批次。');
+		return previous;
+	}
+	await fs.mkdir(path.dirname(operationPath(batchDirectory, tempId)), { recursive: true });
+	try {
+		await fs.writeFile(operationPath(batchDirectory, tempId), `${JSON.stringify({ version: 1, server: serverUrl, operationId: randomUUID(), stepId: randomUUID(), payloadHash })}\n`, { flag: 'wx', mode: 0o600 });
+	} catch (error) { if (error.code !== 'EEXIST') throw error; }
+	return getBatchOperation(batchDirectory, tempId, payload);
+};
+const batchOperationReceipt = async (operation) => {
+	const data = await fetchJson(`/api/operations/${operation.operationId}`);
+	return (data.operations ?? []).find((entry) => entry.stepId === operation.stepId && entry.kind === 'save-draft');
+};
+const successfulReceiptItemId = (receipt) => {
+	const itemId = receipt?.status === 'succeeded' ? receipt.result?.itemId : '';
+	return /^LJM-\d{8}-[A-Z]{3}-\d{3}$/.test(itemId ?? '') ? itemId : '';
+};
 
 const loadCompletedResults = async (batchDirectory) => {
 	const completed = new Map();
@@ -474,6 +510,7 @@ const main = async () => {
 	if (!health?.capabilities?.publicationImageNames) {
 		throw new Error('管理服务尚不支持保留批次图片的正背面命名。请更新并重启本地管理服务后重试，避免第二幅照片被误存为背面。');
 	}
+	if (health.capabilities.writeProtocol !== 2) throw new Error('管理服务尚未启用统一写入保护，请更新并重启管理服务后再入站。');
 
 	const csvBuffer = await fs.readFile(path.join(batchDirectory, 'items.csv')).catch(() => {
 		throw new Error('批次目录中缺少 items.csv。');
@@ -494,6 +531,16 @@ const main = async () => {
 		rowNumber: index + 2,
 		parsed: parseRow(headers, cells, standards),
 	}));
+	// 在图片预检之前恢复已成功的收据，否则“已保存但响应丢失”的图片会被误报为重复。
+	for (const item of items) {
+		if (completed.has(item.tempId)) continue;
+		const operation = await readBatchOperation(batchDirectory, item.tempId);
+		if (!operation) continue;
+		const receipt = await batchOperationReceipt(operation);
+		const itemId = successfulReceiptItemId(receipt);
+		if (itemId) completed.set(item.tempId, itemId);
+		else if (receipt) throw new Error(`${item.tempId} 的原操作状态为 ${receipt.status}，本次停止重新建档。请先在管理页核对；未成功的修正资料需建立新批次。操作编号：${operation.operationId}`);
+	}
 
 	const seenTempIds = new Set();
 	let errorCount = 0;
@@ -547,29 +594,34 @@ const main = async () => {
 		throw new Error('正式执行必须加上 --confirmed-publication-copies，表示你本人确认所有图片都是经过筛选和必要脱敏的发布副本。');
 	}
 	if (!pendingItems.length) {
+		await writeResults(batchDirectory, items.map(item => ({ tempId: item.tempId, status: '成功', itemId: completed.get(item.tempId), message: '已核对原操作收据或既有结果，本次跳过' })));
 		console.log('没有需要保存的新藏品，全部已在草稿中。');
 		return;
 	}
 
 	console.log(`\n开始保存草稿（共 ${pendingItems.length} 件，逐件进行）……\n`);
-	const results = [];
+	const results = items.filter(item => completed.has(item.tempId)).map(item => ({
+		tempId: item.tempId, status: '成功', itemId: completed.get(item.tempId), message: '此前已成功，本次跳过',
+	}));
 	for (const item of items) {
 		if (completed.has(item.tempId)) {
-			results.push({ tempId: item.tempId, status: '成功', itemId: completed.get(item.tempId), message: '此前已成功，本次跳过' });
 			continue;
 		}
 		try {
 			item.encodedImages = await encodeItemImages(item);
 			const payload = buildDraftPayload(item, confirmedPublicationCopies);
-			const { draft } = await postJson('/api/save-draft', payload, { retries: 2 });
-			const itemId = draft.record.core.item_id;
-			results.push({ tempId: item.tempId, status: '成功', itemId, message: '' });
+			const operation = await getBatchOperation(batchDirectory, item.tempId, payload);
+			const saved = await postJson('/api/save-draft', payload, { retries: 2, ...operation });
+			const itemId = saved.draft?.record?.core?.item_id ?? successfulReceiptItemId(saved.operation);
+			if (!/^LJM-\d{8}-[A-Z]{3}-\d{3}$/.test(itemId ?? '')) throw new Error(`保存结果待核对，已停止重新建档。操作编号：${operation.operationId}`);
+			results.push({ tempId: item.tempId, status: '成功', itemId, message: saved.replayed ? '已从原操作收据恢复，请核对草稿' : '' });
 			console.log(`✓ ${item.tempId} → ${itemId}`);
 		} catch (error) {
 			results.push({ tempId: item.tempId, status: '失败', itemId: '', message: error.message });
 			console.log(`✗ ${item.tempId}：${error.message}`);
 		} finally {
 			item.encodedImages = null;
+			await writeResults(batchDirectory, results);
 		}
 	}
 	await writeResults(batchDirectory, results);
@@ -578,7 +630,7 @@ const main = async () => {
 	const failed = results.length - succeeded;
 	console.log(`\n本次执行结束：成功 ${succeeded} 件，失败 ${failed} 件。结果已写入 ${resultPath(batchDirectory)}`);
 	if (failed) {
-		console.log('失败的行修正后重新执行同一命令即可，已成功的行会自动跳过。');
+		console.log('再次执行会先核对原操作收据，已成功的行自动跳过。结果待核对时不会重新建档；请先核对管理页，再处理失败资料。');
 		process.exitCode = 3;
 		return;
 	}
