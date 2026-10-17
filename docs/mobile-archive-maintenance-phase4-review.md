@@ -29,14 +29,14 @@
 
 ## 验证结果
 
-- 全量管理测试：257 项，256 通过、0 失败，1 项 Windows 软链接测试跳过；公开点赞服务 2 项通过。Linux 补验列入实际部署记录。
+- 全量管理测试：257 项，256 通过、0 失败，1 项 Windows 软链接测试跳过；公开点赞服务 2 项通过。Linux 257/257通过、0跳过，见实际部署记录。
 - 新增客户端 8 项、发布确认 7 项及实际 HTTP 发布门禁/同名图片保护测试；覆盖取消、快照、同号恢复、逐张重试、发布丢响应、登录核对及版本绑定。既有并发、取消回滚、批量部分失败、历史/回收、相册与五种外语测试通过。
 - 完整隔离副本执行现有 `npm run build` 通过：72 页、1 件合成公开详情，六语言与公开产物隔离检查通过。发布按钮实际调用同一正式构建流程完成一次合成资料发布。
 - 浏览器实测 390×844：修改、草稿保存、未勾选拒绝发布、生成13项均未选的清单、逐项确认后发布成功、再次修改仍是草稿。控制台无错误。
 - 320/360/390/430/768/1280 宽度的发布检查和预览共12组无整页横向溢出；窄屏对照纵向、电脑保留表格。前三阶段原有相册、完整资料、译文与列表返回检查继续有效。
 - 原项目2,737份受保护文件逐文件 SHA256 一致；未使用真实档案、真实图片、账号或投稿作测试，未访问或调整项目外原始主库，未使用旧批次特别公开授权。
 
-证据在 `outputs/mobile-maintenance-stage4/`：`tests-release-final.log`、`tests-client-final.log`、`tests-likes.log`、`build.log`、`browser-layout.json`、`mobile-comparison.png`、`protected-verification.json`；全部排除公开构建与仓库。
+证据在 `outputs/mobile-maintenance-stage4/`：`tests-release-final.log`、`tests-client-final.log`、`tests-likes.log`、`build-release.log`、`browser-layout.json`、`mobile-comparison.png`、`protected-verification.json`；全部排除公开构建与仓库。
 
 ## 原方案验收映射与边界
 

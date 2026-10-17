@@ -3,7 +3,7 @@
 评估日期：2026-10-17  
 评估基线：本机项目提交 `2129ed3`，开始检查时工作区干净。  
 方案来源：用户提供的 `mobile-archive-maintenance-plan.md`（微信文件副本）。  
-当前状态（2026-10-18 更新）：用户授权复查前三阶段并完成全部剩余阶段，随后明确同意正常上线。前三阶段缺陷已修复，第四阶段开发与本机验收通过，见[复查记录](mobile-archive-maintenance-phase4-review.md)；[第五阶段受控上线](mobile-archive-maintenance-phase5-rollout.md)正在执行。实际安卓试用仍待用户按清单反馈。以下差距与代码行号保留评估时基线。
+当前状态（2026-10-18 更新）：用户授权复查前三阶段并完成全部剩余阶段，随后明确同意正常上线。前三阶段缺陷已修复，第四阶段开发与本机验收通过，见[复查记录](mobile-archive-maintenance-phase4-review.md)；[第五阶段受控上线](mobile-archive-maintenance-phase5-rollout.md)已完成技术部署与线上自动验收。实际安卓试用仍待用户按清单反馈。以下差距与代码行号保留评估时基线。
 
 ## 一、评估结论
 
