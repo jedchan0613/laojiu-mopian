@@ -1,0 +1,4 @@
+# import到公开站点既有handle_errors内，保留语言选择和真实错误状态。
+# 错误链独立于正常链，不能只在正常链上设置缓存头。
+@ljmErrorCacheHost host laojiumopian.com
+header @ljmErrorCacheHost >Cache-Control "no-store"

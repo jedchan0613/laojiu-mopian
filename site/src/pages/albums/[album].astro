@@ -10,6 +10,7 @@ import { createArchiveRecordView } from '../../data/archive-view';
 import { getResponsiveImage } from '../../data/responsive-images';
 import { publishedAlbumGroups, albumHref, albumDateSummary, curatedAlbumForId, curatedLetterAlbum } from '../../data/album-groups';
 import { compareAlbumPositions } from '../../data/album-position.mjs';
+import {albumTranslationAvailable} from '../../data/album-translation-state.mjs';
 
 export function getStaticPaths() {
   return publishedAlbumGroups().map(({ albumId, slug, members }) => ({
@@ -55,8 +56,8 @@ const photoCount = photoEntries.length;
 const imageCount = photoEntries.reduce((count, entry) => count + entry.view.images.length, 0);
 const letterImageCount = letterEntries.reduce((count, entry) => count + entry.view.images.length, 0);
 const albumSummary = albumLead || t("已公开 {0} 件照片档案，共 {1} 幅附图。", locale, { 0: photoCount, 1: imageCount });
-const pendingTranslation = (Boolean(curatedAlbum) && ['en','th'].includes(locale)) || entries.some((entry) => entry.view.translationState !== 'published') ||
-  (Boolean(albumView) && albumView!.translationState !== 'published');
+const translationAvailable=(language:string)=>albumTranslationAvailable(language,{curated:Boolean(curatedAlbum),memberStates:members.map(item=>getArchiveTranslation(item,language).state)});
+const pendingTranslation = !translationAvailable(locale);
 const albumUrl = Astro.site ? new URL(localizePath(albumHref(albumId), locale), Astro.site) : undefined;
 const albumStructuredData = {
   '@context': 'https://schema.org',
@@ -89,9 +90,9 @@ const breadcrumbStructuredData = {
   image={albumCover?.src ?? galleryEntries.find((entry) => entry.cover)?.cover?.src}
   pageType="website"
   structuredData={[albumStructuredData, breadcrumbStructuredData]}
-  translationAvailability={Object.fromEntries(translationLocales.map(language=>[language,!(isLetterCollection&&['en','th'].includes(language))&&members.every(item=>getArchiveTranslation(item,language).state==='published')]))}
-  englishAvailable={!isLetterCollection && !members.some(item=>getArchiveTranslation(item,'en').state!=='published')}
-  thaiAvailable={!isLetterCollection && !members.some(item=>getArchiveTranslation(item,'th').state!=='published')}
+  translationAvailability={Object.fromEntries(translationLocales.map(language=>[language,translationAvailable(language)]))}
+  englishAvailable={translationAvailable('en')}
+  thaiAvailable={translationAvailable('th')}
   robots={locale !== 'zh-CN' && pendingTranslation ? 'noindex,follow' : undefined}
 >
   <article class="album-page" data-album-id={albumId} data-album-photo-count={photoCount} data-album-letter-count={letterEntries.length}>

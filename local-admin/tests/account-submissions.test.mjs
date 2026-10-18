@@ -103,6 +103,24 @@ test('草稿：允许不完整内容，跨设备可读，保存后图片与说�
 	assert.equal((await fs.readdir(path.join(recycleRoot, entries[0]))).includes('copy-01.jpg'), true);
 });
 
+test('伪装图片不能进入账号新稿或编辑，失败保留旧稿版本、说明和原图片', async t => {
+	const { store, create, root } = await fixture(t);
+	const invalid = [{ name: 'disguised.jpg', type: 'image/jpeg', buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>') }];
+	for (const mode of ['draft', 'submit']) await assert.rejects(create(ACCOUNT_A, mode, { images: invalid }), { statusCode: 400 });
+	assert.equal((await store.listAccountSubmissions({ accountId: ACCOUNT_A })).length, 0);
+	const draft = await create(ACCOUNT_A, 'draft');
+	const recordPath = path.join(root, draft.id, 'record.json');
+	const before = await fs.readFile(recordPath);
+	const oldImage = await store.getAccountImage({ id: draft.id, accountId: ACCOUNT_A, filename: 'copy-01.jpg' });
+	for (const images of [invalid, [{ name: 'wrong.png', type: 'image/png', buffer: image }], [{ name: 'broken.jpg', buffer: image.subarray(0, 16) }]]) {
+		await assert.rejects(store.saveAccountSubmission({ id: draft.id, accountId: ACCOUNT_A, revision: draft.revision,
+			payload: { fields: { ...completeFields(), title: '不应保存的标题' }, keep: [], images } }), { statusCode: 400 });
+		assert.deepEqual(await fs.readFile(recordPath), before);
+		assert.deepEqual(await store.getAccountImage({ id: draft.id, accountId: ACCOUNT_A, filename: 'copy-01.jpg' }), oldImage);
+		assert.equal((await fs.readdir(path.join(root, draft.id))).sort().join(','), 'copy-01.jpg,record.json');
+	}
+});
+
 test('空图片草稿可保存；提交仍须图片与人物情况明确', async t => {
 	const { store, create } = await fixture(t);
 	const draft = await create(ACCOUNT_A, 'draft', { fields: { ...completeFields(), people: '' }, images: [] });

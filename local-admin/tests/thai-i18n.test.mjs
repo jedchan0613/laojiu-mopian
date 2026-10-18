@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';import path from 'node:path';import os from 'node:os';import {createRequire} from 'node:module';import {fileURLToPath} from 'node:url';
 import {createTranslationStore} from '../translations.mjs';import {createMailer} from '../mail.mjs';import {localizeAccountPayload,normalizeAccountLanguage} from '../account-i18n.mjs';
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),require=createRequire(path.join(project,'site/package.json')),esbuild=require('esbuild');
-async function load(file){const built=await esbuild.build({absWorkingDir:project,entryPoints:[file],bundle:true,write:false,platform:'node',format:'cjs',tsconfigRaw:{},logLevel:'silent'});const module={exports:{}};new Function('require','module','exports',built.outputFiles[0].text)(require,module,module.exports);return module.exports;}
+async function load(file){const built=await esbuild.build({absWorkingDir:project,entryPoints:[file],bundle:true,write:false,platform:'node',format:'cjs',tsconfigRaw:{},logLevel:'silent'});const module={exports:{}};new Function('require','module','exports',built.outputFiles[0].text)(require,module,module.exports);if(module.exports.installClientMessages){const {getClientMessages}=await load('site/src/i18n/client-messages.ts');for(const locale of ['zh-CN','en','th','ja','ko','zh-Hant'])module.exports.installClientMessages(getClientMessages(locale));}return module.exports;}
 test('泰语路径在三种语言间往返，保留查询与锚点，不改接口和媒体地址',async()=>{
  const {getLocale,localizePath,dateLocale}=await load('site/src/i18n/ui.ts');
  assert.equal(getLocale('/th/archive/'),'th');assert.equal(getLocale('/'),'zh-CN');

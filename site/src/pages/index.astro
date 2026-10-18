@@ -3,6 +3,7 @@
 import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { serializeHtmlJson } from '../../../shared/html-json.mjs';
 import BrandMark from '../components/BrandMark.astro';
 import AlbumBrowseCard from '../components/AlbumBrowseCard.astro';
 import { createAlbumBrowseViews } from '../data/album-browse';
@@ -372,7 +373,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 			<ul class="view-history-list" data-view-history-list></ul>
 		</section>
 	</div>
-	<script type="application/json" id="random-record-index" set:html={JSON.stringify(randomRecordIds)} />
+	<script type="application/json" id="random-record-index" set:html={serializeHtmlJson(randomRecordIds)} />
 	<script>
 		// 独立的轻量轮播入口：不等待随机浏览、足迹或整套客户端翻译字典。
 		import '../scripts/home-featured-carousel';

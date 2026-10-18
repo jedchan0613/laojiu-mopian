@@ -3,6 +3,8 @@
 import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
 import {localeDefinitions} from '../../../shared/locale-config.mjs';
+import { serializeHtmlJson } from '../../../shared/html-json.mjs';
+import {getClientMessages} from '../i18n/client-messages';
 import LanguagePicker from '../components/LanguagePicker.astro';
 import ContactWidget from '../components/ContactWidget.astro';
 import SocialLinks from '../components/SocialLinks.astro';
@@ -51,7 +53,7 @@ const englishUrl = Astro.site ? new URL(localizePath(currentPath, 'en'), Astro.s
 const canonicalUrl = Astro.site ? new URL(currentPath, Astro.site) : undefined;
 const shareImageUrl = image && Astro.site ? new URL(image, Astro.site) : undefined;
 const serializedStructuredData = structuredData
-	? JSON.stringify(structuredData).replaceAll('<', '\\u003c')
+	? serializeHtmlJson(structuredData)
 	: undefined;
 ---
 
@@ -85,8 +87,10 @@ const serializedStructuredData = structuredData
 			<script type="application/ld+json" set:html={serializedStructuredData} />
 		)}
 		<title>{title}</title>
+		<script type="application/json" id="client-interface-messages" set:html={serializeHtmlJson(getClientMessages(locale))} />
 	</head>
 	<body>
+		<p id="client-message-error" role="alert" hidden>{({ 'zh-CN':'页面交互没有加载完成，请刷新页面。普通档案链接仍可使用。',en:'Page controls could not load. Reload this page. Ordinary archive links remain available.',th:'โหลดส่วนโต้ตอบไม่สำเร็จ โปรดรีเฟรชหน้า ลิงก์รายการทั่วไปยังใช้ได้',ja:'操作機能を読み込めませんでした。再読み込みしてください。通常の資料リンクは利用できます。',ko:'페이지 기능을 불러오지 못했습니다. 새로고침해 주세요. 일반 자료 링크는 사용할 수 있습니다.','zh-Hant':'頁面互動尚未載入完成，請重新整理。一般檔案連結仍可使用。' })[locale]}</p>
 		<a class="skip-link" href={localizePath("#main-content", locale)}>{t("跳到主要内容", locale)}</a>
 		<div class:list={['site-shell', { 'site-shell--archive': isArchive }]}>
 			<header class="site-header" data-home-brand={isHome ? 'compact' : undefined}>
@@ -125,7 +129,7 @@ const serializedStructuredData = structuredData
 		</div>
 		<script>
 			import '../scripts/account-nav';
-			import {localizePath, type Locale} from '../i18n/ui';
+			import {localizePath, type Locale} from '../i18n/routing';
 			for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-language]')) {
 				const language=link.dataset.language as Locale;
 				link.href=localizePath(location.pathname+location.search+location.hash,language);

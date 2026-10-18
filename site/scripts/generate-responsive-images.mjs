@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { assertPublicationImageSignature, createPublicationImageInput } from '../../shared/publication-image-safety.mjs';
 
 const siteDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const publicDirectory = path.join(siteDirectory, 'public');
@@ -90,6 +91,12 @@ if (await pathExists(archiveDirectory)) {
 			const stem = path.basename(fileEntry.name, path.extname(fileEntry.name));
 			const sourceHash = await sha256(sourcePath);
 			const previousEntry = previousManifest[sourcePublicPath];
+			const sourceFile = await fs.open(sourcePath, 'r');
+			try {
+				const header = Buffer.alloc(16);
+				const { bytesRead } = await sourceFile.read(header, 0, header.length, 0);
+				assertPublicationImageSignature(header.subarray(0, bytesRead), { filename: fileEntry.name });
+			} finally { await sourceFile.close(); }
 
 			if (await reusableEntry(previousEntry, sourceHash, itemEntry.name, stem)) {
 				manifest[sourcePublicPath] = previousEntry;
@@ -100,14 +107,17 @@ if (await pathExists(archiveDirectory)) {
 				continue;
 			}
 
-			const metadata = await sharp(sourcePath).metadata();
+			// 保留构建器原有像素上限；投稿仍使用更严格的 4000 万像素上限。
+			const input = createPublicationImageInput(sharp, await fs.readFile(sourcePath), { filename: fileEntry.name, limitInputPixels: 268402689 });
+			const metadata = await input.metadata();
 			if (!metadata.width || !metadata.height) throw new Error(`无法读取发布图片尺寸：${sourcePath}`);
+			if ((metadata.pages ?? 1) > 1) throw new Error(`发布图片不能包含动画或多页内容：${sourcePath}`);
 
 			await fs.mkdir(targetDirectory, { recursive: true });
 			const variants = [];
 			for (const width of targetWidths.filter((candidate) => candidate < metadata.width)) {
 				const expected = expectedVariant(itemEntry.name, stem, width);
-				const result = await sharp(sourcePath)
+				const result = await input.clone()
 					.rotate()
 					.resize({ width, withoutEnlargement: true })
 					.webp({ quality: 80, effort: 4 })

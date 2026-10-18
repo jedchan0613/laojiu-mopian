@@ -15,6 +15,9 @@ import {
   isPublishedArchiveItem,
 } from '../../data/archive-view';
 import { getResponsiveImage } from '../../data/responsive-images';
+import { serializeHtmlJson } from '../../../../shared/html-json.mjs';
+import {groupArchiveMatches} from '../../data/archive-browse.mjs';
+import {archiveSearchUrl} from '../../data/archive-search-index';
 
 const publishedViews = archiveItems
   .filter(isPublishedArchiveItem)
@@ -89,9 +92,14 @@ const publishedEntries = [...publishedViews]
   }));
 // 构建时生成的搜索索引：只包含公开展示层已有的文字字段，按永久编号索引。
 // 转义所有“<”，避免档案文字中出现标签开头时截断脚本数据。
-const searchIndexJson = JSON.stringify(
-  publishedViews.map((view) => ({ id: view.id, fields: view.searchFields })),
-).replaceAll('<', '\\u003c');
+const searchIndexJson = serializeHtmlJson(
+  {url:archiveSearchUrl},
+);
+const initialFullIds=new Set(groupArchiveMatches(publishedEntries.map(({view})=>({id:view.id,albumKey:albumKeyByItemId.get(view.id)}))).slice(0,12).filter(group=>group.kind==='item').map(group=>group.key));
+const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({view,coverImage})=>[view.id,{
+ description:view.description,date:view.dateDisplay,place:view.placeDisplay,tags:filterDisplayTags(view.tags,view.placeDisplay,view.placeFilters),
+ image:coverImage?{...coverImage,alt:view.imageDescriptions[0]}:undefined,
+}])));
 ---
 
 <BaseLayout
@@ -277,19 +285,19 @@ const searchIndexJson = JSON.stringify(
               data-archive-places={`|${view.placeFilters.join('|')}|`}
               data-archive-tags={`|${view.canonicalTags.join('|')}|`}
               data-archive-id={view.id}
-              data-archive-accession={view.item.core.accession_date ?? ''}
+              data-card-expanded={initialFullIds.has(view.id)?'true':undefined}
               data-archive-year={view.item.core.date_display.match(/\d{4}/)?.[0] ?? ''}
               data-archive-type-label={view.typeLabel}
               data-archive-title={view.title}
               data-archive-original-index={originalIndex}
             >
               <a
-                class="archive-entry"
+                class:list={['archive-entry',{'archive-entry--compact':!initialFullIds.has(view.id)}]}
                 href={localizePath(`/archive/${view.id}/`, locale)}
                 aria-label={t("查看档案：{0}", locale, {0: (view.title)})}
                 data-archive-entry
               >
-                <figure class="archive-image">
+                {initialFullIds.has(view.id)?<><figure class="archive-image">
                   {coverImage && (
                     <img
                       src={coverImage.src}
@@ -332,7 +340,7 @@ const searchIndexJson = JSON.stringify(
                   <p class="archive-match-reason" data-match-reason hidden></p>
 
                   <span class="archive-entry-action" aria-hidden="true">{t("查看档案 →", locale)}</span>
-                </div>
+                </div></>:view.title}
               </a>
             </li>
           ))
@@ -348,6 +356,7 @@ const searchIndexJson = JSON.stringify(
         </div>
       </nav>
       <script type="application/json" id="archive-search-index" set:html={searchIndexJson} />
+      <script type="application/json" id="archive-card-data" set:html={cardDataJson} />
     </section>
   </div>
 </BaseLayout>
@@ -365,6 +374,7 @@ import '../../scripts/archive-likes';
   } from '../../scripts/archive-search';
   import type { ArchiveSearchFields } from '../../data/archive-view';
   import { groupArchiveMatches } from '../../data/archive-browse.mjs';
+  import {showArchiveCard,type ArchiveCardData} from '../../scripts/archive-card';
 
   const archiveIndex = document.querySelector<HTMLElement>('.archive-index');
   const searchInput = document.querySelector<HTMLInputElement>('#archive-search');
@@ -400,6 +410,7 @@ import '../../scripts/archive-likes';
   const albumCards = new Map(Array.from(document.querySelectorAll<HTMLElement>('[data-archive-album-card]'))
     .map((entry) => [entry.dataset.archiveAlbumCard!, entry]));
   const entriesById = new Map(archiveEntries.map((entry) => [entry.dataset.archiveId!, entry]));
+  const cardData=JSON.parse(document.querySelector('#archive-card-data')?.textContent??'{}') as Record<string,ArchiveCardData>;
   const viewModeLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-archive-view]'));
   const requestedViewMode = new URLSearchParams(window.location.search).get('view');
   let viewMode = requestedViewMode === 'albums' || requestedViewMode === 'items' ? requestedViewMode : 'grouped';
@@ -439,15 +450,22 @@ import '../../scripts/archive-likes';
 
   // 构建时写入页面的搜索索引：永久编号 → 分字段搜索文字。
   const searchFieldsByItemId = new Map<string, ArchiveSearchFields>();
-  try {
+  let searchReady=false;
+  const filterControls=Array.from(document.querySelectorAll<HTMLInputElement|HTMLSelectElement>('.archive-controls input, .archive-controls select'));
+  filterControls.forEach(control=>{control.disabled=true;});
+  const searchReadyPromise=(async()=>{
     const indexElement = document.querySelector<HTMLElement>('#archive-search-index');
-    const entries = JSON.parse(indexElement?.textContent ?? '[]') as Array<{ id: string; fields: ArchiveSearchFields }>;
+    const {url}=JSON.parse(indexElement?.textContent??'{}');
+    if(typeof url!=='string'||!/^\/archive-search\/[a-f0-9]{24}\.json$/.test(url))throw new Error('Invalid search index');
+    const response=await fetch(url,{signal:AbortSignal.timeout(15000)});if(!response.ok)throw new Error('Search index unavailable');
+    const entries=await response.json() as Array<{ id: string; fields: ArchiveSearchFields }>;
+    if(!Array.isArray(entries)||entries.length!==archiveEntries.length)throw new Error('Incomplete search index');
     for (const entry of entries) {
       if (entry?.id && entry.fields) searchFieldsByItemId.set(entry.id, entry.fields);
     }
-  } catch {
-    // 索引损坏时搜索退化为“找不到结果”，不影响分类、年代等结构化筛选。
-  }
+    if(searchFieldsByItemId.size!==entriesById.size||[...entriesById.keys()].some(id=>!searchFieldsByItemId.has(id)))throw new Error('Search index mismatch');
+    searchReady=true;filterControls.forEach(control=>{control.disabled=false;});
+  })();
 
   const splitDataValues = (value: string | undefined) => (value ?? '').split('|').filter(Boolean);
 
@@ -676,6 +694,7 @@ import '../../scripts/archive-likes';
     matchingEntries.forEach((entry, index) => {
       entry.hidden = index < startIndex || index >= endIndex;
     });
+    for(const entry of archiveEntries)showArchiveCard(entry,cardData[entry.dataset.archiveId??''],!entry.hidden);
     if (!pagination || !pageSummary || !previousPageButton || !nextPageButton || !pageNumbers) {
       return { startIndex, endIndex, totalPages };
     }
@@ -697,6 +716,7 @@ import '../../scripts/archive-likes';
   };
 
   const updateArchiveResults = () => {
+    if(!searchReady)return;
     if (!searchInput || !categorySelect || !sortSelect || !decadeSelect || !placeSelect || !tagSelect || !resultsSummary) return;
     const terms = searchTermsFrom(searchInput.value);
     syncRelevanceSort(terms.length > 0);
@@ -761,10 +781,10 @@ import '../../scripts/archive-likes';
       }
     }
     archiveList?.append(...displayEntries);
+    const pageState = renderPagination(displayEntries);
     renderSearchHighlights(terms);
     renderMatchReasons(scoreMap, terms.length > 0);
     renderSearchSuggestions(matchingEntries, terms);
-    const pageState = renderPagination(displayEntries);
     const advancedFilterCount = [selectedDecade, selectedPlace, selectedTag].filter(Boolean).length;
     if (moreFiltersSummary) moreFiltersSummary.textContent = advancedFilterCount ? ct("已选 {0} 项", {0: (advancedFilterCount)}) : ct("年代、地点、标签");
     if (archiveActions) archiveActions.hidden = !hasActiveFilters;
@@ -900,8 +920,10 @@ import '../../scripts/archive-likes';
   }
   if (moreFilters && [decadeSelect?.value, placeSelect?.value, tagSelect?.value].some(Boolean)) moreFilters.open = true;
 
+  searchReadyPromise.then(()=>{
   updateArchiveResults();
   updateFiltersInAddress();
+  syncLikesSortOption();
 
   archiveList?.addEventListener('click', (event) => {
     const entryLink = (event.target as HTMLElement).closest<HTMLAnchorElement>('[data-archive-entry], [data-album-entry]');
@@ -920,9 +942,11 @@ import '../../scripts/archive-likes';
   } catch {
     // 无法读取会话状态时不影响筛选本身。
   }
+  }).catch(()=>{if(resultsSummary)resultsSummary.textContent=ct('暂时无法完成操作，请稍后再试。');const notice=document.getElementById('client-message-error');if(notice)notice.hidden=false;});
 </script>
 
 <style>
+  .archive-entry--compact {padding:1rem;min-height:4rem;overflow-wrap:anywhere;}
   .archive-view-modes { display:flex; flex-wrap:wrap; gap:0.65rem; margin:0 0 0.8rem; }
   .archive-view-modes a { padding:0.5rem 0.85rem; border:1px solid var(--site-border-soft); color:var(--site-muted); text-decoration:none; font:0.8rem/1.6 var(--site-ui-font); }
   .archive-view-modes a[aria-current="page"] { color:var(--site-accent); border-color:var(--site-accent); background:var(--site-paper); }
@@ -1536,6 +1560,8 @@ import '../../scripts/archive-likes';
   .archive-pagination > div,
   #archive-page-numbers {
     display: flex;
+    flex-wrap: wrap;
+    min-width: 0;
     align-items: center;
     gap: 0.4rem;
   }

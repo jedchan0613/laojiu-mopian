@@ -1,25 +1,49 @@
 # 公开网站缓存规则
 
-本规则只用于 `https://laojiumopian.com` 的公开静态网站，不适用于档案管理域名，也不会缓存 `/api/` 请求、草稿、历史、回收区或其他私密资料。
+2026-10-18 第二批修订。**目前仅完成开发及隔离验收，未应用到正式站。按用户新要求，五点全部完成后再统一上线。**
+
+公开静态规则只匹配 `laojiumopian.com`，不会改变共享站点块中的 `hk-test.laojiumopian.com`。管理域名经既有 Tunnel 直达管理服务，由该服务单独返回 `no-store`，不将其改接到 Caddy，也不改变访问保护。
 
 ## 缓存范围
 
-- Astro 自动生成并带内容版本号的 `/_astro/` CSS 和 JavaScript：缓存一年。文件内容变化时文件名也会变化，不会把旧页面样式误当成新版本。
-- 响应式网页图片和可下载发布副本：缓存一小时。发布图片可能沿用原文件名，因此不使用永久缓存，替换后最迟一小时重新核验。
-- 公开二维码和网站图标：缓存一天。
-- 首页、档案页、详情页、关于、投稿和纠错页面：每次访问都向服务器确认是否更新，内容没有变化时仍可使用浏览器已有副本。
-- `/api/` 与 `admin.laojiumopian.com`：不在本规则范围内，继续使用各服务现有的私密或禁止缓存策略。
+- 已存在且名称含构建版本号的 `/_astro/` CSS、JavaScript、字体：`public, max-age=31536000, immutable`。仅成功响应及 304 采用此规则；不存在的哈希网址仍是 404、`no-store`。
+- 六语言公开 HTML（含相册）、发布图片、响应式图片、`records.json`、robots、站点地图、图标与二维码：`public, max-age=0, must-revalidate`。可以保存公开副本，但再次使用前需核对更新；保留 Caddy 原有 ETag/Last-Modified。
+- `/_astro/` 中未带内容版本号的资源也使用重新核验，不因为目录名而缓存一年。
+- 六语言登录/用户中心、全部 `/api` 和 `/api/*`、管理页/管理脚本/管理图片及错误响应：`no-store`。管理端保留应用内只读 ETag 协商，但响应仍为 `no-store`，不要求浏览器/共享代理持久保存私密内容。
+- 错误链单独引入 `Caddyfile.error-cache.example`，保留既有六语言缺页和真实 404/401/403/5xx，不把自定义缺页变成 200。普通响应链也覆盖上游误设的错误缓存及重定向。
+
+“重新核验”不能收回访客已下载或已打开的内容，也不承诺清除配置生效前的所有旧缓存。上线后仍需检查实际经过的代理层；本阶段不新增 CDN、不刷新全站缓存、不清除访客账号或浏览数据。
 
 ## 安装方法
 
-包含本次修改的程序版本部署到服务器后，在腾讯云服务器终端执行：
+五点全部完成、取得统一上线及 Caddy 配置授权后，先将对应程序部署到服务器，再在腾讯云服务器终端执行只检查命令：
 
 ```bash
-sudo bash /srv/laojiumopian-admin/app/current/deployment/install-public-cache-headers.sh
+sudo bash /srv/laojiumopian-admin/app/current/deployment/install-public-cache-headers.sh --check
 ```
 
-安装程序会先备份 `/etc/caddy/Caddyfile`，再写入独立缓存规则、验证 Caddy 配置、平滑重新加载，最后从正式域名检查首页、CSS/JavaScript 和响应式图片的响应头。任何步骤失败都会恢复原配置。
+不带参数也等同 `--check`：只在私密 build-work 新建候选配置并校验，不改 `/etc/caddy`，不重载服务。程序使用现有 Node/Caddy，未增加依赖。
+
+经批准实际应用时，必须明确执行：
+
+```bash
+sudo bash /srv/laojiumopian-admin/app/current/deployment/install-public-cache-headers.sh --apply
+```
+
+工具与程序发布共用既有互斥锁。它只为唯一正式站点块和其既有错误块添加 import，不重写认证、API 路由或其他站点；结构不明确、旧 import 放置异常或校验期间配置改变时停止。
+
+应用前保存主配置、既有规则和恢复清单，保留原文件权限/所有者；先校验候选，再替换并复验、平滑重载、核对正式域名及本机管理拒绝响应。候选失败不写正式配置；写入/重载/HTTP核验失败会恢复旧文件，必要时重新加载旧配置。回退失败会明确报告备份位置，不报成功。
+
+备份与日志位于新建的私密 `/srv/laojiumopian-admin/build-work/public-cache-<时间>-<随机编号>/`，不放入公开站点。`rollback-manifest.json` 标明每个目标的旧文件、权限和所有者；原先不存在的规则在回退时只移除本次新建文件。不要手工恢复其他版本的数据目录或覆盖后来的档案/账号修改。
+
+## 验收与待办
+
+本批真实 Caddy 隔离演练覆盖六语言、相册、ETag/Last-Modified、304、HEAD、程序版本变化、图片替换/撤下、404后恢复、私密路径及上游误设缓存。安装流程另有候选失败、写后校验失败、重载失败、HTTP失败和并发修改的合成回退测试，包含严格 umask 下的权限保留。详见 `docs/website-cache-phase2-review-20261018.md`。
+
+正式配置现阶段未变。统一上线时仍须执行正式域名的 HTTP 检查，确认无额外代理层改写策略；不能用隔离通过冒充正式站生效。
 
 ## CDN 说明
 
-本阶段没有把正式域名从“仅 DNS”切换为 Cloudflare 代理，也没有新增收费 CDN。香港源站到中国大陆的实际线路差异较大；如需继续启用边缘缓存，应先在测试域名分别检查移动、电信和联通网络，再决定是否切换正式域名。启用前还必须确认 `/api/` 不被缓存，并重新核对访客地址转发规则。
+本阶段没有改变 DNS/Cloudflare 代理状态、接入新 CDN 或修改可信代理/访客地址转发。将来若调整这些服务，须另行确认并重新核对接口、管理域名、可变图片和撤下内容，不直接套用静态程序的一年缓存。
+
+依据：[Caddy 响应头与延迟设置](https://caddyserver.com/docs/caddyfile/directives/header)、[错误处理链](https://caddyserver.com/docs/caddyfile/directives/handle_errors)、[文件服务](https://caddyserver.com/docs/caddyfile/directives/file_server)、[MDN Cache-Control](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control)。

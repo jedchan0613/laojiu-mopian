@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
+import { request as httpRequest } from 'node:http';
 import { once } from 'node:events';
 import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -135,6 +136,28 @@ else console.log('synthetic build '+count);
 	return { root, site, archive, privateRoot, draftDirectory, inbox, origin, post, get, record, savePayload, save, newPayload,
 		buildCount, holdBuild, waitBuild, releaseBuild };
 };
+
+test('管理页、脚本、图片、接口及错误均no-store，应用内ETag协商仍保持原内容', { timeout: 30000 }, async t => {
+	const f = await createFixture(t);
+	for (const [route, status] of [['/healthz', 200], ['/admin', 302], ['/admin/', 200], ['/admin/app.js', 200], ['/admin/styles.css', 200], ['/admin/album-position.mjs', 200], ['/admin/missing.js', 404], ['/api/image/LJM-20000101-LET-001/front-public.png', 200], ['/api/image/invalid/file.png', 400], ['/missing-cache-fixture/', 404]]) {
+		const response = await fetch(`${f.origin}${route}`, { redirect: 'manual' });
+		assert.equal(response.status, status, route); assert.equal(response.headers.get('cache-control'), 'no-store', route);
+		await response.arrayBuffer();
+	}
+	for (const route of ['/api/bootstrap?format=split-v1', '/api/admin-standards']) {
+		const first = await fetch(`${f.origin}${route}`);
+		assert.equal(first.status, 200); assert.equal(first.headers.get('cache-control'), 'no-store');
+		const etag = first.headers.get('etag'); assert.ok(etag); await first.arrayBuffer();
+		const second = await fetch(`${f.origin}${route}`, { headers: { 'If-None-Match': etag } });
+		assert.equal(second.status, 304); assert.equal(second.headers.get('cache-control'), 'no-store');
+		assert.equal(await second.text(), '');
+	}
+	const denied = await new Promise((resolve, reject) => {
+		const request = httpRequest(`${f.origin}/api/bootstrap`, { headers: { Host: 'untrusted.example.invalid' } }, response => { response.resume(); response.once('end', () => resolve({ status: response.statusCode, cache: response.headers['cache-control'] })); });
+		request.once('error', reject); request.end();
+	});
+	assert.equal(denied.status, 403); assert.equal(denied.cache, 'no-store');
+});
 
 test('发布须有当前版本人工确认；缺确认、改图或旧清单均不构建且保留原公开内容', { timeout: 30000 }, async t => {
 	const f = await createFixture(t), row = await f.record(), itemId = row.core.item_id;

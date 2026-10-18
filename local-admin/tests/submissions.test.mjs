@@ -8,6 +8,7 @@ import { once } from 'node:events';
 import { createRequire } from 'node:module';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { crc32 } from 'node:zlib';
 import { createSubmissionStore, createPublicSubmissionHandler, privacyChecks, submissionId, consentVersion } from '../submissions.mjs';
 
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -52,6 +53,34 @@ test('服务端拒绝缺失授权、伪造格式、主档、损坏图片与过�
   { website: 'bot' },
  ]) await assert.rejects(store.create({ ...payload, ...patch }));
  assert.equal((await store.list()).length, 0);
+});
+test('伪装字节在加载图片库和创建投稿目录之前拒绝', async t => {
+ const { root, payload } = await fixture(t);
+ const target = path.join(root, 'must-not-be-created');
+ const store = createSubmissionStore({ root: target, siteDirectory: path.join(root, 'no-native-library') });
+ for (const buffer of [Buffer.from('<svg/>'), Buffer.from('GIF89a'), Buffer.from('\0\0\0\x18ftypavif')]) {
+  await assert.rejects(store.create({ ...payload, images: [{ name: 'fake.jpg', buffer }] }), { statusCode: 400 });
+ }
+ await assert.rejects(fs.stat(target), { code: 'ENOENT' });
+ await assert.rejects(store.create({ ...payload, images: [{ name: 'copy.jpg', type: 'image/png', buffer: image }] }), { statusCode: 400 });
+});
+test('投稿接受真实 PNG/WebP，但拒绝截断、超像素及多帧图片，失败没有半份收件', async t => {
+ const { store, payload } = await fixture(t);
+ for (const format of ['png', 'webp']) {
+  const buffer = await sharp(image)[format]().toBuffer();
+  const created = await store.create({ ...payload, key: randomBytes(32).toString('hex'), images: [{ name: `copy.${format}`, type: `image/${format}`, buffer }] });
+  assert.equal((await sharp(await store.getImage(created.id, 'copy-01.jpg')).metadata()).format, 'jpeg');
+ }
+ const png = await sharp(image).png().toBuffer();
+ const hugePixels = Buffer.from(png);
+ hugePixels.writeUInt32BE(100000, 16); hugePixels.writeUInt32BE(100000, 20);
+ hugePixels.writeUInt32BE(crc32(hugePixels.subarray(12, 29)), 29);
+ const animated = await sharp(Buffer.concat([Buffer.alloc(48, 0), Buffer.alloc(48, 255)]), { raw: { width: 4, height: 8, channels: 3, pageHeight: 4 } }).webp({ delay: [100, 200], loop: 0 }).toBuffer();
+ assert.equal((await sharp(animated).metadata()).pages, 2);
+ for (const [name, buffer] of [['broken.png', png.subarray(0, 16)], ['pixels.png', hugePixels], ['animated.webp', animated]]) {
+  await assert.rejects(store.create({ ...payload, key: randomBytes(32).toString('hex'), images: [{ name, buffer }] }), { statusCode: 400 });
+ }
+ assert.equal((await store.list()).length, 2);
 });
 test('审核回复、版本冲突、停止处理与草稿门禁', async t => {
  const { store, payload } = await fixture(t); const { id } = await store.create(payload);
@@ -117,10 +146,10 @@ test('公开 HTTP 仅支持约定路由，限制来源、正文大小和频率',
  t.after(() => { server.closeAllConnections(); return new Promise(resolve => server.close(resolve)); });
  const jsonHeaders = { 'Content-Type': 'application/json', 'X-LJM-Submission': '1', Origin: origin };
  const formHeaders = { 'X-LJM-Submission': '1', Origin: origin };
- const submissionForm = () => {
+ const submissionForm = (mimeType = '') => {
   const form = new FormData();
   for (const [key, value] of Object.entries(payload)) {
-   if (key === 'images') { for (const image of value) form.append('images', new Blob([image.buffer]), image.name); }
+   if (key === 'images') { for (const image of value) form.append('images', new Blob([image.buffer], { type: mimeType }), image.name); }
    else if (key === 'consents') { for (const [name, accepted] of Object.entries(value)) form.append(`consents_${name}`, String(accepted)); }
    else if (value === null || typeof value === 'object') continue;
    else form.append(key, String(value));
@@ -134,12 +163,14 @@ test('公开 HTTP 仅支持约定路由，限制来源、正文大小和频率',
  assert.equal((await fetch(`${origin}/api/submissions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin }, body: '{}' })).status, 403);
  assert.equal((await fetch(`${origin}/api/submissions/lookup`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ padding: 'x'.repeat(4200) }) })).status, 413);
  assert.equal((await fetch(`${origin}/api/submissions`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify(payload) })).status, 415);
+ const wrongMime = await fetch(`${origin}/api/submissions`, { method: 'POST', headers: formHeaders, body: submissionForm('image/png') }); assert.equal(wrongMime.status, 400);
+ assert.match((await wrongMime.json()).error, /实际格式/);
  const created = await fetch(`${origin}/api/submissions`, { method: 'POST', headers: formHeaders, body: submissionForm() }); assert.equal(created.status, 201);
  const { id } = await created.json();
  const lookup = await fetch(`${origin}/api/submissions/lookup`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ id, key: payload.key }) }); assert.equal(lookup.status, 200);
  assert.ok(!(await lookup.text()).includes(payload.contact));
- for (let n = 0; n < 4; n++) {
+ for (let n = 0; n < 3; n++) {
   const response = await fetch(`${origin}/api/submissions`, { method: 'POST', headers: formHeaders, body: new FormData() });
-  assert.equal(response.status, n === 3 ? 429 : 400);
+  assert.equal(response.status, n === 2 ? 429 : 400);
  }
 });

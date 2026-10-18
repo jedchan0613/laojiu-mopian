@@ -13,6 +13,7 @@ async function loadClient(relativePath) {
  const built = await esbuild.build({ absWorkingDir: project, entryPoints: [path.join(project, relativePath)], bundle: true, write: false, platform: 'node', format: 'cjs', tsconfigRaw: {}, logLevel: 'silent' });
  const module = { exports: {} };
  new Function('module', 'exports', built.outputFiles[0].text)(module, module.exports);
+ if(module.exports.installClientMessages){const {getClientMessages}=await loadClient('site/src/i18n/client-messages.ts');for(const locale of ['zh-CN','en','th','ja','ko','zh-Hant'])module.exports.installClientMessages(getClientMessages(locale));}
  return module.exports;
 }
 function staticKeys(source) {

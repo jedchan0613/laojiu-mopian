@@ -20,6 +20,7 @@ import { createTranslationStore } from './translations.mjs';
 import { filterApprovedMetadataIssues } from '../shared/publication-metadata-approvals.mjs';
 import { createWriteCoordinator, acquireWriteLease, atomicWrite, recordRevision, WriteSafetyError } from './write-coordinator.mjs';
 import { createPublicationReviews } from './publication-review.mjs';
+import { assertPublicationImageSignature, detectPublicationImageMime } from '../shared/publication-image-safety.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
@@ -386,7 +387,6 @@ const sendJson = (response, status, value, options = {}) => {
 	};
 	if (options.etag) {
 		headers['ETag'] = options.etag;
-		headers['Cache-Control'] = 'private, no-cache';
 		if (options.request?.headers?.['if-none-match'] === options.etag) {
 			response.writeHead(304, {
 				...headers,
@@ -438,12 +438,7 @@ const cleanupStagedUploads = async (operationId) => {
 
 // 手机保存恢复（第三阶段）：服务重启后，从操作收据核对并恢复仍完整有效的暂存图片，
 // 页面重试时可直接沿用有效令牌；文件缺失或摘要不一致的令牌明确报失效，由页面重新上传。
-const detectImageSignature = (buffer) => {
-	if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
-	if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
-	if (buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'image/webp';
-	return '';
-};
+const detectImageSignature = detectPublicationImageMime;
 const restoreStagedUploads = async () => {
 	let restored = 0;
 	for (const record of writes.all()) {
@@ -1663,18 +1658,7 @@ const validateImageSignature = (buffer, mimeType, originalName) => {
 	if (/(master|original|raw|主档|原始)/i.test(lowerName)) {
 		throw new Error(`文件名疑似主档或原始文件，已停止接收：${originalName}`);
 	}
-	const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
-	const isPng = buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
-	const isWebp =
-		buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
-		buffer.subarray(8, 12).toString('ascii') === 'WEBP';
-	if (
-		(mimeType === 'image/jpeg' && !isJpeg) ||
-		(mimeType === 'image/png' && !isPng) ||
-		(mimeType === 'image/webp' && !isWebp)
-	) {
-		throw new Error(`图片实际格式与文件说明不一致：${originalName}`);
-	}
+	assertPublicationImageSignature(buffer, { filename: originalName, mimeType });
 };
 
 const validateImageBuffer = (buffer, mimeType, originalName) => {
@@ -2632,6 +2616,8 @@ const publishDraftsBatch = async (payload, options = {}) => {
 };
 
 const adminServer = http.createServer(async (request, response) => {
+	// 管理域名经Tunnel直达本服务，不依赖公开站Caddy；包括早期错误和重定向。
+	response.setHeader('Cache-Control', 'no-store');
 	try {
 		const url = new URL(request.url ?? '/', configuredAdminOrigin);
 		if (!onlineMode && !new Set([`127.0.0.1:${adminPort}`, `localhost:${adminPort}`]).has(request.headers.host)) throw new RequestError('请从本机管理地址打开。', 403);
@@ -2776,7 +2762,7 @@ const adminServer = http.createServer(async (request, response) => {
 			const responsivePath = await responsiveImageVariant(itemId, filename, url.searchParams.get('variant'));
 			if (responsivePath) {
 				await sendFile(response, siteResponsiveArchiveDirectory, `/${responsivePath}`, {
-					cacheControl: 'private, max-age=300', request,
+					cacheControl: 'no-store', request,
 				});
 				return;
 			}
@@ -2785,7 +2771,7 @@ const adminServer = http.createServer(async (request, response) => {
 				response,
 				await pathExists(inboxFile) ? path.join(inboxDirectory, itemId) : path.join(siteArchiveDirectory, itemId),
 				`/${filename}`,
-				{ cacheControl: 'private, no-cache', request },
+				{ cacheControl: 'no-store', request },
 			);
 			return;
 		}
@@ -2796,7 +2782,7 @@ const adminServer = http.createServer(async (request, response) => {
 			const entryDirectory = path.join(recycleDirectory, itemId, entryId);
 			const manifest = await readJson(path.join(entryDirectory, 'manifest.json'));
 			await sendFile(response, entryDirectory, `/${manifest.filename}`, {
-				cacheControl: 'private, no-cache',
+				cacheControl: 'no-store',
 				request,
 			});
 			return;
@@ -2885,15 +2871,12 @@ const adminServer = http.createServer(async (request, response) => {
 			// 仅提供管理页需要的一个共享模块；此分支之前已完成线上 Access 鉴权。
 			if (['/admin/album-position.mjs', '/admin/publication-metadata-approvals.mjs'].includes(url.pathname)) {
 				await sendFile(response, sharedAlbumModuleDirectory, `/${path.basename(url.pathname)}`, {
-					cacheControl: 'private, max-age=300', request,
+					cacheControl: 'no-store', request,
 				});
 				return;
 			}
-			const resourceExtension = path.extname(url.pathname).toLowerCase();
 			await sendFile(response, publicDirectory, url.pathname.slice('/admin'.length), {
-				cacheControl: ['.js', '.css'].includes(resourceExtension)
-					? 'private, max-age=300'
-					: 'private, no-cache',
+				cacheControl: 'no-store',
 				request,
 			});
 			return;

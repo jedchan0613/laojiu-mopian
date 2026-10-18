@@ -3,6 +3,7 @@
 import { t, getLocale, localizePath, canonicalPath, dateLocale } from '../../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
 import {translationLocales} from '../../../../shared/locale-config.mjs';
+import { serializeHtmlJson } from '../../../../shared/html-json.mjs';
 import {getArchiveTranslation} from '../../data/archive-localization';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveLikeButton from '../../components/ArchiveLikeButton.astro';
@@ -716,7 +717,7 @@ const breadcrumbStructuredData = {
         </div>
       </nav>
     )}
-    <script type="application/json" id="record-view-data" set:html={JSON.stringify(recordViewData)} />
+    <script type="application/json" id="record-view-data" set:html={serializeHtmlJson(recordViewData)} />
   </article>
 </BaseLayout>
 

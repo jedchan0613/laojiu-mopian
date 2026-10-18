@@ -3,6 +3,7 @@ import { access, readdir, readFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fontace } from 'fontace';
+import {createHash} from 'node:crypto';
 import { pointsInRanges, readCompleteFontCoverage } from './complete-font-coverage.mjs';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -380,6 +381,15 @@ if (archiveIndex) {
 	check(archiveIndex.html.includes('id="archive-search-suggestions"'), '档案列表缺少相关标签提示区域。');
 	check(archiveIndex.html.includes('data-search-highlight'), '档案列表缺少关键词高亮目标。');
 	check(archiveIndex.html.includes('id="archive-search-index"'), '档案列表缺少构建时生成的搜索索引数据。');
+	try {
+	 const config=JSON.parse(archiveIndex.html.match(/<script\b[^>]*id="archive-search-index"[^>]*>([\s\S]*?)<\/script>/)?.[1]??'null');
+	 check(/^\/archive-search\/[a-f0-9]{24}\.json$/.test(config?.url),'检索文件网址不符合版本规则。');
+	 const raw=await readFile(join(distRoot,config.url),'utf8'),entries=JSON.parse(raw);
+	 check(config.url===`/archive-search/${createHash('sha256').update(raw).digest('hex').slice(0,24)}.json`,'检索文件版本与内容不一致。');
+	 check(JSON.stringify(entries.map(entry=>entry.id).sort())===JSON.stringify([...archiveIds].sort()),'检索文件与公开编号集合不一致。');
+	 for(const entry of entries)check(Object.keys(entry.fields??{}).sort().join(',')==='dateDisplay,description,identifiers,place,tags,title,transcription,typeLabel','检索文件丢失字段或包含额外字段。');
+	 for(const definition of localeDefinitions){const prefix=definition.prefix;const page=htmlEntries.find(entry=>entry.relativePath===`${prefix?prefix+'/':''}archive/index.html`);if(page)check(page.html.includes(config.url),`${definition.locale} 检索文件未共用同一版本。`);}
+	} catch(error){check(false,`检索静态文件校验失败：${error.message}`);}
 	check(archiveIndex.html.includes('data-match-reason'), '档案列表缺少关键词匹配位置提示。');
 	check(!archiveIndex.html.includes('data-search-text'), '档案列表重新使用扁平搜索文本而不是分字段搜索索引。');
 	check(archiveIndex.html.includes('id="archive-pagination"'), '档案列表缺少条件式分页控件。');
@@ -448,7 +458,8 @@ for (const page of htmlEntries) {
 		check(!page.html.includes(publicPath), `${page.relativePath} 仍引用已下线的背景音乐：${publicPath}。`);
 	}
 	check(!pageLoadsScriptMarker(page, 'ljm-background-music-preference'), `${page.relativePath} 仍加载已下线的背景音乐程序。`);
-	for (const imageTag of page.html.match(/<img\b[^>]*>/g) ?? []) {
+	// 属性内合法的尖括号不能被当作标签结尾（例如忠实展示含 </script> 的图片说明）。
+	for (const imageTag of page.html.match(/<img\b(?:[^>"']|"[^"]*"|'[^']*')*>/g) ?? []) {
 		check(/\bwidth="\d+"/.test(imageTag) && /\bheight="\d+"/.test(imageTag), `${page.relativePath} 存在未声明尺寸的图片，可能引起页面跳动或异常拉长。`);
 	}
 	check(!/(?:localhost|127\.0\.0\.1)[^<"]*/i.test(

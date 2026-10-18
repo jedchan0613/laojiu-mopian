@@ -1,247 +1,44 @@
-import { getLocale, localizePath, t, type Locale } from './ui';
-import {fixedText} from '../../../shared/fixed-text.mjs';
-// Only fixed interface messages are translated. Values supplied by visitors or
-// curators remain unchanged when inserted into a translated message.
-const dictionary: Record<string, string> = {
-"继续查看档案：{0}": "Continue viewing: {0}",
-"继续查看 →": "Continue viewing →",
-"{0}年代": "{0}s",
-"移除{0}筛选：{1}": "Remove {0} filter: {1}",
-"匹配：{0}": "Matches: {0}",
-"按相关标签“{0}”继续筛选": "Filter by related tag “{0}”",
-"第 {0} 页，共 {1} 页": "Page {0} of {1}",
-"前往第 {0} 页": "Go to page {0}",
-"已选 {0} 项": "{0} filters selected",
-"，显示第 {0}–{1} 件": "; showing {0}–{1}",
-"{0} {1} 件档案{2}": "{0} {1} records{2}",
-"放大查看：{0}": "Enlarge: {0}",
-"第 {0} 张，共 {1} 张": "Image {0} of {1}",
-"← 返回筛选结果": "← Back to filtered results",
-"《{0}》（{1}），老旧默片，{2}，访问日期：{3}。": "“{0}” ({1}), Laojiu Mopian, {2}, accessed {3}.",
-
-"Lullaby（夏日蝉鸣）": "Lullaby (Summer cicadas)",
-"为“{0}”点赞": "Like “{0}”",
-"收藏“{0}”": "Save “{0}”",
-"例如：LJM-… 或网页地址": "For example: LJM-… or a page URL",
-"便于联系的电话号码": "A phone number for replies",
-"先选择来信类型，我会更快找到重点。": "Choose a message type so I can find the right information sooner.",
-"写留言": "Write a message",
-"发送备用邮件": "Send a backup email",
-"回复方式": "Reply method",
-"填写联系内容": "Write your message",
-"复制回执": "Copy receipt",
-"保存回执": "Save receipt",
-"展览、研究、授权、媒体": "Exhibitions, research, permissions, media",
-"建议、询问或留言": "Suggestions, enquiries or messages",
-"怎么称呼您 ": "Your name ",
-"我已阅读隐私提示，同意为处理这次联系而私密保存以上内容。": "I have read the privacy notice and agree to private storage of this information to handle my message.",
-"我的投稿": "My submissions",
-"我的收藏": "My favorites",
-"提交留言": "Send message",
-"播放背景音乐《{0}》": "Play background music: {0}",
-"播放音乐": "Play music",
-"收起联系挂件": "Close contact panel",
-"无需回复": "No reply needed",
-"昵称或机构简称即可": "A nickname or organization name is enough",
-"暂停背景音乐《{0}》": "Pause background music: {0}",
-"暂停音乐": "Pause music",
-"有重要的事想告诉我？": "Something important to share?",
-"来信类型": "Message type",
-"查看纠错与撤下说明": "Read corrections and removal information",
-"查询密钥相当于这封留言的钥匙，请勿公开分享。回执不会显示您的联系方式或留言正文。": "The lookup key unlocks this message. Do not share it publicly. The receipt contains no contact details or message body.",
-"查询联系进度": "Check message progress",
-"查进度": "Check progress",
-"查询进度": "Check progress",
-"正在检查私密联系通道…": "Checking private contact availability…",
-"用户中心导航": "Account navigation",
-"用户中心": "My account",
-"账户": "Account",
-"电子邮箱": "Email",
-"微信": "WeChat",
-"电话": "Phone",
-"留言已收到。": "Message received.",
-"相关档案编号或页面地址 ": "Related record ID or page URL ",
-"私密联系通道暂时不可用。隐私、纠错或撤下事项可以先查看处理说明。": "Private contact is temporarily unavailable. Read the guidance for privacy concerns, corrections or removal requests.",
-"纠错、限制公开、撤下": "Corrections, restricted access, removal",
-"纠错与撤下说明": "Corrections and removal information",
-"老旧默片｜网站联系": "Laojiu Mopian | Website enquiry",
-"老旧默片": "Laojiu Mopian",
-"联系功能没有加载完成，请稍后重试。": "Contact could not load. Please try again later.",
-"联系我": "Contact me",
-"联系挂件功能": "Contact panel functions",
-"联系站主": "Contact the curator",
-"联系方式": "Contact details",
-"简要说明": "Brief explanation",
-"联系编号": "Contact ID",
-"查询密钥": "Lookup key",
-"选填": "Optional",
-"背景音乐": "Background music",
-"背景音乐暂时不可用": "Background music is temporarily unavailable",
-"背景音乐：{0}": "Background music: {0}",
-"请写清楚事情、涉及的页面和希望如何处理": "Explain the issue, the relevant page and the action you would like.",
-"请在浏览器中开启 JavaScript 后使用联系挂件。页面不会在未提交时保存您填写的内容。": "Enable JavaScript to use this contact panel. Your entries are not stored before submission.",
-"请妥善保存这份回执": "Keep this receipt safe",
-"账户设置": "Account settings",
-"输入回执上的联系编号和查询密钥。结果只显示处理状态和站主给您的说明。": "Enter the contact ID and lookup key from your receipt. Only the status and curator’s reply will be shown.",
-"音乐不可用": "Music unavailable",
-"首次留言请勿发送完整证件号、精确住址、清晰签名、医疗资料或未脱敏图片。需要补充材料时，请先确认安全的传递方式。": "Do not send full identification numbers, precise home addresses, clear signatures, medical information or unredacted images in your first message. Confirm a secure method before providing more material.",
-
-'网络连接失败，请检查网络后重试；已填写的内容不会自动丢失。': 'Connection failed. Check your connection and try again; your entries will stay on this page.',
-'暂时无法完成操作，请稍后再试。': 'This action is temporarily unavailable. Please try again later.',
-'正在上传 {0}%…': 'Uploading {0}%…',
-'提交没有完成。': 'The submission did not finish.',
-'连接中断或等待超时，请稍后重试；已经保存的内容不会丢失。': 'The connection was interrupted or timed out. Try again later; saved content will remain.',
-'新图片': 'New image', '第 {0} 张图片副本': 'Image copy {0}',
-'这张图的说明（选填）': 'Image description (optional)', '第 {0} 张图片的说明': 'Description for image {0}',
-'第 {0} 张 · 已保存': 'Image {0} · Saved', '第 {0} 张 · 待上传': 'Image {0} · Ready to upload',
-'移除这张': 'Remove image', '上移': 'Move up', '下移': 'Move down',
-'共 {0} / 8 张（已保存 {1} 张，待上传 {2} 张）。第一张会作为封面。': '{0} / 8 images ({1} saved, {2} ready to upload). The first image is the cover.',
-'尚未选择图片。': 'No images selected.', '最多选择 8 张图片。': 'Select up to 8 images.',
-'{0}：只接收 JPG、PNG、WebP 筛选副本。': '{0}: only selected JPG, PNG or WebP copies are accepted.',
-'{0}：每张最多 5 MB，每次合计最多 20 MB。': '{0}: up to 5 MB per image and 20 MB per upload.',
-'{0}：已经选过相同图片。': '{0}: this image is already selected.',
-'{0}：无法预览或像素过大，请重新导出副本。': '{0}: the image cannot be previewed or is too large. Export a smaller copy.',
-'题名': 'Title', '未填写': 'Not provided', '藏品分类': 'Object category', '未选择': 'Not selected',
-'大致年代': 'Approximate date', '大致地点': 'Approximate location', '公开署名': 'Public credit',
-'未填写署名': 'No credit provided', '匿名': 'Anonymous', '图片': 'Images',
-'{0} 张，第一张作为封面': '{0} images; the first image is the cover', '尚未选择': 'Not selected',
-'草稿': 'Draft', '待审核': 'Awaiting review', '待补充': 'More information needed', '整理中': 'In preparation',
-'暂不采用': 'Not selected', '已撤回': 'Withdrawn', '投稿编号': 'Submission ID', '当前状态': 'Current status',
-'撤下处理中': 'Removal in progress', '最近更新': 'Last updated', '图片数量': 'Image count',
-'{0} 张': '{0} images', '提交版本': 'Submitted versions', '{0} 个': '{0}', '关联档案': 'Linked record',
-'修改或撤下申请': 'Amendment or removal request', '已收到，等待站主处理': 'Received; awaiting review',
-'站主处理中': 'Under review', '已处理，请查看站主说明': 'Processed; see the curator’s reply',
-'未通过，请查看站主说明': 'Declined; see the curator’s reply', '状态待核实': 'Status needs checking',
-'站主的说明：{0}': 'Curator’s reply: {0}', '撤回并修改这份投稿': 'Withdraw and edit this submission',
-'撤回这份投稿': 'Withdraw this submission', '请先选择至少一张经过筛选的图片副本。': 'Select at least one image copy prepared for publication.',
-'请先补全标记为必填的内容。': 'Complete all required fields first.',
-'题名或署名过长，请适当精简。': 'The title or credit is too long. Please shorten it.',
-'正在保存草稿…': 'Saving draft…', '草稿已保存，可以稍后回来继续编辑。': 'Draft saved. You can return to edit it later.',
-'保存没有完成，请稍后重试。': 'Saving did not finish. Please try again later.',
-'页面信息尚未就绪，请刷新后重试。': 'The page is not ready. Refresh and try again.',
-'请逐项确认第三步的四点说明，它们不会被预先勾选。': 'Read and confirm each of the four statements in step 3. They are never preselected.',
-'正在提交审核…': 'Submitting for review…',
-'已提交审核。资料收到后会先由站主核对，未经确认不会公开。': 'Submitted for review. The curator will check it before anything is published.',
-'提交没有完成，请稍后重试。': 'Submission did not finish. Please try again later.',
-'正在{0}…': '{0}…', '{0}已完成。': '{0} completed.', '{0}没有完成。': '{0} did not finish.',
-'撤回': 'Withdraw',
-'草稿会移入回收区，不再出现在投稿列表里；已经保存的图片不会被永久删除。确定继续吗？': 'The draft will move to the recycle area and leave your submission list. Saved images will not be permanently deleted. Continue?',
-'移入回收区': 'Move to recycle area', '请说明需要修改哪些内容（站主会看到）：': 'Describe the changes you need (the curator will see this):',
-'请说明需要撤下的原因（站主会看到，涉及隐私的会优先处理）：': 'Explain why removal is needed (the curator will see this; privacy concerns receive priority):',
-'请填写说明后再提交申请。': 'Add an explanation before submitting.', '提交修改申请': 'Submit amendment request', '提交撤下申请': 'Submit removal request',
-'投稿暂时暂停接收。已保存的资料仍可查看；账户内的撤回与申请入口照常使用。': 'New submissions are paused. You can still view saved material, withdraw submissions and make requests.',
-'投稿通道暂未开放，暂时只能保存草稿的文字内容。': 'Submissions are unavailable. For now, only draft text can be saved.',
-'暂时无法打开投稿页面。': 'The submission page is temporarily unavailable.',
-'撤下申请已收到': 'Removal request received', '撤下申请已处理': 'Removal request processed', '撤下申请未通过': 'Removal request declined',
-'撤下申请': 'Removal request', '停止处理申请已收到': 'Request to stop processing received',
-'修改申请已收到': 'Amendment request received', '修改处理中': 'Amendment in progress', '修改申请已处理': 'Amendment request processed',
-'修改申请未通过': 'Amendment request declined', '修改申请': 'Amendment request',
-'公开状态暂不可核对': 'Publication status cannot be checked right now', '已公开': 'Published',
-'继续编辑': 'Continue editing', '查看补充要求': 'View requested information', '查看处理情况': 'View progress', '查看详情': 'View details',
-'{0} 张图片': '{0} images', '（未命名草稿）': '(Untitled draft)', '未选分类': 'No category selected',
-'最近更新 {0}': 'Last updated {0}', '站主说明：{0}': 'Curator’s reply: {0}', '打开公开页面': 'View public record',
-'有 {0} 件需要你处理': '{0} submissions need your attention', '目前没有待你处理的事项。': 'Nothing needs your attention right now.',
-'今日还可提交 {0} 件 · 草稿还能保存 {1} 件 · 私密空间剩余约 {2} MB': 'Today: {0} submissions remaining · {1} more drafts · About {2} MB of private storage remaining',
-'暂时无法读取投稿。': 'Submissions cannot be loaded right now.', '请先勾选确认，再提交关联。': 'Confirm the statement before linking.',
-'请填写正确的投稿编号与查询密钥。': 'Enter a valid submission ID and lookup key.', '正在核对…': 'Checking…',
-'这份投稿已经关联到当前账号。': 'This submission is already linked to your account.',
-'关联成功。以后可以在上方列表里查看它的处理进度。': 'Linked successfully. Its progress will appear in your submission list.', '关联没有完成。': 'Linking did not finish.',
-'{0} 的封面': 'Cover of {0}', '档案封面': 'Record cover', '暂无封面': 'No cover image', '暂不可查看': 'Currently unavailable',
-'这份档案当前不在公开列表中': 'This record is currently unavailable to the public', '收藏于 {0}': 'Saved on {0}',
-'取消收藏': 'Remove from favorites', '已取消收藏。': 'Removed from favorites.', '暂时无法取消收藏。': 'This favorite cannot be removed right now.',
-'暂时无法读取收藏。': 'Favorites cannot be loaded right now.', '重新发送': 'Resend', '重新发送（{0}）': 'Resend ({0})',
-'请先填写邮箱。': 'Enter your email address first.', '正在发送…': 'Sending…', '正在发送验证码，请稍候…': 'Sending your code. Please wait…',
-'验证码已发送到 {0}。如果没有收到，请查看垃圾邮件。': 'A code has been sent to {0}. Check your spam folder if it does not arrive.',
-'暂时无法发送验证码。': 'The code cannot be sent right now.', '获取验证码': 'Get a code',
-'请输入邮件中收到的 6 位数字验证码。': 'Enter the six-digit code from your email.', '正在验证…': 'Verifying…',
-'登录成功，正在进入用户中心…': 'Signed in. Opening your account…',
-'邮箱已验证，但新账号开通暂时关闭。已有账号仍可登录。': 'Email verified. Registration is currently closed; existing accounts can still sign in.',
-'验证通过。这是第一次使用，请阅读说明并完成开通。': 'Email verified. Read the terms and complete registration to create your account.',
-'验证没有通过。': 'Verification did not succeed.', '验证并继续': 'Verify and continue',
-'请先阅读并主动勾选同意，才能完成开通。': 'Read the terms and check the agreement box to create your account.',
-'页面信息已过期，请重新获取验证码。': 'This page information has expired. Request a new code.',
-'正在开通…': 'Creating…', '正在开通账号…': 'Creating your account…', '账号已开通，正在进入用户中心…': 'Account created. Opening your account…',
-'开通没有完成。': 'Registration did not finish.', '完成开通': 'Create account',
-'登录服务暂时不可用：邮件通道尚未配置完成。你仍然可以浏览公开档案，稍后再试。': 'Sign-in is temporarily unavailable because email delivery is not configured. You can still browse public records.',
-'暂时不可用': 'Temporarily unavailable', '登录通道正常。验证前不会透露邮箱是否已经注册。': 'Sign-in is available. Registration status is not disclosed before verification.',
-'已有账号可以登录；新账号开通暂时关闭。': 'Existing accounts can sign in; registration is temporarily closed.',
-'无法连接登录服务，请稍后再试。': 'Cannot connect to the sign-in service. Please try again later.',
-'我的': 'My account', '{0} 件': '{0} records', '{0} 台': '{0} devices', '还没有提交过申请。': 'No requests submitted yet.',
-'暂时无法读取账号信息。': 'Account information cannot be loaded right now.', '正在保存…': 'Saving…', '已保存{0}。': 'Saved{0}.', '保存没有完成。': 'Saving did not finish.',
-'正在向当前邮箱发送验证码…': 'Sending a code to your current email…',
-'验证码已发送到当前邮箱，请在 10 分钟内完成验证。': 'A code was sent to your current email. Verify it within 10 minutes.',
-'暂时无法开始更换邮箱。': 'The email change cannot be started right now.', '原邮箱已验证，请填写新邮箱。': 'Current email verified. Enter your new email address.',
-'验证码已发送到新邮箱，请完成验证。': 'A code was sent to your new email. Complete verification.', '正在完成更换…': 'Completing the change…',
-'邮箱已更换为 {0}。为了安全，全部设备已退出登录，请使用新邮箱重新登录。': 'Your email is now {0}. All devices were signed out for security. Sign in with your new email.',
-'更换没有完成。': 'The change did not finish.', '正在退出全部设备…': 'Signing out all devices…',
-'已退出全部设备（{0} 个登录凭证已撤销），正在返回首页…': 'Signed out all devices ({0} sessions revoked). Returning to the home page…',
-'暂时无法退出全部设备。': 'All devices cannot be signed out right now.', '正在提交申请…': 'Submitting request…',
-'导出申请已收到，回执编号 {0}。这是「已收到申请」，不是「导出完成」；站主确认后会通过私密方式联系你。': 'Export request received. Receipt: {0}. The export is not yet complete; the curator will contact you privately after review.',
-'暂时无法提交申请。': 'The request cannot be submitted right now.', '请先阅读并勾选确认，再提交注销申请。': 'Read the statement and confirm it before requesting account deletion.',
-'注销申请已收到，回执编号 {0}。已立即退出全部设备并停止新投稿；公开档案不会随注销自动删除。': 'Deletion request received. Receipt: {0}. All devices have been signed out and new submissions stopped. Published records are not automatically deleted.',
-'已收藏，点击取消收藏': 'Saved; click to remove from favorites', '收藏这件档案，便于以后在“我的收藏”中查看': 'Save this record to find it in My favorites',
-'已收藏': 'Saved', '收藏': 'Save', '登录后可以收藏这件档案': 'Sign in to save this record', '收藏操作没有成功，请稍后再试': 'The favorite could not be saved. Try again later.', '重试': 'Retry',
-'这个访问地址已经赞过这件档案': 'This visitor address has already liked this record', '为这件档案点赞': 'Like this record', '已赞': 'Liked', '点赞': 'Like',
-'这件档案的点赞暂时不可用': 'Likes are temporarily unavailable for this record', '暂不可用': 'Unavailable', '点赞服务暂时不可用': 'The like service is temporarily unavailable',
-'点赞接口返回 {0}': 'The like service returned {0}', '点赞接口数据格式不正确': 'The like service returned invalid data', '点赞没有成功，请稍后再试': 'The like did not succeed. Try again later.',
-'编号': 'ID', '标签': 'Tags', '地点': 'Location', '类型': 'Type', '年代': 'Date', '简介': 'Description', '原文': 'Original text',
-'合作洽谈': 'Collaboration', '请简要说明合作方向、时间安排和希望采用的联系方式。': 'Describe your collaboration idea, timing and preferred contact method.',
-'隐私问题': 'Privacy concern', '请指出相关档案或页面及风险；此类来信会优先进入人工核对。': 'Identify the record or page and your concern. Privacy messages receive priority review.',
-'其他事宜': 'Other enquiries', '建议、问题或想说的话，都可以在这里简要说明。': 'Share your suggestions, questions or message here.',
-'联系通道返回了无法读取的结果。': 'The contact service returned an unreadable response.', '操作没有完成，请稍后重试。': 'The action did not finish. Try again later.',
-'连接等待超时，无法确认这次操作是否完成；请稍后再试一次。': 'The connection timed out; completion is unconfirmed. Please try again later.',
-'您的邮箱': 'Your email address', '您的微信号': 'Your WeChat ID', '您的电话号码': 'Your phone number',
-'老旧默片联系回执\n联系编号：{0}\n查询密钥：{1}\n收到时间：{2}\n\n请勿公开分享查询密钥。': 'Laojiu Mopian contact receipt\nContact ID: {0}\nLookup key: {1}\nReceived: {2}\n\nDo not share your lookup key publicly.',
-'联系通道尚未启用。': 'The contact service is not yet enabled.', '私密联系通道可用。': 'Private contact is available.',
-'联系通道暂时不可用。': 'Contact is temporarily unavailable.', '私密联系通道暂时不可用，请稍后再试。': 'Private contact is temporarily unavailable. Please try again later.',
-'正在私密提交…': 'Sending privately…', '提交失败，请稍后重试。': 'Submission failed. Try again later.', '已复制': 'Copied', '请手动保存回执': 'Please save the receipt manually',
-'{0}-联系回执.txt': '{0}-contact-receipt.txt', '正在查询…': 'Checking…', '\n站主的说明：{0}': '\nCurator’s reply: {0}', '\n暂时还没有新的说明。': '\nNo new reply yet.',
-'查询失败，请稍后重试。': 'Lookup failed. Please try again later.', '投稿已收到，谢谢您的信任。': 'Submission received. Thank you.',
-'接收状态待确认，请保留回执。': 'Receipt is unconfirmed. Keep your receipt details.',
-'资料已进入私密审核区。您可以凭回执查看进度，或申请停止处理。': 'Your material is in private review. Use the receipt to check progress or request that processing stops.',
-'网络未返回明确结果。请先用下方查询功能确认是否收到，避免重复投稿；不要丢失查询密钥。': 'The network did not confirm receipt. Use the lookup below before submitting again, and keep your lookup key.',
-'投稿通道暂时无法连接，请稍后重试。': 'Cannot connect to the submission service. Try again later.', '操作未完成，请稍后重试。': 'The action did not finish. Please try again later.',
-'本地体验：投稿只进入本机的私密审核区。': 'Local preview: submissions stay in this computer’s private review area.',
-'投稿通道已开放。您填写的内容仅在点击提交后发送。': 'Submissions are open. Your entries are sent only when you submit.',
-'投稿通道暂未开放或连接失败。当前不会发送资料；请稍后刷新重试。': 'Submissions are unavailable or the connection failed. Nothing will be sent now; refresh and try later.',
-'第 {0} 张待投稿副本': 'Submission copy {0}', '移除第 {0} 张图片': 'Remove image {0}',
-'已选择 {0} / 8 张，合计 {1} / 20 MB。': '{0} / 8 images selected, {1} / 20 MB total.',
-'当前访问地址不是安全连接，无法读取和加密图片。请通过网站的正式地址访问后再投稿。': 'This connection is not secure. Open the official website using HTTPS before submitting images.',
-'{0}：仅接收 JPG、PNG、WebP 筛选副本。': '{0}: only selected JPG, PNG or WebP copies are accepted.',
-'{0}：每张最多 5 MB，合计最多 20 MB。': '{0}: up to 5 MB per image and 20 MB in total.',
-'{0}：已选过相同图片。': '{0}: this image is already selected.', '图片读取失败，请重新选择。': 'Image reading failed. Select the images again.',
-'您常用的邮箱': 'Your usual email address', '可用于联系的电话号码': 'A phone number we can use to contact you',
-'图片已发送，正在检查并保存，请稍候…': 'Images sent. Checking and saving them; please wait…', '投稿未完成。': 'Submission did not finish.',
-'没有收到明确的接收结果，请先查询回执。': 'Receipt was not confirmed. Check your receipt first.',
-'连接中断或等待超时，请先查询回执确认是否收到；未收到时可以重试。': 'Connection interrupted or timed out. Check the receipt first; retry only if it was not received.',
-'同意条款版本尚未获取，请刷新页面后再试。': 'The consent terms have not loaded. Refresh and try again.', '正在准备图片副本…': 'Preparing image copies…',
-'接收回执需要核实，请先查询进度。': 'The receipt needs checking. Look up the progress first.',
-'提交完成。请保存上方回执；继续填写可投另一份资料。': 'Submitted. Save the receipt above; you can fill in another submission.',
-'投稿未完成，请稍后重试。': 'Submission did not finish. Try again later.', '已收到': 'Received', '待查询确认': 'Awaiting lookup confirmation',
-'老旧默片 · 投稿回执\n投稿编号：{0}\n查询密钥：{1}\n查询页面：{2}/contribute/#submission-lookup\n接收状态：{3}\n请勿公开分享查询密钥。': 'Laojiu Mopian · Submission receipt\nSubmission ID: {0}\nLookup key: {1}\nLookup page: {2}/contribute/#submission-lookup\nReceipt status: {3}\nDo not share your lookup key publicly.',
-'{0}-回执.txt': '{0}-receipt.txt', '请手动复制或保存回执': 'Please copy or save your receipt manually',
-'已收到停止处理申请，等待站主核查。': 'Your request to stop processing has been received and awaits review.',
-'\n已进入档案整理流程；初审通过不等于已公开发布。': '\nIn archive preparation; initial approval does not mean publication.',
-'申请未完成，请稍后重试。': 'The request did not finish. Try again later.',
-'当前访问地址不是安全连接，无法加密处理投稿内容。请改用网站的正式地址（https）访问后再投稿。': 'This connection is not secure. Open the official website using HTTPS before submitting.',
-'查看精选档案：{0}': 'View featured record: {0}', '为"{0}"点赞': 'Like “{0}”', '已显示第 {0} 张精选图片：{1}': 'Featured image {0}: {1}',
-'初审通过': 'Initial review approved', '已停止处理': 'Processing stopped', '核对中': 'Under review', '等待补充': 'Awaiting more information', '已回复': 'Replied', '已结束': 'Closed',
-'正常': 'Active', '已暂停': 'Suspended', '注销处理中': 'Deletion in progress', '已收到申请': 'Request received', '处理中': 'In progress', '已完成': 'Completed', '未通过': 'Declined',
-'数据导出申请': 'Data export request', '账号注销申请': 'Account deletion request', '账号恢复申诉': 'Account reinstatement appeal',
-'照片': 'Photograph', '明信片': 'Postcard', '信件': 'Letter', '证件': 'Document', '旧卡片': 'Old card', '其他旧物': 'Other objects',
+import { getLocale, localizePath, type Locale } from './routing';
+export type ClientMessagePack = { locale: Locale; messages: Record<string,string>; templates: Array<[string,string]> };
+const packs = new Map<Locale,ClientMessagePack>();
+export const installClientMessages = (pack: ClientMessagePack) => {
+ if (!pack || !pack.locale || !pack.messages || !Array.isArray(pack.templates)) throw new Error('Invalid interface messages');
+ packs.set(pack.locale,pack);
 };
 export const clientLocale = () => getLocale();
 export const clientPath = (href: string) => localizePath(href, clientLocale());
-export const interfaceText = (text: string, locale: Locale, params: Record<string, unknown> = {}) => {
-  let template = locale === 'zh-CN' ? text : dictionary[text] ?? t(text, 'en');
-  if(locale!=='zh-CN'&&locale!=='en')template=fixedText(template,locale,text);
-  // Singular applies to this fixed interface template only, never visitor text.
-  if (locale === 'en' && text === '{0} {1} 件档案{2}' && Number(params['1']) === 1) template = '{0} {1} record{2}';
-  return template.replace(/\{(\w+)\}/g, (match, key) => Object.prototype.hasOwnProperty.call(params, key) ? String(params[key] ?? '') : match);
+const requireMessages = (locale: Locale) => {
+ if (!packs.has(locale) && typeof document !== 'undefined') {
+  try {
+   const element = document.getElementById?.('client-interface-messages');
+   const pack = JSON.parse(element?.textContent ?? 'null');
+   if (pack?.locale === locale) installClientMessages(pack);
+  } catch { /* 统一进入可读失败提示，不以错误语言初始化交互。 */ }
+ }
+ const pack = packs.get(locale);
+ if (!pack) {
+  if (typeof document !== 'undefined') {
+   const notice = document.getElementById?.('client-message-error'); if (notice) notice.hidden = false;
+   document.querySelectorAll?.('form input, form select, form textarea, form button').forEach(control => { (control as HTMLInputElement).disabled = true; });
+  }
+  throw new Error('Interface messages unavailable; reload this page.');
+ }
+ return pack;
 };
-export const clientText = (text: string, params: Record<string, unknown> = {}) => interfaceText(text, clientLocale(), params);
-export const clientError = (message: unknown, fallback = '暂时无法完成操作，请稍后再试。') => {
-  const value = typeof message === 'string' && message ? message : fallback;
-  const translated = clientText(value);
-  return ['en','th','ko'].includes(clientLocale()) && /[\u3400-\u9fff]/.test(translated) ? clientText(fallback) : translated;
+export const interfaceText = (text: string, locale: Locale, params: Record<string,unknown> = {}) => {
+ const pack = requireMessages(locale);
+ const key = text.trim().replace(/\s+/g,' ');
+ let template = locale === 'zh-CN' ? text : Object.hasOwn(pack.messages,text) ? pack.messages[text] : Object.hasOwn(pack.messages,key) ? pack.messages[key] : text;
+ if (locale !== 'zh-CN' && template === text) for (const [pattern,value] of pack.templates) {
+  const match = text.match(new RegExp(pattern)); if (match) { const captured=locale==='th'&&pattern==='^View Laojiu Mopian on (.+)$'?match[1].replace(', opens in a new window',' (เปิดหน้าต่างใหม่)'):match[1];template = value.replace('{0}',captured); break; }
+ }
+ if (locale === 'en' && text === '{0} {1} 件档案{2}' && Number(params['1']) === 1) template = '{0} {1} record{2}';
+ return template.replace(/\{(\w+)\}/g,(match,key)=>Object.hasOwn(params,key)?String(params[key]??''):match);
 };
+export const clientText = (text: string,params:Record<string,unknown>={}) => interfaceText(text,clientLocale(),params);
+export const clientError = (message: unknown,fallback='暂时无法完成操作，请稍后再试。') => {
+ const value=typeof message==='string'&&message?message:fallback, translated=clientText(value);
+ return ['en','th','ko'].includes(clientLocale())&&/[\u3400-\u9fff]/.test(translated)?clientText(fallback):translated;
+};
+// 模块脚本延后执行，此时头部的同语言JSON已存在；任何依赖本模块的表单先经过校验。
+if (typeof document !== 'undefined' && typeof document.getElementById === 'function') requireMessages(clientLocale());

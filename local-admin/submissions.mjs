@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
+import { assertPublicationImageSignature, createPublicationImageInput } from '../shared/publication-image-safety.mjs';
 
 export const submissionLimits = Object.freeze({ images: 8, imageBytes: 5 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, requestBytes: 22 * 1024 * 1024 });
 export const consentVersion = '2026-09-05-v1';
@@ -69,16 +70,20 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    if (!buffer?.length) fail('图片格式无法读取。');
    incoming += buffer.length;
    if (buffer.length > submissionLimits.imageBytes || incoming > submissionLimits.totalBytes) fail('每张图片最多 5 MB，每次合计最多 20 MB。', 413);
-   staged.push({ name: originalName, buffer });
+   const mimeType = image?.type ?? image?.file?.type ?? '';
+   try { assertPublicationImageSignature(buffer, { filename: originalName, mimeType }); }
+   catch (error) { fail(error.message); }
+   staged.push({ name: originalName, buffer, mimeType });
   }
   return staged;
  };
  const processImages = async (staged, filenameFor = (index) => `copy-${String(index + 1).padStart(2, '0')}.jpg`) => {
+  if (!staged.length) return [];
   sharp ??= require('sharp');
   const images = [];
   for (const [index, image] of staged.entries()) {
    try {
-    const input = sharp(image.buffer, { limitInputPixels: 40_000_000, failOn: 'warning', animated: false });
+    const input = createPublicationImageInput(sharp, image.buffer, { filename: image.name, mimeType: image.mimeType });
     const info = await input.metadata();
     const expectedFormat = /\.(png)$/i.test(image.name) ? 'png' : /\.(webp)$/i.test(image.name) ? 'webp' : 'jpeg';
     if (info.format !== expectedFormat || (info.pages ?? 1) > 1) fail('图片真实格式不符，或包含动画/多页内容。');
@@ -117,7 +122,6 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    }
    const records = await all();
    if (records.length >= maxEntries || records.reduce((n, r) => n + r.images.reduce((s, i) => s + i.bytes, 0), 0) + submissionLimits.totalBytes > maxStorageBytes) fail('投稿收件区暂满，请稍后再试。', 503);
-   sharp ??= require('sharp');
    const images = await processImages(staged);
    const now = new Date().toISOString();
    const record = { version: 1, revision: 1, id, created_at: now, updated_at: now, key_hash: hash(payload.key), fingerprint,
@@ -648,7 +652,7 @@ export async function readSubmissionForm(request, maximum = submissionLimits.req
  for (const [key, value] of form.entries()) {
   if (typeof value !== 'string') {
    if (key !== 'images') fail('提交内容无法读取。');
-   payload.images.push({ name: value.name, buffer: Buffer.from(await value.arrayBuffer()) });
+   payload.images.push({ name: value.name, type: value.type, buffer: Buffer.from(await value.arrayBuffer()) });
    continue;
   }
   if (key.startsWith('consents_')) payload.consents[key.slice('consents_'.length)] = value === 'true';

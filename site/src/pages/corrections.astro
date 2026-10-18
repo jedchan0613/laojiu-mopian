@@ -92,7 +92,7 @@ const mailtoHref = contactEmail
 </BaseLayout>
 
 <script>
-import {t, getLocale} from '../i18n/ui';
+import {clientText as ct} from '../i18n/client';
 
   const copyButton = document.querySelector<HTMLButtonElement>('[data-copy-correction-template]');
   const template = document.querySelector<HTMLElement>('#correction-request-template');
@@ -100,9 +100,9 @@ import {t, getLocale} from '../i18n/ui';
   copyButton?.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(template?.textContent?.trim() ?? '');
-      if (feedback) feedback.textContent = t("申请模板已复制。", getLocale());
+      if (feedback) feedback.textContent = ct("申请模板已复制。");
     } catch {
-      if (feedback) feedback.textContent = t("浏览器未允许自动复制，请手工选择模板文字。", getLocale());
+      if (feedback) feedback.textContent = ct("浏览器未允许自动复制，请手工选择模板文字。");
     }
   });
 </script>

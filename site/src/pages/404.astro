@@ -3,6 +3,7 @@
 import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { serializeHtmlJson } from '../../../shared/html-json.mjs';
 import { archiveItems } from '../data/archive';
 import { isPublishedArchiveItem } from '../data/archive-view';
 
@@ -48,7 +49,7 @@ const randomRecordIds = archiveItems
       <a class="ui-text-link" href={localizePath("/corrections/", locale)}>{t("查看纠错与撤下说明 →", locale)}</a>
     </aside>
   </section>
-  <script type="application/json" id="random-record-index" set:html={JSON.stringify(randomRecordIds)} />
+  <script type="application/json" id="random-record-index" set:html={serializeHtmlJson(randomRecordIds)} />
   <script>import '../scripts/random-record';</script>
 </BaseLayout>
 

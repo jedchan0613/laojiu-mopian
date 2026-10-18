@@ -1,6 +1,6 @@
 ---
 import { getLocale, localizePath } from '../i18n/ui';
-import { interfaceText } from '../i18n/client';
+import { interfaceText } from '../i18n/interface-text';
 const locale = getLocale(Astro.url.pathname);
 const ct = (text: string, params: Record<string, unknown> = {}) => interfaceText(text, locale, params);
 
