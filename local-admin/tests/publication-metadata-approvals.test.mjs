@@ -29,7 +29,3 @@ test('大连七张照片只认可缺失背面，总册才认可缺失实物评�
   r.metadata.dimensions.D12={verso_types:['FAKE']};
   assert.ok(filterApprovedMetadataIssues(r,issues).some(issue=>issue.code==='collection_code_invalid_D12_verso_types_FAKE'));
 });
-<<<<<<< HEAD
-=======
-
->>>>>>> 777691d8366f3bb5cf319a9c40992a306a7737b7

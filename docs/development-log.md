@@ -4519,3 +4519,13 @@ Windows再次运行288项（286通过、2环境跳过）及点赞2项；本机27
 三是把压缩脚本放到隔离沙箱用真实 darwin 版 sharp 做了端到端验证（`/tmp` 内临时安装，未改动项目依赖，用后已删除）：取 7 个真实发布副本（6 个超 1.5MB、1 个 0.8MB），脚本输出“检查 6 个超限文件，压缩 6 个，保留原样 0 个，38.1 MB 降至 2.7 MB”，0.8MB 文件按阈值正确跳过；压缩后最长为 2560 像素、格式仍为 jpeg，人工查看图像清晰可读。缓存规则的匹配表达式也做了用例验证：`/archive/<编号>/front-public.jpg` 与 `/archive-responsive/<编号>/front-public-640.webp` 命中，`/archive/<编号>/index.html`、`/archive/`、`/_astro/*` 不命中。`docs/public-cache-guide.md` 已同步更新，并明确本次仅改模板、未应用。
 
 仍未完成、且本机无法完成的部分：完整 `npm run build` 与真实 Caddy 缓存测试。本机 `site/public/archive` 只有 97 张图、`site/src/data/archive.ts` 为 141 件版本，而现有 `dist` 是由 231 张图、164 件档案构建的，本机构建会基于不完整也不一致的数据，结论不可信，故未执行。这两项需在你的 Windows 机器或服务器上验证；服务器自动部署本身会在切换前跑 `local-admin/tests/*.test.mjs`（含真实 Caddy 缓存测试）与正式构建，配置有误会直接中止部署并回退，不会带着错误上线。本轮仍未推送 main、未在服务器做任何变更。
+
+### 上线异常：合并冲突标记导致自动部署反复失败（同日）
+
+用户于 10-20 从 Windows 用 GitHub Desktop 推送后，线上长时间没有变化。经查 GitHub 网页（本机直连 github.com 被网络阻断，改用可访问的通道）：main 上已有 `ff3cc9d`、`85a4d76`（合并提交）、`7d07a30` 三条当日提交，本次性能改动（`site/package.json` 的 build 链、`site/scripts/compress-publication-copies.mjs`、`deployment/Caddyfile.public-cache.example` 的 `@ljmPublicImages`、`deployment/verify-public-cache.mjs` 的 `imageCache`、以及缓存测试断言）**均已在 main 上且互相一致**。而线上首页 `last-modified` 仍是 10-19 10:36 UTC，`/records.json` 封面仍是全尺寸 jpg，说明部署一直没有切换版本。
+
+根因：`local-admin/tests/publication-metadata-approvals.test.mjs` 末尾残留 Git 冲突标记（`<<<<<<< HEAD` / `=======` / 空行 / `>>>>>>> 777691d8…`），这是合并两台机器的改动时没有清理干净就提交的。该文件语法错误，导致部署脚本在切换前执行的 `node --test local-admin/tests/*.test.mjs` 必然失败，部署中止并保留旧版本；而定时器每两分钟重试一次，因此一直在循环失败（每次重试都会短暂停止管理服务）。
+
+处理：已在本地删除这 4 行冲突标记（文件由 35 行恢复为 31 行、无标记、以 `});` 正常结束），并运行该测试文件确认 4 项全部通过；同时全项目扫描（排除 `site/node_modules`、`site/dist`、`outputs`）确认没有其他冲突标记。`docs/public-cache-guide.md`、`deployment/verify-public-cache.mjs`、缓存测试在 main 上的内容也已逐一核对一致。该修复需由用户重新提交并推送后，自动部署才能继续。
+
+另发现：本机 `.git` 对象库不完整（`git diff` 报 `unable to read <blob>`），与前述百度云同步缺失同源，因此这台机器不能用于提交或推送，Git 操作应在 Windows 机器或服务器上进行。
