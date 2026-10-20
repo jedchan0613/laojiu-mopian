@@ -10,7 +10,7 @@ import { spawn, spawnSync, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
-import { revalidateCache, immutableCache, imageCache } from '../../deployment/verify-public-cache.mjs';
+import { revalidateCache, immutableCache } from '../../deployment/verify-public-cache.mjs';
 
 const command = process.env.LJM_CACHE_TEST_CADDY || 'caddy';
 const available = spawnSync(command, ['version'], { windowsHide: true }).status === 0;
@@ -104,12 +104,12 @@ test('真实Caddy：六语言、条件请求、更新/撤下、哈希资源与�
 			assert.equal((await check(route, revalidateCache)).body, 'synthetic-page-v2');
 		}
 	});
-	await t.test('发布图片一小时缓存、替换/撤下及时核对，哈希图不存在时同样no-store', async () => {
+	await t.test('发布图片替换/撤下与发现文件及时核对，哈希图不存在时同样no-store', async () => {
 		for (const route of ['/archive/SYNTHETIC/front.png', '/archive-responsive/SYNTHETIC/front-640.webp']) {
-			const { response } = await check(route, imageCache);
-			await check(route, imageCache, 304, { headers: { 'If-None-Match': response.headers.get('etag') } });
+			const { response } = await check(route, revalidateCache);
+			await check(route, revalidateCache, 304, { headers: { 'If-None-Match': response.headers.get('etag') } });
 			await write(route, 'synthetic-image-v2', 2001);
-			assert.equal((await check(route, imageCache, 200, { headers: { 'If-None-Match': response.headers.get('etag') } })).body, 'synthetic-image-v2');
+			assert.equal((await check(route, revalidateCache, 200, { headers: { 'If-None-Match': response.headers.get('etag') } })).body, 'synthetic-image-v2');
 			await fs.rename(path.join(publicRoot, route), path.join(retired, path.basename(route)));
 			await check(route, 'no-store', 404);
 		}

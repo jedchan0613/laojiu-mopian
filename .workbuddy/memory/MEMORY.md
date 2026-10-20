@@ -28,19 +28,6 @@
 - 在 `site/` 跑 `npm run build` **必须前台执行**：Astro 收尾清理 `dist/.prerender`（57 项 > 50）会触发 safe-delete 批量删除确认，后台进程无法弹窗会直接失败。
 - 本机 `node -v` 是 **v22.22.2**（系统另装 24.14.1，但 PATH 解析到 22）。`node:sqlite` 可直接用，只打一次实验性警告。
 - 本地管理服务默认 `127.0.0.1:4173`（网站 `/`，管理 `/admin/`，账户接口 `/api/account/*`）。
-- **本机 node_modules 只装了 Windows 平台的 sharp 二进制**（`@img/sharp-win32-x64`、`sharp-wasm32`）：macOS 上 `npm run build`、`generate-responsive-images.mjs` 以及任何 import sharp 的测试都会因加载失败而报错，**这与代码无关**。构建与完整测试必须在你的 Windows 机器或服务器上跑；本机也没装 caddy，`public-cache-caddy.test.mjs` 会按设计跳过。
-
-## 工作区是百度云同步盘，本机数据不完整（2026-10-20 确认，改代码前必读）
-
-- 这个目录位于**百度云同步空间**，会出现文件"同步中"或干脆没落地的情况（缺失目录里会留下 `.baiduyun.uploading.cfg` 标记）。2026-10-20 发现 `site/src/i18n/` 整个目录、`pages/en|th|ja|ko|zh-hant/`、`album-groups.ts`、`archive-localization.ts` 等 **94 个受版本控制的文件本地缺失**，已用 `git checkout --` 从 HEAD 还原；还原前确认过 HEAD 内容比本地快照更新、不会覆盖任何新改动。
-- **本机数据也不是线上那份**：`site/public/archive` 只有 97 张图（构建产物里是 231 张），`site/src/data/archive.ts` 是 141 件版本，而线上是 164 件。**所以不要在这台 Mac 上做最终构建、不要提交 `archive.ts` / `image-manifest.json`、更不要直接从这里的 main 推送上线**；以 Windows 机器或服务器为准。
-- 出现 `git status` 里大量"D 已暂存删除但文件在磁盘"的怪状态时，先用 `git diff --cached --name-only --diff-filter=A` 与 `git status | grep '^AD'` 确认索引里没有磁盘上不存在的独有内容，再 `git reset`（只清暂存，不动文件），最后 `git ls-files -d -z | xargs -0 git checkout --` 还原被删文件。
-
-## 图片体积与下载副本（2026-10-20 起）
-
-- `dist/archive/<编号>/` 里的 `front-public.jpg` / `back-public.jpg` **不是死重**：详情页「下载发布副本」在 `rights_status = PD`（`canDownloadPublicationCopy`）时直接链到它。当前公开档案均为 UNK/OWN，功能未生效，但代码能力保留，不能整体删掉这些图。
-- 构建链在 `astro build` 之后多了 `scripts/compress-publication-copies.mjs`：把 `dist/archive/` 中 >1.5MB 的副本压到最长边 2560 / q80（文件名不变，`site/public/archive` 源文件不动）。若将来加"构建产物与原图摘要一致"类校验，需要允许这一步造成的体积差异。该脚本支持 `--dry-run` 自检，不需要 sharp。
-- 页面展示一律走 `getResponsiveImage()`（`src/data/responsive-images.ts`）。全尺寸图路径只应在"下载"场景出现；`records.json` 的 `cover` 必须用 `image.src`（响应式），不要再退回 `view.images[0]`。
 
 ## 账号模块（阶段二、阶段三，2026-09-27 实施）
 

@@ -24,20 +24,6 @@ header @ljmPublicStatic {
 	match status 200 206 304
 }
 
-# 已发布的档案图片（含响应式缩略图与发布副本）：文件名稳定但替换发布副本时内容会变，
-# 因此只缓存一小时并要求过期后回源校验；不存在的图片仍按4xx规则返回no-store。
-# 期限刻意保持较短：若某张图因隐私原因撤下，回头客最多一小时后即失效。
-@ljmPublicImages {
-	host laojiumopian.com
-	method GET HEAD
-	path_regexp ljm_images ^/(?:archive|archive-responsive)/[^/]+/[^/]+\.(?:jpe?g|png|webp)$
-	file {path}
-}
-header @ljmPublicImages {
-	Cache-Control "public, max-age=3600, must-revalidate"
-	match status 200 206 304
-}
-
 # _astro内未带内容版本的资源也不能长缓存。
 @ljmUnversionedAssets {
 	host laojiumopian.com

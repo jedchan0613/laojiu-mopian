@@ -4,7 +4,6 @@ import { localeDefinitions } from '../shared/locale-config.mjs';
 
 export const revalidateCache = 'public, max-age=0, must-revalidate';
 export const immutableCache = 'public, max-age=31536000, immutable';
-export const imageCache = 'public, max-age=3600, must-revalidate';
 
 export async function verifyPublicCache({ baseUrl, reportFile, adminOrigin }) {
 	const results = [];
@@ -34,7 +33,7 @@ export async function verifyPublicCache({ baseUrl, reportFile, adminOrigin }) {
 		const first = await check(asset, immutableCache);
 		assert.ok(first.response.headers.get('etag'));
 		await check(asset, immutableCache, 304, { headers: { 'If-None-Match': first.response.headers.get('etag') } });
-		await check(image, imageCache);
+		await check(image, revalidateCache);
 		for (const file of ['/robots.txt', '/sitemap.xml']) await check(file, revalidateCache);
 		await check('/_astro/cache-check.ABCDEFGH.js', 'no-store', 404);
 		await check('/api/account/me', 'no-store', 401);
