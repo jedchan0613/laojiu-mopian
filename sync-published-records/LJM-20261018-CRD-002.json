@@ -1,0 +1,75 @@
+{
+  "core": {
+    "title": "下船了，也得按时打卡",
+    "accession_date": "2026-10-18",
+    "object_type": "CRD",
+    "date_display": "1991年",
+    "record_status": "ACT",
+    "privacy_level": "G",
+    "rights_status": "UNK",
+    "research_status": "R0",
+    "evidence_level": "D",
+    "digitization_status": "DG0",
+    "transcription_status": "TX0",
+    "use_status": "U3",
+    "publication_file_path": [
+      "/archive/LJM-20261018-CRD-002/front-public.jpg",
+      "/archive/LJM-20261018-CRD-002/back-public.jpg"
+    ],
+    "batch_id": "FSA-20261018-B01",
+    "physical_location": "家中",
+    "acquisition_method": "PR-FAM",
+    "item_id": "LJM-20261018-CRD-002",
+    "created_date": "2026-10-19",
+    "updated_date": "2026-10-19",
+    "collection_code": "CRD_1991年_OTH_OTH_EXP_UNK+COL_NON_COM+C2+YEL",
+    "carrier": "MT-UNK",
+    "color": "CL-COL",
+    "condition_grade": "C2",
+    "condition_details": [
+      "DM-YEL"
+    ],
+    "id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+    "required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+  },
+  "metadata": {
+    "schema": "card",
+    "dimensions": {
+      "CD01": {
+        "card_type": "CT-OTH"
+      },
+      "CD02": {
+        "card_functions": [
+          "KF-OTH"
+        ]
+      },
+      "CD12": {
+        "card_status": "KS-EXP"
+      },
+      "CD16": {
+        "material_details": "纸质印刷表格，含手写与印章"
+      },
+      "CD17": {
+        "card_technologies": [
+          "KT-NON"
+        ]
+      },
+      "CD20": {
+        "card_completeness": "KC-COM"
+      },
+      "CD21": {
+        "redaction_status": "RD-MASK",
+        "restricted_fields": "姓名/住址末段/签名（已局部马赛克）"
+      }
+    }
+  },
+  "public_view": {
+    "description": "1991年，广州远洋运输公司，公休船员学习登记卡。船员公休在家，每月四日仍要回公司学习，考勤员一个个签名、打勾。海上漂了半辈子的人，上了岸，依然被一张小卡片牵着走——那是一个单位管到人的年代。",
+    "transcription": "",
+    "tags": [],
+    "image_descriptions": [
+      "公休船员学习登记卡，正面。",
+      "登记卡背面（考勤记录）。"
+    ]
+  }
+}

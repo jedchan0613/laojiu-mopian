@@ -1,0 +1,44 @@
+---
+import type { AlbumBrowseView } from '../data/album-browse';
+import { getResponsiveImage } from '../data/responsive-images';
+import { t, localizePath, type Locale } from '../i18n/ui';
+
+interface Props { album: AlbumBrowseView; locale: Locale; showMatches?: boolean; }
+const { album, locale, showMatches = false } = Astro.props;
+const cover = album.coverPath ? getResponsiveImage(album.coverPath) : undefined;
+---
+<a class="album-browse-card" href={localizePath(album.href, locale)} data-album-entry>
+  <figure>
+    {cover ? <img src={cover.src} srcset={cover.srcset} sizes="(max-width: 700px) calc(100vw - 48px), 380px" width={cover.width} height={cover.height} alt={album.coverDescription || album.title} loading="lazy" decoding="async" />
+      : <span>{t('暂无图片', locale)}</span>}
+  </figure>
+  <div class="album-browse-copy">
+    <small>{album.isLetterCollection ? t('信件选览', locale) : t('相册', locale)}</small>
+    <h2>{album.title}</h2>
+    {album.description && <p class="album-browse-description">{album.description}</p>}
+    <p>{t('{0} 件公开档案', locale, { 0: album.recordCount })}</p>
+    <p>{album.isLetterCollection ? t('{0} 件信件档案', locale, { 0: album.letterCount }) : t('{0} 件照片档案 · {1} 幅附图', locale, { 0: album.photoCount, 1: album.imageCount })}</p>
+    {!album.isLetterCollection && album.dateSummary.range && <p>{album.dateSummary.uncertainPhotoCount > 0
+      ? t('照片年代线索：{0}（含推测）', locale, { 0: album.dateSummary.range })
+      : t('已知照片年代：{0}', locale, { 0: album.dateSummary.range })}</p>}
+    {!album.isLetterCollection && album.dateSummary.unknownPhotoCount > 0 && <p>{t('{0} 件年代待考', locale, { 0: album.dateSummary.unknownPhotoCount })}</p>}
+    {!album.isLetterCollection && !album.hasAlbumRecord && <p>{t('相册总档案尚未公开，以下为已公开照片。', locale)}</p>}
+    {showMatches && <p class="album-browse-matches" data-album-matches>{t('命中 {0} 件 / 册内共 {1} 件公开档案', locale, { 0: album.recordCount, 1: album.recordCount })}</p>}
+    <strong class="album-browse-action">{t('进入相册 →', locale)}</strong>
+  </div>
+</a>
+<style>
+  .album-browse-card { display:grid; grid-template-columns:minmax(0,0.85fr) minmax(0,1.3fr); gap:1.1rem; padding:1rem; border:1px solid var(--site-border-soft); color:inherit; text-decoration:none; background:var(--site-paper); }
+  .album-browse-card:hover h2, .album-browse-action { color:var(--site-accent); }
+  .album-browse-card:focus-visible { outline:2px solid var(--site-focus-outline); outline-offset:4px; }
+  figure { margin:0; min-width:0; aspect-ratio:4/3; display:grid; place-items:center; align-self:start; background:var(--site-background); }
+  figure img { display:block; width:100%; height:100%; min-height:0; object-fit:contain; }
+  figure span, small, p { color:var(--site-muted); font:0.76rem/1.7 var(--site-ui-font); }
+  .album-browse-copy { min-width:0; display:grid; align-content:start; gap:0.4rem; }
+  h2, p { margin:0; overflow-wrap:anywhere; }
+  h2 { font-size:1.1rem; line-height:1.6; }
+  .album-browse-description { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .album-browse-matches { color:var(--site-accent); }
+  .album-browse-action { font:0.8rem/1.8 var(--site-ui-font); margin-top:0.3rem; }
+  @media(max-width:500px) { .album-browse-card { grid-template-columns:minmax(0,1fr); } figure { max-height:15rem; } }
+</style>

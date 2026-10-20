@@ -1,0 +1,236 @@
+---
+
+import { t, getLocale, localizePath } from '../../i18n/ui';
+const locale = getLocale(Astro.url.pathname);
+import {translationLocales} from '../../../../shared/locale-config.mjs';
+import {getArchiveTranslation} from '../../data/archive-localization';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { type ArchiveItem } from '../../data/archive';
+import { createArchiveRecordView } from '../../data/archive-view';
+import { getResponsiveImage } from '../../data/responsive-images';
+import { publishedAlbumGroups, albumHref, albumDateSummary, curatedAlbumForId, curatedLetterAlbum } from '../../data/album-groups';
+import { compareAlbumPositions } from '../../data/album-position.mjs';
+import {albumTranslationAvailable} from '../../data/album-translation-state.mjs';
+
+export function getStaticPaths() {
+  return publishedAlbumGroups().map(({ albumId, slug, members }) => ({
+    params: { album: slug },
+    props: { albumId, members },
+  }));
+}
+
+interface Props {
+  albumId: string;
+  members: ArchiveItem[];
+}
+
+const { albumId, members } = Astro.props;
+const curatedAlbum = curatedAlbumForId(albumId);
+const isLetterCollection = albumId === curatedLetterAlbum.id;
+const albumRecord = members.find((item) => item.core.object_type === 'ALB');
+const albumView = albumRecord ? createArchiveRecordView(albumRecord, locale) : undefined;
+const photoEntries = members
+  .filter((item) => item.core.object_type === 'PHO')
+  .map((item) => ({ item, view: createArchiveRecordView(item, locale) }))
+  .sort((left, right) =>
+    compareAlbumPositions(left.item.core.original_position, right.item.core.original_position) ||
+    left.item.core.title.localeCompare(right.item.core.title, 'zh-CN') ||
+    left.item.core.item_id.localeCompare(right.item.core.item_id));
+const letterEntries = isLetterCollection ? members
+  .filter((item) => item.core.object_type === 'LET')
+  .map((item) => ({ item, view: createArchiveRecordView(item, locale) }))
+  .sort((left, right) =>
+    (left.item.core.date_start || left.item.core.date_display || '').localeCompare(right.item.core.date_start || right.item.core.date_display || '') ||
+    left.item.core.item_id.localeCompare(right.item.core.item_id)) : [];
+const entries = isLetterCollection ? letterEntries : photoEntries;
+const galleryEntries = entries.map((entry) => ({
+  ...entry,
+  cover: entry.view.images[0] ? getResponsiveImage(entry.view.images[0]) : undefined,
+}));
+const albumTitle = curatedAlbum ? t(curatedAlbum.title, locale) : albumView?.title || t("相册 {0}", locale, { 0: albumId });
+const albumLead = curatedAlbum ? t(curatedAlbum.description, locale) : albumView?.description ?? '';
+const albumCover = albumView?.images[0] ? getResponsiveImage(albumView.images[0]) : undefined;
+const dateSummary = albumDateSummary(members);
+const yearRange = dateSummary.range;
+const photoCount = photoEntries.length;
+const imageCount = photoEntries.reduce((count, entry) => count + entry.view.images.length, 0);
+const letterImageCount = letterEntries.reduce((count, entry) => count + entry.view.images.length, 0);
+const albumSummary = albumLead || t("已公开 {0} 件照片档案，共 {1} 幅附图。", locale, { 0: photoCount, 1: imageCount });
+const translationAvailable=(language:string)=>albumTranslationAvailable(language,{curated:Boolean(curatedAlbum),memberStates:members.map(item=>getArchiveTranslation(item,language).state)});
+const pendingTranslation = !translationAvailable(locale);
+const albumUrl = Astro.site ? new URL(localizePath(albumHref(albumId), locale), Astro.site) : undefined;
+const albumStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: albumTitle,
+  description: albumSummary,
+  inLanguage: locale,
+  url: albumUrl?.href,
+  hasPart: entries.map((entry) => ({
+    '@type': 'CreativeWork',
+    name: entry.view.title,
+    identifier: entry.view.id,
+    url: Astro.site ? new URL(localizePath(`/archive/${entry.view.id}/`, locale), Astro.site).href : undefined,
+  })),
+};
+const breadcrumbStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: t("首页", locale), item: Astro.site ? new URL(localizePath('/', locale), Astro.site).href : undefined },
+    { '@type': 'ListItem', position: 2, name: t("档案", locale), item: Astro.site ? new URL(localizePath('/archive/', locale), Astro.site).href : undefined },
+    { '@type': 'ListItem', position: 3, name: albumTitle, item: albumUrl?.href },
+  ],
+};
+---
+
+<BaseLayout
+  title={t("{0}｜老旧默片", locale, { 0: albumTitle })}
+  description={albumSummary}
+  image={albumCover?.src ?? galleryEntries.find((entry) => entry.cover)?.cover?.src}
+  pageType="website"
+  structuredData={[albumStructuredData, breadcrumbStructuredData]}
+  translationAvailability={Object.fromEntries(translationLocales.map(language=>[language,translationAvailable(language)]))}
+  englishAvailable={translationAvailable('en')}
+  thaiAvailable={translationAvailable('th')}
+  robots={locale !== 'zh-CN' && pendingTranslation ? 'noindex,follow' : undefined}
+>
+  <article class="album-page" data-album-id={albumId} data-album-photo-count={photoCount} data-album-letter-count={letterEntries.length}>
+    <div class="record-top">
+      <nav class="record-breadcrumb" aria-label={t("面包屑", locale)}>
+        <a href={localizePath("/", locale)} class="breadcrumb-link">{t("首页", locale)}</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <a href={localizePath("/archive/", locale)} class="breadcrumb-link">{t("档案", locale)}</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="breadcrumb-current" aria-current="page">{albumTitle}</span>
+      </nav>
+      <a class="back-link ui-text-link" href={localizePath("/archive/", locale)}>{t("← 返回档案", locale)}</a>
+    </div>
+
+    <header class:list={['album-heading', { 'has-cover': Boolean(albumCover) }]}>
+      <div class="album-intro">
+      <p class="section-mark icon-heading"><span>{isLetterCollection ? t("信件选览", locale) : t("相册", locale)}</span></p>
+      <h1>{albumTitle}</h1>
+      <p class="album-meta">
+        <span>{isLetterCollection ? t("{0} 件信件档案 · {1} 幅附图", locale, { 0: letterEntries.length, 1: letterImageCount }) : t("{0} 件照片档案 · {1} 幅附图", locale, { 0: photoCount, 1: imageCount })}</span>
+        {!isLetterCollection && yearRange && <span>{dateSummary.uncertainPhotoCount > 0
+          ? t("照片年代线索：{0}（含推测）", locale, { 0: yearRange })
+          : t("已知照片年代：{0}", locale, { 0: yearRange })}</span>}
+        {!isLetterCollection && dateSummary.unknownPhotoCount > 0 && <span>{t("{0} 件年代待考", locale, { 0: dateSummary.unknownPhotoCount })}</span>}
+      </p>
+      {albumLead && <p class="album-lead">{albumLead}</p>}
+      {!albumView && !isLetterCollection && <p class="album-order-note">{t("相册总档案尚未公开，以下为已公开照片。", locale)}</p>}
+      <div class="album-actions">
+        {entries.length > 0 && <a class="ui-text-link" href="#album-photos-heading">{isLetterCollection ? t("浏览本辑信件 ↓", locale) : t("浏览本册照片 ↓", locale)}</a>}
+        {albumView && <a class="ui-text-link" href={localizePath(`/archive/${albumView.id}/`, locale)}>{t("查看相册总档案 →", locale)}</a>}
+      </div>
+      </div>
+      {albumCover && (
+        <figure class="album-cover">
+          <img
+            src={albumCover.src}
+            srcset={albumCover.srcset}
+            sizes="(max-width: 760px) 92vw, 640px"
+            alt={albumView?.imageDescriptions[0] ?? albumTitle}
+            width={albumCover.width}
+            height={albumCover.height}
+            loading="eager"
+            decoding="async"
+          />
+          <figcaption>{albumView?.imageDescriptions[0] || t("相册封面或整页记录", locale)}</figcaption>
+        </figure>
+      )}
+    </header>
+
+    {locale !== 'zh-CN' && pendingTranslation && (
+      <p class="translation-notice" role="status">{t('Some translations are pending review. Source text is shown where a current translation is unavailable.',locale)}</p>
+    )}
+
+    <section class="album-photos" aria-labelledby="album-photos-heading">
+      <div class="album-section-heading">
+        <h2 id="album-photos-heading">{isLetterCollection ? t("本辑信件", locale) : t("同册照片", locale)}</h2>
+        <p>{isLetterCollection ? t("按档案记载的写信年代排列；不确定的日期以单件记录为准。", locale) : t("已标注位置的照片按原始页序排列。", locale)}</p>
+      </div>
+      {!isLetterCollection && <p class="album-order-note">{t("未标注或无法确定页序的照片列在后面；数量仅包含已公开照片。", locale)}</p>}
+      <ol class="album-photo-grid">
+        {galleryEntries.map((entry) => (
+          <li data-album-photo-id={isLetterCollection ? undefined : entry.view.id} data-album-letter-id={isLetterCollection ? entry.view.id : undefined}><a class="album-photo-card" href={localizePath(`/archive/${entry.view.id}/`, locale)}>
+            <figure>
+              {entry.cover ? (
+                <img
+                  src={entry.cover.src}
+                  srcset={entry.cover.srcset}
+                  sizes="(max-width: 600px) 44vw, (max-width: 900px) 45vw, 350px"
+                  alt={entry.view.imageDescriptions[0]}
+                  width={entry.cover.width}
+                  height={entry.cover.height}
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : <span class="album-photo-placeholder">{t("暂无图片", locale)}</span>}
+            </figure>
+            <div class="album-photo-copy">
+              <small>{isLetterCollection ? entry.view.dateDisplay : entry.item.core.original_position?.trim() || t("页序未标注", locale)}</small>
+              <strong>{entry.view.title}</strong>
+              <span>{entry.view.typeLabel} · {entry.view.dateDisplay} · {t("{0} 幅附图", locale, { 0: entry.view.images.length })}</span>
+            </div>
+          </a></li>
+        ))}
+      </ol>
+      {entries.length === 0 && <p class="album-empty">{isLetterCollection ? t("这辑暂无可公开的信件。", locale) : t("这本相册暂时没有可公开的照片。", locale)}</p>}
+    </section>
+  </article>
+</BaseLayout>
+
+<script>
+  import { clientPath, clientText } from '../../i18n/client';
+  // 从相册目录进入时，返回当前语言的原筛选和页码；不把任意地址写入链接。
+  try {
+    const state = JSON.parse(window.sessionStorage.getItem('ljm-archive-browse-state') ?? 'null');
+    const slug = window.location.pathname.split('/').filter(Boolean).at(-1);
+    if (state?.targetAlbumSlug === slug && typeof state.href === 'string' && /^\/(?:(?:en|th|ja|ko|zh-hant)\/)?archive\/(?:[?#]|$)/.test(state.href)) {
+      const localized = { ...state, href: clientPath(state.href), restorePending: true };
+      window.sessionStorage.setItem('ljm-archive-browse-state', JSON.stringify(localized));
+      const link = document.querySelector<HTMLAnchorElement>('.record-top .back-link');
+      if (link) { link.href = localized.href; link.textContent = clientText('← 返回筛选结果'); }
+    }
+  } catch { /* 禁用会话存储时仍可用默认返回入口。 */ }
+</script>
+
+<style>
+  .album-page { display:grid; gap:2.5rem; min-width:0; padding:1.5rem 0 3rem; }
+  .record-top { display:flex; justify-content:space-between; align-items:baseline; gap:1rem; font:0.78rem/1.6 var(--site-ui-font); color:var(--site-muted); }
+  .record-breadcrumb { display:flex; flex-wrap:wrap; align-items:baseline; gap:0.45rem; min-width:0; }
+  .breadcrumb-current { overflow-wrap:anywhere; }
+  .back-link { flex-shrink:0; }
+  .album-heading { display:grid; gap:1.25rem; border-bottom:1px solid var(--site-border-soft); padding-bottom:2rem; }
+  .album-heading.has-cover { grid-template-columns:minmax(0,1fr) minmax(0,0.7fr); gap:2.5rem; align-items:center; }
+  .album-intro { min-width:0; display:grid; gap:1rem; }
+  .section-mark { color:var(--site-accent); font:0.75rem/1.5 var(--site-ui-font); letter-spacing:0.14em; margin:0; }
+  .album-heading h1 { margin:0; font-size:clamp(1.7rem,4vw,2.55rem); line-height:1.35; overflow-wrap:anywhere; }
+  .album-meta { display:flex; flex-wrap:wrap; gap:0.4rem 1rem; margin:0; font:0.8rem/1.7 var(--site-ui-font); color:var(--site-muted); }
+  .album-lead { margin:0; line-height:1.9; max-width:40rem; white-space:pre-line; overflow-wrap:anywhere; }
+  .album-actions { display:flex; flex-wrap:wrap; gap:0.75rem 1.5rem; font:0.8rem/1.7 var(--site-ui-font); }
+  .album-cover { margin:0; min-width:0; padding:0.8rem; border:1px solid var(--site-border-soft); background:var(--site-paper); }
+  .album-cover img { display:block; width:100%; height:auto; max-height:24rem; object-fit:contain; }
+  .album-cover figcaption { margin-top:0.65rem; color:var(--site-muted); font:0.72rem/1.6 var(--site-ui-font); }
+  .album-photos { min-width:0; display:grid; gap:1.2rem; scroll-margin-top:1.5rem; }
+  .album-section-heading { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:0.5rem 1rem; }
+  .album-section-heading h2 { margin:0; font-size:1.15rem; }
+  .album-section-heading p, .album-order-note { margin:0; color:var(--site-muted); font:0.78rem/1.7 var(--site-ui-font); }
+  .album-photo-grid { list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.8rem 1.4rem; }
+  .album-photo-grid li { min-width:0; }
+  .album-photo-card { display:grid; gap:0.8rem; height:100%; color:inherit; text-decoration:none; min-width:0; }
+  .album-photo-card:hover strong { color:var(--site-accent); }
+  .album-photo-card:focus-visible { outline:2px solid var(--site-focus-outline); outline-offset:5px; }
+  .album-photo-card figure { margin:0; min-width:0; aspect-ratio:4/3; padding:0.6rem; display:grid; place-items:center; overflow:hidden; border:1px solid var(--site-border-soft); background:var(--site-paper); }
+  .album-photo-card img { display:block; width:100%; height:100%; min-height:0; max-width:100%; max-height:100%; object-fit:contain; }
+  .album-photo-placeholder { color:var(--site-muted); font:0.8rem/1.6 var(--site-ui-font); }
+  .album-photo-copy { display:grid; gap:0.3rem; min-width:0; align-self:start; }
+  .album-photo-copy small, .album-photo-copy span { color:var(--site-muted); font:0.75rem/1.6 var(--site-ui-font); overflow-wrap:anywhere; }
+  .album-photo-copy strong { font-size:1.02rem; line-height:1.65; overflow-wrap:anywhere; }
+  .album-empty { margin:0; padding:1.5rem; border:1px dashed var(--site-border-soft); color:var(--site-muted); line-height:1.8; }
+  @media(max-width:900px) { .album-photo-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .album-heading.has-cover { gap:1.5rem; } }
+  @media(max-width:600px) { .album-page { gap:1.8rem; padding-top:0.8rem; } .record-top { align-items:flex-start; flex-direction:column; gap:0.7rem; } .album-heading.has-cover { grid-template-columns:minmax(0,1fr); } .album-cover { max-width:28rem; width:100%; box-sizing:border-box; } .album-photo-grid { gap:1.4rem 0.8rem; } .album-photo-card figure { padding:0.35rem; } .album-photo-copy strong { font-size:0.9rem; } }
+  @media(max-width:360px) { .album-photo-grid { grid-template-columns:minmax(0,1fr); } }
+</style>
