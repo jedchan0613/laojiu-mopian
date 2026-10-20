@@ -1,0 +1,50 @@
+{
+  "core": {
+    "title": "天涯海角我给你的吻",
+    "accession_date": "2026-10-18",
+    "object_type": "LET",
+    "date_display": "1987年",
+    "record_status": "ACT",
+    "privacy_level": "G",
+    "rights_status": "UNK",
+    "research_status": "R0",
+    "evidence_level": "D",
+    "digitization_status": "DG0",
+    "transcription_status": "TX0",
+    "use_status": "U3",
+    "publication_file_path": [
+      "/archive/LJM-20261018-LET-001/front-public.jpg",
+      "/archive/LJM-20261018-LET-001/detail-01-public.jpg",
+      "/archive/LJM-20261018-LET-001/detail-02-public.jpg",
+      "/archive/LJM-20261018-LET-001/detail-03-public.jpg",
+      "/archive/LJM-20261018-LET-001/detail-04-public.jpg",
+      "/archive/LJM-20261018-LET-001/detail-05-public.jpg"
+    ],
+    "batch_id": "FSA-20261018-B01",
+    "physical_location": "家中",
+    "acquisition_method": "PR-FAM",
+    "item_id": "LJM-20261018-LET-001",
+    "created_date": "2026-10-19",
+    "updated_date": "2026-10-19",
+    "collection_code": "LET_1987年",
+    "id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+    "required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+  },
+  "metadata": {
+    "schema": "common",
+    "dimensions": {}
+  },
+  "public_view": {
+    "description": "1987年元月17日，大连港，船即开航。一个远洋船员在离家前写下六页长信：春节不能回家了，别给孩子乱吃油炸的，晚上早点睡，别急着回信——海上航行一个月，收不到信别慌。信的末尾他说：\"天涯海角我给你的吻，亲爱的萍。\"有些浪漫，是要隔着一整个大洋才说得出口的。",
+    "transcription": "",
+    "tags": [],
+    "image_descriptions": [
+      "1987年春节大连港夫致妻家信，第1页。",
+      "第2页。",
+      "第3页。",
+      "第4页。",
+      "第5页。",
+      "第6页（落款页）。"
+    ]
+  }
+}

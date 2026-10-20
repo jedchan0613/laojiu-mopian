@@ -10046,6 +10046,453 @@ export const archiveItems = [
 				"这里很美快点来航空边框明信片背面，背面。"
 			]
 		}
+	},
+	{
+		"core": {
+			"title": "五项阴性，第一针",
+			"accession_date": "2026-10-18",
+			"object_type": "CRD",
+			"date_display": "1996年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261018-CRD-001/front-public.jpg",
+				"/archive/LJM-20261018-CRD-001/back-public.jpg",
+				"/archive/LJM-20261018-CRD-001/detail-01-public.jpg"
+			],
+			"batch_id": "FSA-20261018-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-FAM",
+			"item_id": "LJM-20261018-CRD-001",
+			"created_date": "2026-10-19",
+			"updated_date": "2026-10-19",
+			"collection_code": "CRD_1996年_OTH_SVC_EXP_UNK+COL_NON_COM+C2+YEL",
+			"carrier": "MT-UNK",
+			"color": "CL-COL",
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "card",
+			"dimensions": {
+				"CD01": {
+					"card_type": "CT-OTH"
+				},
+				"CD02": {
+					"card_functions": [
+						"KF-SVC"
+					]
+				},
+				"CD12": {
+					"card_status": "KS-EXP"
+				},
+				"CD16": {
+					"material_details": "纸质印刷表格，含手写与印章"
+				},
+				"CD17": {
+					"card_technologies": [
+						"KT-NON"
+					]
+				},
+				"CD20": {
+					"card_completeness": "KC-COM"
+				},
+				"CD21": {
+					"redaction_status": "RD-MASK",
+					"restricted_fields": "姓名/签名/工号（已局部马赛克）"
+				}
+			}
+		},
+		"public_view": {
+			"description": "1996年8月23日，广州远洋运输公司综合门诊部。乙肝两对半五项全阴，当天注射第一针疫苗，30微克。跑船的人，身体就是本钱——这一纸\"阴性\"，是他下一次远航前，给家里最踏实的交代。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"乙肝疫苗注射卡，正面。",
+				"注射卡背面（印刷注意事项）。",
+				"乙肝二对半检验报告单。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "下船了，也得按时打卡",
+			"accession_date": "2026-10-18",
+			"object_type": "CRD",
+			"date_display": "1991年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261018-CRD-002/front-public.jpg",
+				"/archive/LJM-20261018-CRD-002/back-public.jpg"
+			],
+			"batch_id": "FSA-20261018-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-FAM",
+			"item_id": "LJM-20261018-CRD-002",
+			"created_date": "2026-10-19",
+			"updated_date": "2026-10-19",
+			"collection_code": "CRD_1991年_OTH_OTH_EXP_UNK+COL_NON_COM+C2+YEL",
+			"carrier": "MT-UNK",
+			"color": "CL-COL",
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "card",
+			"dimensions": {
+				"CD01": {
+					"card_type": "CT-OTH"
+				},
+				"CD02": {
+					"card_functions": [
+						"KF-OTH"
+					]
+				},
+				"CD12": {
+					"card_status": "KS-EXP"
+				},
+				"CD16": {
+					"material_details": "纸质印刷表格，含手写与印章"
+				},
+				"CD17": {
+					"card_technologies": [
+						"KT-NON"
+					]
+				},
+				"CD20": {
+					"card_completeness": "KC-COM"
+				},
+				"CD21": {
+					"redaction_status": "RD-MASK",
+					"restricted_fields": "姓名/住址末段/签名（已局部马赛克）"
+				}
+			}
+		},
+		"public_view": {
+			"description": "1991年，广州远洋运输公司，公休船员学习登记卡。船员公休在家，每月四日仍要回公司学习，考勤员一个个签名、打勾。海上漂了半辈子的人，上了岸，依然被一张小卡片牵着走——那是一个单位管到人的年代。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"公休船员学习登记卡，正面。",
+				"登记卡背面（考勤记录）。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "天涯海角我给你的吻",
+			"accession_date": "2026-10-18",
+			"object_type": "LET",
+			"date_display": "1987年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261018-LET-001/front-public.jpg",
+				"/archive/LJM-20261018-LET-001/detail-01-public.jpg",
+				"/archive/LJM-20261018-LET-001/detail-02-public.jpg",
+				"/archive/LJM-20261018-LET-001/detail-03-public.jpg",
+				"/archive/LJM-20261018-LET-001/detail-04-public.jpg",
+				"/archive/LJM-20261018-LET-001/detail-05-public.jpg"
+			],
+			"batch_id": "FSA-20261018-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-FAM",
+			"item_id": "LJM-20261018-LET-001",
+			"created_date": "2026-10-19",
+			"updated_date": "2026-10-19",
+			"collection_code": "LET_1987年",
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "common",
+			"dimensions": {}
+		},
+		"public_view": {
+			"description": "1987年元月17日，大连港，船即开航。一个远洋船员在离家前写下六页长信：春节不能回家了，别给孩子乱吃油炸的，晚上早点睡，别急着回信——海上航行一个月，收不到信别慌。信的末尾他说：\"天涯海角我给你的吻，亲爱的萍。\"有些浪漫，是要隔着一整个大洋才说得出口的。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"1987年春节大连港夫致妻家信，第1页。",
+				"第2页。",
+				"第3页。",
+				"第4页。",
+				"第5页。",
+				"第6页（落款页）。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "请你放心为好，安心工作",
+			"accession_date": "2026-10-18",
+			"object_type": "LET",
+			"date_display": "1988年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261018-LET-002/front-public.jpg",
+				"/archive/LJM-20261018-LET-002/back-public.jpg"
+			],
+			"batch_id": "FSA-20261018-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-FAM",
+			"item_id": "LJM-20261018-LET-002",
+			"created_date": "2026-10-19",
+			"updated_date": "2026-10-19",
+			"collection_code": "LET_1988年",
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "common",
+			"dimensions": {}
+		},
+		"public_view": {
+			"description": "1988年2月11日晚，妻子给在船上的丈夫回信：一个月没收到你的信了，家里都好，孩子这个月感冒了两次——说到这里她停了停，又补一句\"请你放心为好，安心工作\"。报喜也报忧，但每一笔落的都是\"别挂念\"。持家的人，连诉苦都是克制的。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"1988年妻致夫回信，第1页。",
+				"第2页（落款页）。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "深夜两点，值班中起草",
+			"accession_date": "2026-10-18",
+			"object_type": "LET",
+			"date_display": "1988年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261018-LET-003/front-public.jpg",
+				"/archive/LJM-20261018-LET-003/detail-01-public.jpg",
+				"/archive/LJM-20261018-LET-003/detail-02-public.jpg"
+			],
+			"batch_id": "FSA-20261018-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-FAM",
+			"item_id": "LJM-20261018-LET-003",
+			"created_date": "2026-10-19",
+			"updated_date": "2026-10-19",
+			"collection_code": "LET_1988年",
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "common",
+			"dimensions": {}
+		},
+		"public_view": {
+			"description": "1988年4月23日深夜两点，湛江调顺码头，货装完就走，目的地西德，航程一个月。他趁着值班的间隙给妻子写信：原谅我临时叫你别来，天热了记得挂蚊帐，单位里该争的要争，别受人利用。一个男人出海前夜的心思，全在这三页纸里了。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"1988年赴西德前湛江港夫致妻家信，第1页。",
+				"第2页。",
+				"第3页（落款页）。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "工资一千四百二十七块九毛二",
+			"accession_date": "2026-10-18",
+			"object_type": "LET",
+			"date_display": "1994年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261018-LET-004/front-public.jpg",
+				"/archive/LJM-20261018-LET-004/back-public.jpg"
+			],
+			"batch_id": "FSA-20261018-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-FAM",
+			"item_id": "LJM-20261018-LET-004",
+			"created_date": "2026-10-19",
+			"updated_date": "2026-10-19",
+			"collection_code": "LET_1994年",
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "common",
+			"dimensions": {}
+		},
+		"public_view": {
+			"description": "1994年元月3日，妻子给船上的丈夫写回信。孩子的期末考试、珠算、寒假安排，事无巨细；末了把他的工资数目一笔一划抄在信里：壹仟肆佰贰拾柒元玖角贰分。她不懂浪漫，她只把这个家记得分毫不差。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"1994年春节妻致夫回信，第1页。",
+				"第2页（落款页）。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "自行车的事，决不反悔",
+			"accession_date": "2026-10-18",
+			"object_type": "LET",
+			"date_display": "1997年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261018-LET-005/front-public.jpg",
+				"/archive/LJM-20261018-LET-005/detail-01-public.jpg",
+				"/archive/LJM-20261018-LET-005/detail-02-public.jpg"
+			],
+			"batch_id": "FSA-20261018-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-FAM",
+			"item_id": "LJM-20261018-LET-005",
+			"created_date": "2026-10-19",
+			"updated_date": "2026-10-19",
+			"collection_code": "LET_1997年",
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "common",
+			"dimensions": {}
+		},
+		"public_view": {
+			"description": "1997年3月10日，荷兰鹿特丹港。儿子考了全级第46名，写信告诉了爸爸。爸爸从半个地球外回信：先夸，再教写作文、教数学，最后郑重承诺——\"自行车的事，我一口应成和答复，决不反悔\"。父爱就是这样，远在海角，也要把答应孩子的事钉死。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"1997年鹿特丹港父致子信（广州远洋运输公司稿纸），第1页。",
+				"第2页。",
+				"第3页（落款页）。"
+			]
+		}
+	},
+	{
+		"core": {
+			"title": "一个人带回来的半座大连",
+			"accession_date": "2026-10-18",
+			"object_type": "PHO",
+			"date_display": "约1959年",
+			"record_status": "ACT",
+			"privacy_level": "G",
+			"rights_status": "UNK",
+			"research_status": "R0",
+			"evidence_level": "D",
+			"digitization_status": "DG0",
+			"transcription_status": "TX0",
+			"use_status": "U3",
+			"publication_file_path": [
+				"/archive/LJM-20261018-PHO-001/front-public.jpg",
+				"/archive/LJM-20261018-PHO-001/detail-01-public.jpg",
+				"/archive/LJM-20261018-PHO-001/detail-02-public.jpg",
+				"/archive/LJM-20261018-PHO-001/detail-03-public.jpg",
+				"/archive/LJM-20261018-PHO-001/detail-04-public.jpg",
+				"/archive/LJM-20261018-PHO-001/detail-05-public.jpg",
+				"/archive/LJM-20261018-PHO-001/detail-06-public.jpg"
+			],
+			"batch_id": "FSA-20261018-B01",
+			"physical_location": "家中",
+			"acquisition_method": "PR-FAM",
+			"item_id": "LJM-20261018-PHO-001",
+			"created_date": "2026-10-19",
+			"updated_date": "2026-10-19",
+			"collection_code": "PHO_约1959年_CITY+MEM_MEM_NONE_C2+YEL_G",
+			"country": "中国",
+			"province": "辽宁省",
+			"city": "大连市",
+			"specific_place": "旅顺友谊塔；青泥洼桥；明泽池；劳动公园；工业博物馆；大连火车站；星海村浴场",
+			"themes": [
+				"SU-CITY",
+				"SU-MEM"
+			],
+			"condition_grade": "C2",
+			"condition_details": [
+				"DM-YEL"
+			],
+			"id_check": "永久编号格式与重复检查通过，编号、JSON、图片目录和发布路径一致。",
+			"required_check": "核心必填字段、对象类型与 schema、隐私检查、图片路径和正式构建均已通过。"
+		},
+		"metadata": {
+			"schema": "photo",
+			"dimensions": {
+				"D07": {
+					"photo_function": "FN-MEM"
+				},
+				"D12": {
+					"verso_types": [
+						"VS-NONE"
+					]
+				}
+			}
+		},
+		"public_view": {
+			"description": "旅顺友谊塔、青泥洼桥、明泽池、劳动公园、工业博物馆、火车站、星海村浴场——七张黑白纪念照，边角印着手写体地名。这大概是一位远洋船员在大连停靠时买下的。船在港里停几天，他就把这座城装进了口袋，带回家给妻子孩子看：你们看，我到过这里。",
+			"transcription": "",
+			"tags": [],
+			"image_descriptions": [
+				"旅顺友谊塔。",
+				"大连青泥洼桥。",
+				"大连明泽池划船。",
+				"大连劳动公园之一角。",
+				"大连工业博物馆（门楣横幅\"庆祝建国十周年展览会\"）。",
+				"大连火车站。",
+				"大连星海村浴场。"
+			]
+		}
 	}
 ] satisfies ArchiveItem[];
 

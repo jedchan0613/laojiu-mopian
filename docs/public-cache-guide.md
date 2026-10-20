@@ -1,13 +1,16 @@
 # 公开网站缓存规则
 
-2026-10-18 第二批修订。**目前仅完成开发及隔离验收，未应用到正式站。按用户新要求，五点全部完成后再统一上线。**
+2026-10-18 第二批修订，17:36 已按用户后续“直接部署上线／继续完成”授权应用到正式站。程序版本 `6a7bdca`，服务器及电脑端正式域名 HTTP 核验通过；待审译文未随程序发布。上线结果与备份位置见 `docs/website-foundation-release-20261018.md`。
+
+2026-10-20 追加发布图片一小时缓存（见下文“缓存范围”），**本次只改了仓库中的配置模板与验证脚本，尚未应用到服务器**；实际应用仍须取得单独的线上操作授权，并在应用后按本文“验收与待办”重新核验。
 
 公开静态规则只匹配 `laojiumopian.com`，不会改变共享站点块中的 `hk-test.laojiumopian.com`。管理域名经既有 Tunnel 直达管理服务，由该服务单独返回 `no-store`，不将其改接到 Caddy，也不改变访问保护。
 
 ## 缓存范围
 
 - 已存在且名称含构建版本号的 `/_astro/` CSS、JavaScript、字体：`public, max-age=31536000, immutable`。仅成功响应及 304 采用此规则；不存在的哈希网址仍是 404、`no-store`。
-- 六语言公开 HTML（含相册）、发布图片、响应式图片、`records.json`、robots、站点地图、图标与二维码：`public, max-age=0, must-revalidate`。可以保存公开副本，但再次使用前需核对更新；保留 Caddy 原有 ETag/Last-Modified。
+- 六语言公开 HTML（含相册）、`records.json`、robots、站点地图、图标与二维码：`public, max-age=0, must-revalidate`。可以保存公开副本，但再次使用前需核对更新；保留 Caddy 原有 ETag/Last-Modified。
+- 已发布的档案图片（`/archive/` 下的下载副本与 `/archive-responsive/` 下的响应式缩略图，jpg/jpeg/png/webp）：`public, max-age=3600, must-revalidate`（2026-10-20 起）。这些文件名稳定、替换发布副本时内容会变，因此只缓存一小时；过期后仍核对 ETag/Last-Modified。期限刻意不设一天或一年：某张图若因隐私原因撤下，回头客最多一小时后即失效。尚未替换的旧规则是每次访问都回源核验。
 - `/_astro/` 中未带内容版本号的资源也使用重新核验，不因为目录名而缓存一年。
 - 六语言登录/用户中心、全部 `/api` 和 `/api/*`、管理页/管理脚本/管理图片及错误响应：`no-store`。管理端保留应用内只读 ETag 协商，但响应仍为 `no-store`，不要求浏览器/共享代理持久保存私密内容。
 - 错误链单独引入 `Caddyfile.error-cache.example`，保留既有六语言缺页和真实 404/401/403/5xx，不把自定义缺页变成 200。普通响应链也覆盖上游误设的错误缓存及重定向。
@@ -16,7 +19,7 @@
 
 ## 安装方法
 
-五点全部完成、取得统一上线及 Caddy 配置授权后，先将对应程序部署到服务器，再在腾讯云服务器终端执行只检查命令：
+后续再次应用仍须取得相应线上操作授权；先将对应程序部署到服务器，再在腾讯云服务器终端执行只检查命令：
 
 ```bash
 sudo bash /srv/laojiumopian-admin/app/current/deployment/install-public-cache-headers.sh --check
@@ -40,7 +43,7 @@ sudo bash /srv/laojiumopian-admin/app/current/deployment/install-public-cache-he
 
 本批真实 Caddy 隔离演练覆盖六语言、相册、ETag/Last-Modified、304、HEAD、程序版本变化、图片替换/撤下、404后恢复、私密路径及上游误设缓存。安装流程另有候选失败、写后校验失败、重载失败、HTTP失败和并发修改的合成回退测试，包含严格 umask 下的权限保留。详见 `docs/website-cache-phase2-review-20261018.md`。
 
-正式配置现阶段未变。统一上线时仍须执行正式域名的 HTTP 检查，确认无额外代理层改写策略；不能用隔离通过冒充正式站生效。
+本次已实际应用正式配置，服务器与电脑端正式域名检查通过；电脑端覆盖 69 项缓存检查，含六语言、条件请求 304、公开资源、账号/API及错误响应。响应为既有 Caddy，未观察到额外共享缓存层改写；不是对所有访客网络的保证。浏览器预览超时，交互和安卓真机不因 HTTP 检查而视为已验收。
 
 ## CDN 说明
 

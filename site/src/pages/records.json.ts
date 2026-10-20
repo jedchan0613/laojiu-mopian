@@ -19,7 +19,7 @@ export const GET: APIRoute = ({url}) => {
 				title: view.title,
 				type_label: view.typeLabel,
 				date_display: view.dateDisplay,
-				cover: view.images[0] ?? null,
+				cover: image?.src ?? null,
 				cover_alt: view.imageDescriptions[0] ?? '',
 				cover_width: image?.width ?? 0,
 				cover_height: image?.height ?? 0,
