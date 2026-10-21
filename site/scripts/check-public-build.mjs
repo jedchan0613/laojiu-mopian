@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { fontace } from 'fontace';
 import {createHash} from 'node:crypto';
 import { pointsInRanges, readCompleteFontCoverage } from './complete-font-coverage.mjs';
+import { collectVisibleHan } from '../../shared/public-build-text.mjs';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
@@ -37,6 +38,7 @@ const listFiles = async (directory) => {
 };
 
 const distFiles = await listFiles(distRoot);
+check(!distFiles.some(file => file.includes('_冲突文件_')), '公开构建包含同步冲突副本，必须排除后重新构建。');
 const htmlFiles = distFiles.filter((path) => path.endsWith('.html'));
 const htmlEntries = await Promise.all(htmlFiles.map(async (path) => ({
 	path,
@@ -76,13 +78,7 @@ const originalGlyphsPreserved = originalBrandFont.unicodeRangeArray.every((range
 	return true;
 });
 check(originalGlyphsPreserved, '拆分字体遗漏原字库字形，可能导致服务器既有公开档案缺字。');
-const publicPageMarkup = htmlEntries
-	.map(({ html }) => html
-		.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-		.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ''))
-	.join('\n');
 const requiredBrandCharacters = new Set([
-	...(publicPageMarkup.match(/\p{Script=Han}/gu) ?? []),
 	// 来自已发布页面截图；即使本地样例数据暂未同步，也必须防止再次回退。
 	...'搞玩都困难暗室',
 	// 2026-10-11：服务器草稿发布曾因这四字缺失而回滚，字体更新不能再次遗漏。
@@ -92,6 +88,7 @@ const requiredBrandCharacters = new Set([
 	// 服务器正式公开原文的缺字回归；不能只验证本地六件样例。
 	...'啊哎唉矮傲爸吧佰半伴饱抱倍辈奔俾舶踩惭婵畅吵趁乘吃迟抽匆粗答诞蛋挡弟睇掂颠惦叮懂唞豆毒盾耳帆凡犯饭芳飞奋逢父妇负赶糕咯哥耕顾怪孩害咁憾豪恨厚乎诲慧伙棘几季嫁健奖骄叫颈竟敬举倔嘅颗苦愧啦篮懒牢唠涝叻励俩谅聆履虑乱啰妈吗嘛慢忙矛锚冇妹闷猛眠乜咩母耐男恼脑呢嗯溺廿嬲努哦怕盼抛跑陪碰疲辟贫企气弃歉倾球屈佢却扰森啥衫捎婶甚食叔蔬瞬虽岁碎嗦琐她踏坦讨厅痛偷透忘委胃喂慰吻揾握屋唔午吸媳暇卸兄眼药爷嘢遗椅饮勇忧又娱渔愉愚院责掌啫争侄衷嘱抓仔租阻尊琢坐做咗㗎',
 ]);
+for (const { html } of htmlEntries) collectVisibleHan(html, requiredBrandCharacters);
 const missingBrandCharacters = [...requiredBrandCharacters]
 	.filter((character) => !brandFontHasGlyph(character))
 	.sort((left, right) => left.localeCompare(right, 'zh-CN'));
@@ -471,12 +468,12 @@ for (const publicPath of retiredBackgroundMusicPublicPaths) {
 	check(!(await exists(join(distRoot, publicPath.replace(/^\/+/, '')))), `公开构建仍携带已下线的音频副本：${publicPath}。`);
 }
 
-const publicText = htmlEntries.map((entry) => entry.html).join('\n');
+const publicTextIncludes = marker => htmlEntries.some(entry => entry.html.includes(marker));
 for (const marker of ['LOCAL ARCHIVE DESK', '/api/bootstrap', 'data-admin-app', 'similar-record-button', 'STRUCTURED DATA ONLY', '/api/admin/contacts']) {
-	check(!publicText.includes(marker), `公开构建混入管理端标记：${marker}。`);
+	check(!publicTextIncludes(marker), `公开构建混入管理端标记：${marker}。`);
 }
 for (const secretMarker of ['LJM_LIKE_HASH_SECRET', 'LJM_LIKE_DATA_FILE', 'X-LJM-Client-IP']) {
-	check(!publicText.includes(secretMarker), `公开构建混入点赞服务私有配置：${secretMarker}。`);
+	check(!publicTextIncludes(secretMarker), `公开构建混入点赞服务私有配置：${secretMarker}。`);
 }
 check(!(await exists(join(distRoot, 'admin'))), '公开构建中不应存在 admin 目录。');
 
@@ -490,9 +487,9 @@ if (contributionPage) {
 	check(pageLoadsScriptMarker(contributionPage, '/api/submissions/config'), '投稿页缺少通道可用性检查。');
 	check(pageLoadsScriptMarker(contributionPage, '/api/submissions/lookup'), '投稿页缺少私密回执查询程序。');
 }
-const publicCode = publicText + scriptEntries.map((entry) => entry.contents).join('\n');
+const publicCodeIncludes = marker => publicTextIncludes(marker) || scriptEntries.some(entry => entry.contents.includes(marker));
 for (const marker of ['/api/admin/submissions', '/api/admin/contacts', '/api/admin/translations', '/api/operations/', 'OPERATION_NEEDS_REVIEW', 'reviewed_by', 'confirmed_fields', 'LJM_SUBMISSION_DATA_DIR', 'key_hash', 'source_submission_id', 'PRIVATE-NOTE-ONLY', 'synthetic@example.invalid', 'synthetic-contact@example.invalid']) {
-	check(!publicCode.includes(marker), `公开构建混入私密投稿信息或管理程序：${marker}。`);
+	check(!publicCodeIncludes(marker), `公开构建混入私密投稿信息或管理程序：${marker}。`);
 }
 for (const privateName of ['submissions', '_contacts', 'drafts', 'history', 'recycle-bin', 'local-admin', 'accounts', 'translations', 'operations']) {
 	check(!distFiles.some((file) => relative(distRoot, file).split(sep).includes(privateName)), `公开构建混入私密目录：${privateName}。`);
@@ -508,7 +505,7 @@ for (const page of [...accountPages, ...englishAccountPages]) {
 	check(page.html.includes('data-ljm-account-page'), `${page.relativePath} 缺少账户页面标记，无法与公开内容区分。`);
 }
 for (const marker of ['ljm_account_session', 'LJM_ACCOUNT_DATA_DIR', 'LJM_ACCOUNT_IP_SALT', '/api/account-admin/']) {
-	check(!publicCode.includes(marker), `公开构建混入账户私密信息：${marker}。`);
+	check(!publicCodeIncludes(marker), `公开构建混入账户私密信息：${marker}。`);
 }
 
 const configuredSiteUrl = process.env.PUBLIC_SITE_URL?.trim();

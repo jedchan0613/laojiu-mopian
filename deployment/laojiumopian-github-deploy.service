@@ -8,6 +8,7 @@ Type=oneshot
 ExecStart=/usr/local/sbin/laojiumopian-github-deploy
 TimeoutStartSec=20min
 UMask=0027
+LimitCORE=0
 
 NoNewPrivileges=true
 PrivateDevices=true
