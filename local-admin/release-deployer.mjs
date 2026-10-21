@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { pruneReleases } from '../shared/release-retention.mjs';
 
 const safeReleaseLabelPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const safeReleaseNamePattern = /^\d{8}-\d{6}-[a-z0-9]+(?:-[a-z0-9]+)*-[a-f0-9]{8}$/;
@@ -118,10 +119,19 @@ export const createReleaseDeployer = ({
 			throw new Error(`新公开版本切换失败，当前网站仍保留原版本：${error.message}`);
 		}
 
+		// 已成功切换后才整理旧构建；整理失败不撤销已经完成的发布。
+		let retention;
+		try {
+			retention = await pruneReleases({ releasesDirectory, liveLink, kind: 'public', protectedDirectories: [previous.resolvedTarget], apply: true });
+		} catch (error) {
+			retention = { warning: error.message };
+			console.warn(`旧公开版本整理未完成：${error.message}`);
+		}
 		return {
 			releaseName,
 			releaseDirectory,
 			previousReleaseName: previous.releaseName,
+			retention,
 		};
 	},
 });
