@@ -242,6 +242,7 @@ install -d -o "$ADMIN_USER" -g "$ADMIN_GROUP" -m 0750 "$staging_directory"
 archive_file="$BUILD_ROOT/github-source-$short_commit-$$.tar"
 run_as_admin git --git-dir="$REPOSITORY_DIR" archive --format=tar --output="$archive_file" \
 	"$candidate_commit" -- deployment local-admin site shared \
+	':(exclude,glob)**/*_冲突文件_*' \
 	':(exclude)local-admin/drafts/**' \
 	':(exclude)local-admin/history/**' \
 	':(exclude)local-admin/recycle-bin/**' \
