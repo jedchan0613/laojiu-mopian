@@ -44,4 +44,6 @@ tool=/srv/laojiumopian-admin/app/current/deployment/prune-releases.mjs
 
 修复图片专用缓存与通用静态规则同时匹配的问题，恢复真实Caddy测试，未删减测试或放宽预期。部署既有压缩脚本后，每次正式构建只压缩 `dist/archive` 内过大的网页发布副本；服务器当前源副本保持原样。压缩效果按本次服务器构建记录核对，不沿用本机旧估算。
 
+同日合并同步修复后的最终缓存选择：发布图片保留`max-age=0, must-revalidate`，撤回尚未正式应用的一小时特例及其排除项，以便每次复用前核验更新/撤下。上述规则重叠排障是历史过程，不表示最终仍启用一小时缓存；其余版本保留、空间和日志治理完整保留。见`docs/sync-recovery-20261021.md`。
+
 安装部署基础设施必须另行实际安装根目录脚本；普通GitHub代码部署不会自动覆盖 `/usr/local/sbin/laojiumopian-github-deploy`。本次安装仅替换这一脚本，不顺带覆盖其他服务定义或正式Caddy配置。系统日志限制使用既有systemd配置，不引入新服务或依赖。
