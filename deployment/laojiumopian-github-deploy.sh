@@ -12,6 +12,8 @@ readonly DEPLOY_DIRECTORY='/srv/laojiumopian-admin/github-deploy'
 readonly DEPLOY_KEY="$DEPLOY_DIRECTORY/id_ed25519"
 readonly KNOWN_HOSTS="$DEPLOY_DIRECTORY/known_hosts"
 readonly DEPLOYED_COMMIT_FILE="$DEPLOY_DIRECTORY/deployed-commit"
+readonly FAILED_ATTEMPT_FILE="$DEPLOY_DIRECTORY/last-failed-attempt"
+readonly FAILURE_RETRY_SECONDS=1800
 readonly APP_ROOT='/srv/laojiumopian-admin/app'
 readonly APP_RELEASES="$APP_ROOT/releases"
 readonly APP_CURRENT="$APP_ROOT/current"
@@ -108,6 +110,11 @@ cleanup() {
 	trap - EXIT
 	if [[ "$status" -ne 0 ]]; then
 		set +e
+		if [[ "${candidate_commit:-}" =~ ^[0-9a-f]{40}$ ]]; then
+			printf '%s %s\n' "$candidate_commit" "$(date +%s)" > "$FAILED_ATTEMPT_FILE.tmp"
+			chmod 0640 "$FAILED_ATTEMPT_FILE.tmp"
+			mv -f -- "$FAILED_ATTEMPT_FILE.tmp" "$FAILED_ATTEMPT_FILE"
+		fi
 		log '部署没有完成，开始恢复原版本。'
 		if [[ "$public_switched" == true && -n "$previous_public_target" ]]; then
 			switch_link "$PUBLIC_LIVE" "$previous_public_target"
@@ -199,6 +206,16 @@ if [[ "$candidate_commit" == "$deployed_commit" ]]; then
 	exit 0
 fi
 
+# 同一坏提交半小时再试一次；新提交立即检查，避免每两分钟重复安装/测试。
+if [[ -f "$FAILED_ATTEMPT_FILE" && "${LJM_DEPLOY_RETRY_NOW:-0}" != 1 ]]; then
+	read -r failed_commit failed_time < "$FAILED_ATTEMPT_FILE" || true
+	if [[ "${failed_commit:-}" == "$candidate_commit" && "${failed_time:-}" =~ ^[0-9]+$ ]] &&
+		(( $(date +%s) - failed_time < FAILURE_RETRY_SECONDS )); then
+		log "同一提交上次失败，等待重试窗口：${candidate_commit:0:12}"
+		exit 0
+	fi
+fi
+
 previous_app_target="$(readlink "$APP_CURRENT")"
 previous_public_target="$(readlink "$PUBLIC_LIVE")"
 previous_app_directory="$(readlink -f "$APP_CURRENT")"
@@ -207,6 +224,13 @@ require_directory "$previous_app_directory/site/public/archive" '当前公开图
 require_directory "$previous_app_directory/site/public/archive-responsive" '当前响应式图片目录'
 require_file "$previous_app_directory/site/src/data/archive.ts" '当前网站档案数据源'
 require_file "$previous_app_directory/site/src/data/generated/image-manifest.json" '当前响应式图片清单'
+
+# 在安装和停服务之前检查峰值空间：新应用、新公开副本和1GiB余量。
+available_bytes="$(df -PB1 "$APP_RELEASES" | awk 'NR == 2 {print $4}')"
+application_bytes="$(du -sxB1 "$previous_app_directory" | awk '{print $1}')"
+public_bytes="$(du -sxB1 "$(readlink -f "$PUBLIC_LIVE")" | awk '{print $1}')"
+required_bytes=$((application_bytes + public_bytes + 1073741824))
+(( available_bytes >= required_bytes )) || fail '磁盘可用空间不足以安全准备新版本，请先运行版本整理；原服务继续运行。'
 
 timestamp="$(TZ=Asia/Shanghai date '+%Y%m%d-%H%M%S')"
 short_commit="${candidate_commit:0:12}"
@@ -379,6 +403,12 @@ printf '%s\n' "$candidate_commit" > "$DEPLOYED_COMMIT_FILE.tmp"
 chown root:root "$DEPLOYED_COMMIT_FILE.tmp"
 chmod 0640 "$DEPLOYED_COMMIT_FILE.tmp"
 mv -f -- "$DEPLOYED_COMMIT_FILE.tmp" "$DEPLOYED_COMMIT_FILE"
+rm -f -- "$FAILED_ATTEMPT_FILE"
+
+# 公开切换和所有健康检查完成后，才清理旧应用；额外保护部署前版本。
+if ! run_as_admin "$NODE" "$release_directory/deployment/prune-releases.mjs" admin --apply "--protect=$previous_app_directory"; then
+	log '旧应用整理未完成，当前发布保持成功；请人工查看整理记录。'
+fi
 
 log "发布成功：GitHub ${candidate_commit:0:12}"
 log "管理程序：$(basename "$release_directory")"
