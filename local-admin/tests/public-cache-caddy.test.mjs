@@ -104,7 +104,8 @@ test('真实Caddy：六语言、条件请求、更新/撤下、哈希资源与�
 			assert.equal((await check(route, revalidateCache)).body, 'synthetic-page-v2');
 		}
 	});
-	await t.test('发布图片一小时缓存、替换/撤下及时核对，哈希图不存在时同样no-store', async () => {
+	await t.test('发布图片每次复用前核验、替换/撤下及时核对，哈希图不存在时同样no-store', async () => {
+		assert.equal(imageCache, revalidateCache, '发布图片不能延迟隐私撤下后的重新核验');
 		for (const route of ['/archive/SYNTHETIC/front.png', '/archive-responsive/SYNTHETIC/front-640.webp']) {
 			const { response } = await check(route, imageCache);
 			await check(route, imageCache, 304, { headers: { 'If-None-Match': response.headers.get('etag') } });

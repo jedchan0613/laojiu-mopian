@@ -4,7 +4,8 @@ import { localeDefinitions } from '../shared/locale-config.mjs';
 
 export const revalidateCache = 'public, max-age=0, must-revalidate';
 export const immutableCache = 'public, max-age=31536000, immutable';
-export const imageCache = 'public, max-age=3600, must-revalidate';
+// 发布图片不是内容版本网址；继续每次复用前核验，不放宽撤下后的缓存期限。
+export const imageCache = revalidateCache;
 
 export async function verifyPublicCache({ baseUrl, reportFile, adminOrigin }) {
 	const results = [];

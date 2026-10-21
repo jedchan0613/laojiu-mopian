@@ -184,3 +184,9 @@ local-admin/operations/
 # 公开仓库不再承担图片分发，避免公开图在 GitHub 形成第二曝光面（2026-10-12 用户授权移出并清洗历史）
 site/public/archive/
 site/public/archive-responsive/
+
+# 跨电脑同步元文件与冲突副本不入代码仓库；源码检查仍会拒绝实际混入的冲突文件。
+*_冲突文件_*
+.baiduyun.uploading.cfg
+.DS_Store
+._*
