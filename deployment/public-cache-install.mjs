@@ -26,21 +26,23 @@ const replace = async (file, bytes, metadata) => {
 };
 
 // 可注入校验/重载/HTTP核验，只为合成目录的失败演练；CLI路径仍固定为现有部署位置。
-export async function installPublicCache({ configFile, snippetsDirectory, sourceDirectory, backupDirectory, validate, reload, verify, apply = false }) {
+export async function installPublicCache({ configFile, snippetsDirectory, sourceDirectory, backupDirectory, validate, reload, verify, apply = false,
+	prepareConfig = preparePublicCacheConfig,
+	snippetSources = [[publicCacheName, 'Caddyfile.public-cache.example'], [errorCacheName, 'Caddyfile.error-cache.example']],
+	label = '缓存',
+}) {
+	if (!snippetSources.length || snippetSources.some(([name, source]) => !/^[a-z][a-z0-9-]+\.caddy$/.test(name) || path.basename(source) !== source) || new Set(snippetSources.map(([name]) => name)).size !== snippetSources.length) throw new Error('托管配置文件名无效。');
 	const before = new Map();
-	for (const file of [configFile, path.join(snippetsDirectory, publicCacheName), path.join(snippetsDirectory, errorCacheName)]) before.set(file, await snapshot(file));
+	for (const file of [configFile, ...snippetSources.map(([name]) => path.join(snippetsDirectory, name))]) before.set(file, await snapshot(file));
 	if (!before.get(configFile)) throw new Error('没有找到原Caddy配置。');
 	await fs.mkdir(backupDirectory, { mode: 0o700 });
 	const staged = path.join(backupDirectory, 'staged');
 	await fs.mkdir(staged, { mode: 0o700 });
-	const rules = new Map([
-		[publicCacheName, await fs.readFile(path.join(sourceDirectory, 'Caddyfile.public-cache.example'))],
-		[errorCacheName, await fs.readFile(path.join(sourceDirectory, 'Caddyfile.error-cache.example'))],
-	]);
+	const rules = new Map(await Promise.all(snippetSources.map(async ([name, source]) => [name, await fs.readFile(path.join(sourceDirectory, source))])));
 	for (const [name, bytes] of rules) await fs.writeFile(path.join(staged, name), bytes, { mode: 0o600, flag: 'wx' });
 	const original = before.get(configFile).bytes.toString('utf8');
 	const candidate = path.join(staged, 'Caddyfile');
-	await fs.writeFile(candidate, preparePublicCacheConfig(original, staged.replaceAll('\\', '/')), { mode: 0o600, flag: 'wx' });
+	await fs.writeFile(candidate, prepareConfig(original, staged.replaceAll('\\', '/')), { mode: 0o600, flag: 'wx' });
 	await validate(candidate);
 	if (!apply) return { applied: false, candidate, backupDirectory };
 	const manifest = [];
@@ -53,12 +55,12 @@ export async function installPublicCache({ configFile, snippetsDirectory, source
 	// 校验期间若有人修改配置，停止而不是覆盖新内容。
 	for (const [file, old] of before) {
 		const current = await snapshot(file);
-		if ((old === null) !== (current === null) || (old && !old.bytes.equals(current.bytes))) throw new Error('配置在检查期间发生变化，请重新核对。');
+		if ((old === null) !== (current === null) || (old && (!old.bytes.equals(current.bytes) || old.mode !== current.mode || old.uid !== current.uid || old.gid !== current.gid))) throw new Error('配置在检查期间发生变化，请重新核对。');
 	}
 	let reloadAttempted = false;
 	try {
 		for (const [name, bytes] of rules) { const target = path.join(snippetsDirectory, name); await replace(target, bytes, before.get(target)); }
-		await replace(configFile, Buffer.from(preparePublicCacheConfig(original, snippetsDirectory.replaceAll('\\', '/'))), before.get(configFile));
+		await replace(configFile, Buffer.from(prepareConfig(original, snippetsDirectory.replaceAll('\\', '/'))), before.get(configFile));
 		await validate(configFile);
 		reloadAttempted = true;
 		await reload();
@@ -72,7 +74,7 @@ export async function installPublicCache({ configFile, snippetsDirectory, source
 			}
 			if (reloadAttempted) { await validate(configFile); await reload(); }
 		} catch (rollbackError) { throw new AggregateError([error, rollbackError], `安装失败且回退未完成，请依据${backupDirectory}人工恢复。`); }
-		throw new Error(`缓存安装未完成，已恢复原配置；备份：${backupDirectory}`, { cause: error });
+		throw new Error(`${label}安装未完成，已恢复原配置；备份：${backupDirectory}`, { cause: error });
 	}
 }
 

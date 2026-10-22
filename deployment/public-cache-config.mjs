@@ -3,7 +3,13 @@ export const publicCacheName = 'laojiumopian-public-cache.caddy';
 export const errorCacheName = 'laojiumopian-error-cache.caddy';
 
 export function preparePublicCacheConfig(source, directory = '/etc/caddy') {
+	return prepareManagedSnippetConfig(source, directory, publicCacheName, errorCacheName);
+}
+
+// 缓存和公开防护使用同一个保守解析器；各自只管理自己命名的import。
+export function prepareManagedSnippetConfig(source, directory, normalName, errorsName) {
 	if (/[\r\n"`]/.test(directory)) throw new Error('缓存规则目录无效。');
+	if (![normalName, errorsName].every(name => /^[a-z][a-z0-9-]+\.caddy$/.test(name)) || normalName === errorsName) throw new Error('托管规则名称无效。');
 	const newline = source.includes('\r\n') ? '\r\n' : '\n';
 	const lines = source.split(/\r?\n/);
 	const stack = [], blocks = [], imports = [];
@@ -15,7 +21,7 @@ export function preparePublicCacheConfig(source, directory = '/etc/caddy') {
 		if (comment >= 0) tokens.splice(comment);
 		if (tokens[0] === 'import') {
 			const name = tokens[1]?.replace(/^"|"$/g, '');
-			if ([publicCacheName, errorCacheName].some(base => name?.split('/').at(-1) === base)) {
+			if ([normalName, errorsName].some(base => name?.split('/').at(-1) === base)) {
 				if (tokens.length !== 2) throw new Error('已有缓存import包含未知参数，停止自动修改。');
 				imports.push({ index, name, owner: stack.at(-1) });
 			}
@@ -44,10 +50,10 @@ export function preparePublicCacheConfig(source, directory = '/etc/caddy') {
 		if (block.start === block.end || !/^\s*[^#]*\{\s*(?:#.*)?$/.test(lines[block.start])) throw new Error('站点或错误块不是独立多行结构，停止自动修改。');
 	}
 	for (const entry of imports) {
-		const isPublic = entry.name.split('/').at(-1) === publicCacheName;
+		const isPublic = entry.name.split('/').at(-1) === normalName;
 		if (isPublic ? entry.owner !== site : !errors.includes(entry.owner)) throw new Error('已有缓存import不在预期站点/错误块内，停止自动修改。');
 	}
 	const remove = new Set(imports.map(entry => entry.index));
-	const insert = new Map([[site.start, `\timport "${directory}/${publicCacheName}"`], ...errors.map(block => [block.start, `${lines[block.start].match(/^\s*/)[0]}\timport "${directory}/${errorCacheName}"`])]);
+	const insert = new Map([[site.start, `\timport "${directory}/${normalName}"`], ...errors.map(block => [block.start, `${lines[block.start].match(/^\s*/)[0]}\timport "${directory}/${errorsName}"`])]);
 	return lines.flatMap((line, index) => remove.has(index) ? [] : insert.has(index) ? [line, insert.get(index)] : [line]).join(newline);
 }

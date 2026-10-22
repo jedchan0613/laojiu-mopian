@@ -1,4 +1,12 @@
 {
+  "Please sign in again.": "再度ログインしてください。",
+  "This action is not permitted. Check your account and try again.": "この操作は許可されていません。アカウントを確認して、もう一度お試しください。",
+  "Too many requests. Please try again later.": "リクエストが多すぎます。しばらくしてから、もう一度お試しください。",
+  "The service is temporarily unavailable. Please try again later.": "サービスは一時的に利用できません。しばらくしてから、もう一度お試しください。",
+  "The request could not be completed. Check the form and try again.": "リクエストを完了できませんでした。入力内容を確認して、もう一度お試しください。",
+  "Loading full-text search. Your keywords are saved. Clear them to continue browsing.": "全文検索を読み込んでいます。キーワードは保持されています。キーワードを消すと閲覧を続けられます。",
+  "Full-text search could not load. Your keywords are saved. Retry, or clear them to continue browsing.": "全文検索を読み込めませんでした。キーワードは保持されています。再試行するか、キーワードを消して閲覧を続けてください。",
+  "Retry full-text search": "全文検索を再試行",
   "Browse by album": "アルバムから探す",
   "Open an album to browse its individual records together.": "アルバムを開くと、収録資料を一件ずつ閲覧できます。",
   "View all albums →": "すべてのアルバムを見る →",

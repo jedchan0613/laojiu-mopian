@@ -12,6 +12,8 @@ readonly DEPLOY_DIRECTORY='/srv/laojiumopian-admin/github-deploy'
 readonly DEPLOY_KEY="$DEPLOY_DIRECTORY/id_ed25519"
 readonly KNOWN_HOSTS="$DEPLOY_DIRECTORY/known_hosts"
 readonly DEPLOYED_COMMIT_FILE="$DEPLOY_DIRECTORY/deployed-commit"
+readonly CHECKED_STATE_FILE="$DEPLOY_DIRECTORY/last-checked.json"
+readonly DEPLOY_PLAN='/usr/local/lib/laojiumopian-github-deploy/deploy-change-plan.mjs'
 readonly FAILED_ATTEMPT_FILE="$DEPLOY_DIRECTORY/last-failed-attempt"
 readonly FAILURE_RETRY_SECONDS=1800
 readonly APP_ROOT='/srv/laojiumopian-admin/app'
@@ -161,6 +163,8 @@ done
 require_file "$NODE" 'Node.js'
 require_file "$NPM" 'npm'
 require_file "$RUNUSER" 'runuser'
+require_file "$DEPLOY_PLAN" '已安装的部署变化判定工具'
+[[ "${LJM_DEPLOY_FORCE_BUILD:-0}" == 0 || "${LJM_DEPLOY_FORCE_BUILD:-0}" == 1 ]] || fail 'LJM_DEPLOY_FORCE_BUILD只能为0或1。'
 require_file "$ENVIRONMENT_FILE" '线上管理配置'
 require_file "$DEPLOY_KEY" 'GitHub 只读部署私钥'
 require_file "$KNOWN_HOSTS" 'GitHub 主机身份清单'
@@ -201,13 +205,27 @@ deployed_commit=''
 if [[ -f "$DEPLOYED_COMMIT_FILE" ]]; then
 	deployed_commit="$(tr -d '\r\n' < "$DEPLOYED_COMMIT_FILE")"
 fi
-if [[ "$candidate_commit" == "$deployed_commit" ]]; then
+if [[ "$candidate_commit" == "$deployed_commit" && "${LJM_DEPLOY_FORCE_BUILD:-0}" != 1 ]]; then
 	log "main 没有新版本：${candidate_commit:0:12}"
 	exit 0
 fi
 
+# 检查记录与实际部署编号分开；纯文档检查不能冒充程序已经部署。
+if [[ "${LJM_DEPLOY_FORCE_BUILD:-0}" != 1 && \
+	"$("$NODE" "$DEPLOY_PLAN" checked "$CHECKED_STATE_FILE" "$candidate_commit" "$deployed_commit")" == yes ]]; then
+	log "main 文档变化已检查，无需构建：${candidate_commit:0:12}；实际部署仍为${deployed_commit:0:12}"
+	exit 0
+fi
+change_mode="$(run_as_admin "$NODE" "$DEPLOY_PLAN" plan "$REPOSITORY_DIR" "$deployed_commit" "$candidate_commit" "${LJM_DEPLOY_FORCE_BUILD:-0}")"
+if [[ "$change_mode" == docs-only ]]; then
+	"$NODE" "$DEPLOY_PLAN" record "$CHECKED_STATE_FILE" "$candidate_commit" "$deployed_commit" no-build
+	log "仅有通过内容检查的文档变化，不安装、不停服务、不切换版本：${candidate_commit:0:12}；实际部署仍为${deployed_commit:0:12}"
+	exit 0
+fi
+[[ "$change_mode" == build ]] || fail '部署变化判定返回未知状态。'
+
 # 同一坏提交半小时再试一次；新提交立即检查，避免每两分钟重复安装/测试。
-if [[ -f "$FAILED_ATTEMPT_FILE" && "${LJM_DEPLOY_RETRY_NOW:-0}" != 1 ]]; then
+if [[ -f "$FAILED_ATTEMPT_FILE" && "${LJM_DEPLOY_RETRY_NOW:-0}" != 1 && "${LJM_DEPLOY_FORCE_BUILD:-0}" != 1 ]]; then
 	read -r failed_commit failed_time < "$FAILED_ATTEMPT_FILE" || true
 	if [[ "${failed_commit:-}" == "$candidate_commit" && "${failed_time:-}" =~ ^[0-9]+$ ]] &&
 		(( $(date +%s) - failed_time < FAILURE_RETRY_SECONDS )); then
@@ -400,6 +418,7 @@ run_as_admin "$NODE" "$release_directory/deployment/publish-built-site.mjs" \
 	"$release_directory/site/dist" "$PUBLIC_RELEASES" "$PUBLIC_LIVE" "github-${candidate_commit:0:8}"
 public_switched=true
 
+"$NODE" "$DEPLOY_PLAN" record "$CHECKED_STATE_FILE" "$candidate_commit" "$candidate_commit" deployed
 printf '%s\n' "$candidate_commit" > "$DEPLOYED_COMMIT_FILE.tmp"
 chown root:root "$DEPLOYED_COMMIT_FILE.tmp"
 chmod 0640 "$DEPLOYED_COMMIT_FILE.tmp"

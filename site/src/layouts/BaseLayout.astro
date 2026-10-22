@@ -4,7 +4,7 @@ import { t, getLocale, localizePath, canonicalPath } from '../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
 import {localeDefinitions} from '../../../shared/locale-config.mjs';
 import { serializeHtmlJson } from '../../../shared/html-json.mjs';
-import {getClientMessages} from '../i18n/client-messages';
+import {getClientMessages,getClientMessageGroups} from '../i18n/client-messages';
 import LanguagePicker from '../components/LanguagePicker.astro';
 import ContactWidget from '../components/ContactWidget.astro';
 import SocialLinks from '../components/SocialLinks.astro';
@@ -24,6 +24,8 @@ interface Props {
 	structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
 	/** 账户页面等私密入口使用；公开内容不设置，保持可以被搜索引擎正常收录。 */
 	robots?: string;
+	/** 缺页不声明可收录的标准地址，语言切换返回对应首页。 */
+	errorPage?: boolean;
 }
 
 const {
@@ -33,6 +35,7 @@ const {
 	pageType = 'website',
 	structuredData,
 	robots,
+	errorPage = false,
 	englishAvailable = true,
  thaiAvailable = true,
  translationAvailability = {},
@@ -47,10 +50,10 @@ const isArchive = pathWithoutLocale.startsWith('/archive') || pathWithoutLocale.
 const isAbout = pathWithoutLocale.startsWith('/about');
 const isContribute = pathWithoutLocale.startsWith('/contribute');
 const isAccount = pathWithoutLocale.startsWith('/login') || pathWithoutLocale.startsWith('/me');
-const chineseUrl = Astro.site ? new URL(localizePath(currentPath, 'zh-CN'), Astro.site) : undefined;
+const chineseUrl = Astro.site && !errorPage ? new URL(localizePath(currentPath, 'zh-CN'), Astro.site) : undefined;
 const thaiUrl = Astro.site ? new URL(localizePath(currentPath, 'th'), Astro.site) : undefined;
 const englishUrl = Astro.site ? new URL(localizePath(currentPath, 'en'), Astro.site) : undefined;
-const canonicalUrl = Astro.site ? new URL(currentPath, Astro.site) : undefined;
+const canonicalUrl = Astro.site && !errorPage ? new URL(currentPath, Astro.site) : undefined;
 const shareImageUrl = image && Astro.site ? new URL(image, Astro.site) : undefined;
 const serializedStructuredData = structuredData
 	? serializeHtmlJson(structuredData)
@@ -78,7 +81,7 @@ const serializedStructuredData = structuredData
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
 		{canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
-		{Astro.site && localeDefinitions.filter(entry=>availability[entry.locale]!==false).map(entry=><link rel="alternate" hreflang={entry.locale} href={new URL(localizePath(currentPath,entry.locale),Astro.site)} />)}
+		{Astro.site && !errorPage && localeDefinitions.filter(entry=>availability[entry.locale]!==false).map(entry=><link rel="alternate" hreflang={entry.locale} href={new URL(localizePath(currentPath,entry.locale),Astro.site)} />)}
  {chineseUrl && <link rel="alternate" hreflang="x-default" href={chineseUrl} />}
 		{canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
 		{shareImageUrl && <meta property="og:image" content={shareImageUrl} />}
@@ -87,7 +90,7 @@ const serializedStructuredData = structuredData
 			<script type="application/ld+json" set:html={serializedStructuredData} />
 		)}
 		<title>{title}</title>
-		<script type="application/json" id="client-interface-messages" set:html={serializeHtmlJson(getClientMessages(locale))} />
+		<script type="application/json" id="client-interface-messages" set:html={serializeHtmlJson(getClientMessages(locale,getClientMessageGroups(pathWithoutLocale)))} />
 	</head>
 	<body>
 		<p id="client-message-error" role="alert" hidden>{({ 'zh-CN':'页面交互没有加载完成，请刷新页面。普通档案链接仍可使用。',en:'Page controls could not load. Reload this page. Ordinary archive links remain available.',th:'โหลดส่วนโต้ตอบไม่สำเร็จ โปรดรีเฟรชหน้า ลิงก์รายการทั่วไปยังใช้ได้',ja:'操作機能を読み込めませんでした。再読み込みしてください。通常の資料リンクは利用できます。',ko:'페이지 기능을 불러오지 못했습니다. 새로고침해 주세요. 일반 자료 링크는 사용할 수 있습니다.','zh-Hant':'頁面互動尚未載入完成，請重新整理。一般檔案連結仍可使用。' })[locale]}</p>
@@ -104,7 +107,7 @@ const serializedStructuredData = structuredData
 						<a href={localizePath("/about/", locale)} aria-current={isAbout ? 'page' : undefined}>{t("关于", locale)}</a>
 						<a href={localizePath("/contribute/", locale)} aria-current={isContribute ? 'page' : undefined}>{t("我要投稿", locale)}</a>
 						<a href={localizePath("/login/", locale)} data-account-nav aria-current={isAccount ? 'page' : undefined}>{t("登录", locale)}</a>
-						<LanguagePicker />
+						<LanguagePicker pathname={errorPage ? '/' : undefined} />
 					</div>
 				</nav>
 			</header>
@@ -132,9 +135,9 @@ const serializedStructuredData = structuredData
 			import {localizePath, type Locale} from '../i18n/routing';
 			for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-language]')) {
 				const language=link.dataset.language as Locale;
-				link.href=localizePath(location.pathname+location.search+location.hash,language);
+				link.href=link.dataset.languageTarget ?? localizePath(location.pathname+location.search+location.hash,language);
 				link.addEventListener('click',()=>{
-					link.href=localizePath(location.pathname+location.search+location.hash,language);
+					link.href=link.dataset.languageTarget ?? localizePath(location.pathname+location.search+location.hash,language);
 					try {localStorage.setItem('ljm-language',language);}catch {}
 				});
 			}

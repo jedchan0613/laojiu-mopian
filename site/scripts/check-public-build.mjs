@@ -46,6 +46,20 @@ const htmlEntries = await Promise.all(htmlFiles.map(async (path) => ({
 	html: await readFile(path, 'utf8'),
 })));
 
+// 缺页会复用于任意不存在网址，不能把构建时的/404/当成标准页面或翻译对应页。
+for (const { prefix, locale } of localeDefinitions) {
+	const filename = prefix ? `${prefix}/404/index.html` : '404.html';
+	const page = htmlEntries.find(entry => entry.relativePath === filename);
+	check(Boolean(page), `缺少${locale}错误页面：${filename}。`);
+	if (!page) continue;
+	check(/<meta\b[^>]*name="robots"[^>]*content="noindex, follow"/.test(page.html), `${filename}必须禁止搜索收录。`);
+	check(!/<link\b[^>]*rel="(?:canonical|alternate)"|<meta\b[^>]*property="og:url"/.test(page.html), `${filename}不应输出标准地址或错误的语言自引用。`);
+	for (const target of localeDefinitions) {
+		const home = pathForLocale('/', target.locale);
+		check(page.html.includes(`data-language-target="${home}"`), `${filename}的${target.locale}语言入口必须返回对应首页。`);
+	}
+}
+
 // 公共页面正文统一使用本地宋体。直接读取字体文件的真实字形范围，避免
 // 子集缺字时浏览器悄悄回退到另一种宋体，造成同一标题内粗细不一致。
 const brandFontFiles = [

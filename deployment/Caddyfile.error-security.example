@@ -1,0 +1,18 @@
+# 错误链不继承正常响应链的header；保留已有语言选择、状态码及no-store缓存规则。
+@ljmErrorSecurity {
+	host laojiumopian.com
+	not path_regexp ljm_error_security_private ^/(?:en/|th/|ja/|ko/|zh-hant/)?(?:api|admin|local-admin)(?:/|$)
+}
+header @ljmErrorSecurity {
+	>X-Content-Type-Options "nosniff"
+	>X-Frame-Options "DENY"
+	>Referrer-Policy "strict-origin-when-cross-origin"
+	>Content-Security-Policy "base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+	>X-Robots-Tag "noindex"
+}
+@ljmErrorHsts {
+	host laojiumopian.com
+	protocol https
+	not path_regexp ljm_error_hsts_private ^/(?:en/|th/|ja/|ko/|zh-hant/)?(?:api|admin|local-admin)(?:/|$)
+}
+header @ljmErrorHsts >Strict-Transport-Security "max-age=300"

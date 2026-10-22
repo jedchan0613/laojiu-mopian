@@ -1,6 +1,8 @@
 ---
 import {getLocale,localizePath,languageNames,locales,t} from '../i18n/ui';
 const locale=getLocale(Astro.url.pathname);
+interface Props { pathname?: string; }
+const {pathname} = Astro.props;
 ---
 <details class="language-picker" data-language-picker>
   <summary aria-label={t('选择语言',locale)}>
@@ -10,7 +12,7 @@ const locale=getLocale(Astro.url.pathname);
   </summary>
   <div class="language-options">
     <p>{t('选择语言',locale)}</p>
-    {locales.map(language=><a href={localizePath(Astro.url.pathname,language)} lang={language} hreflang={language} data-language={language} aria-current={language===locale?'true':undefined}><span>{languageNames[language]}</span><span class="language-check" aria-hidden="true">{language===locale?'✓':''}</span></a>)}
+    {locales.map(language=><a href={localizePath(pathname ?? Astro.url.pathname,language)} lang={language} hreflang={language} data-language={language} data-language-target={pathname ? localizePath(pathname,language) : undefined} aria-current={language===locale?'true':undefined}><span>{languageNames[language]}</span><span class="language-check" aria-hidden="true">{language===locale?'✓':''}</span></a>)}
   </div>
 </details>
 <script>

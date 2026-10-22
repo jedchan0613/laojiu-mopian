@@ -260,6 +260,9 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
       >
         {t("共", locale)} {publishedViews.length} {t("件档案", locale)}
       </p>
+      <button class="ui-action ui-action--secondary" id="archive-search-retry" type="button" hidden>
+        {t('重试全文搜索', locale)}
+      </button>
 
       <div class="archive-empty-state" id="archive-empty-state" hidden>
         <h2 id="archive-empty-title">{t("没有找到符合条件的档案", locale)}</h2>
@@ -401,6 +404,7 @@ import '../../scripts/archive-likes';
   const searchSuggestions = document.querySelector<HTMLElement>('#archive-search-suggestions');
   const archiveList = document.querySelector<HTMLElement>('#archive-list');
   const resultsSummary = document.querySelector<HTMLElement>('#archive-results-summary');
+  const retrySearchButton = document.querySelector<HTMLButtonElement>('#archive-search-retry');
   const pagination = document.querySelector<HTMLElement>('#archive-pagination');
   const pageSummary = document.querySelector<HTMLElement>('#archive-page-summary');
   const previousPageButton = document.querySelector<HTMLButtonElement>('#archive-page-previous');
@@ -448,24 +452,44 @@ import '../../scripts/archive-likes';
     if (likesOption) likesOption.disabled = !likesAvailable;
   };
 
-  // 构建时写入页面的搜索索引：永久编号 → 分字段搜索文字。
+  // 分类、排序和分页直接使用页面轻量数据；只有关键词搜索才需要全文索引。
   const searchFieldsByItemId = new Map<string, ArchiveSearchFields>();
-  let searchReady=false;
-  const filterControls=Array.from(document.querySelectorAll<HTMLInputElement|HTMLSelectElement>('.archive-controls input, .archive-controls select'));
-  filterControls.forEach(control=>{control.disabled=true;});
-  const searchReadyPromise=(async()=>{
-    const indexElement = document.querySelector<HTMLElement>('#archive-search-index');
-    const {url}=JSON.parse(indexElement?.textContent??'{}');
-    if(typeof url!=='string'||!/^\/archive-search\/[a-f0-9]{24}\.json$/.test(url))throw new Error('Invalid search index');
-    const response=await fetch(url,{signal:AbortSignal.timeout(15000)});if(!response.ok)throw new Error('Search index unavailable');
-    const entries=await response.json() as Array<{ id: string; fields: ArchiveSearchFields }>;
-    if(!Array.isArray(entries)||entries.length!==archiveEntries.length)throw new Error('Incomplete search index');
-    for (const entry of entries) {
-      if (entry?.id && entry.fields) searchFieldsByItemId.set(entry.id, entry.fields);
-    }
-    if(searchFieldsByItemId.size!==entriesById.size||[...entriesById.keys()].some(id=>!searchFieldsByItemId.has(id)))throw new Error('Search index mismatch');
-    searchReady=true;filterControls.forEach(control=>{control.disabled=false;});
-  })();
+  let searchState: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
+  let searchLoadPromise: Promise<void> | undefined;
+  const ensureSearchIndex = () => {
+    if (searchState === 'ready' || searchLoadPromise) return searchLoadPromise;
+    searchState = 'loading';
+    updateArchiveResults();
+    searchLoadPromise = Promise.resolve().then(async () => {
+      try {
+        const indexElement = document.querySelector<HTMLElement>('#archive-search-index');
+        const { url } = JSON.parse(indexElement?.textContent ?? '{}');
+        if (typeof url !== 'string' || !/^\/archive-search\/[a-f0-9]{24}\.json$/.test(url)) throw new Error('Invalid search index');
+        const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) throw new Error('Search index unavailable');
+        const entries = await response.json() as Array<{ id: string; fields: ArchiveSearchFields }>;
+        if (!Array.isArray(entries) || entries.length !== archiveEntries.length) throw new Error('Incomplete search index');
+        const validatedFields = new Map<string, ArchiveSearchFields>();
+        const fieldNames = Object.keys(SEARCH_FIELD_LABELS) as Array<keyof ArchiveSearchFields>;
+        for (const entry of entries) {
+          if (!entry?.id || !entriesById.has(entry.id) || !entry.fields
+            || !fieldNames.every((field) => typeof entry.fields[field] === 'string')) throw new Error('Invalid search fields');
+          validatedFields.set(entry.id, entry.fields);
+        }
+        if (validatedFields.size !== entriesById.size) throw new Error('Search index mismatch');
+        validatedFields.forEach((fields, id) => searchFieldsByItemId.set(id, fields));
+        searchState = 'ready';
+      } catch {
+        searchState = 'error';
+      } finally {
+        searchLoadPromise = undefined;
+        updateArchiveResults();
+        updateFiltersInAddress();
+        restoreBrowsePosition();
+      }
+    });
+    return searchLoadPromise;
+  };
 
   const splitDataValues = (value: string | undefined) => (value ?? '').split('|').filter(Boolean);
 
@@ -716,7 +740,6 @@ import '../../scripts/archive-likes';
   };
 
   const updateArchiveResults = () => {
-    if(!searchReady)return;
     if (!searchInput || !categorySelect || !sortSelect || !decadeSelect || !placeSelect || !tagSelect || !resultsSummary) return;
     const terms = searchTermsFrom(searchInput.value);
     syncRelevanceSort(terms.length > 0);
@@ -724,6 +747,27 @@ import '../../scripts/archive-likes';
     const selectedDecade = decadeSelect.value;
     const selectedPlace = placeSelect.value;
     const selectedTag = tagSelect.value;
+    const advancedFilterCount = [selectedDecade, selectedPlace, selectedTag].filter(Boolean).length;
+    const hasActiveFilters = terms.length > 0 || Boolean(selectedCategory || selectedDecade || selectedPlace || selectedTag);
+    if (moreFiltersSummary) moreFiltersSummary.textContent = advancedFilterCount ? ct("已选 {0} 项", {0: (advancedFilterCount)}) : ct("年代、地点、标签");
+    if (archiveActions) archiveActions.hidden = !hasActiveFilters;
+    renderActiveFilterChips();
+    const awaitingSearch = terms.length > 0 && searchState !== 'ready';
+    if (archiveList) {
+      archiveList.hidden = awaitingSearch;
+      archiveList.setAttribute('aria-busy', String(awaitingSearch && searchState === 'loading'));
+    }
+    if (retrySearchButton) retrySearchButton.hidden = !awaitingSearch || searchState !== 'error';
+    if (awaitingSearch) {
+      // 未完成搜索不能当作零命中；保留关键词、其他筛选和页码，直到完整索引可用。
+      resultsSummary.textContent = searchState === 'error'
+        ? ct('全文搜索暂时无法加载，关键词已保留。请重试，或清除关键词后继续浏览。')
+        : ct('正在加载全文搜索，关键词已保留。可以清除关键词后继续浏览。');
+      if (emptyState) emptyState.hidden = true;
+      if (pagination) pagination.hidden = true;
+      if (searchAssist) searchAssist.hidden = true;
+      return;
+    }
     const scoreMap = new Map<HTMLElement, ArchiveSearchMatch>();
     const initialMatches = archiveEntries.filter((entry) => {
       const fields = searchFieldsByItemId.get(entry.dataset.archiveId ?? '');
@@ -751,7 +795,6 @@ import '../../scripts/archive-likes';
     })), viewMode);
     archiveEntries.forEach((entry) => { entry.hidden = true; });
     albumCards.forEach((entry) => { entry.hidden = true; });
-    const hasActiveFilters = terms.length > 0 || Boolean(selectedCategory || selectedDecade || selectedPlace || selectedTag);
     const displayEntries: HTMLElement[] = [];
     for (const group of displayGroups) {
       const entry = group.kind === 'album' ? albumCards.get(group.key) : entriesById.get(group.key);
@@ -785,10 +828,6 @@ import '../../scripts/archive-likes';
     renderSearchHighlights(terms);
     renderMatchReasons(scoreMap, terms.length > 0);
     renderSearchSuggestions(matchingEntries, terms);
-    const advancedFilterCount = [selectedDecade, selectedPlace, selectedTag].filter(Boolean).length;
-    if (moreFiltersSummary) moreFiltersSummary.textContent = advancedFilterCount ? ct("已选 {0} 项", {0: (advancedFilterCount)}) : ct("年代、地点、标签");
-    if (archiveActions) archiveActions.hidden = !hasActiveFilters;
-    renderActiveFilterChips();
     if (emptyState) emptyState.hidden = matchingEntries.length !== 0;
     if (!matchingEntries.length) {
       const hasOnlyCategoryFilter = Boolean(selectedCategory) && !terms.length && !selectedDecade && !selectedPlace && !selectedTag;
@@ -826,7 +865,12 @@ import '../../scripts/archive-likes';
     saveBrowseState();
   };
 
-  searchInput?.addEventListener('input', applyFilterChange);
+  searchInput?.addEventListener('focus', () => { void ensureSearchIndex(); });
+  searchInput?.addEventListener('input', () => {
+    if (searchTermsFrom(searchInput.value).length) void ensureSearchIndex();
+    applyFilterChange();
+  });
+  retrySearchButton?.addEventListener('click', () => { void ensureSearchIndex(); });
   for (const link of viewModeLinks) link.addEventListener('click', (event) => {
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
     event.preventDefault();
@@ -912,6 +956,7 @@ import '../../scripts/archive-likes';
   selectRequestedValue(placeSelect, requestedPlace);
   selectRequestedValue(tagSelect, requestedTag);
   selectRequestedValue(sortSelect, requestedSort);
+  if (requestedSort && sortSelect?.value === requestedSort) userChosenSort = true;
   if (Number.isInteger(requestedPage) && requestedPage > 0) currentPage = requestedPage;
   if (categorySelect && requestedCategory && hasRequestedCategory) categorySelect.value = requestedCategory;
   else if (categorySelect && requestedType) {
@@ -920,7 +965,7 @@ import '../../scripts/archive-likes';
   }
   if (moreFilters && [decadeSelect?.value, placeSelect?.value, tagSelect?.value].some(Boolean)) moreFilters.open = true;
 
-  searchReadyPromise.then(()=>{
+  if (searchInput && searchTermsFrom(searchInput.value).length) void ensureSearchIndex();
   updateArchiveResults();
   updateFiltersInAddress();
   syncLikesSortOption();
@@ -933,19 +978,24 @@ import '../../scripts/archive-likes';
     saveBrowseState(targetId, albumSlug);
   });
 
-  try {
-    const storedState = JSON.parse(window.sessionStorage.getItem(browseStateKey) ?? 'null');
-    if (storedState?.restorePending === true && storedState.href === currentBrowseHref() && Number.isFinite(storedState.scrollY)) {
-      window.requestAnimationFrame(() => window.scrollTo({ top: storedState.scrollY, behavior: 'auto' }));
-      window.sessionStorage.setItem(browseStateKey, JSON.stringify({ ...storedState, restorePending: false }));
+  function restoreBrowsePosition() {
+    if (searchInput && searchTermsFrom(searchInput.value).length && searchState !== 'ready') return;
+    try {
+      const storedState = JSON.parse(window.sessionStorage.getItem(browseStateKey) ?? 'null');
+      if (storedState?.restorePending === true && storedState.href === currentBrowseHref() && Number.isFinite(storedState.scrollY)) {
+        window.requestAnimationFrame(() => window.scrollTo({ top: storedState.scrollY, behavior: 'auto' }));
+        window.sessionStorage.setItem(browseStateKey, JSON.stringify({ ...storedState, restorePending: false }));
+      }
+    } catch {
+      // 无法读取会话状态时不影响筛选本身。
     }
-  } catch {
-    // 无法读取会话状态时不影响筛选本身。
   }
-  }).catch(()=>{if(resultsSummary)resultsSummary.textContent=ct('暂时无法完成操作，请稍后再试。');const notice=document.getElementById('client-message-error');if(notice)notice.hidden=false;});
+  restoreBrowsePosition();
 </script>
 
 <style>
+  .archive-list[hidden],
+  #archive-search-retry[hidden] { display: none; }
   .archive-entry--compact {padding:1rem;min-height:4rem;overflow-wrap:anywhere;}
   .archive-view-modes { display:flex; flex-wrap:wrap; gap:0.65rem; margin:0 0 0.8rem; }
   .archive-view-modes a { padding:0.5rem 0.85rem; border:1px solid var(--site-border-soft); color:var(--site-muted); text-decoration:none; font:0.8rem/1.6 var(--site-ui-font); }

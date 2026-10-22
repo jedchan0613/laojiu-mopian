@@ -1,5 +1,13 @@
 // Fixed interface and catalogue labels. Archive prose and visitor input are separate.
 export const thaiMessages = {
+  "Please sign in again.": "โปรดเข้าสู่ระบบอีกครั้ง",
+  "This action is not permitted. Check your account and try again.": "ไม่อนุญาตให้ดำเนินการนี้ โปรดตรวจสอบบัญชีแล้วลองอีกครั้ง",
+  "Too many requests. Please try again later.": "มีคำขอมากเกินไป โปรดลองอีกครั้งในภายหลัง",
+  "The service is temporarily unavailable. Please try again later.": "บริการไม่พร้อมใช้งานชั่วคราว โปรดลองอีกครั้งในภายหลัง",
+  "The request could not be completed. Check the form and try again.": "ดำเนินการตามคำขอไม่สำเร็จ โปรดตรวจสอบแบบฟอร์มแล้วลองอีกครั้ง",
+  "Loading full-text search. Your keywords are saved. Clear them to continue browsing.": "กำลังโหลดการค้นหาข้อความทั้งหมด คำค้นของคุณยังอยู่ ล้างคำค้นเพื่อเลือกชมต่อได้",
+  "Full-text search could not load. Your keywords are saved. Retry, or clear them to continue browsing.": "ไม่สามารถโหลดการค้นหาข้อความทั้งหมดได้ คำค้นของคุณยังอยู่ ลองอีกครั้งหรือล้างคำค้นเพื่อเลือกชมต่อ",
+  "Retry full-text search": "ลองค้นหาข้อความทั้งหมดอีกครั้ง",
   "Browse by album": "เลือกชมตามอัลบั้ม",
   "Open an album to browse its individual records together.": "เปิดอัลบั้มเพื่อชมรายการแต่ละชิ้นที่รวบรวมไว้ด้วยกัน",
   "View all albums →": "ดูอัลบั้มทั้งหมด →",

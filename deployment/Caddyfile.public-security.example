@@ -1,0 +1,26 @@
+# 仅正式域名；不改API和管理入口已有的应用防护，也不影响共享测试域名。
+# 现有页面包含内联脚本和样式。本批CSP只约束base、对象和嵌入，不声称已阻止脚本注入。
+@ljmPublicSecurity {
+	host laojiumopian.com
+	not path_regexp ljm_security_private ^/(?:en/|th/|ja/|ko/|zh-hant/)?(?:api|admin|local-admin)(?:/|$)
+}
+header @ljmPublicSecurity {
+	>X-Content-Type-Options "nosniff"
+	>X-Frame-Options "DENY"
+	>Referrer-Policy "strict-origin-when-cross-origin"
+	>Content-Security-Policy "base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+}
+@ljmPublicHsts {
+	host laojiumopian.com
+	protocol https
+	not path_regexp ljm_hsts_private ^/(?:en/|th/|ja/|ko/|zh-hant/)?(?:api|admin|local-admin)(?:/|$)
+}
+# 初始仅五分钟，不扩展子域、不申请preload；回退配置不会立即清除访客已记住的期限。
+header @ljmPublicHsts >Strict-Transport-Security "max-age=300"
+
+# 直接访问生成的缺页文件也进入既有错误链，保持真正404及no-store。
+@ljmExplicitNotFound {
+	host laojiumopian.com
+	path /404 /404/ /404.html /404/index.html /en/404 /en/404/ /en/404/index.html /th/404 /th/404/ /th/404/index.html /ja/404 /ja/404/ /ja/404/index.html /ko/404 /ko/404/ /ko/404/index.html /zh-hant/404 /zh-hant/404/ /zh-hant/404/index.html
+}
+error @ljmExplicitNotFound 404

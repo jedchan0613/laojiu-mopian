@@ -3,6 +3,14 @@ import {fixedText} from '../../../shared/fixed-text.mjs';
 // Only fixed interface messages are translated. Values supplied by visitors or
 // curators remain unchanged when inserted into a translated message.
 const dictionary: Record<string, string> = {
+"请重新登录。": "Please sign in again.",
+"不允许此操作，请检查账号后重试。": "This action is not permitted. Check your account and try again.",
+"请求过于频繁，请稍后再试。": "Too many requests. Please try again later.",
+"服务暂时不可用，请稍后再试。": "The service is temporarily unavailable. Please try again later.",
+"请求未能完成，请检查表单后重试。": "The request could not be completed. Check the form and try again.",
+"正在加载全文搜索，关键词已保留。可以清除关键词后继续浏览。": "Loading full-text search. Your keywords are saved. Clear them to continue browsing.",
+"全文搜索暂时无法加载，关键词已保留。请重试，或清除关键词后继续浏览。": "Full-text search could not load. Your keywords are saved. Retry, or clear them to continue browsing.",
+"重试全文搜索": "Retry full-text search",
 "继续查看档案：{0}": "Continue viewing: {0}",
 "继续查看 →": "Continue viewing →",
 "{0}年代": "{0}s",

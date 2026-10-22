@@ -16,6 +16,8 @@ const randomRecordIds = archiveItems
 <BaseLayout
   title={t("页面暂时不可访问｜老旧默片", locale)}
   description={t("当前页面不存在、地址已经改变，或相关档案暂时不对外开放。", locale)}
+  robots="noindex, follow"
+  errorPage={true}
 >
   <section class="not-found" aria-labelledby="not-found-title">
     <p class="not-found-mark">{t("缺页", locale)}</p>
