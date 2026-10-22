@@ -28,7 +28,13 @@ async function fixture(t) {
  for (const prefix of ['/srv/laojiumopian-admin', '/usr/local', '/etc/systemd/system', '/run/lock']) installer = installer.replaceAll(prefix, root + prefix);
  await fs.writeFile(path.join(scripts, 'install.sh'), installer);
  const targetNames = ['usr/local/lib/laojiumopian-github-deploy/deploy-change-plan.mjs', 'usr/local/sbin/laojiumopian-github-deploy', 'etc/systemd/system/laojiumopian-github-deploy.service', 'etc/systemd/system/laojiumopian-github-deploy.timer', 'etc/systemd/system/laojiumopian-admin.service'];
- for (const name of targetNames.slice(1)) { const filename = path.join(root, name); await fs.mkdir(path.dirname(filename), { recursive: true }); await fs.writeFile(filename, `original:${name}\n`, { mode: 0o640 }); }
+ for (const name of targetNames.slice(1)) {
+  const filename = path.join(root, name); await fs.mkdir(path.dirname(filename), { recursive: true });
+  await fs.writeFile(filename, `original:${name}\n`, { mode: 0o640 });
+  // 服务器预演可能使用umask 077；明确建立0640基线，随后仍严格检查恢复后的权限。
+  await fs.chmod(filename, 0o640);
+  assert.equal((await fs.stat(filename)).mode & 0o777, 0o640);
+ }
  await fs.mkdir(path.join(root, 'srv/laojiumopian-admin/build-work'), { recursive: true }); await fs.mkdir(path.join(root, 'run/lock'), { recursive: true });
  const run = (args = [], fail = '') => execute('bash', [path.join(scripts, 'install.sh'), ...args], { env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, LJM_INSTALL_TEST_FAIL: fail } });
  const assertRestored = async () => {

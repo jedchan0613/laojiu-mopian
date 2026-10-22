@@ -23,4 +23,8 @@ header @ljmPublicHsts >Strict-Transport-Security "max-age=300"
 	host laojiumopian.com
 	path /404 /404/ /404.html /404/index.html /en/404 /en/404/ /en/404/index.html /th/404 /th/404/ /th/404/index.html /ja/404 /ja/404/ /ja/404/index.html /ko/404 /ko/404/ /ko/404/index.html /zh-hant/404 /zh-hant/404/ /zh-hant/404/index.html
 }
-error @ljmExplicitNotFound 404
+# 与现有静态catch-all同属handle组，具名匹配会在无匹配的文件服务之前执行。
+# 顶层error的默认指令顺序晚于handle，不能用顶层error拦截已存在的404文件。
+handle @ljmExplicitNotFound {
+	error 404
+}
