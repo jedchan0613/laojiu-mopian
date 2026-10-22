@@ -6,6 +6,7 @@ import { fontace } from 'fontace';
 import {createHash} from 'node:crypto';
 import { pointsInRanges, readCompleteFontCoverage } from './complete-font-coverage.mjs';
 import { collectVisibleHan } from '../../shared/public-build-text.mjs';
+import { checkLocalizedPageSeo } from './public-build-seo.mjs';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
@@ -444,15 +445,8 @@ for (const page of detailPages) {
 
 for (const page of htmlEntries) {
 	const locale=localeDefinitions.find(entry=>entry.prefix&&page.relativePath.startsWith(entry.prefix+'/'))?.locale??'zh-CN';
- const isEnglish=locale!=='zh-CN';
 	check(page.html.includes(`<html lang="${locale}"`), `${page.relativePath} 页面语言设置不正确。`);
-	if (isEnglish && process.env.PUBLIC_SITE_URL?.trim()) {
-  const head = page.html.split('</head>')[0];
-		const pendingArchive = /^(?:en|th|ja|ko|zh-hant)\/(?:archive\/LJM-|albums\/)/.test(page.relativePath) && /name="robots" content="noindex/.test(page.html);
-		check(head.includes('hreflang="zh-CN"') && head.includes('hreflang="x-default"'), `${page.relativePath} 缺少对应中文页面标记。`);
-		check(pendingArchive ? !head.includes(`hreflang="${locale}"`) : head.includes(`hreflang="${locale}"`), `${page.relativePath} 英文页面关联与译文审核状态不一致。`);
-		if (pendingArchive) check(page.html.includes('class="translation-notice"'), `${page.relativePath} 缺少英文译文待复核提示。`);
-	}
+	checkLocalizedPageSeo(page, locale, check);
 	check(page.html.includes('<meta name="viewport"'), `${page.relativePath} 缺少手机端视口设置。`);
 	check(page.html.includes('data-contact-widget'), `${page.relativePath} 缺少联系挂件。`);
 	check(page.html.includes('data-contact-launcher'), `${page.relativePath} 缺少联系挂件入口。`);
