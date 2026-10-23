@@ -141,11 +141,14 @@ const loadStandards = async () => {
 	const standards = await fetchJson('/api/admin-standards');
 	const dictionaryByField = new Map();
 	for (const entry of standards.codeDictionary?.entries ?? []) {
-		if (!entry.enabled || !entry.field) continue;
-		if (!dictionaryByField.has(entry.field)) dictionaryByField.set(entry.field, { codes: new Set(), multi: false });
-		const slot = dictionaryByField.get(entry.field);
-		slot.codes.add(entry.code);
-		if ((entry.input_mode ?? '').includes('多')) slot.multi = true;
+		if (!entry.enabled) continue;
+		// 专属维度的 field 可能是“07_证件维度/ID21”，实际字段名由 dictionary_key 给出。
+		for (const field of new Set([entry.dictionary_key, entry.field].filter(Boolean))) {
+			if (!dictionaryByField.has(field)) dictionaryByField.set(field, { codes: new Set(), multi: false });
+			const slot = dictionaryByField.get(field);
+			slot.codes.add(entry.code);
+			if ((entry.input_mode ?? '').includes('多')) slot.multi = true;
+		}
 	}
 	const commonFieldByCode = new Map((standards.commonFields?.fields ?? []).map((field) => [field.field_code, field]));
 	for (const field of standards.commonFields?.fields ?? []) {
