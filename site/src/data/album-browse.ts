@@ -9,6 +9,7 @@ export const createAlbumBrowseViews = (items: ArchiveItem[], locale: Locale) =>
     const albumView = group.albums[0] ? createArchiveRecordView(group.albums[0], locale) : undefined;
     const memberViews = group.members.map((item) => createArchiveRecordView(item, locale));
     const photoViews = memberViews.filter((view) => view.objectType === 'PHO');
+    const albumViews = memberViews.filter((view) => view.objectType === 'ALB');
     const curated = curatedAlbumForId(group.albumId);
     const isLetterCollection = group.albumId === curatedLetterAlbum.id;
     const coverView = albumView?.images[0] ? albumView : memberViews.find((view) => view.images[0]);
@@ -25,6 +26,8 @@ export const createAlbumBrowseViews = (items: ArchiveItem[], locale: Locale) =>
       photoCount: photoViews.length,
       letterCount: group.letters.length,
       imageCount: photoViews.reduce((count, view) => count + view.images.length, 0),
+      albumCount: albumViews.length,
+      albumImageCount: albumViews.reduce((count, view) => count + view.images.length, 0),
       dateSummary: albumDateSummary(group.members),
       hasAlbumRecord: Boolean(albumView),
     };

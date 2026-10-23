@@ -43,6 +43,14 @@ const letterEntries = isLetterCollection ? members
     (left.item.core.date_start || left.item.core.date_display || '').localeCompare(right.item.core.date_start || right.item.core.date_display || '') ||
     left.item.core.item_id.localeCompare(right.item.core.item_id)) : [];
 const entries = isLetterCollection ? letterEntries : photoEntries;
+const albumEntries = members.filter((item) => item.core.object_type === 'ALB')
+  .map((item) => ({ item, view: createArchiveRecordView(item, locale) }));
+const albumPageEntries = !isLetterCollection && photoEntries.length === 0
+  ? albumEntries.flatMap((entry) => entry.view.images.map((path, index) => ({
+    ...entry, imageIndex: index + 1, description: entry.view.imageDescriptions[index],
+    image: getResponsiveImage(path),
+  }))) : [];
+const hasWholeAlbumImages = albumPageEntries.length > 0;
 const galleryEntries = entries.map((entry) => ({
   ...entry,
   cover: entry.view.images[0] ? getResponsiveImage(entry.view.images[0]) : undefined,
@@ -55,7 +63,9 @@ const yearRange = dateSummary.range;
 const photoCount = photoEntries.length;
 const imageCount = photoEntries.reduce((count, entry) => count + entry.view.images.length, 0);
 const letterImageCount = letterEntries.reduce((count, entry) => count + entry.view.images.length, 0);
-const albumSummary = albumLead || t("已公开 {0} 件照片档案，共 {1} 幅附图。", locale, { 0: photoCount, 1: imageCount });
+const albumSummary = albumLead || (hasWholeAlbumImages
+  ? t("{0} 件相册档案 · {1} 幅整册影像", locale, { 0: albumEntries.length, 1: albumPageEntries.length })
+  : t("已公开 {0} 件照片档案，共 {1} 幅附图。", locale, { 0: photoCount, 1: imageCount }));
 const translationAvailable=(language:string)=>albumTranslationAvailable(language,{curated:Boolean(curatedAlbum),memberStates:members.map(item=>getArchiveTranslation(item,language).state)});
 const pendingTranslation = !translationAvailable(locale);
 const albumUrl = Astro.site ? new URL(localizePath(albumHref(albumId), locale), Astro.site) : undefined;
@@ -66,7 +76,7 @@ const albumStructuredData = {
   description: albumSummary,
   inLanguage: locale,
   url: albumUrl?.href,
-  hasPart: entries.map((entry) => ({
+  hasPart: (hasWholeAlbumImages ? albumEntries : entries).map((entry) => ({
     '@type': 'CreativeWork',
     name: entry.view.title,
     identifier: entry.view.id,
@@ -95,7 +105,7 @@ const breadcrumbStructuredData = {
   thaiAvailable={translationAvailable('th')}
   robots={locale !== 'zh-CN' && pendingTranslation ? 'noindex,follow' : undefined}
 >
-  <article class="album-page" data-album-id={albumId} data-album-photo-count={photoCount} data-album-letter-count={letterEntries.length}>
+  <article class="album-page" data-album-id={albumId} data-album-photo-count={photoCount} data-album-letter-count={letterEntries.length} data-album-page-count={albumPageEntries.length}>
     <div class="record-top">
       <nav class="record-breadcrumb" aria-label={t("面包屑", locale)}>
         <a href={localizePath("/", locale)} class="breadcrumb-link">{t("首页", locale)}</a>
@@ -112,7 +122,10 @@ const breadcrumbStructuredData = {
       <p class="section-mark icon-heading"><span>{isLetterCollection ? t("信件选览", locale) : t("相册", locale)}</span></p>
       <h1>{albumTitle}</h1>
       <p class="album-meta">
-        <span>{isLetterCollection ? t("{0} 件信件档案 · {1} 幅附图", locale, { 0: letterEntries.length, 1: letterImageCount }) : t("{0} 件照片档案 · {1} 幅附图", locale, { 0: photoCount, 1: imageCount })}</span>
+        <span>{isLetterCollection ? t("{0} 件信件档案 · {1} 幅附图", locale, { 0: letterEntries.length, 1: letterImageCount }) : hasWholeAlbumImages
+          ? t("{0} 件相册档案 · {1} 幅整册影像", locale, { 0: albumEntries.length, 1: albumPageEntries.length })
+          : t("{0} 件照片档案 · {1} 幅附图", locale, { 0: photoCount, 1: imageCount })}</span>
+        {hasWholeAlbumImages && albumView?.dateDisplay && <span>{t("相册档案年代：{0}", locale, { 0: albumView.dateDisplay })}</span>}
         {!isLetterCollection && yearRange && <span>{dateSummary.uncertainPhotoCount > 0
           ? t("照片年代线索：{0}（含推测）", locale, { 0: yearRange })
           : t("已知照片年代：{0}", locale, { 0: yearRange })}</span>}
@@ -122,6 +135,7 @@ const breadcrumbStructuredData = {
       {!albumView && !isLetterCollection && <p class="album-order-note">{t("相册总档案尚未公开，以下为已公开照片。", locale)}</p>}
       <div class="album-actions">
         {entries.length > 0 && <a class="ui-text-link" href="#album-photos-heading">{isLetterCollection ? t("浏览本辑信件 ↓", locale) : t("浏览本册照片 ↓", locale)}</a>}
+        {hasWholeAlbumImages && <a class="ui-text-link" href="#album-photos-heading">{t("浏览整册影像 ↓", locale)}</a>}
         {albumView && <a class="ui-text-link" href={localizePath(`/archive/${albumView.id}/`, locale)}>{t("查看相册总档案 →", locale)}</a>}
       </div>
       </div>
@@ -148,11 +162,27 @@ const breadcrumbStructuredData = {
 
     <section class="album-photos" aria-labelledby="album-photos-heading">
       <div class="album-section-heading">
-        <h2 id="album-photos-heading">{isLetterCollection ? t("本辑信件", locale) : t("同册照片", locale)}</h2>
-        <p>{isLetterCollection ? t("按档案记载的写信年代排列；不确定的日期以单件记录为准。", locale) : t("已标注位置的照片按原始页序排列。", locale)}</p>
+        <h2 id="album-photos-heading">{isLetterCollection ? t("本辑信件", locale) : hasWholeAlbumImages ? t("整册影像", locale) : t("同册照片", locale)}</h2>
+        <p>{isLetterCollection ? t("按档案记载的写信年代排列；不确定的日期以单件记录为准。", locale) : hasWholeAlbumImages
+          ? t("封面、内页和贴照页按档案附件顺序展示；附图不另计为档案。", locale)
+          : t("已标注位置的照片按原始页序排列。", locale)}</p>
       </div>
-      {!isLetterCollection && <p class="album-order-note">{t("未标注或无法确定页序的照片列在后面；数量仅包含已公开照片。", locale)}</p>}
+      {!isLetterCollection && !hasWholeAlbumImages && <p class="album-order-note">{t("未标注或无法确定页序的照片列在后面；数量仅包含已公开照片。", locale)}</p>}
       <ol class="album-photo-grid">
+        {albumPageEntries.map((entry, index) => (
+          <li data-album-page-owner={entry.view.id} data-album-page-index={entry.imageIndex}>
+            <a class="album-photo-card" href={`${localizePath(`/archive/${entry.view.id}/`, locale)}#image-${entry.imageIndex}`} aria-label={t("查看第 {0} 幅整册影像：{1}", locale, { 0: index + 1, 1: entry.description })}>
+              <figure>
+                <img src={entry.image.src} srcset={entry.image.srcset} sizes="(max-width: 600px) 44vw, (max-width: 900px) 45vw, 350px" alt={entry.description} width={entry.image.width} height={entry.image.height} loading="lazy" decoding="async" />
+              </figure>
+              <div class="album-photo-copy">
+                <small>{t("第 {0} 幅", locale, { 0: index + 1 })}</small>
+                <strong>{entry.description}</strong>
+                <span>{t("查看相册总档案 →", locale)}</span>
+              </div>
+            </a>
+          </li>
+        ))}
         {galleryEntries.map((entry) => (
           <li data-album-photo-id={isLetterCollection ? undefined : entry.view.id} data-album-letter-id={isLetterCollection ? entry.view.id : undefined}><a class="album-photo-card" href={localizePath(`/archive/${entry.view.id}/`, locale)}>
             <figure>
@@ -177,7 +207,7 @@ const breadcrumbStructuredData = {
           </a></li>
         ))}
       </ol>
-      {entries.length === 0 && <p class="album-empty">{isLetterCollection ? t("这辑暂无可公开的信件。", locale) : t("这本相册暂时没有可公开的照片。", locale)}</p>}
+      {entries.length === 0 && !hasWholeAlbumImages && <p class="album-empty">{isLetterCollection ? t("这辑暂无可公开的信件。", locale) : t("这本相册暂时没有可公开的照片。", locale)}</p>}
     </section>
   </article>
 </BaseLayout>

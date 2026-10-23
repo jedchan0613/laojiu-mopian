@@ -15,6 +15,9 @@ const dalianIds = new Set([
   'LJM-20261018-ALB-001',
 ]);
 
+// 2026-10-24 所有人明确答复“允许。发布。”：仅此册允许按真实缺项公开照片背面信息。
+export const graduationAlbumMissingBackNotice = '资料说明：未提供贴入照片的背面，背面文字待核';
+
 export const filterApprovedMetadataIssues = (record, issues) => {
   const core = record?.core;
   const originalApproval = approvedIds.has(core?.item_id) && core?.album_id === 'LJM-A20260909-01' &&
@@ -23,7 +26,10 @@ export const filterApprovedMetadataIssues = (record, issues) => {
   const dalianApproval = dalianIds.has(core?.item_id) && core?.album_id === 'LJM-20261018-ALB-001' &&
     core?.batch_id === 'FSA-20261018-B01' && core?.accession_date === '2026-10-18' &&
     record?.public_view?.description?.includes(dalianMissingMetadataNotice);
-  if ((!originalApproval && !dalianApproval) || record?.metadata?.schema !== 'photo' ||
+  const graduationApproval = core?.item_id === 'LJM-20260910-ALB-001' && core?.object_type === 'ALB' &&
+    core?.album_id === 'LJM-A20260910-DOHTO-01' && core?.batch_id === 'LJM-20260910-B02' &&
+    core?.accession_date === '2026-09-10' && record?.public_view?.description?.includes(graduationAlbumMissingBackNotice);
+  if ((!originalApproval && !dalianApproval && !graduationApproval) || record?.metadata?.schema !== 'photo' ||
     !['PHO', 'ALB'].includes(core?.object_type)) return issues;
   const dimensions = record.metadata.dimensions ?? {};
   const empty = (field, dimension) => !meaningful(core[field]) && !meaningful(dimensions[dimension]?.[field]);
@@ -32,7 +38,7 @@ export const filterApprovedMetadataIssues = (record, issues) => {
     allowed.add('collection_code_required_D12_verso_types');
     if (empty('verso_transcription', 'D12')) allowed.add('collection_required_D12');
   }
-  if (originalApproval || core.object_type === 'ALB') {
+  if (originalApproval || dalianApproval && core.object_type === 'ALB') {
     if (empty('condition_grade', 'D16')) allowed.add('collection_code_required_D16_condition_grade');
     if (empty('condition_details', 'D16')) allowed.add('collection_code_required_D16_condition_details');
     if (empty('condition_grade', 'D16') && empty('condition_details', 'D16') && empty('treatment_notes', 'D16')) allowed.add('collection_required_D16');

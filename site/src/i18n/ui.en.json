@@ -1,12 +1,4 @@
 {
-  "请重新登录。": "Please sign in again.",
-  "不允许此操作，请检查账号后重试。": "This action is not permitted. Check your account and try again.",
-  "请求过于频繁，请稍后再试。": "Too many requests. Please try again later.",
-  "服务暂时不可用，请稍后再试。": "The service is temporarily unavailable. Please try again later.",
-  "请求未能完成，请检查表单后重试。": "The request could not be completed. Check the form and try again.",
-  "正在加载全文搜索，关键词已保留。可以清除关键词后继续浏览。": "Loading full-text search. Your keywords are saved. Clear them to continue browsing.",
-  "全文搜索暂时无法加载，关键词已保留。请重试，或清除关键词后继续浏览。": "Full-text search could not load. Your keywords are saved. Retry, or clear them to continue browsing.",
-  "重试全文搜索": "Retry full-text search",
   "按相册浏览": "Browse by album",
   "同册档案集中查看，进入相册后逐件翻阅。": "Open an album to browse its individual records together.",
   "查看全部相册 →": "View all albums →",
@@ -581,5 +573,12 @@
   "这辑暂无可公开的信件。": "No public letters are available in this collection yet.",
   "查看《明的家书》信件选览（共 {0} 件） →": "View Ming's Family Letters ({0} records) →",
   "查看《上海旧影》主题选览（共 {0} 件） →": "View the Old Shanghai collection ({0} records) →",
-  "同辑信件": "Letters in this collection"
+  "同辑信件": "Letters in this collection",
+  "{0} 件相册档案 · {1} 幅整册影像": "{0} album records · {1} whole-album images",
+  "整册影像": "Whole-album images",
+  "浏览整册影像 ↓": "Browse whole-album images ↓",
+  "封面、内页和贴照页按档案附件顺序展示；附图不另计为档案。": "Covers, inside pages and mounted photographs follow the record's attachment order. Images are not counted as separate records.",
+  "第 {0} 幅": "Image {0}",
+  "查看第 {0} 幅整册影像：{1}": "View whole-album image {0}: {1}",
+  "相册档案年代：{0}": "Album record date: {0}"
 }

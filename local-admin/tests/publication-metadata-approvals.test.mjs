@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { albumMissingMetadataNotice, dalianMissingMetadataNotice, filterApprovedMetadataIssues } from '../../shared/publication-metadata-approvals.mjs';
+import { albumMissingMetadataNotice, dalianMissingMetadataNotice, graduationAlbumMissingBackNotice, filterApprovedMetadataIssues } from '../../shared/publication-metadata-approvals.mjs';
 
 const record = () => ({core:{item_id:'LJM-20260909-PHO-001',album_id:'LJM-A20260909-01',batch_id:'LJM-20260909-B01',accession_date:'2026-09-09',object_type:'PHO'},metadata:{schema:'photo',dimensions:{}},public_view:{description:albumMissingMetadataNotice}});
 const issues = ['collection_required_D12','collection_required_D16','collection_required_D02','privacy_confirmation','images_empty','collection_code_invalid_D12_verso_types_FAKE'].map(code=>({code}));
@@ -28,4 +28,20 @@ test('大连七张照片只认可缺失背面，总册才认可缺失实物评�
   assert.deepEqual(filterApprovedMetadataIssues({...r,public_view:{description:''}},issues),issues);
   r.metadata.dimensions.D12={verso_types:['FAKE']};
   assert.ok(filterApprovedMetadataIssues(r,issues).some(issue=>issue.code==='collection_code_invalid_D12_verso_types_FAKE'));
+});
+
+const graduationRecord = () => ({core:{item_id:'LJM-20260910-ALB-001',album_id:'LJM-A20260910-DOHTO-01',batch_id:'LJM-20260910-B02',accession_date:'2026-09-10',object_type:'ALB'},metadata:{schema:'photo',dimensions:{}},public_view:{description:graduationAlbumMissingBackNotice}});
+test('毕业相册本次授权只允许缺失背面，不豁免保存评级、隐私、图片或非法代码',()=>{
+  const r=graduationRecord();
+  const pending=[{code:'collection_code_required_D12_verso_types'},...issues];
+  assert.deepEqual(filterApprovedMetadataIssues(r,pending),issues.slice(1));
+  r.metadata.dimensions.D12={verso_types:['FAKE']};
+  assert.deepEqual(filterApprovedMetadataIssues(r,pending),pending);
+});
+test('毕业相册授权同时限定永久号、相册、批次、入藏日期、类型、schema和公开缺项说明',()=>{
+  for(const change of [{item_id:'LJM-20260910-ALB-002'},{album_id:'other'},{batch_id:'other'},{accession_date:'2026-09-11'},{object_type:'PHO'}]){
+    const r=graduationRecord();Object.assign(r.core,change);assert.deepEqual(filterApprovedMetadataIssues(r,issues),issues);
+  }
+  const r=graduationRecord();r.metadata.schema='common';assert.deepEqual(filterApprovedMetadataIssues(r,issues),issues);
+  r.metadata.schema='photo';r.public_view.description='';assert.deepEqual(filterApprovedMetadataIssues(r,issues),issues);
 });

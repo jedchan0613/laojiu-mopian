@@ -197,6 +197,8 @@ const recordUrl = Astro.site ? new URL(localizePath(`/archive/${view.id}/`, loca
 const albumGroup = publishedAlbumGroups().find((group) => group.members.some((member) => member.core.item_id === view.id));
 const isLetterCollection = Boolean(albumGroup?.letters.length);
 const albumMateCount = isLetterCollection ? albumGroup!.letters.length : albumGroup?.photos.length ?? 0;
+const isWholeAlbumGroup = Boolean(albumGroup && !isLetterCollection && !albumGroup.photos.length && albumGroup.albums.length);
+const wholeAlbumImageCount = albumGroup?.albums.reduce((count, album) => count + album.core.publication_file_path.length, 0) ?? 0;
 const albumPhotos = [...(isLetterCollection ? albumGroup!.letters : albumGroup?.photos ?? [])].sort((left,right) =>
   isLetterCollection ?
     (left.core.date_start || left.core.date_display || '').localeCompare(right.core.date_start || right.core.date_display || '') || left.core.item_id.localeCompare(right.core.item_id) :
@@ -211,7 +213,8 @@ const previousBrowseView = albumPhotoIndex >= 0
 const nextBrowseView = albumPhotoIndex >= 0
   ? (nextAlbumPhoto ? createArchiveRecordView(nextAlbumPhoto, locale) : undefined) : nextView;
 const albumLinkLabel = albumGroup
-  ? (isLetterCollection ? t("查看《明的家书》信件选览（共 {0} 件） →", locale, { 0: albumMateCount }) : curatedAlbumForId(albumGroup!.albumId)
+  ? (isWholeAlbumGroup ? `${t('{0} 件相册档案 · {1} 幅整册影像', locale, { 0: albumGroup.albums.length, 1: wholeAlbumImageCount })} →`
+    : isLetterCollection ? t("查看《明的家书》信件选览（共 {0} 件） →", locale, { 0: albumMateCount }) : curatedAlbumForId(albumGroup!.albumId)
     ? t(`查看《${curatedAlbumForId(albumGroup!.albumId)!.title}》主题选览（共 {0} 件） →`, locale, { 0: albumMateCount })
     : item.core.object_type === 'ALB'
     ? t("翻阅本册档案（共 {0} 件） →", locale, { 0: albumMateCount })
@@ -302,7 +305,7 @@ const breadcrumbStructuredData = {
       </div>
       {hasText(view.description) && <p class="record-lead">{view.description}</p>}
       {albumGroup && (
-        <nav class="record-album-context" aria-label={isLetterCollection ? t("同辑信件", locale) : t("同册照片", locale)}>
+        <nav class="record-album-context" aria-label={isWholeAlbumGroup ? t('整册影像', locale) : isLetterCollection ? t("同辑信件", locale) : t("同册照片", locale)}>
           <div>
             <a class="ui-text-link" href={localizePath(albumGroup.href, locale)} data-album-entry>{albumLinkLabel}</a>
             {item.core.object_type === 'PHO' && item.core.original_position && <small>{t("相册中的位置", locale)}：{item.core.original_position}</small>}
@@ -378,6 +381,7 @@ const breadcrumbStructuredData = {
           <div
             class="record-gallery"
             data-record-gallery
+            data-record-image-count={galleryImages.length}
             data-gallery-items={JSON.stringify(galleryImages.map((image) => ({
               src: image.src,
               srcset: image.srcset,
@@ -801,6 +805,8 @@ import '../../scripts/archive-likes';
     }
   });
 
+  import { galleryImageIndexFromHash } from '../../data/gallery-image-link.mjs';
+
   document.querySelectorAll<HTMLElement>('[data-record-gallery]').forEach((gallery) => {
     const mainImage = gallery.querySelector<HTMLImageElement>('[data-gallery-main]');
     const openButton = gallery.querySelector<HTMLButtonElement>('[data-gallery-open]');
@@ -977,7 +983,15 @@ import '../../scripts/archive-likes';
       }, { passive: true });
     });
 
+    const selectLinkedImage = () => {
+      const index = galleryImageIndexFromHash(window.location.hash, items.length);
+      if (index === undefined) return;
+      selectImage(index);
+      gallery.scrollIntoView({ block: 'start' });
+    };
     selectImage(0);
+    selectLinkedImage();
+    window.addEventListener('hashchange', selectLinkedImage);
   });
 
   const browseStateKey = 'ljm-archive-browse-state';

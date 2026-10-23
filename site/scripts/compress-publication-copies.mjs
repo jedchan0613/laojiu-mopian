@@ -52,8 +52,10 @@ for (const itemEntry of itemDirectories) {
 		beforeBytes += stat.size;
 		if (dryRun) continue;
 		const extension = fileEntry.name.split('.').at(-1).toLowerCase();
+		const temporaryPath = `${filePath}.compress-tmp`;
 		try {
-			const image = sharp(filePath, { limitInputPixels: false }).rotate();
+			// 先关闭源文件句柄，避免 Windows 上 sharp 持有句柄使原子替换失败。
+			const image = sharp(await fs.readFile(filePath), { limitInputPixels: false }).rotate();
 			const metadata = await image.metadata();
 			const resizeNeeded = Math.max(metadata.width ?? 0, metadata.height ?? 0) > maxDimension;
 			let pipeline = resizeNeeded
@@ -72,7 +74,6 @@ for (const itemEntry of itemDirectories) {
 				afterBytes += stat.size;
 				continue;
 			}
-			const temporaryPath = `${filePath}.compress-tmp`;
 			await fs.writeFile(temporaryPath, buffer);
 			await fs.rename(temporaryPath, filePath);
 			compressed += 1;
@@ -81,6 +82,8 @@ for (const itemEntry of itemDirectories) {
 			keptOriginal += 1;
 			afterBytes += stat.size;
 			console.warn(`发布副本压缩失败，已保留原文件：${filePath}（${error.message}）`);
+		} finally {
+			await fs.rm(temporaryPath, { force: true });
 		}
 	}
 }

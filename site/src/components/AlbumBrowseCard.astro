@@ -6,6 +6,7 @@ import { t, localizePath, type Locale } from '../i18n/ui';
 interface Props { album: AlbumBrowseView; locale: Locale; showMatches?: boolean; }
 const { album, locale, showMatches = false } = Astro.props;
 const cover = album.coverPath ? getResponsiveImage(album.coverPath) : undefined;
+const hasWholeAlbumImages = !album.isLetterCollection && album.photoCount === 0 && album.albumImageCount > 0;
 ---
 <a class="album-browse-card" href={localizePath(album.href, locale)} data-album-entry>
   <figure>
@@ -17,7 +18,9 @@ const cover = album.coverPath ? getResponsiveImage(album.coverPath) : undefined;
     <h2>{album.title}</h2>
     {album.description && <p class="album-browse-description">{album.description}</p>}
     <p>{t('{0} 件公开档案', locale, { 0: album.recordCount })}</p>
-    <p>{album.isLetterCollection ? t('{0} 件信件档案', locale, { 0: album.letterCount }) : t('{0} 件照片档案 · {1} 幅附图', locale, { 0: album.photoCount, 1: album.imageCount })}</p>
+    <p>{album.isLetterCollection ? t('{0} 件信件档案', locale, { 0: album.letterCount }) : hasWholeAlbumImages
+      ? t('{0} 件相册档案 · {1} 幅整册影像', locale, { 0: album.albumCount, 1: album.albumImageCount })
+      : t('{0} 件照片档案 · {1} 幅附图', locale, { 0: album.photoCount, 1: album.imageCount })}</p>
     {!album.isLetterCollection && album.dateSummary.range && <p>{album.dateSummary.uncertainPhotoCount > 0
       ? t('照片年代线索：{0}（含推测）', locale, { 0: album.dateSummary.range })
       : t('已知照片年代：{0}', locale, { 0: album.dateSummary.range })}</p>}

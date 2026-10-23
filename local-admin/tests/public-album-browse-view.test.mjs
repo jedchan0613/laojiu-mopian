@@ -70,6 +70,8 @@ test('私密或未公开总册不提供标题、说明、封面与年代，封�
     assert.equal(view.recordCount, 2);
     assert.equal(view.photoCount, 2);
     assert.equal(view.imageCount, 1);
+    assert.equal(view.albumCount, 0);
+    assert.equal(view.albumImageCount, 0);
     assert.equal(view.dateSummary.range, '1987');
     assert.equal(view.dateSummary.unknownPhotoCount, 1);
     assert.doesNotMatch(JSON.stringify(view), /禁止泄露|private|1800|1809|A-HIDDEN/);
@@ -96,6 +98,8 @@ test('公开总册优先提供标题和封面，档案件数、照片件数和�
   assert.equal(view.recordCount, 4);
   assert.equal(view.photoCount, 3);
   assert.equal(view.imageCount, 3);
+  assert.equal(view.albumCount, 1);
+  assert.equal(view.albumImageCount, 2);
   assert.equal(view.dateSummary.range, '1980—1999');
   assert.equal(view.dateSummary.photoCount, 3);
   assert.equal(view.dateSummary.unknownPhotoCount, 1);
@@ -183,6 +187,23 @@ test('全册无图时封面为空，仍保留公开档案与照片件数', () =>
   assert.equal(view.photoCount, 1);
   assert.equal(view.imageCount, 0);
   assert.equal(view.dateSummary.unknownPhotoCount, 1);
+});
+
+test('17幅整册附件始终计1件ALB，照片计数与整册影像数分开且排除未公开总册', () => {
+  const paths = Array.from({ length: 17 }, (_, i) => `/published/page-${i + 1}.jpg`);
+  for (const locale of ['zh-CN', 'en', 'th', 'ja', 'ko', 'zh-Hant']) {
+    const [view] = createAlbumBrowseViews([
+      record('WHOLE-ALBUM', 'ALB', { publication_file_path: paths }),
+      record('PRIVATE-ALBUM', 'ALB', { privacy_level: 'R', publication_file_path: ['/private/hidden.jpg'] }),
+    ], locale);
+    assert.equal(view.recordCount, 1);
+    assert.equal(view.albumCount, 1);
+    assert.equal(view.albumImageCount, 17);
+    assert.equal(view.photoCount, 0);
+    assert.equal(view.imageCount, 0);
+    assert.deepEqual(view.memberIds, ['WHOLE-ALBUM']);
+    assert.doesNotMatch(JSON.stringify(view), /private|PRIVATE/);
+  }
 });
 
 test('不公开的照片和其他对象不进入成员、封面、计数或年代汇总', () => {
