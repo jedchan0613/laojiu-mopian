@@ -1,11 +1,12 @@
 {
-  "{0} album records · {1} whole-album images": "{0} 件相冊檔案 · {1} 幅整冊影像",
-  "Whole-album images": "整冊影像",
-  "Browse whole-album images ↓": "瀏覽整冊影像 ↓",
-  "Covers, inside pages and mounted photographs follow the record's attachment order. Images are not counted as separate records.": "封面、內頁和貼照頁按檔案附件順序展示；附圖不另計為檔案。",
-  "Image {0}": "第 {0} 幅",
-  "View whole-album image {0}: {1}": "查看第 {0} 幅整冊影像：{1}",
-  "Album record date: {0}": "相冊檔案年代：{0}",
+  "Please sign in again.": "請重新登入。",
+  "This action is not permitted. Check your account and try again.": "不允許此操作，請檢查帳號後重試。",
+  "Too many requests. Please try again later.": "請求過於頻繁，請稍後再試。",
+  "The service is temporarily unavailable. Please try again later.": "服務暫時不可用，請稍後再試。",
+  "The request could not be completed. Check the form and try again.": "請求未能完成，請檢查表單後重試。",
+  "Loading full-text search. Your keywords are saved. Clear them to continue browsing.": "正在載入全文搜尋，關鍵詞已保留。可以清除關鍵詞後繼續瀏覽。",
+  "Full-text search could not load. Your keywords are saved. Retry, or clear them to continue browsing.": "全文搜尋暫時無法載入，關鍵詞已保留。請重試，或清除關鍵詞後繼續瀏覽。",
+  "Retry full-text search": "重試全文搜尋",
   "Browse by album": "按相冊瀏覽",
   "Open an album to browse its individual records together.": "同冊檔案集中查看，進入相冊後逐件翻閱。",
   "View all albums →": "查看全部相冊 →",
@@ -1518,5 +1519,11 @@
   "Keep your nickname within {0} characters.": "暱稱請控制在{0}個字以內。",
   "The limit of {0} favorites has been reached. Remove some favorites first.": "收藏已達{0}項上限，請先移除部分收藏。",
   "明的家书": "明的家書",
-  "本辑按“明的家书”标签归集已公开的家庭书信，写作年代见各件档案。信中记下远行时与家人的通信，也谈到孩子的学习、住处、日常开支和身体照料。相隔各地的想念，常藏在这些具体的家常话里。这里是网站的主题选览，并非另有一件实物相册。": "本輯按「明的家書」標籤歸集已公開的家庭書信，寫作年代見各件檔案。信中記下遠行時與家人的通信，也談到孩子的學習、住處、日常開支和身體照料。相隔各地的想念，常藏在這些具體的家常話裡。這裡是網站的主題選覽，並非另有一件實物相冊。"
+  "本辑按“明的家书”标签归集已公开的家庭书信，写作年代见各件档案。信中记下远行时与家人的通信，也谈到孩子的学习、住处、日常开支和身体照料。相隔各地的想念，常藏在这些具体的家常话里。这里是网站的主题选览，并非另有一件实物相册。": "本輯按「明的家書」標籤歸集已公開的家庭書信，寫作年代見各件檔案。信中記下遠行時與家人的通信，也談到孩子的學習、住處、日常開支和身體照料。相隔各地的想念，常藏在這些具體的家常話裡。這裡是網站的主題選覽，並非另有一件實物相冊。",
+  "{0} album records · {1} whole-album images": "{0} 件相冊檔案 · {1} 幅整冊影像",
+  "Whole-album images": "整冊影像",
+  "Browse whole-album images ↓": "瀏覽整冊影像 ↓",
+  "Covers, inside pages and mounted photographs follow the record's attachment order. Images are not counted as separate records.": "封面、內頁和貼照頁按檔案附件順序展示；附圖不另計為檔案。",
+  "View whole-album image {0}: {1}": "查看第 {0} 幅整冊影像：{1}",
+  "Album record date: {0}": "相冊檔案年代：{0}"
 }

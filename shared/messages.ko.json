@@ -1,11 +1,12 @@
 {
-  "{0} album records · {1} whole-album images": "앨범 자료 {0}건 · 전체 앨범 이미지 {1}장",
-  "Whole-album images": "전체 앨범 이미지",
-  "Browse whole-album images ↓": "전체 앨범 이미지 보기 ↓",
-  "Covers, inside pages and mounted photographs follow the record's attachment order. Images are not counted as separate records.": "표지, 내지와 부착된 사진을 자료의 첨부 순서대로 표시합니다. 이미지는 별도의 자료로 세지 않습니다.",
-  "Image {0}": "이미지 {0}",
-  "View whole-album image {0}: {1}": "전체 앨범 이미지 {0} 보기: {1}",
-  "Album record date: {0}": "앨범 자료의 연대: {0}",
+  "Please sign in again.": "다시 로그인해 주세요.",
+  "This action is not permitted. Check your account and try again.": "이 작업은 허용되지 않습니다. 계정을 확인한 후 다시 시도해 주세요.",
+  "Too many requests. Please try again later.": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+  "The service is temporarily unavailable. Please try again later.": "서비스를 일시적으로 이용할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+  "The request could not be completed. Check the form and try again.": "요청을 완료하지 못했습니다. 입력 내용을 확인한 후 다시 시도해 주세요.",
+  "Loading full-text search. Your keywords are saved. Clear them to continue browsing.": "전체 텍스트 검색을 불러오는 중입니다. 검색어는 유지됩니다. 검색어를 지우면 계속 둘러볼 수 있습니다.",
+  "Full-text search could not load. Your keywords are saved. Retry, or clear them to continue browsing.": "전체 텍스트 검색을 불러오지 못했습니다. 검색어는 유지됩니다. 다시 시도하거나 검색어를 지워 계속 둘러보세요.",
+  "Retry full-text search": "전체 텍스트 검색 다시 시도",
   "Browse by album": "앨범별로 보기",
   "Open an album to browse its individual records together.": "앨범을 열어 수록 자료를 한 건씩 볼 수 있습니다.",
   "View all albums →": "모든 앨범 보기 →",
@@ -1518,5 +1519,11 @@
   "Keep your nickname within {0} characters.": "닉네임은 {0}자 이내로 입력해 주세요.",
   "The limit of {0} favorites has been reached. Remove some favorites first.": "즐겨찾기 한도인 {0}개에 도달했습니다. 먼저 일부 항목을 삭제해 주세요.",
   "明的家书": "明의 가족 편지",
-  "本辑按“明的家书”标签归集已公开的家庭书信，写作年代见各件档案。信中记下远行时与家人的通信，也谈到孩子的学习、住处、日常开支和身体照料。相隔各地的想念，常藏在这些具体的家常话里。这里是网站的主题选览，并非另有一件实物相册。": "이 모음은 ‘明의 가족 편지’ 태그가 있는 공개된 가족 서신을 모았습니다. 작성 연대는 각 기록을 확인해 주세요. 먼 곳에서 가족과 주고받은 편지에는 아이의 공부, 거처, 일상 지출과 건강에 대한 돌봄이 담겨 있습니다. 떨어져 사는 그리움은 이런 구체적인 일상 이야기 속에 숨어 있습니다. 웹사이트의 주제별 선집이며 별도의 실물 앨범이 아닙니다."
+  "本辑按“明的家书”标签归集已公开的家庭书信，写作年代见各件档案。信中记下远行时与家人的通信，也谈到孩子的学习、住处、日常开支和身体照料。相隔各地的想念，常藏在这些具体的家常话里。这里是网站的主题选览，并非另有一件实物相册。": "이 모음은 ‘明의 가족 편지’ 태그가 있는 공개된 가족 서신을 모았습니다. 작성 연대는 각 기록을 확인해 주세요. 먼 곳에서 가족과 주고받은 편지에는 아이의 공부, 거처, 일상 지출과 건강에 대한 돌봄이 담겨 있습니다. 떨어져 사는 그리움은 이런 구체적인 일상 이야기 속에 숨어 있습니다. 웹사이트의 주제별 선집이며 별도의 실물 앨범이 아닙니다.",
+  "{0} album records · {1} whole-album images": "앨범 자료 {0}건 · 전체 앨범 이미지 {1}장",
+  "Whole-album images": "전체 앨범 이미지",
+  "Browse whole-album images ↓": "전체 앨범 이미지 보기 ↓",
+  "Covers, inside pages and mounted photographs follow the record's attachment order. Images are not counted as separate records.": "표지, 내지와 부착된 사진을 자료의 첨부 순서대로 표시합니다. 이미지는 별도의 자료로 세지 않습니다.",
+  "View whole-album image {0}: {1}": "전체 앨범 이미지 {0} 보기: {1}",
+  "Album record date: {0}": "앨범 자료의 연대: {0}"
 }

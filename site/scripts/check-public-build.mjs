@@ -6,6 +6,7 @@ import { fontace } from 'fontace';
 import {createHash} from 'node:crypto';
 import { pointsInRanges, readCompleteFontCoverage } from './complete-font-coverage.mjs';
 import { collectVisibleHan } from '../../shared/public-build-text.mjs';
+import { checkLocalizedPageSeo } from './public-build-seo.mjs';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
@@ -45,6 +46,20 @@ const htmlEntries = await Promise.all(htmlFiles.map(async (path) => ({
 	relativePath: relative(distRoot, path).split(sep).join('/'),
 	html: await readFile(path, 'utf8'),
 })));
+
+// 缺页会复用于任意不存在网址，不能把构建时的/404/当成标准页面或翻译对应页。
+for (const { prefix, locale } of localeDefinitions) {
+	const filename = prefix ? `${prefix}/404/index.html` : '404.html';
+	const page = htmlEntries.find(entry => entry.relativePath === filename);
+	check(Boolean(page), `缺少${locale}错误页面：${filename}。`);
+	if (!page) continue;
+	check(/<meta\b[^>]*name="robots"[^>]*content="noindex, follow"/.test(page.html), `${filename}必须禁止搜索收录。`);
+	check(!/<link\b[^>]*rel="(?:canonical|alternate)"|<meta\b[^>]*property="og:url"/.test(page.html), `${filename}不应输出标准地址或错误的语言自引用。`);
+	for (const target of localeDefinitions) {
+		const home = pathForLocale('/', target.locale);
+		check(page.html.includes(`data-language-target="${home}"`), `${filename}的${target.locale}语言入口必须返回对应首页。`);
+	}
+}
 
 // 公共页面正文统一使用本地宋体。直接读取字体文件的真实字形范围，避免
 // 子集缺字时浏览器悄悄回退到另一种宋体，造成同一标题内粗细不一致。
@@ -430,15 +445,8 @@ for (const page of detailPages) {
 
 for (const page of htmlEntries) {
 	const locale=localeDefinitions.find(entry=>entry.prefix&&page.relativePath.startsWith(entry.prefix+'/'))?.locale??'zh-CN';
- const isEnglish=locale!=='zh-CN';
 	check(page.html.includes(`<html lang="${locale}"`), `${page.relativePath} 页面语言设置不正确。`);
-	if (isEnglish && process.env.PUBLIC_SITE_URL?.trim()) {
-  const head = page.html.split('</head>')[0];
-		const pendingArchive = /^(?:en|th|ja|ko|zh-hant)\/(?:archive\/LJM-|albums\/)/.test(page.relativePath) && /name="robots" content="noindex/.test(page.html);
-		check(head.includes('hreflang="zh-CN"') && head.includes('hreflang="x-default"'), `${page.relativePath} 缺少对应中文页面标记。`);
-		check(pendingArchive ? !head.includes(`hreflang="${locale}"`) : head.includes(`hreflang="${locale}"`), `${page.relativePath} 英文页面关联与译文审核状态不一致。`);
-		if (pendingArchive) check(page.html.includes('class="translation-notice"'), `${page.relativePath} 缺少英文译文待复核提示。`);
-	}
+	checkLocalizedPageSeo(page, locale, check);
 	check(page.html.includes('<meta name="viewport"'), `${page.relativePath} 缺少手机端视口设置。`);
 	check(page.html.includes('data-contact-widget'), `${page.relativePath} 缺少联系挂件。`);
 	check(page.html.includes('data-contact-launcher'), `${page.relativePath} 缺少联系挂件入口。`);
