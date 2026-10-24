@@ -3,29 +3,32 @@ import type { AlbumBrowseView } from '../data/album-browse';
 import { getResponsiveImage } from '../data/responsive-images';
 import { t, localizePath, type Locale } from '../i18n/ui';
 
-interface Props { album: AlbumBrowseView; locale: Locale; showMatches?: boolean; }
-const { album, locale, showMatches = false } = Astro.props;
+interface Props { album: AlbumBrowseView; locale: Locale; showMatches?: boolean; compact?: boolean; }
+const { album, locale, showMatches = false, compact = false } = Astro.props;
 const cover = album.coverPath ? getResponsiveImage(album.coverPath) : undefined;
 const hasWholeAlbumImages = !album.isLetterCollection && album.photoCount === 0 && album.albumImageCount > 0;
+const coverSizes = compact
+  ? '(min-width: 1000px) 240px, (min-width: 600px) calc((100vw - 120px) / 2), calc(100vw - 88px)'
+  : '(max-width: 700px) calc(100vw - 48px), 380px';
 ---
-<a class="album-browse-card" href={localizePath(album.href, locale)} data-album-entry>
+<a class:list={['album-browse-card', { 'album-browse-card--compact': compact }]} href={localizePath(album.href, locale)} data-album-entry>
   <figure>
-    {cover ? <img src={cover.src} srcset={cover.srcset} sizes="(max-width: 700px) calc(100vw - 48px), 380px" width={cover.width} height={cover.height} alt={album.coverDescription || album.title} loading="lazy" decoding="async" />
+    {cover ? <img src={cover.src} srcset={cover.srcset} sizes={coverSizes} width={cover.width} height={cover.height} alt={album.coverDescription || album.title} loading="lazy" decoding="async" />
       : <span>{t('暂无图片', locale)}</span>}
   </figure>
   <div class="album-browse-copy">
     <small>{album.isLetterCollection ? t('信件选览', locale) : t('相册', locale)}</small>
     <h2>{album.title}</h2>
     {album.description && <p class="album-browse-description">{album.description}</p>}
-    <p>{t('{0} 件公开档案', locale, { 0: album.recordCount })}</p>
-    <p>{album.isLetterCollection ? t('{0} 件信件档案', locale, { 0: album.letterCount }) : hasWholeAlbumImages
+    <p class="album-browse-count">{t('{0} 件公开档案', locale, { 0: album.recordCount })}</p>
+    {!compact && <p>{album.isLetterCollection ? t('{0} 件信件档案', locale, { 0: album.letterCount }) : hasWholeAlbumImages
       ? t('{0} 件相册档案 · {1} 幅整册影像', locale, { 0: album.albumCount, 1: album.albumImageCount })
-      : t('{0} 件照片档案 · {1} 幅附图', locale, { 0: album.photoCount, 1: album.imageCount })}</p>
-    {!album.isLetterCollection && album.dateSummary.range && <p>{album.dateSummary.uncertainPhotoCount > 0
+      : t('{0} 件照片档案 · {1} 幅附图', locale, { 0: album.photoCount, 1: album.imageCount })}</p>}
+    {!compact && !album.isLetterCollection && album.dateSummary.range && <p>{album.dateSummary.uncertainPhotoCount > 0
       ? t('照片年代线索：{0}（含推测）', locale, { 0: album.dateSummary.range })
       : t('已知照片年代：{0}', locale, { 0: album.dateSummary.range })}</p>}
-    {!album.isLetterCollection && album.dateSummary.unknownPhotoCount > 0 && <p>{t('{0} 件年代待考', locale, { 0: album.dateSummary.unknownPhotoCount })}</p>}
-    {!album.isLetterCollection && !album.hasAlbumRecord && <p>{t('相册总档案尚未公开，以下为已公开照片。', locale)}</p>}
+    {!compact && !album.isLetterCollection && album.dateSummary.unknownPhotoCount > 0 && <p>{t('{0} 件年代待考', locale, { 0: album.dateSummary.unknownPhotoCount })}</p>}
+    {!compact && !album.isLetterCollection && !album.hasAlbumRecord && <p>{t('相册总档案尚未公开，以下为已公开照片。', locale)}</p>}
     {showMatches && <p class="album-browse-matches" data-album-matches>{t('命中 {0} 件 / 册内共 {1} 件公开档案', locale, { 0: album.recordCount, 1: album.recordCount })}</p>}
     <strong class="album-browse-action">{t('进入相册 →', locale)}</strong>
   </div>
@@ -43,5 +46,12 @@ const hasWholeAlbumImages = !album.isLetterCollection && album.photoCount === 0 
   .album-browse-description { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .album-browse-matches { color:var(--site-accent); }
   .album-browse-action { font:0.8rem/1.8 var(--site-ui-font); margin-top:0.3rem; }
+  .album-browse-card--compact { display:flex; flex-direction:column; gap:0.75rem; height:100%; box-sizing:border-box; padding:0.85rem; }
+  .album-browse-card--compact figure { width:100%; aspect-ratio:4/3; flex:none; overflow:hidden; }
+  .album-browse-card--compact .album-browse-copy { display:flex; flex-direction:column; flex:1; gap:0.35rem; }
+  .album-browse-card--compact h2 { font-size:1rem; line-height:1.6; }
+  .album-browse-card--compact .album-browse-description { min-height:3.4em; }
+  .album-browse-card--compact .album-browse-count { margin-top:auto; padding-top:0.45rem; }
+  .album-browse-card--compact .album-browse-action { padding-top:0.45rem; border-top:1px solid var(--site-border-soft); }
   @media(max-width:500px) { .album-browse-card { grid-template-columns:minmax(0,1fr); } figure { max-height:15rem; } }
 </style>
