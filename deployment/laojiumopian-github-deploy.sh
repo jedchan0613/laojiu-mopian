@@ -266,6 +266,7 @@ run_as_admin git --git-dir="$REPOSITORY_DIR" archive --format=tar --output="$arc
 	':(exclude)local-admin/recycle-bin/**' \
 	':(exclude)local-admin/translations/**' \
 	':(exclude)local-admin/operations/**' \
+	':(exclude)local-admin/merges/**' \
 	':(exclude)local-admin/uploads/**' \
 	':(exclude)local-admin/accounts/**' \
 	':(exclude)local-admin/submissions/**' \
@@ -284,6 +285,7 @@ for forbidden_path in \
 	"$staging_directory/local-admin/history" \
 	"$staging_directory/local-admin/recycle-bin" \
 	"$staging_directory/local-admin/operations" \
+	"$staging_directory/local-admin/merges" \
 	"$staging_directory/local-admin/uploads" \
 	"$staging_directory/local-admin/accounts" \
 	"$staging_directory/local-admin/submissions" \
@@ -332,6 +334,10 @@ sync_runtime_site_data() {
 	chown "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/src/data/archive.ts"
 	cp -a -- "$previous_app_directory/site/src/data/generated/image-manifest.json" \
 		"$staging_directory/site/src/data/generated/image-manifest.json"
+	if [[ -f "$previous_app_directory/site/src/data/archive-merge-aliases.json" ]]; then
+		cp -a -- "$previous_app_directory/site/src/data/archive-merge-aliases.json" "$staging_directory/site/src/data/archive-merge-aliases.json"
+		chown "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/src/data/archive-merge-aliases.json"
+	fi
 	chown "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/src/data/generated/image-manifest.json"
 	"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
 		"$NODE" "$staging_directory/local-admin/server.mjs" --sync-site-data

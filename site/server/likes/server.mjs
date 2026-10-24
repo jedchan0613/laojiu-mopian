@@ -1,7 +1,7 @@
 import { createHmac, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { isIP } from 'node:net';
-import { access, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, rename, unlink, writeFile, chmod } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {acquirePrivateFileGate} from '../../../shared/private-file-gate.mjs';
@@ -69,7 +69,7 @@ export function readConfig(environment = process.env) {
     throw new Error('点赞数据文件不能放在公开网站目录内。');
   }
 
-  return { host, port, publicLiveDirectory, dataFile, secret, publicOrigin };
+  return { host, port, publicLiveDirectory, dataFile, secret, publicOrigin, sharedRead: environment.LJM_LIKE_SHARED_READ === '1' };
 }
 
 function normalizeClientIp(rawValue) {
@@ -135,7 +135,7 @@ async function loadState(dataFile) {
   }
 }
 
-async function persistState(dataFile, state) {
+async function persistState(dataFile, state, sharedRead = false) {
   const dataDirectory = path.dirname(dataFile);
   await mkdir(dataDirectory, { recursive: true, mode: 0o750 });
   const items = {};
@@ -153,6 +153,7 @@ async function persistState(dataFile, state) {
   const temporaryFile = `${dataFile}.${process.pid}.${randomUUID()}.tmp`;
   try {
     await writeFile(temporaryFile, contents, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    if (sharedRead) await chmod(temporaryFile, 0o640);
     await rename(temporaryFile, dataFile);
   } finally {
     await unlink(temporaryFile).catch((error) => {
@@ -284,7 +285,7 @@ export async function createLikeServer(config) {
       voters.add(voter);
       state.set(itemId, voters);
       try {
-        await persistState(config.dataFile, state);
+        await persistState(config.dataFile, state, config.sharedRead);
       } catch (error) {
         voters.delete(voter);
         if (voters.size === 0) state.delete(itemId);
@@ -301,7 +302,7 @@ export async function createLikeServer(config) {
     try {
       const requestUrl = new URL(request.url || '/', 'http://127.0.0.1');
       if (request.method === 'GET' && requestUrl.pathname === '/healthz') {
-        sendJson(response, 200, { ok: true });
+        sendJson(response, 200, { ok: true, capabilities: { fileGateProtocol: 1, sharedRead: Boolean(config.sharedRead) } });
         return;
       }
 

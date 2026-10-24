@@ -24,14 +24,22 @@ const normalizeId = (id, missingMessage = '操作编号无效。') => {
   return id.toLowerCase();
 };
 
-export const atomicWrite = async (target, contents) => {
+export const atomicWrite = async (target, contents, attributes = null) => {
   await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
   const temporary = `${target}.${randomUUID()}.tmp`;
   let ownsTemporary = false;
   try {
     const handle = await fs.open(temporary, 'wx', 0o600);
     ownsTemporary = true;
-    try { await handle.writeFile(contents); await handle.sync(); } finally { await handle.close(); }
+    try {
+      await handle.writeFile(contents);
+      if (attributes) {
+        if (!Number.isInteger(attributes.mode) || attributes.mode < 0 || attributes.mode > 0o777) throw new Error('文件权限参数无效。');
+        if (process.platform !== 'win32') await handle.chown(attributes.uid, attributes.gid);
+        await handle.chmod(attributes.mode);
+      }
+      await handle.sync();
+    } finally { await handle.close(); }
     await fs.rename(temporary, target);
   } finally {
     // rename 成功即已提交。临时文件清理失败不得伪造保存失败，亦不得覆盖原始写入错误。

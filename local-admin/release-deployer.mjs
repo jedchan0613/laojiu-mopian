@@ -104,10 +104,11 @@ export const createReleaseDeployer = ({
 			}
 			const linkTarget = process.platform === 'win32' ? releaseDirectory : releaseName;
 			await fs.symlink(linkTarget, temporaryLink, process.platform === 'win32' ? 'junction' : 'dir');
+			await options.onPrepared?.({ releaseName, releaseDirectory, previous });
 			throwIfAborted(signal);
 		} catch (error) {
 			await fs.rm(temporaryLink, { force: true }).catch(() => {});
-			if (releaseCreated) await fs.rm(releaseDirectory, { recursive: true, force: true }).catch(() => {});
+			if (releaseCreated && !options.retain) await fs.rm(releaseDirectory, { recursive: true, force: true }).catch(() => {});
 			throw new Error(`新公开版本准备失败，当前网站没有切换：${error.message}`);
 		}
 
@@ -115,14 +116,14 @@ export const createReleaseDeployer = ({
 			await fs.rename(temporaryLink, liveLink);
 		} catch (error) {
 			await fs.rm(temporaryLink, { force: true }).catch(() => {});
-			await fs.rm(releaseDirectory, { recursive: true, force: true }).catch(() => {});
+			if (!options.retain) await fs.rm(releaseDirectory, { recursive: true, force: true }).catch(() => {});
 			throw new Error(`新公开版本切换失败，当前网站仍保留原版本：${error.message}`);
 		}
 
 		// 已成功切换后才整理旧构建；整理失败不撤销已经完成的发布。
 		let retention;
 		try {
-			retention = await pruneReleases({ releasesDirectory, liveLink, kind: 'public', protectedDirectories: [previous.resolvedTarget], apply: true });
+			retention = options.retain ? { retainedForTransaction: true } : await pruneReleases({ releasesDirectory, liveLink, kind: 'public', protectedDirectories: [previous.resolvedTarget], apply: true });
 		} catch (error) {
 			retention = { warning: error.message };
 			console.warn(`旧公开版本整理未完成：${error.message}`);

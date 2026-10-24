@@ -40,6 +40,7 @@ export function createMergeUndo({directory,archiveDirectory,draftDirectory,inbox
  }
  async function inspect(mergeId,actor){
   const log=await engine.detail(uuid(mergeId),actor),conflicts=[],ids=[log.primary_id,log.secondary_id];
+  if(log.legacy)mergeFail('这是旧版手工合并，只读追溯；需另行核对历史快照，不能直接撤销。','MERGE_LEGACY_READ_ONLY');
   if(log.operation_kind==='undo'||log.status!=='committed')mergeFail(log.status==='reverted'?'这项合并已经撤销，不会再次执行。':'仅已完成且未撤销的合并可申请恢复。','MERGE_UNDO_NOT_AVAILABLE');
   const original=await originalData(log);conflicts.push(...original.issues);
   const saved=await readJson(directory,log.merge_id+'/review.json'),current=await readRecords(),map=new Map(current.map(row=>[row.core.item_id,row])),merged=new Map(saved.proposed.records.map(row=>[row.core.item_id,row]));

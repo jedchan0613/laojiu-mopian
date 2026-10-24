@@ -25,13 +25,13 @@ export async function initializeMergeUndo({request,setBusy,onCommitted,say,capab
  const status=text=>{$('undo-status').textContent=text;$('undo-progress').textContent=text;};
  const store=()=>{try{pending?sessionStorage.setItem(storageKey,JSON.stringify(pending)):sessionStorage.removeItem(storageKey);}catch{}};
  const endpoint=()=>`/api/merge-undo-result/${pending.mode}/${pending.id}/${pending.step}`;
- async function refresh(){const data=await request('/api/merges');$('merge-history').innerHTML=data.merges.filter(row=>row.operationKind==='merge').map(row=>`<article class="plan-card"><strong>${escape(row.primaryId)} ← ${escape(row.secondaryId)}</strong><small>${escape(new Date(row.createdAt).toLocaleString('zh-CN'))} · ${escape(labels[row.status]??row.status)}</small><button type="button" data-merge-result="${escape(row.mergeId)}">查看记录</button>${row.status==='committed'?` <button type="button" data-undo="${escape(row.mergeId)}">检查恢复条件</button>`:''}</article>`).join('')||'<p class="help">当前身份还没有可查看的合并记录。</p>';}
+ async function refresh(){const data=await request('/api/merges');$('merge-history').innerHTML=data.merges.filter(row=>['merge','legacy'].includes(row.operationKind)).map(row=>`<article class="plan-card"><strong>${escape(row.primaryId)} ← ${escape(row.secondaryId)}</strong><small>${escape(new Date(row.createdAt).toLocaleString('zh-CN'))} · ${escape(labels[row.status]??row.status)}${row.operationKind==='legacy'?' · 历史操作，只读':''}</small><button type="button" data-merge-result="${escape(row.mergeId)}">查看记录</button>${row.status==='committed'&&row.canUndo!==false&&row.operationKind!=='legacy'?` <button type="button" data-undo="${escape(row.mergeId)}">检查恢复条件</button>`:''}</article>`).join('')||'<p class="help">当前身份还没有可查看的合并记录。</p>';}
  async function showResult(undo){
    const isDraft=undo.mode==='drafts';
    const message=undo.status==='rolled-back'?'本次恢复未提交，已回到操作前状态；提案与核对证据保留。':undo.status==='needs_review'?'尚未证明恢复完成，写入保持暂停，请核对原操作。':isDraft?(['drafts-created','proposal-only'].includes(undo.status)?(undo.proposalOnly?'现有草稿和公开内容未改动，恢复提案保存在私密操作记录中。':'已生成两件SUS/Y/U0恢复草稿，当前公开内容和收藏未改动。'):'恢复尚未结束，请等待实际结果。'):undo.status==='committed'?'两件已恢复发布；原合并与本次恢复日志均保留。':'请按执行记录核对恢复状态。';
    $('undo-result').innerHTML=`<article class="preview-box"><h3>${escape(labels[undo.status]??undo.status)}</h3><p>${escape(message)}</p><ul>${(undo.records??[{itemId:undo.primary_id},{itemId:undo.secondary_id}]).map(row=>`<li>${escape(row.itemId)} ${escape(row.title??'')}</li>`).join('')}</ul></article>`;
    status(labels[undo.status]??undo.status);
-   if(['drafts-created','proposal-only','committed'].includes(undo.status)){dialog.close();await onCommitted();await refresh();if(!isDraft&&undo.parent_merge_id)document.dispatchEvent(new CustomEvent('merge-show-result',{detail:undo.parent_merge_id}));say(isDraft?'恢复草稿或提案已保存；当前网站未改变。':'两件已在本机恢复发布；生产环境未改变。','success');}
+   if(['drafts-created','proposal-only','committed'].includes(undo.status)){dialog.close();await onCommitted();await refresh();if(!isDraft&&undo.parent_merge_id)document.dispatchEvent(new CustomEvent('merge-show-result',{detail:undo.parent_merge_id}));say(isDraft?'恢复草稿或提案已保存；当前网站未改变。':(capability.online?'两件已恢复并在线上发布。':'两件已在本机恢复发布；生产环境未改变。'),'success');}
  }
  async function recover(){
    if(!pending||running)return;setBusy(true);
@@ -47,7 +47,7 @@ export async function initializeMergeUndo({request,setBusy,onCommitted,say,capab
  }
  function validate(){
    const publish=$('undo-mode').value==='republish';$('undo-publication').hidden=!publish;$('undo-replace-label').hidden=publish||!review?.hasExistingDrafts;
-   $('undo-submit').textContent=publish?'确认恢复两件并在本机发布':'生成恢复草稿';
+   $('undo-submit').textContent=publish?(capability.online?'确认恢复两件并线上发布':'确认恢复两件并在本机发布'):'生成恢复草稿';
    $('undo-submit').disabled=running||Boolean(pending)||!review||Date.now()>=Date.parse(review.expiresAt)||(publish?(!review.canPublish||$('undo-primary').value.trim()!==review.primaryId||$('undo-secondary').value.trim()!==review.secondaryId||[...document.querySelectorAll('[data-undo-check]')].some(row=>!row.checked)||!$('undo-scope').checked||review.hasExistingDrafts&&!$('undo-consume').checked):!review.canCreateDrafts);
  }
  async function begin(mergeId){

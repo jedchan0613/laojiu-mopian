@@ -4745,7 +4745,7 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	state.integrityReport = data.maintenance?.integrity ?? null;
 	state.adminMode = data.paths?.adminMode ?? 'local';
 	for (const link of [elements.mergePlannerLink, elements.mobileMergePlannerLink]) {
-		if (link) link.hidden = state.adminMode !== 'local';
+		if (link) link.hidden = state.adminMode !== 'local' && !data.paths?.archiveMergeEnabled;
 	}
 	state.publicSiteUrl = (data.paths?.previewUrl ?? '').replace(/\/+$/, '');
 	state.query.loaded = false;

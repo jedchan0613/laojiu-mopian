@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -44,6 +44,12 @@ function headers(ip, includeOrigin = false) {
     ...(includeOrigin ? { Origin: ORIGIN, 'Content-Type': 'application/json' } : {}),
   };
 }
+
+test('共享核对模式在写入前设置0640，健康检查声明门禁协议', {skip:process.platform==='win32'?'POSIX权限在Linux验证':false},async()=>{
+ const fixture=await createFixture();fixture.config.sharedRead=true;const running=await start(fixture.config);
+ try{const result=await fetch(`${running.baseUrl}/api/likes/${ITEM_ID}`,{method:'POST',headers:headers('203.0.113.91',true),body:'{}'});assert.equal(result.status,200);await result.json();assert.equal((await stat(fixture.dataFile)).mode&0o777,0o640);const health=await fetch(running.baseUrl+'/healthz').then(r=>r.json());assert.deepEqual(health.capabilities,{fileGateProtocol:1,sharedRead:true});}
+ finally{await running.close();await rm(fixture.root,{recursive:true,force:true});}
+});
 
 test('同一访问地址只计一次，其他地址可增加，并且不保存原始 IP', async () => {
   const fixture = await createFixture();

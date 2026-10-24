@@ -57,11 +57,14 @@ export async function writeExclusive(root,relative,bytes){
   let parent=path.resolve(root);for(const part of relative.split('/').slice(0,-1)){parent=path.join(parent,part);await safeDirectory(parent);}
   await fs.writeFile(file,bytes,{flag:'wx',mode:0o600});
 }
-export async function writeVersionedFile(root,relative,bytes){
+export async function fileAttributes(root,relative){
+  try{const stat=await fs.lstat(relativeFile(root,relative));if(!stat.isFile()||stat.isSymbolicLink())mergeFail('目标文件类型变化。','MERGE_PATH_INVALID');return{mode:stat.mode&0o777,uid:stat.uid,gid:stat.gid};}catch(error){if(error.code==='ENOENT')return null;throw error;}
+}
+export async function writeVersionedFile(root,relative,bytes,attributes=null){
   const file=relativeFile(root,relative);await fs.mkdir(path.dirname(file),{recursive:true,mode:0o700});
   let parent=path.resolve(root);for(const part of relative.split('/').slice(0,-1)){parent=path.join(parent,part);await safeDirectory(parent);}
   if(await exists(file)){const stat=await fs.lstat(file);if(!stat.isFile()||stat.isSymbolicLink())mergeFail('目标文件类型变化。','MERGE_PATH_INVALID');}
-  await atomicWrite(file,bytes);
+  await atomicWrite(file,bytes,attributes??await fileAttributes(root,relative));
 }
 export async function readJson(root,relative){return JSON.parse((await safeBytes(root,relative)).toString('utf8'));}
 export async function assertFreeSpace(directory,required){

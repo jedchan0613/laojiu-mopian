@@ -501,6 +501,7 @@ if (isDirectRun) {
 	});
 	const store = createAccountStore({
 		directory: resolvedDataRoot,
+		enableArchiveMerge: process.env.LJM_ACCOUNT_ARCHIVE_MERGE === '1',
 		mailer,
 		environment,
 		ipSalt: process.env.LJM_ACCOUNT_IP_SALT?.trim() || '',
@@ -539,7 +540,7 @@ if (isDirectRun) {
 		try {
 			const pathname = new URL(request.url ?? '/', origin).pathname;
 			if (pathname === '/healthz' && request.method === 'GET') {
-				response.writeHead(200, securityHeaders()).end(JSON.stringify({ ok: true }));
+				response.writeHead(200, securityHeaders()).end(JSON.stringify({ ok: true, capabilities: { archiveMergeProtocol: store.archiveMerge ? 1 : 0 } }));
 				return;
 			}
 			if (!await handler(request, response, pathname)) {

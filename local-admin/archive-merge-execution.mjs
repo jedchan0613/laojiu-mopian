@@ -7,7 +7,7 @@ import {archiveSourceForRecords,resolveArchiveMergeProjection} from '../shared/a
 import {translationLocales} from '../shared/locale-config.mjs';
 import {acquirePrivateFileGate,releasePrivateFileGate} from '../shared/private-file-gate.mjs';
 import {validateLikesSnapshot} from '../shared/archive-merge-likes.mjs';
-import {mergeFail,exists,safeDirectory,safeBytes,tree,copyTree,currentHash,writeExclusive,writeVersionedFile,readJson,assertFreeSpace,bytesOf,snapshotEntryId,treeDigest,hashBytes,relativeFile,inside} from './archive-merge-files.mjs';
+import {mergeFail,exists,safeDirectory,safeBytes,tree,copyTree,currentHash,writeExclusive,writeVersionedFile,readJson,assertFreeSpace,bytesOf,snapshotEntryId,treeDigest,hashBytes,relativeFile,inside,fileAttributes} from './archive-merge-files.mjs';
 
 const publicRecord=r=>r.core.record_status==='ACT'&&r.core.privacy_level==='G'&&r.core.use_status==='U3';
 const linkKeys=new Set(['related_item_ids','attachment_item_ids','portrait_item_id']);
@@ -32,7 +32,7 @@ export function createArchiveMergeExecution({
   directory,archiveDirectory,draftDirectory,inboxDirectory,siteDirectory,sharedDirectory,historyDirectory,
   translationDirectory,submissionDirectory,likesFile,planner,readRecords,accounts,
   validateRecord=async()=>[],normalizeRecord=record=>record,validateImage,buildCandidate,
-  afterPhase=async()=>{},now=()=>new Date(),reviewTtl=30*60*1000,
+  afterPhase=async()=>{},now=()=>new Date(),reviewTtl=30*60*1000,publication=null,
 }){
   const reviews=new Map();
   const accountHandler=log=>log.operation_kind==='undo'?{
@@ -48,9 +48,9 @@ export function createArchiveMergeExecution({
   async function capture(){
     const files={};for(const[key,root]of Object.entries(roots))files[key]=await tree(root);
     const packages={};for(const entry of await fs.readdir(siteDirectory,{withFileTypes:true}))if(entry.isFile())packages[entry.name]=await currentHash(siteDirectory,entry.name);
-    const code={};for(const name of ['archive-merge-execution.mjs','archive-merge-undo.mjs','archive-merge-files.mjs','archive-merge-runtime.mjs','archive-merge-favorites.mjs','archive-merge-plans.mjs','archive-merge-references.mjs','write-coordinator.mjs','accounts.mjs','account-server.mjs','server.mjs'])code[name]=hashBytes(await fs.readFile(new URL(name,import.meta.url)));
+    const code={};for(const name of ['archive-merge-execution.mjs','archive-merge-undo.mjs','archive-merge-files.mjs','archive-merge-runtime.mjs','archive-merge-favorites.mjs','archive-merge-plans.mjs','archive-merge-references.mjs','archive-merge-production.mjs','release-deployer.mjs','write-coordinator.mjs','accounts.mjs','account-server.mjs','server.mjs'])code[name]=hashBytes(await fs.readFile(new URL(name,import.meta.url)));
     const favorites=accounts.inspect;const accountState=typeof favorites==='function'?true:false;
-    return{files,packages,code,likes:likesFile?hashBytes(await fs.readFile(likesFile)):null,adapterReady:accountState};
+    return{files,packages,code,likes:likesFile?hashBytes(await fs.readFile(likesFile)):null,adapterReady:accountState,...(publication?{publication:await publication.capture()}: {})};
   }
   async function currentPlan(payload,actor){
     const detail=await planner.detail(payload.planId,actor);
@@ -209,7 +209,7 @@ export function createArchiveMergeExecution({
       const index=entries.length,backup=beforeHash===null?null:`${log.merge_id}/before/${index}.bin`,next=bytes===null?null:`${log.merge_id}/after/${index}.bin`;
       if(backup)await writeExclusive(directory,backup,await safeBytes(writeRoots[root],relative));
       if(next)await writeExclusive(directory,next,bytes);
-      entries.push({root,relative,beforeHash,afterHash,afterSize:bytes?.length??null,backup,next,state:'pending'});
+      entries.push({root,relative,beforeHash,afterHash,afterSize:bytes?.length??null,backup,next,beforeAttributes:await fileAttributes(writeRoots[root],relative),state:'pending'});
     };
     for(const record of review.proposed.affected)await add('archive',record.core.item_id+'.json',bytesOf(record));
     for(const draft of review.proposed.removeDrafts??[]){if(await currentHash(draftDirectory,draft.itemId+'.json')!==draft.sha256)mergeFail('恢复草稿有新编辑，不能直接转为发布。','MERGE_UNDO_STALE');await add('drafts',draft.itemId+'.json',null);}
@@ -231,8 +231,10 @@ export function createArchiveMergeExecution({
   }
   async function verifyAfter(log){
     for(const row of log.files)if(await currentHash(writeRoots[row.root],row.relative)!==row.afterHash)mergeFail('提交后文件摘要不一致，须核对。','MERGE_AFTER_MISMATCH');
+    for(const row of log.files)if(row.afterHash!==null&&row.beforeAttributes&&!same(await fileAttributes(writeRoots[row.root],row.relative),row.beforeAttributes))mergeFail('提交后文件属主或权限不一致。','MERGE_AFTER_MISMATCH');
     if(await treeDigest(path.join(siteDirectory,'dist'))!==log.distAfter)mergeFail('当前公开产物与候选摘要不一致。','MERGE_AFTER_MISMATCH');
     if(!['applied','committed'].includes(accountHandler(log).status(log.merge_id)?.status))mergeFail('收藏迁移状态不能证明完成。');
+    if(publication)await publication.verify(log);
   }
   async function retainPlanResult(log){
     if(log.operation_kind==='undo'){
@@ -251,7 +253,9 @@ export function createArchiveMergeExecution({
   function expectedAfterBaseline(review,log,withDist=false){
     const expected=structuredClone(review.baseline);
     for(const row of log.files)if(row.afterHash===null)delete expected.files[row.root][row.relative];else expected.files[row.root][row.relative]={sha256:row.afterHash,size:row.afterSize};
-    if(withDist)expected.files.dist=log.distFiles;return expected;
+    if(withDist)expected.files.dist=log.distFiles;
+    if(log.publication?.switched)expected.publication=log.publication.after;
+    return expected;
   }
   async function releaseLikes(log){
     if(!log.likes_gate)return;
@@ -265,6 +269,7 @@ export function createArchiveMergeExecution({
     for(const row of log.files??[]){const hash=await currentHash(writeRoots[row.root],row.relative);if(hash!==row.beforeHash&&hash!==row.afterHash)mergeFail('检测到合并后的外部改动，不能盲目恢复。','MERGE_RECOVERY_CONFLICT');}
     const currentDist=await treeDigest(dist);
     if(currentDist!==log.distBefore&&currentDist!==log.distAfter&&await exists(dist))mergeFail('公开产物已被其他操作改动，恢复已停止。','MERGE_RECOVERY_CONFLICT');
+    if(publication)await publication.rollback(log);
     if(await exists(previous)){
       if(await treeDigest(previous)!==log.distBefore)mergeFail('原公开版本备份摘要不一致。','MERGE_RECOVERY_CONFLICT');
       if(await exists(dist)){
@@ -276,7 +281,7 @@ export function createArchiveMergeExecution({
     for(const row of [...(log.files??[])].reverse()){
       const current=await currentHash(writeRoots[row.root],row.relative);if(current===row.beforeHash)continue;
       if(row.beforeHash===null){if(current!==row.afterHash)mergeFail('新增文件已有其他变化，禁止删除。');await fs.unlink(relativeFile(writeRoots[row.root],row.relative));}
-      else{const bytes=await safeBytes(directory,row.backup);if(hashBytes(bytes)!==row.beforeHash)mergeFail('恢复副本摘要无效。');await writeVersionedFile(writeRoots[row.root],row.relative,bytes);}
+      else{const bytes=await safeBytes(directory,row.backup);if(hashBytes(bytes)!==row.beforeHash)mergeFail('恢复副本摘要无效。');await writeVersionedFile(writeRoots[row.root],row.relative,bytes,row.beforeAttributes);}
     }
     for(const row of log.files??[])if(await currentHash(writeRoots[row.root],row.relative)!==row.beforeHash)mergeFail('恢复后摘要仍不一致。','MERGE_RECOVERY_CONFLICT');
     if(log.hadDist&&await treeDigest(dist)!==log.distBefore)mergeFail('恢复后的公开版本摘要无效。','MERGE_RECOVERY_CONFLICT');
@@ -296,6 +301,7 @@ export function createArchiveMergeExecution({
     return commitChange(reviewed,actor,context,payload);
   }
   async function commitChange(reviewed,actor,context,payload){
+    context.assertDeploymentLock?.();
     if(reviewed.actor!==actor)mergeFail('核对结果不属于当前维护身份。','MERGE_FORBIDDEN',403);
     assertUuid(context.operationId);assertUuid(context.stepId);abort(context.signal);
     if(!same(await capture(),reviewed.baseline))mergeFail('全站输入已变化，请重新核对。','MERGE_BASELINE_CHANGED');
@@ -303,6 +309,7 @@ export function createArchiveMergeExecution({
     await safeDirectory(folder,{create:true});
     const log={schema_version:1,merge_id:mergeId,operation_kind:reviewed.operationKind??'merge',parent_merge_id:reviewed.parentMergeId??null,status:'prepared',phase:'prepared',actor,primary_id:reviewed.plan.primaryId,secondary_id:reviewed.plan.secondaryId,plan_id:payload.planId,plan_revision:payload.planRevision,
       operation:{operationId:context.operationId,stepId:context.stepId},created_at:now().toISOString(),baseline_digest:reviewed.baselineDigest,authorization:{confirmPrimaryId:payload.confirmPrimaryId,...(payload.confirmSecondaryId?{confirmSecondaryId:payload.confirmSecondaryId}:{}),confirmations:payload.confirmations,publicationAuthorization:payload.publicationAuthorization},events:[],snapshots:[],files:[]};
+    if(publication)log.publicationBefore=reviewed.baseline.publication;
     context.markChanged();
     await writeExclusive(directory,`${mergeId}/review.json`,bytesOf(reviewed));
     await writeExclusive(directory,`commit-operations/${context.operationId}.${context.stepId}.json`,bytesOf({mergeId,actor}));
@@ -325,11 +332,13 @@ export function createArchiveMergeExecution({
       accountHandler(log).begin({mergeId,primaryId:log.primary_id,secondaryId:log.secondary_id,expectedDigest:reviewed.favoritesDigest});
       log.status='committing';await event(log,'favorites-locked');
       for(const row of log.files){
+        context.assertDeploymentLock?.();
         abort(context.signal);
         if(await currentHash(writeRoots[row.root],row.relative)!==row.beforeHash)mergeFail('提交前文件变化，已停止。','MERGE_BASELINE_CHANGED');
+        if(row.beforeAttributes&&!same(await fileAttributes(writeRoots[row.root],row.relative),row.beforeAttributes))mergeFail('提交前文件属主或权限变化，已停止。','MERGE_BASELINE_CHANGED');
         row.state='writing';await event(log,'writing-file',{root:row.root,relative:row.relative});
         if(row.afterHash===null)await fs.unlink(relativeFile(writeRoots[row.root],row.relative));
-        else{const bytes=await safeBytes(directory,row.next);if(hashBytes(bytes)!==row.afterHash)mergeFail('待提交副本摘要不一致。');await writeVersionedFile(writeRoots[row.root],row.relative,bytes);}
+        else{const bytes=await safeBytes(directory,row.next);if(hashBytes(bytes)!==row.afterHash)mergeFail('待提交副本摘要不一致。');await writeVersionedFile(writeRoots[row.root],row.relative,bytes,row.beforeAttributes);}
         row.state='written';await event(log,'file-written');
       }
       await event(log,'files-applied');abort(context.signal);
@@ -342,6 +351,7 @@ export function createArchiveMergeExecution({
       await event(log,'previous-dist-retained');
       await fs.rename(path.join(candidate.site,'dist'),dist);await event(log,'dist-switched');
       if(!same(await capture(),expectedAfterBaseline(reviewed,log,true)))mergeFail('切换后发现其他输入变化，须恢复后核对。','MERGE_BASELINE_CHANGED');
+      if(publication){context.assertDeploymentLock?.();await publication.publish(log,phase=>{context.assertDeploymentLock?.();return event(log,phase);},context.signal);if(!same(await capture(),expectedAfterBaseline(reviewed,log,true)))mergeFail('公开切换后发现其他变化。','MERGE_BASELINE_CHANGED');}
       await verifyAfter(log);await event(log,'verified');abort(context.signal);
       log.status='committed';log.completed_at=now().toISOString();await event(log,'committed');
       await retainPlanResult(log);
@@ -350,6 +360,7 @@ export function createArchiveMergeExecution({
       return{mergeId,status:'committed',primaryId:log.primary_id,secondaryId:log.secondary_id,results:asIds(reviewed.plan).map(itemId=>({itemId,ok:true}))};
     }catch(error){
       if(log.status==='committed')throw error;
+      try{context.assertDeploymentLock?.();}catch(lockError){log.status='needs_review';await event(log,'needs-review',{errorCode:lockError.code});throw lockError;}
       // 提交前失败不应尝试覆盖全站来源或他人的新改动。
       if(!log.files.length||log.files.every(row=>row.state==='pending')){
         accountHandler(log).rollback(mergeId);await releaseLikes(log);log.status='rolled-back';await event(log,'rolled-back',{errorCode:error.code??'BUILD_FAILED'});
@@ -359,6 +370,7 @@ export function createArchiveMergeExecution({
   }
   async function detail(mergeId,actor){
     mergeId=assertUuid(mergeId);const log=await readJson(directory,mergeId+'/manifest.json');
+    if(isLegacy(log))return{merge_id:mergeId,legacy:true,operation_kind:'legacy',status:log.status,primary_id:log.primary_id,secondary_id:log.secondary_id,created_at:log.created_at,completed_at:log.completed_at??null,snapshots:(log.snapshots??[]).map(row=>({item_id:row.item_id})),message:'历史手工操作，只读追溯。旧日志格式不同，需核对快照与原授权后另建恢复提案，不能按新版事务直接撤销。'};
     if(log.actor!==actor)mergeFail('无权查看这项合并记录。','MERGE_FORBIDDEN',403);return log;
   }
   async function byOperation(operationId,stepId,actor){
@@ -377,6 +389,7 @@ export function createArchiveMergeExecution({
   }
   async function recover(mergeId,actor){
     const log=await detail(mergeId,actor);
+    if(log.legacy)mergeFail('历史手工操作不能使用新版事务恢复，请先核对历史快照。','MERGE_LEGACY_READ_ONLY');
     if(log.status==='committed'){await verifyAfter(log);await retainPlanResult(log);accountHandler(log).finalize(log.merge_id);await releaseLikes(log);await writeVersionedFile(directory,log.merge_id+'/manifest.json',bytesOf(log));return{status:'committed',log};}
     if(log.status==='reverted')return{status:log.status,log};
     if(log.status==='rolled-back')return{status:log.status,log};
@@ -387,9 +400,11 @@ export function createArchiveMergeExecution({
     const rows=[];
     for(const entry of await fs.readdir(directory,{withFileTypes:true}).catch(error=>{if(error.code==='ENOENT')return[];throw error;}))if(entry.isDirectory()&&operationIdPattern.test(entry.name)){
       const log=await readJson(directory,entry.name+'/manifest.json');
-      if(log.actor===actor)rows.push({mergeId:log.merge_id,operationKind:log.operation_kind??'merge',parentMergeId:log.parent_merge_id??null,primaryId:log.primary_id,secondaryId:log.secondary_id,status:log.status,createdAt:log.created_at,completedAt:log.completed_at??null});
+      if(log.actor===actor||isLegacy(log))rows.push({mergeId:log.merge_id,operationKind:isLegacy(log)?'legacy':log.operation_kind??'merge',canUndo:!isLegacy(log)&&log.operation_kind!=='undo'&&log.status==='committed',parentMergeId:log.parent_merge_id??null,primaryId:log.primary_id,secondaryId:log.secondary_id,status:log.status,createdAt:log.created_at,completedAt:log.completed_at??null});
     }
     return rows.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
   }
   return{review,execute,detail,byOperation,recover,capture,commitChange,list};
 }
+
+const isLegacy=log=>!log.actor&&Boolean(log.operator)&&['committed','failed'].includes(log.status)&&/^LJM-\d{8}-[A-Z]{3}-\d{3}$/.test(log.primary_id??'')&&/^LJM-\d{8}-[A-Z]{3}-\d{3}$/.test(log.secondary_id??'');

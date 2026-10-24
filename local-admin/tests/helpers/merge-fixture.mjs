@@ -10,6 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {createRequire} from 'node:module';
 import { createMergePlanner } from '../../archive-merge-plans.mjs';
 import { digest } from '../../write-coordinator.mjs';
+import {createAccountStore} from '../../accounts.mjs';
 
 export const projectRoot = fileURLToPath(new URL('../../../', import.meta.url));
 export const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j8WQAAAAASUVORK5CYII=', 'base64');
@@ -32,7 +33,8 @@ export async function standards() {
     await Promise.all(['common-fields', 'code-dictionary', 'collection-code-rules', 'admin-field-routing', 'photo-dimensions', 'postcard-dimensions', 'diary-notebook-dimensions', 'credential-dimensions', 'card-dimensions'].map(read));
   return { commonFields, codeDictionary, collectionCodeRules, fieldRouting, dimensions: { photo, postcard, diary_notebook, credential, card } };
 }
-export async function fixture(t, { http = false, count = 2, keep = false, online = false, internal = false, port: requestedPort } = {}) {
+export async function fixture(t, { http = false, count = 2, keep = false, online = false, internal = false, production = false, port: requestedPort } = {}) {
+  if(production){online=true;internal=true;}
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ljm-merge-test-'));
   const checked = () => assert.ok(path.resolve(root).startsWith(path.resolve(os.tmpdir()) + path.sep + 'ljm-merge-test-'));
   checked();
@@ -85,6 +87,7 @@ await fs.writeFile(${JSON.stringify(path.join(root,'build-started'))},'started')
 while(await has(${JSON.stringify(path.join(root,'build-hold'))}))await new Promise(resolve=>setTimeout(resolve,30));
 if(await has(${JSON.stringify(path.join(root,'build-fail'))}))throw new Error('synthetic controlled build failure');
 await fs.mkdir('dist',{recursive:true});await fs.writeFile('dist/index.html','SYNTHETIC CANDIDATE PUBLIC VERSION');
+for(const file of ['404.html','robots.txt','sitemap.xml'])await fs.writeFile('dist/'+file,'synthetic');
 await fs.copyFile('src/data/archive.ts','dist/synthetic-data.txt');
 if(await has('public'))await fs.cp('public','dist',{recursive:true});
 console.log('synthetic official npm build entry completed');`);
@@ -103,13 +106,14 @@ console.log('synthetic official npm build entry completed');`);
   if (online) {
     for (const folder of ['drafts', 'history', 'recycle']) await fs.mkdir(path.join(privateRoot, folder), { recursive: true });
     const release = path.join(root, 'releases', '20000101-000000-synthetic-12345678'); await fs.mkdir(release, { recursive: true });
+    if(production){await fs.cp(path.join(site,'dist'),release,{recursive:true});const store=createAccountStore({directory:path.join(privateRoot,'accounts'),enableArchiveMerge:true,mailer:{available:false,async send(){}},ipSalt:'synthetic'});store.close();await fs.writeFile(path.join(privateRoot,'deployment.lock'),'');Object.assign(env,{LJM_MERGE_ENABLED:'1',LJM_MERGE_DEPLOY_LOCK:path.join(privateRoot,'deployment.lock')});}
     await fs.symlink(release, env.LJM_PUBLIC_LIVE_LINK, process.platform === 'win32' ? 'junction' : 'dir');
     Object.assign(env, { LJM_ADMIN_MODE: 'online', LJM_ADMIN_ORIGIN: 'https://admin.example.test', PUBLIC_SITE_URL: 'https://public.example.test',
       LJM_CF_ACCESS_TEAM_DOMAIN: 'https://synthetic.cloudflareaccess.com', LJM_CF_ACCESS_AUD: 'synthetic-audience', LJM_ADMIN_ALLOWED_EMAILS: 'test@example.test' });
     const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
     const jwk = { ...publicKey.export({ format: 'jwk' }), kid: 'synthetic-key', alg: 'RS256', use: 'sig' };
     const preload = path.join(root, 'synthetic-jwks.mjs');
-    await fs.writeFile(preload, `globalThis.fetch=async url=>{if(String(url)==='https://synthetic.cloudflareaccess.com/cdn-cgi/access/certs')return {ok:true,json:async()=>(${JSON.stringify({ keys: [jwk] })})};throw new Error('合成测试禁止向外请求');};`);
+    await fs.writeFile(preload, `globalThis.fetch=async url=>{if(String(url)==='https://synthetic.cloudflareaccess.com/cdn-cgi/access/certs')return {ok:true,json:async()=>(${JSON.stringify({ keys: [jwk] })})};if(${production}&&['http://127.0.0.1:4175/healthz','http://127.0.0.1:4177/healthz'].includes(String(url)))return{ok:true,json:async()=>({capabilities:{archiveMergeProtocol:1,fileGateProtocol:1,sharedRead:true}})};throw new Error('合成测试禁止向外请求');};`);
     args.push('--import', pathToFileURL(preload).href);
     const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url'), current = Math.floor(Date.now() / 1000);
     const token = encode({ alg: 'RS256', kid: 'synthetic-key' }) + '.' + encode({ iss: env.LJM_CF_ACCESS_TEAM_DOMAIN, aud: ['synthetic-audience'], email: 'test@example.test', sub: 'synthetic-test', iat: current, nbf: current, exp: current + 600, type: 'app' });
@@ -125,7 +129,7 @@ console.log('synthetic official npm build entry completed');`);
   assert.ok(ready, output);
   const get = async (route, headers = {}) => { const res = await fetch(origin + route, { headers: { ...authHeaders, ...headers } }); return { status: res.status, body: await res.json(), headers: res.headers }; };
   const post = async (route, body, op = operation(), headers = {}) => {
-    const res = await fetch(origin + route, { method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json', 'x-ljm-admin-request': '1', origin,
+    const res = await fetch(origin + route, { method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json', 'x-ljm-admin-request': '1', origin: online ? env.LJM_ADMIN_ORIGIN : origin,
       ...(op ? { 'x-ljm-operation-id': op.operationId, 'x-ljm-step-id': op.stepId } : {}), ...headers }, body: JSON.stringify(body) });
     return { status: res.status, body: await res.json(), headers: res.headers };
   };
