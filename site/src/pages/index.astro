@@ -274,7 +274,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 				<a class="ui-text-link" href={localizePath('/archive/?view=albums', locale)}>{t('查看全部相册 →', locale)}</a>
 			</header>
 			{albumBrowseViews.length > 0
-				? <ul class="home-album-list">{albumBrowseViews.slice(0, 3).map((album) => <li><AlbumBrowseCard album={album} locale={locale} /></li>)}</ul>
+				? <ul class="home-album-list">{albumBrowseViews.slice(0, 4).map((album) => <li><AlbumBrowseCard album={album} locale={locale} compact /></li>)}</ul>
 				: <p class="home-album-empty">{t('暂时没有可公开的相册，其他档案仍可逐件浏览。', locale)}</p>}
 		</section>
 
@@ -441,8 +441,10 @@ import {clientText as ct,clientPath,clientLocale} from '../i18n/client';
 	.home-albums-heading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:0.75rem 1.5rem; }
 	.home-albums-heading h2 { margin:0; font-size:1.2rem; }
 	.home-albums-heading p, .home-album-empty { color:var(--site-muted); font:0.8rem/1.8 var(--site-ui-font); }
-	.home-album-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,28rem),1fr)); list-style:none; margin:0; padding:0; gap:1rem; }
+	.home-album-list { display:grid; grid-template-columns:minmax(0,1fr); list-style:none; margin:0; padding:0; gap:1rem; }
 	.home-album-list li { min-width:0; }
+	@media (min-width:600px) { .home-album-list { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+	@media (min-width:1000px) { .home-album-list { grid-template-columns:repeat(4,minmax(0,1fr)); } }
 	.home {
 		/* 字间距统一分四档：紧凑 / 常规 / 宽松 / 展示，避免零散数值 */
 		--ls-tight: 0.05em;
