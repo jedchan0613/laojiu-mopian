@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>两件合并方案｜老旧默片</title><link rel="stylesheet" href="/admin/merge.css?v=1"></head>
+<body class="merge-app">
+  <a class="skip" href="#selection-heading">跳到档案选择</a>
+  <header class="page-header"><div><a href="/admin/">← 返回档案管理</a><p class="eyebrow">老旧默片 · 本地档案工作台</p><h1>两件档案，整理为一件</h1><p>先核对它们是否属于同一件或同一套，再决定保留哪个编号。</p></div><span class="phase-badge">第一阶段 · 私密方案</span></header>
+  <div class="stage-note"><strong>当前可用：选两件、对照资料、排列图片、保存方案。</strong><span>方案与正式档案分开保存，执行合并、正式撤销和发布将在后续阶段开放。</span></div>
+  <p class="message" id="message" role="status" aria-live="polite" tabindex="-1">正在读取本机档案…</p>
+  <button class="quiet" id="recover-save" type="button" hidden>核对上一次保存结果</button>
+  <button class="quiet" id="recheck-basis" type="button" hidden>重新核对变化，保留当前编辑</button>
+  <main class="page-grid">
+    <div>
+      <section class="panel" aria-labelledby="selection-heading"><div class="section-heading"><h2 id="selection-heading">1. 选择两件档案</h2><span id="records-count"></span></div>
+        <div class="filters"><label>搜索题名或编号<input id="record-search" type="search" placeholder="输入题名、编号…" autocomplete="off"></label><label>资料类型<select id="type-filter"><option value="">全部类型</option></select></label></div>
+        <div id="selected-summary" class="selected-summary" aria-live="polite"></div>
+        <p class="help">首版只比较已公开、同类型且没有草稿的档案。同作者、同相册或看起来相似，并不代表同一件。</p>
+        <div id="record-options" class="record-options"></div><nav id="record-pages" class="pagination" aria-label="选择列表分页"></nav>
+        <div class="section-actions"><button id="clear-selection" class="quiet" type="button">清除选择</button><button id="check-button" class="primary" type="button" disabled>核对这两件</button></div>
+      </section>
+      <section id="preflight-panel" class="panel" hidden aria-labelledby="preflight-heading"><h2 id="preflight-heading">2. 前置检查</h2><div id="preflight-results"></div><div id="reference-results" class="reference-grid"></div></section>
+      <section id="compare-panel" class="panel" hidden aria-labelledby="compare-heading">
+        <form id="plan-form"><fieldset id="plan-controls"><legend id="compare-heading">3. 对照与整理</legend>
+          <div class="keep-number"><label>保留编号（主档案）<select id="primary-id"></select></label><p id="recommendation" class="help"></p><label>选择此主档案的理由<input id="primary-reason" maxlength="1000" placeholder="如：正文首页、已有外部引用…"></label></div>
+          <div id="record-comparison" class="record-comparison"></div>
+          <label class="source-reason">为什么确认是同一件或同一套？<textarea id="source-reason" rows="3" maxlength="4000" placeholder="例如：同一封信的前后两页，正文有连续衔接。请写具体依据。"></textarea></label>
+          <p class="help">有争议的字段可以先留待核对。未知码有明确含义，不能当成空白；私密信息也不能用两份遮盖内容互相补齐。</p>
+          <div class="field-head"><h3>字段差异</h3><span id="pending-summary" role="status"></span></div>
+          <div id="different-fields"></div><details id="same-fields"><summary>相同与系统管理字段</summary><div id="equal-fields"></div></details>
+          <section aria-labelledby="images-heading"><h3 id="images-heading">图片顺序与逐图说明</h3><p class="help">拖动或用“上移／下移”排序。图注跟随图片移动；调整顺序后，请同时核对电子转录中的页号。这里不读取原始主档。</p><ol id="image-order" class="image-order"></ol><div id="omitted-images"></div></section>
+          <details class="preview-box" open><summary>合并呈现预览</summary><h3 id="preview-title"></h3><p id="preview-count"></p><div id="preview-description" class="plain-text"></div><details><summary>查看拟采用的电子原文</summary><pre id="preview-transcription"></pre></details></details>
+          <div id="saved-issues" class="help" aria-live="polite"></div>
+        </fieldset><footer class="save-bar"><span id="save-state" role="status">尚未保存方案</span><button class="primary" id="save-plan" type="submit">保存私密方案</button></footer></form>
+        <section id="execution-panel" hidden aria-labelledby="execution-heading"><h3 id="execution-heading">内部验收：执行已保存的方案</h3><p class="help">本阶段仅限本机明确开启的验收环境。请先保存，随后重新核对合成图文；不是生产发布入口。</p><button id="review-merge" type="button">检查执行条件与合并预览</button><button id="recover-merge" type="button" hidden>核对上一次合并结果</button><button id="repair-merge" type="button" hidden>核对并恢复中断操作</button><div id="merge-execution-status" class="help" role="status" aria-live="polite"></div><div id="merge-execution-result"></div></section>
+      </section>
+    </div>
+    <aside class="panel plans-panel" aria-labelledby="plans-heading"><div class="section-heading"><h2 id="plans-heading">已保存的方案</h2><button class="quiet" id="refresh-plans" type="button">刷新</button></div><label>查找已保存方案<input id="plan-search" type="search" placeholder="题名或编号…"></label><div id="plans-list"></div><button class="quiet" id="more-plans" type="button" hidden>显示更多方案</button><p class="help">关闭页面后仍可从这里继续；方案不会自动变成公开档案。</p></aside>
+  </main>
+  <dialog id="stale-dialog" aria-labelledby="stale-heading"><h2 id="stale-heading">方案的基础已变化</h2><p>你的选值仍保留。请对照当前资料的新差异，再明确更新检查基础；旧确认不会自动沿用。</p><div id="stale-changes"></div><div class="section-actions"><button id="stale-close" class="quiet" type="button">先保留原方案</button><button id="refresh-basis" class="primary" type="button">重新核对，沿用我的选值</button></div></dialog>
+  <dialog id="execute-dialog" aria-labelledby="execute-heading"><h2 id="execute-heading">核对合并后的整件资料</h2><p>以下勾选表示你本人已核对并完成必要处理，不表示资料没有隐私风险。原来的公开批准不会自动代替本次检查。</p><div id="execute-preview"></div><form id="execute-form"><fieldset id="execute-controls"><legend>本人逐项核对</legend><div id="merge-checklist"></div><label>输入将保留的完整编号<input id="merge-primary-confirm" autocomplete="off" spellcheck="false"></label><label class="merge-check"><input type="checkbox" id="authorize-primary">同意发布合并后的主档案</label><label class="merge-check"><input type="checkbox" id="authorize-secondary">同意从档案正式撤销留档，并将其旧副本撤出公开目录；inbox和私密快照保留</label></fieldset><p id="execute-progress" class="help" role="status" aria-live="polite"></p><div class="section-actions"><button id="execute-close" type="button">返回继续核对</button><button id="cancel-merge" type="button" hidden>取消并等待恢复结果</button><button id="execute-submit" class="primary" type="submit" disabled>确认执行本机合并</button></div></form></dialog>
+  <script type="module" src="/admin/merge.js?v=1"></script>
+</body></html>

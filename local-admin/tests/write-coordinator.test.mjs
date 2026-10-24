@@ -364,3 +364,26 @@ test('读取不能越过已递交但尚未完成入队的写入', async t => {
   await started.promise; assert.equal(read, false);
   pause.resolve(); await write; assert.equal(await result, 'after');
 });
+
+test('合并待核对收据只接受服务端证明；恢复后保留原幂等去向',async t=>{
+ const {directory}=await fixture(t),writes=await createWriteCoordinator({directory});
+ const params=request({kind:'merge-records',target:[itemId,'LJM-20000101-LET-002']});
+ await assert.rejects(writes.perform(params,context=>{context.markChanged();throw new Error('synthetic uncertain result');}),{code:'OPERATION_NEEDS_REVIEW'});
+ const stored=writes.query(params.operationId)[0];assert.equal(stored.status,'needs_review');
+ await assert.rejects(writes.reconcileMerge({...params,requestHash:'wrong'},async()=>({status:'succeeded'})),{code:'MERGE_RECOVERY_INVALID'});
+ await assert.rejects(writes.reconcileMerge({...params,requestHash:stored.requestHash},async()=>({status:'unknown'})),{code:'MERGE_RECOVERY_UNPROVEN'});
+ assert.throws(()=>writes.assertReady(),{code:'OPERATION_NEEDS_REVIEW'});
+ const reconciled=await writes.reconcileMerge({...params,requestHash:stored.requestHash},async()=>({status:'succeeded',result:{results:[{itemId,ok:true}],privateText:'must not enter receipt'}}));
+ assert.equal(reconciled.status,'succeeded');assert.ok(!JSON.stringify(reconciled).includes('must not enter receipt'));writes.assertReady();
+ let called=false;const replay=await writes.perform(params,()=>{called=true;});assert.equal(replay.replayed,true);assert.equal(called,false);
+});
+
+test('合并恢复成失败不伪造成功；其他类型待核对操作不可借此解除',async t=>{
+ const {directory}=await fixture(t),writes=await createWriteCoordinator({directory});
+ const params=request({kind:'merge-records',target:[itemId,'LJM-20000101-LET-002']});
+ await assert.rejects(writes.perform(params,context=>{context.markChanged();throw new Error('interrupted');}));
+ const stored=writes.query(params.operationId)[0];
+ assert.equal((await writes.reconcileMerge({...params,requestHash:stored.requestHash},async()=>({status:'failed'}))).status,'failed');writes.assertReady();
+ const other=request();await assert.rejects(writes.perform(other,context=>{context.markChanged();throw new Error('different operation');}));
+ const entry=writes.query(other.operationId)[0];await assert.rejects(writes.reconcileMerge({...other,requestHash:entry.requestHash},async()=>({status:'succeeded'})),{code:'MERGE_RECOVERY_INVALID'});
+});

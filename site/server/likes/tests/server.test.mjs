@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { createLikeServer } from '../server.mjs';
+import {acquirePrivateFileGate} from '../../../../shared/private-file-gate.mjs';
 
 const ITEM_ID = 'LJM-20260808-PHO-001';
 const ORIGIN = 'https://laojiumopian.com';
@@ -116,4 +117,20 @@ test('拒绝非本站请求、伪造编号和未公开档案', async () => {
     await running.close();
     await rm(fixture.root, { recursive: true, force: true });
   }
+});
+
+test('合并门禁非阻塞返回423，释放后恢复点赞；旧编号使用当前主号计数',async()=>{
+ const fixture=await createFixture(),running=await start(fixture.config);let gate;
+ try{
+  gate=await acquirePrivateFileGate(fixture.dataFile,{role:'archive-merge'});
+  const held=await fetch(`${running.baseUrl}/api/likes/${ITEM_ID}`,{method:'POST',headers:headers('203.0.113.31',true),body:'{}'});assert.equal(held.status,423);
+  await gate.release();gate=null;
+  const old='LJM-20260808-PHO-002';await mkdir(path.join(fixture.config.publicLiveDirectory,'archive',old),{recursive:true});await writeFile(path.join(fixture.config.publicLiveDirectory,'archive',old,'index.html'),'old alias page');
+  await writeFile(path.join(fixture.config.publicLiveDirectory,'records.json'),JSON.stringify({records:[{id:ITEM_ID}],aliases:{[old]:ITEM_ID}}));
+  const first=await fetch(`${running.baseUrl}/api/likes/${old}`,{method:'POST',headers:headers('203.0.113.31',true),body:'{}'});assert.deepEqual(await first.json(),{item_id:ITEM_ID,count:1,liked:true,created:true});
+  const repeated=await fetch(`${running.baseUrl}/api/likes/${ITEM_ID}`,{method:'POST',headers:headers('203.0.113.31',true),body:'{}'});assert.equal((await repeated.json()).created,false);
+  const queried=await fetch(`${running.baseUrl}/api/likes?items=${old}`,{headers:headers('203.0.113.31')});assert.equal((await queried.json()).items[old].count,1);
+  await writeFile(path.join(fixture.config.publicLiveDirectory,'records.json'),JSON.stringify({records:[],aliases:{}}));
+  assert.equal((await fetch(`${running.baseUrl}/api/likes/${old}`,{method:'POST',headers:headers('203.0.113.32',true),body:'{}'})).status,404);
+ }finally{await gate?.release();await running.close();await rm(fixture.root,{recursive:true,force:true});}
 });

@@ -226,6 +226,8 @@ const publicPreviewUrl = (pathname = '/') => {
 };
 
 const elements = {
+  mergePlannerLink: document.getElementById('merge-planner-link'),
+  mobileMergePlannerLink: document.getElementById('mobile-merge-planner-link'),
 	recordList: document.querySelector('#record-list'), recordCount: document.querySelector('#record-count'),
 	recordSearch: document.querySelector('#record-search'), recordTitle: document.querySelector('#record-title'),
 	recordSort: document.querySelector('#record-sort'),
@@ -4742,6 +4744,9 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	state.recycleBin = data.recycle_bin ?? [];
 	state.integrityReport = data.maintenance?.integrity ?? null;
 	state.adminMode = data.paths?.adminMode ?? 'local';
+	for (const link of [elements.mergePlannerLink, elements.mobileMergePlannerLink]) {
+		if (link) link.hidden = state.adminMode !== 'local';
+	}
 	state.publicSiteUrl = (data.paths?.previewUrl ?? '').replace(/\/+$/, '');
 	state.query.loaded = false;
 	state.query.loading = false;

@@ -8,6 +8,7 @@ import {supportedLocales} from '../shared/locale-config.mjs';
 // - 验证码只存不可逆摘要；会话令牌只存摘要；邮箱与来源地址只存用于限流聚合的摘要。
 
 import { normalizeAccountLanguage } from './account-i18n.mjs';
+import { createFavoriteMergeAdapter } from './archive-merge-favorites.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -196,7 +197,7 @@ export function createAccountReader({ directory }) {
  * @param {string} [options.ipSalt] 来源地址摘要用的盐；缺失时用随机盐并落盘保存
  * @param {Function} [options.now] 取当前时间，便于测试注入
  */
-export function createAccountStore({ directory, mailer, environment = 'development', ipSalt = '', now = () => new Date() }) {
+export function createAccountStore({ directory, mailer, environment = 'development', ipSalt = '', now = () => new Date(), enableArchiveMerge = false }) {
 	if (!directory || !path.isAbsolute(directory)) fail('账户数据目录必须是绝对路径。');
 	if (!mailer || typeof mailer.send !== 'function') fail('必须提供邮件发送器。');
 	if (!['development', 'production'].includes(environment)) fail('运行环境只能是 development 或 production。');
@@ -226,6 +227,9 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 	}
 	database.prepare('UPDATE schema_version SET version = 2 WHERE version < 2').run();
 	const schemaVersion = database.prepare('SELECT version FROM schema_version LIMIT 1').get().version;
+	// 关闭开发入口也不能绕过已经持久化的收藏门禁或旧编号解析。
+	const existingMergeSchema=database.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='archive_merge_events'").get();
+	const archiveMerge = enableArchiveMerge || existingMergeSchema ? createFavoriteMergeAdapter(database) : null;
 
 	const run = (sql, ...parameters) => database.prepare(sql).run(...parameters);
 	const one = (sql, ...parameters) => database.prepare(sql).get(...parameters) ?? null;
@@ -419,6 +423,7 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 
 	return {
 		schemaVersion,
+		archiveMerge,
 		databaseFile,
 		close: () => database.close(),
 		environment,
@@ -615,12 +620,14 @@ export function createAccountStore({ directory, mailer, environment = 'developme
 		},
 
 		listFavorites({ session }) {
+			archiveMerge?.assertReadable(session.user.id);
 			return many('SELECT item_id, created_at FROM favorites WHERE user_id = ? ORDER BY created_at DESC', session.user.id)
 				.map((row) => ({ item_id: row.item_id, created_at: row.created_at }));
 		},
 		toggleFavorite({ session, itemId, action }) {
-			const id = String(itemId ?? '').trim();
+			let id = String(itemId ?? '').trim();
 			if (!itemIdPattern.test(id)) fail('档案编号格式不正确。', 400);
+			id = archiveMerge?.resolveForWrite(id) ?? id;
 			const exists = one('SELECT 1 AS present FROM favorites WHERE user_id = ? AND item_id = ?', session.user.id, id);
 			if (action === 'remove') {
 				if (exists) {

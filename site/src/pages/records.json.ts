@@ -6,6 +6,8 @@ import { archiveItems } from '../data/archive';
 import { createArchiveRecordView, isPublishedArchiveItem } from '../data/archive-view';
 import { getLocale, localizePath } from '../i18n/ui';
 import { getResponsiveImage } from '../data/responsive-images';
+import projection from '../data/archive-merge-aliases.json';
+import { resolveArchiveMergeProjection } from '../../../shared/archive-merge-projection.mjs';
 
 export const GET: APIRoute = ({url}) => {
 	const locale = getLocale(url.pathname);
@@ -26,7 +28,10 @@ export const GET: APIRoute = ({url}) => {
 				href: localizePath(`/archive/${view.id}/`, locale),
 			};
 		});
-	return new Response(JSON.stringify({ locale, records }), {
+	const resolved=resolveArchiveMergeProjection(archiveItems,projection);
+	const aliases=Object.fromEntries(Object.entries(resolved).map(([source,row]:[string,any])=>[source,row.targetId]));
+	const alias_pages=Object.fromEntries(Object.entries(resolved).map(([source,row]:[string,any])=>[source,row.images]));
+	return new Response(JSON.stringify({ locale, records, aliases, alias_pages }), {
 		headers: {
 			'Content-Type': 'application/json; charset=utf-8',
 			'Cache-Control': 'public, max-age=300',

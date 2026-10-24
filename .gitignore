@@ -179,6 +179,7 @@ local-admin/history/
 local-admin/recycle-bin/
 local-admin/upload-staging/
 local-admin/operations/
+local-admin/merges/
 
 # 网站公开图片（发布副本与响应式变体）不入仓库：服务器部署按上一版应用目录继承并远程写入，
 # 公开仓库不再承担图片分发，避免公开图在 GitHub 形成第二曝光面（2026-10-12 用户授权移出并清洗历史）

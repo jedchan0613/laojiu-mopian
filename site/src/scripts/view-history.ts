@@ -75,12 +75,17 @@ export async function readLocalizedViewHistory(): Promise<ViewHistoryEntry[]> {
   const payload = await response.json();
   if (!Array.isArray(payload?.records)) return [];
   const records = new Map<string, any>(payload.records.map((record: any) => [record.id, record]));
+  const seen=new Set<string>();
   return cached.flatMap((entry) => {
-   const record = records.get(entry.id);
+   const id=typeof payload.aliases?.[entry.id]==='string'?payload.aliases[entry.id]:entry.id;
+   if(seen.has(id))return[];
+   const record = records.get(id);
    if (!record || typeof record.title !== 'string') return [];
+   seen.add(id);
    const cover = typeof record.cover === 'string' ? record.cover : '';
    return [{
     ...entry,
+    id,
     title: record.title,
     typeLabel: String(record.type_label ?? ''),
     dateDisplay: String(record.date_display ?? ''),

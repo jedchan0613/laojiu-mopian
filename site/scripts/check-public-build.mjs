@@ -41,11 +41,22 @@ const listFiles = async (directory) => {
 const distFiles = await listFiles(distRoot);
 check(!distFiles.some(file => file.includes('_冲突文件_')), '公开构建包含同步冲突副本，必须排除后重新构建。');
 const htmlFiles = distFiles.filter((path) => path.endsWith('.html'));
-const htmlEntries = await Promise.all(htmlFiles.map(async (path) => ({
+const allHtmlEntries = await Promise.all(htmlFiles.map(async (path) => ({
 	path,
 	relativePath: relative(distRoot, path).split(sep).join('/'),
 	html: await readFile(path, 'utf8'),
 })));
+// 旧号去向页是只读导航，不是另一件档案；仍单独检查其隐私/目标/索引约束。
+const aliasPages=allHtmlEntries.filter(page=>page.html.includes('data-archive-merge-alias='));
+const htmlEntries=allHtmlEntries.filter(page=>!page.html.includes('data-archive-merge-alias='));
+for(const page of aliasPages){
+ const data=page.html.match(/id="merge-link-data">([\s\S]*?)<\/script>/)?.[1];
+ let value;try{value=JSON.parse(data);}catch{check(false,page.relativePath+' 合并去向数据格式无效。');continue;}
+ check(page.html.includes('name="robots" content="noindex, follow"'),page.relativePath+' 旧号不能进入搜索索引。');
+ check(!/data-archive-id=|data-record-citation|data-archive-like|"@type":"CreativeWork"/.test(page.html),page.relativePath+' 旧号不得冒作独立档案。');
+ check(htmlEntries.some(row=>'/'+row.relativePath.replace(/index\.html$/,'')===value.target),page.relativePath+' 合并目标必须仍公开。');
+ check(Object.keys(value).sort().join(',')==='images,records,sourceId,target',page.relativePath+' 合并去向含多余私密字段。');
+}
 
 // 缺页会复用于任意不存在网址，不能把构建时的/404/当成标准页面或翻译对应页。
 for (const { prefix, locale } of localeDefinitions) {

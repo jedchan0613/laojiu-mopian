@@ -4,6 +4,7 @@ import { isIP } from 'node:net';
 import { access, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {acquirePrivateFileGate} from '../../../shared/private-file-gate.mjs';
 
 const ITEM_ID_PATTERN = /^LJM-\d{8}-[A-Z0-9]{2,5}-\d{3}$/;
 const HASH_PATTERN = /^[a-f0-9]{64}$/;
@@ -215,7 +216,7 @@ function requireSameOrigin(request, publicOrigin) {
 
 export async function createLikeServer(config) {
   await access(config.publicLiveDirectory);
-  const state = await loadState(config.dataFile);
+  let state = await loadState(config.dataFile);
   const rateLimits = new Map();
   let mutationQueue = Promise.resolve();
 
@@ -242,32 +243,40 @@ export async function createLikeServer(config) {
     }
   }
 
+  async function canonicalItem(itemId){
+    if(!ITEM_ID_PATTERN.test(itemId))throw new RequestError(404,'档案不存在或尚未公开。');
+    let summary;
+    try{summary=JSON.parse(await readFile(path.join(config.publicLiveDirectory,'records.json'),'utf8'));}
+    catch(error){if(error.code!=='ENOENT')throw error;}
+    const target=summary?.aliases?.[itemId]??itemId;
+    if(!ITEM_ID_PATTERN.test(target)||summary&&(!Array.isArray(summary.records)||!summary.records.some(row=>row.id===target))||!await publicItemExists(config.publicLiveDirectory,target))throw new RequestError(404,'档案不存在或尚未公开。');
+    return target;
+  }
+
   async function getItems(requestUrl, clientIp) {
     const rawItems = requestUrl.searchParams.get('items') || '';
     const itemIds = [...new Set(rawItems.split(',').map((value) => value.trim()).filter(Boolean))];
     if (itemIds.length === 0 || itemIds.length > MAX_ITEMS_PER_QUERY) {
       throw new RequestError(400, `一次需要查询 1 至 ${MAX_ITEMS_PER_QUERY} 件档案。`);
     }
-    for (const itemId of itemIds) {
-      if (!(await publicItemExists(config.publicLiveDirectory, itemId))) {
-        throw new RequestError(404, '档案不存在或尚未公开。');
-      }
-    }
+    const canonical=new Map();for(const itemId of itemIds)canonical.set(itemId,await canonicalItem(itemId));
+    state=await loadState(config.dataFile);
     const items = {};
     for (const itemId of itemIds) {
-      const voter = createDigest(config.secret, 'like-v1', itemId, clientIp);
-      const voters = state.get(itemId) || new Set();
+      const target=canonical.get(itemId),voter = createDigest(config.secret, 'like-v1', target, clientIp);
+      const voters = state.get(target) || new Set();
       items[itemId] = { count: voters.size, liked: voters.has(voter) };
     }
     return { items };
   }
 
   async function addLike(itemId, clientIp) {
-    if (!(await publicItemExists(config.publicLiveDirectory, itemId))) {
-      throw new RequestError(404, '档案不存在或尚未公开。');
-    }
-    const voter = createDigest(config.secret, 'like-v1', itemId, clientIp);
     const resultPromise = mutationQueue.then(async () => {
+      let gate;
+      try{gate=await acquirePrivateFileGate(config.dataFile,{role:'likes'});}catch(error){if(error.code==='PRIVATE_FILE_GATE_BUSY')throw new RequestError(423,error.message);throw error;}
+      try{
+      itemId=await canonicalItem(itemId);state=await loadState(config.dataFile);
+      const voter=createDigest(config.secret,'like-v1',itemId,clientIp);
       const voters = state.get(itemId) || new Set();
       if (voters.has(voter)) {
         return { item_id: itemId, count: voters.size, liked: true, created: false };
@@ -282,6 +291,7 @@ export async function createLikeServer(config) {
         throw error;
       }
       return { item_id: itemId, count: voters.size, liked: true, created: true };
+      }finally{await gate.release();}
     });
     mutationQueue = resultPromise.catch(() => undefined);
     return resultPromise;

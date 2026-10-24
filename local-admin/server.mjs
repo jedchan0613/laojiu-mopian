@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { userInfo } from 'node:os';
 import { createHash, randomUUID } from 'node:crypto';
 import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
 import { createAccessAuthenticator } from './access-auth.mjs';
@@ -20,11 +21,17 @@ import { createTranslationStore } from './translations.mjs';
 import { filterApprovedMetadataIssues } from '../shared/publication-metadata-approvals.mjs';
 import { createWriteCoordinator, acquireWriteLease, atomicWrite, recordRevision, WriteSafetyError } from './write-coordinator.mjs';
 import { createPublicationReviews } from './publication-review.mjs';
+import { createMergePlanner } from './archive-merge-plans.mjs';
+import { createMergeReferenceInspector } from './archive-merge-references.mjs';
+import { createArchiveMergeExecution } from './archive-merge-execution.mjs';
+import { createMergeUndo } from './archive-merge-undo.mjs';
+import { createMergeImageValidator, buildMergeCandidate } from './archive-merge-runtime.mjs';
 import { assertPublicationImageSignature, detectPublicationImageMime } from '../shared/publication-image-safety.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
 const onlineMode = runtimeMode === 'online';
+const mergeInternalEnabled = !onlineMode && process.env.LJM_MERGE_INTERNAL_ENABLED === '1';
 const readEnvironmentPath = (name, fallback) => {
 	const value = process.env[name]?.trim();
 	return path.resolve(value || fallback);
@@ -69,6 +76,8 @@ const siteArchiveDataFile = path.join(siteDirectory, 'src', 'data', 'archive.ts'
 const siteTranslationDataFile = path.join(siteDirectory, 'src', 'data', 'archive-translations.json');
 const translationDirectory = path.join(adminDataRoot, 'translations');
 const operationDirectory = path.join(adminDataRoot, 'operations');
+const mergeDirectory = path.join(adminDataRoot, 'merges');
+const mergeLikesFile = process.env.LJM_MERGE_LIKES_FILE?.trim() ? path.resolve(process.env.LJM_MERGE_LIKES_FILE.trim()) : null;
 const responsiveImageManifestFile = path.join(siteDirectory, 'src', 'data', 'generated', 'image-manifest.json');
 const archiveCategoryFile = path.join(siteDirectory, 'src', 'data', 'archive-categories.json');
 const siteDistDirectory = path.join(siteDirectory, 'dist');
@@ -204,6 +213,7 @@ validateRuntimeConfiguration();
 
 // 账户业务数据目录：账号、会话、收藏、申请与邮件事件全部保存在这里，与档案数据完全分开。
 const accountDataRoot = readEnvironmentPath('LJM_ACCOUNT_DATA_DIR', path.join(adminDataRoot, 'accounts'));
+if (mergeLikesFile && !pathIsInside(adminDataRoot, mergeLikesFile)) throw new Error('合并验收的点赞文件必须位于当前私密管理目录内。');
 
 for (const publicRoot of [siteDirectory, publicDirectory, path.join(projectRoot, 'public-assets')]) {
 	if (pathIsInside(publicRoot, submissionDirectory)) throw new Error('私密投稿目录不能位于网站、管理页面或公开素材目录内。');
@@ -211,6 +221,7 @@ for (const publicRoot of [siteDirectory, publicDirectory, path.join(projectRoot,
 	if (pathIsInside(publicRoot, accountDataRoot)) throw new Error('账户私密数据目录不能位于网站、管理页面或公开素材目录内。');
 	if (pathIsInside(publicRoot, translationDirectory)) throw new Error('英文草稿与审核数据目录不能位于公开目录内。');
 	if (pathIsInside(publicRoot, operationDirectory)) throw new Error('私密操作记录不能位于公开目录内。');
+	if (pathIsInside(publicRoot, mergeDirectory)) throw new Error('私密合并方案不能位于公开目录内。');
 }
 const releaseWriteLease = process.argv.includes('--check-config') ? null : await acquireWriteLease(operationDirectory);
 const writes = process.argv.includes('--check-config') ? null : await createWriteCoordinator({ directory: operationDirectory });
@@ -249,6 +260,7 @@ const accountService = onlineMode ? null : (() => {
 	});
 	const store = createAccountStore({
 		directory: accountDataRoot,
+		enableArchiveMerge: mergeInternalEnabled,
 		mailer,
 		environment: 'development',
 		ipSalt: process.env.LJM_ACCOUNT_IP_SALT?.trim() || '',
@@ -1310,6 +1322,17 @@ const getAdminStandards = async () => {
 	return { standards: adminStandardsCache, signature };
 };
 
+const mergePlanner = createMergePlanner({
+	directory: mergeDirectory, imageRoot: inboxDirectory, readState: readRecordState,
+	readRecords: loadOfficialRecords,
+	getStandards: async () => (await getAdminStandards()).standards,
+	policies: await readJson(path.join(adminDirectory, 'archive-merge-field-policies.json')),
+	validateRecord: (record, standards) => getPublicationIssues(record, standards.commonFields, null, standards.collectionCodeRules, standards.codeDictionary),
+	collectionCode: (record, standards) => getCollectionCodeResult(record, standards.collectionCodeRules, standards.codeDictionary),
+	inspectReferences: createMergeReferenceInspector({ accountDirectory: accountDataRoot, submissionDirectory, mergeDirectory, translationDirectory, siteDataDirectory: path.join(siteDirectory, 'src', 'data'), likesFile: mergeLikesFile }),
+});
+const localMergeActor = 'local:' + userInfo().username;
+
 const loadBootstrap = async (standards) => {
 	const [officialRecords, drafts, history, recycleBin] = await Promise.all([
 		loadOfficialRecords(),
@@ -1919,6 +1942,7 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 			removed_image_descriptions: removedImageDescriptions,
 			restored_from_history: existingDraft?.restored_from_history ?? null,
 			restored_from_withdrawal: existingDraft?.restored_from_withdrawal ?? null,
+			...(existingDraft?.merge_undo ? { merge_undo: existingDraft.merge_undo } : {}),
 			record,
 		};
 		await fs.mkdir(draftDirectory, { recursive: true });
@@ -2395,6 +2419,7 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 		const draftPath = path.join(draftDirectory, `${itemId}.json`);
 		if (!(await pathExists(draftPath))) throw new Error('请先保存草稿。');
 		const draft = await readJson(draftPath);
+		if (draft.merge_undo) throw new RequestError('这是撤销合并的恢复草稿。请回到“两件合并”中的原操作，重新核对两件、引用和收藏后恢复发布，不能逐件绕过合并检查。', 409);
 		const record = structuredClone(draft.record);
 		if (draft.source_submission_id) {
 			const sourceSubmission = await submissionStore.detail(draft.source_submission_id);
@@ -2615,6 +2640,46 @@ const publishDraftsBatch = async (payload, options = {}) => {
 		return { results };
 };
 
+const mergeExecution = mergeInternalEnabled ? createArchiveMergeExecution({
+	directory: mergeDirectory, archiveDirectory: archiveDataDirectory, draftDirectory, inboxDirectory,
+	siteDirectory, sharedDirectory: sharedAlbumModuleDirectory, historyDirectory, translationDirectory, submissionDirectory,
+	likesFile: mergeLikesFile, planner: mergePlanner, readRecords: loadOfficialRecords,
+	accounts: accountService.store.archiveMerge,
+	validateImage: createMergeImageValidator(siteDirectory), buildCandidate: buildMergeCandidate,
+	normalizeRecord: async record => {
+		const { standards } = await getAdminStandards();
+		if (normalizeSharedCoreFields(record, standards.fieldRouting, standards.commonFields).length) throw new RequestError('共享字段仍有冲突，须先处理。');
+		const code = getCollectionCodeResult(record, standards.collectionCodeRules, standards.codeDictionary);
+		if (code.issues.length) throw new PublicationValidationError(code.issues);
+		record.core.collection_code = code.code; return record;
+	},
+	validateRecord: async record => {
+		const { standards } = await getAdminStandards();
+		// 新的目标文件尚只存在于候选内；其来源和最终副本由引擎逐张完整解码、核对摘要。
+		return (await getPublicationIssues(record, standards.commonFields, null, standards.collectionCodeRules, standards.codeDictionary))
+			.filter(issue => !['privacy_confirmation', 'image_missing'].includes(issue.code));
+	},
+}) : null;
+
+const mergeUndo = mergeExecution ? createMergeUndo({
+	directory: mergeDirectory, archiveDirectory: archiveDataDirectory, draftDirectory, inboxDirectory,
+	historyDirectory, translationDirectory, siteDirectory, likesFile: mergeLikesFile, engine: mergeExecution,
+	accounts: accountService.store.archiveMerge, readRecords: loadOfficialRecords,
+	validateImage: createMergeImageValidator(siteDirectory),
+	normalizeRecord: async record => {
+		const { standards } = await getAdminStandards();
+		if (normalizeSharedCoreFields(record, standards.fieldRouting, standards.commonFields).length) throw new RequestError('恢复内容有字段冲突，须先处理。');
+		const code = getCollectionCodeResult(record, standards.collectionCodeRules, standards.codeDictionary);
+		if (code.issues.length) throw new PublicationValidationError(code.issues);
+		record.core.collection_code = code.code; return record;
+	},
+	validateRecord: async record => {
+		const { standards } = await getAdminStandards();
+		return (await getPublicationIssues(record, standards.commonFields, null, standards.collectionCodeRules, standards.codeDictionary))
+			.filter(issue => !['privacy_confirmation', 'image_missing'].includes(issue.code));
+	},
+}) : null;
+
 const adminServer = http.createServer(async (request, response) => {
 	// 管理域名经Tunnel直达本服务，不依赖公开站Caddy；包括早期错误和重定向。
 	response.setHeader('Cache-Control', 'no-store');
@@ -2629,6 +2694,107 @@ const adminServer = http.createServer(async (request, response) => {
 			return;
 		}
 		const adminIdentity = onlineMode ? await accessAuthenticator.verifyRequest(request) : null;
+		const mergeRequest = /^\/api\/(?:merge(?:-|$)|merges(?:\/|$))/.test(url.pathname);
+		if (onlineMode && (mergeRequest || /^\/admin\/merge[.-]/.test(url.pathname))) {
+			sendJson(response, 404, { error: '合并方案第一阶段仅在本机维护入口开放。' }); return;
+		}
+		if (mergeRequest) {
+			if (request.method === 'GET' && url.pathname === '/api/merge-capabilities') {
+				sendJson(response, 200, { phase: 3, internalExecutionEnabled: Boolean(mergeExecution), undoEnabled: Boolean(mergeUndo), online: false }, { request }); return;
+			}
+			if (mergeExecution && request.method === 'GET' && url.pathname === '/api/merges') {
+				sendJson(response, 200, { merges: await writes.read(() => mergeExecution.list(localMergeActor)) }, { request }); return;
+			}
+			if (mergeUndo && request.method === 'POST' && url.pathname === '/api/merge-undo-review') {
+				requireSafeMutation(request); const payload = await readSubmissionJson(request, 32 * 1024);
+				sendJson(response, 200, await writes.read(() => mergeUndo.review(payload, localMergeActor)), { request }); return;
+			}
+			const undoImage = /^\/api\/merge-undo-image\/([a-f0-9-]{36})\/(LJM-\d{8}-[A-Z]{3}-\d{3})\/([-A-Za-z0-9_.]+)$/i.exec(url.pathname);
+			if (mergeUndo && request.method === 'GET' && undoImage) {
+				const value = await mergeUndo.image(undoImage[1], undoImage[2], undoImage[3], localMergeActor);
+				response.writeHead(200, { 'Content-Type': detectPublicationImageMime(value.bytes), 'Content-Length': value.bytes.length, 'X-Content-Type-Options': 'nosniff' }); response.end(value.bytes); return;
+			}
+			if (mergeUndo && request.method === 'POST' && url.pathname === '/api/merge-undo') {
+				requireSafeMutation(request); const payload = await readSubmissionJson(request, 32 * 1024);
+				if (!['drafts','republish'].includes(payload?.mode)) throw new RequestError('请选择生成恢复草稿或重新核对恢复发布。');
+				const merge = await writes.read(() => mergeExecution.detail(payload.mergeId, localMergeActor));
+				const isDraft = payload.mode === 'drafts';
+				const result = await runManagedOperation(request, isDraft ? 'merge-undo-drafts' : 'merge-undo', payload,
+					context => isDraft ? mergeUndo.drafts(payload, localMergeActor, context) : mergeUndo.publish(payload, localMergeActor, context),
+					{ target: [merge.primary_id, merge.secondary_id], checkVersion: false });
+				const operationId = requestOperationId(request), stepId = String(request.headers['x-ljm-step-id']).toLowerCase();
+				const undo = isDraft ? await mergeUndo.byOperation(operationId, stepId, localMergeActor) : await mergeExecution.byOperation(operationId, stepId, localMergeActor);
+				bootstrapCache = null; inboxHashCache = new Map();
+				sendJson(response, 200, { ...result, undo, internalOnly: true }, { request }); return;
+			}
+			const undoResult = /^\/api\/merge-undo-result\/(drafts|republish)\/([a-f0-9-]{36})\/([a-f0-9-]{36})$/i.exec(url.pathname);
+			if (mergeUndo && request.method === 'GET' && undoResult) {
+				const undo = undoResult[1] === 'drafts' ? await mergeUndo.byOperation(undoResult[2], undoResult[3], localMergeActor) : await mergeExecution.byOperation(undoResult[2], undoResult[3], localMergeActor);
+				sendJson(response, 200, { undo }, { request }); return;
+			}
+			if (mergeExecution && request.method === 'POST' && url.pathname === '/api/merge-review') {
+				requireSafeMutation(request); const payload = await readSubmissionJson(request, 32 * 1024);
+				sendJson(response, 200, await writes.read(() => mergeExecution.review(payload, localMergeActor)), { request }); return;
+			}
+			if (mergeExecution && request.method === 'POST' && url.pathname === '/api/merge') {
+				requireSafeMutation(request); const payload = await readSubmissionJson(request, 32 * 1024);
+				const { plan } = await writes.read(() => mergePlanner.detail(payload?.planId, localMergeActor));
+				const result = await runManagedOperation(request, 'merge-records', payload, context => mergeExecution.execute(payload, localMergeActor, context), { target: [plan.primaryId, plan.secondaryId], checkVersion: false });
+				const merge = await mergeExecution.byOperation(requestOperationId(request), String(request.headers['x-ljm-step-id']).toLowerCase(), localMergeActor);
+				sendJson(response, 200, { ...result, merge, internalOnly: true }, { request }); return;
+			}
+			if (mergeExecution && request.method === 'GET' && /^\/api\/merges\/[a-f0-9-]{36}$/i.test(url.pathname)) {
+				sendJson(response, 200, { merge: await writes.read(() => mergeExecution.detail(url.pathname.split('/').at(-1), localMergeActor)) }, { request }); return;
+			}
+			const mergeResultPath = /^\/api\/merge-result\/([a-f0-9-]{36})\/([a-f0-9-]{36})$/i.exec(url.pathname);
+			if (mergeExecution && request.method === 'GET' && mergeResultPath) {
+				sendJson(response, 200, { merge: await mergeExecution.byOperation(mergeResultPath[1], mergeResultPath[2], localMergeActor) }, { request }); return;
+			}
+			if (mergeExecution && request.method === 'POST' && url.pathname === '/api/merge-recover') {
+				requireSafeMutation(request); const payload = await readSubmissionJson(request, 32 * 1024);
+				if (!payload || Object.keys(payload).some(key => !['operationId','stepId','requestHash'].includes(key))) throw new RequestError('恢复请求格式无效。');
+				const operation = await writes.reconcileMerge(payload, async entry => {
+					if (entry.kind === 'merge-undo-drafts') {
+						const undo = await mergeUndo.byOperation(entry.operationId, entry.stepId, localMergeActor);
+						const recovered = await mergeUndo.recoverDrafts(undo.undo_id, localMergeActor);
+						return { status: ['drafts-created','proposal-only'].includes(recovered.status) ? 'succeeded' : 'failed', result: { results: recovered.records.map(row => ({ itemId: row.itemId, ok: true })) } };
+					}
+					const merge = await mergeExecution.byOperation(entry.operationId, entry.stepId, localMergeActor);
+					const recovered = await mergeExecution.recover(merge.merge_id, localMergeActor);
+					return { status: ['committed','reverted'].includes(recovered.status) ? 'succeeded' : 'failed', result: { results: [merge.primary_id, merge.secondary_id].map(itemId => ({ itemId, ok: true })) } };
+				});
+				bootstrapCache = null; sendJson(response, 200, { operation, internalOnly: true }, { request }); return;
+			}
+			if (request.method === 'POST' && url.pathname === '/api/merge-preflight') {
+				requireSafeMutation(request);
+				const payload = await readSubmissionJson(request, 1024 * 1024);
+				if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new RequestError('预检查请求格式无效。');
+				if (Object.keys(payload).some(key => key !== 'itemIds')) throw new RequestError('预检查请求包含未知参数。');
+				sendJson(response, 200, await writes.read(() => mergePlanner.preflight(payload.itemIds, localMergeActor)), { request }); return;
+			}
+			if (request.method === 'POST' && url.pathname === '/api/merge-plan') {
+				requireSafeMutation(request);
+				const payload = await readSubmissionJson(request, 1024 * 1024);
+				const result = await runManagedOperation(request, 'save-merge-plan', payload, async context => {
+					await mergePlanner.save(payload, localMergeActor, context);
+					return { results: [payload.primaryId, payload.secondaryId].map(itemId => ({ itemId, ok: true })) };
+				}, { target: [payload.primaryId, payload.secondaryId], checkVersion: false });
+				const plan = await mergePlanner.byOperation(requestOperationId(request), String(request.headers['x-ljm-step-id']).toLowerCase(), localMergeActor);
+				sendJson(response, 200, { ...result, plan, phase: 1, canExecute: false }, { request }); return;
+			}
+			if (request.method === 'GET' && url.pathname === '/api/merge-plans') {
+				sendJson(response, 200, { plans: await writes.read(() => mergePlanner.list(localMergeActor)), phase: 1 }, { request }); return;
+			}
+			const mergeOperation = /^\/api\/merge-plans\/by-operation\/([a-f0-9-]{36})\/([a-f0-9-]{36})$/i.exec(url.pathname);
+			if (request.method === 'GET' && mergeOperation) {
+				sendJson(response, 200, { plan: await writes.read(() => mergePlanner.byOperation(mergeOperation[1], mergeOperation[2], localMergeActor)), canExecute: false }, { request }); return;
+			}
+			const mergePlan = /^\/api\/merge-plans\/([a-f0-9-]{36})$/i.exec(url.pathname);
+			if (request.method === 'GET' && mergePlan) {
+				sendJson(response, 200, await writes.read(() => mergePlanner.detail(mergePlan[1], localMergeActor)), { request }); return;
+			}
+			sendJson(response, 501, { error: '当前仅支持预检查和保存私密方案；执行合并、发布及撤销尚未开放。', code: 'MERGE_EXECUTION_UNAVAILABLE' }); return;
+		}
 		if (request.method === 'POST' && url.pathname === '/api/publication-review') {
 			requireSafeMutation(request);
 			const payload = await readRequestJson(request);

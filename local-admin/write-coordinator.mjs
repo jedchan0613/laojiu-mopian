@@ -303,5 +303,23 @@ export const createWriteCoordinator = async ({ directory, maxEntries = 10000, ma
   // 只读列举全部收据：供服务重启后恢复暂存图片等核对用途，不暴露正文（收据本身只含白名单字段）。
   const all = () => [...records.values()].map(record => structuredClone(record));
   const read = callback => admissions.then(() => serial(callback));
-  return { perform, query, cancel, read, assertReady, drain, all };
+  // 仅合并恢复使用；结论必须由服务端检查真实日志/摘要产生，不能接受客户端自报成功。
+  const reconcileMerge = async ({operationId,stepId,requestHash},verify) => {
+    operationId=normalizeId(operationId,'恢复操作编号无效。');stepId=normalizeId(stepId,'恢复子步骤编号无效。');
+    await admissions;
+    return serial(async()=>{
+      const key=operationId+'.'+stepId,entry=records.get(key);
+      if(!entry||!['merge-records','merge-undo','merge-undo-drafts'].includes(entry.kind)||entry.requestHash!==requestHash)throw new WriteSafetyError('恢复目标或请求摘要不匹配。',409,'MERGE_RECOVERY_INVALID');
+      if(entry.status!=='needs_review')return structuredClone(entry);
+      if(active.has(key))throw new WriteSafetyError('合并仍在运行，请等待实际结束。',423,'MERGE_RECOVERY_BUSY');
+      const outcome=await verify(structuredClone(entry));
+      if(!outcome||!['succeeded','failed'].includes(outcome.status))throw new WriteSafetyError('未能证明合并或恢复结果，写入仍暂停。',409,'MERGE_RECOVERY_UNPROVEN');
+      const next={...entry,status:outcome.status,finishedAt:new Date().toISOString(),
+        ...(outcome.status==='succeeded'?{result:safeReceipt(outcome.result??{})}:{errorCode:'MERGE_RECOVERED_ROLLBACK',errorStatus:409})};
+      delete next.errorCode;if(outcome.status==='failed')next.errorCode='MERGE_RECOVERED_ROLLBACK';
+      if(outcome.status==='succeeded')delete next.errorStatus;
+      await persist(key,next);return structuredClone(next);
+    });
+  };
+  return { perform, query, cancel, read, assertReady, drain, all, reconcileMerge };
 };
