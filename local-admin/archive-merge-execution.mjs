@@ -7,7 +7,7 @@ import {archiveSourceForRecords,resolveArchiveMergeProjection} from '../shared/a
 import {translationLocales} from '../shared/locale-config.mjs';
 import {acquirePrivateFileGate,releasePrivateFileGate} from '../shared/private-file-gate.mjs';
 import {validateLikesSnapshot} from '../shared/archive-merge-likes.mjs';
-import {mergeFail,exists,safeDirectory,safeBytes,tree,copyTree,currentHash,writeExclusive,writeVersionedFile,readJson,assertFreeSpace,bytesOf,snapshotEntryId,treeDigest,hashBytes,relativeFile,inside,fileAttributes} from './archive-merge-files.mjs';
+import {mergeFail,exists,safeDirectory,safeBytes,tree,copyTree,currentHash,writeExclusive,writeVersionedFile,readJson,assertFreeSpace,bytesOf,snapshotEntryId,treeDigest,hashBytes,relativeFile,inside,fileAttributes,moveVerifiedDirectory} from './archive-merge-files.mjs';
 
 const publicRecord=r=>r.core.record_status==='ACT'&&r.core.privacy_level==='G'&&r.core.use_status==='U3';
 const linkKeys=new Set(['related_item_ids','attachment_item_ids','portrait_item_id']);
@@ -273,10 +273,10 @@ export function createArchiveMergeExecution({
     if(await exists(previous)){
       if(await treeDigest(previous)!==log.distBefore)mergeFail('原公开版本备份摘要不一致。','MERGE_RECOVERY_CONFLICT');
       if(await exists(dist)){
-        const failed=path.join(folder,'failed-dist-'+randomUUID());await fs.rename(dist,failed);
+        const failed=path.join(folder,'failed-dist-'+randomUUID());await moveVerifiedDirectory(dist,failed,currentDist);
       }
-      await fs.rename(previous,dist);
-    }else if(!log.hadDist&&await exists(dist)&&currentDist===log.distAfter)await fs.rename(dist,path.join(folder,'failed-dist-'+randomUUID()));
+      await moveVerifiedDirectory(previous,dist,log.distBefore);
+    }else if(!log.hadDist&&await exists(dist)&&currentDist===log.distAfter)await moveVerifiedDirectory(dist,path.join(folder,'failed-dist-'+randomUUID()),log.distAfter);
     accountHandler(log).rollback(log.merge_id);
     for(const row of [...(log.files??[])].reverse()){
       const current=await currentHash(writeRoots[row.root],row.relative);if(current===row.beforeHash)continue;
@@ -285,7 +285,7 @@ export function createArchiveMergeExecution({
     }
     for(const row of log.files??[])if(await currentHash(writeRoots[row.root],row.relative)!==row.beforeHash)mergeFail('恢复后摘要仍不一致。','MERGE_RECOVERY_CONFLICT');
     if(log.hadDist&&await treeDigest(dist)!==log.distBefore)mergeFail('恢复后的公开版本摘要无效。','MERGE_RECOVERY_CONFLICT');
-    await releaseLikes(log);log.status='rolled-back';await event(log,'rolled-back');return{status:'rolled-back'};
+    await releaseLikes(log);log.status='rolled-back';await event(log,'rolled-back',log.failure?{errorCode:log.failure.code}:{});return{status:'rolled-back'};
   }
   async function execute(payload,actor,context){
     const allowed=new Set(['planId','planRevision','reviewId','confirmPrimaryId','confirmations','publicationAuthorization']);
@@ -347,9 +347,9 @@ export function createArchiveMergeExecution({
       const dist=path.join(siteDirectory,'dist'),previous=path.join(folder,'previous-dist');
       if(await treeDigest(dist)!==log.distBefore)mergeFail('当前公开版本变化，不能切换。','MERGE_BASELINE_CHANGED');
       if(await treeDigest(path.join(candidate.site,'dist'))!==log.distAfter)mergeFail('候选产物摘要变化，不能切换。','MERGE_CANDIDATE_CHANGED');
-      if(log.hadDist)await fs.rename(dist,previous);
+      if(log.hadDist)await moveVerifiedDirectory(dist,previous,log.distBefore);
       await event(log,'previous-dist-retained');
-      await fs.rename(path.join(candidate.site,'dist'),dist);await event(log,'dist-switched');
+      await moveVerifiedDirectory(path.join(candidate.site,'dist'),dist,log.distAfter);await event(log,'dist-switched');
       if(!same(await capture(),expectedAfterBaseline(reviewed,log,true)))mergeFail('切换后发现其他输入变化，须恢复后核对。','MERGE_BASELINE_CHANGED');
       if(publication){context.assertDeploymentLock?.();await publication.publish(log,phase=>{context.assertDeploymentLock?.();return event(log,phase);},context.signal);if(!same(await capture(),expectedAfterBaseline(reviewed,log,true)))mergeFail('公开切换后发现其他变化。','MERGE_BASELINE_CHANGED');}
       await verifyAfter(log);await event(log,'verified');abort(context.signal);
@@ -360,6 +360,7 @@ export function createArchiveMergeExecution({
       return{mergeId,status:'committed',primaryId:log.primary_id,secondaryId:log.secondary_id,results:asIds(reviewed.plan).map(itemId=>({itemId,ok:true}))};
     }catch(error){
       if(log.status==='committed')throw error;
+      log.failure={code:error.code??'BUILD_FAILED',phase:log.phase};
       try{context.assertDeploymentLock?.();}catch(lockError){log.status='needs_review';await event(log,'needs-review',{errorCode:lockError.code});throw lockError;}
       // 提交前失败不应尝试覆盖全站来源或他人的新改动。
       if(!log.files.length||log.files.every(row=>row.state==='pending')){

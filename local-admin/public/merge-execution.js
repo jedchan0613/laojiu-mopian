@@ -20,6 +20,14 @@ const checklist=[
 ];
 const phases={'prepared':'准备私密日志','snapshots-complete':'快照已保存','candidate-ready':'独立候选版本已准备','build-complete':'候选构建已完成','files-prepared':'准备提交前复查','likes-lock-intent':'准备短时保护点赞写入','likes-locked':'已短时保护点赞写入','favorites-locked':'短时保护收藏写入','writing-file':'写入当前应用版本','file-written':'提交文件并核对摘要','files-applied':'文件提交完成','favorites-applied':'收藏迁移已完成','previous-dist-retained':'原公开版本已私密留存','dist-switched':'已切换网站构建','verified':'切换后核对完成','public-switch-intent':'准备切换公开网站','public-switched':'公开网站已切换','committed':'合并完成','rolled-back':'已恢复操作前状态','needs-review':'需要核对，写入保持暂停'};
 
+export function getMergeFailureMessage(merge){
+ if(merge.status!=='rolled-back')return '';
+ const code=merge.failure?.code??[...(merge.events??[])].reverse().find(event=>event.errorCode)?.errorCode;
+ if(!code)return '本次未提交，已恢复操作前状态；旧记录未保存具体失败原因。';
+ const messages={EXDEV:'服务器跨目录切换网站文件失败。',ENOSPC:'服务器可用空间不足。',EACCES:'服务器文件访问权限不足。',MERGE_BASELINE_CHANGED:'操作期间资料或网站版本发生变化。',MERGE_COPY_INVALID:'网站文件复制后的完整性核对未通过。',OPERATION_CANCELLED:'操作已取消。'};
+ return (messages[code]??'执行过程中发生错误，请保留本次记录供维护排查。')+'本次未提交，已恢复操作前状态。';
+}
+
 export async function initializeMergeExecution({request,getState,setBusy,onCommitted,say}){
  const capability=await request('/api/merge-capabilities');if(!capability.internalExecutionEnabled)return;
  $('execution-panel').hidden=false;document.querySelector('.phase-badge').textContent=capability.online?'档案合并 · 生产环境':'档案合并 · 本机环境';
@@ -46,9 +54,11 @@ export async function initializeMergeExecution({request,getState,setBusy,onCommi
    $('compare-panel').hidden=false;
    if(merge.legacy){$('merge-execution-result').innerHTML=`<article class="preview-box"><h3>历史手工合并 · 只读追溯</h3><p>${escape(merge.primary_id)} ← ${escape(merge.secondary_id)}</p><p>${escape(merge.message)}</p><p>状态：${escape(merge.status)} · 快照${merge.snapshots?.length??0}件</p></article>`;status('历史操作未重新执行。');return;}
    $('merge-execution-result').innerHTML=`<article class="preview-box"><h3>${merge.status==='reverted'?'合并已撤销':merge.operation_kind==='undo'&&merge.status==='committed'?'两件已恢复发布':merge.status==='committed'?'合并完成':merge.status==='rolled-back'?'本次未提交，已恢复':escape(phases[merge.phase]??merge.status)}</h3><p>保留编号：<strong>${escape(merge.primary_id)}</strong><br>从编号：${escape(merge.secondary_id)}（${merge.status==='committed'?'正式撤销留档':'见操作状态'}）</p><p>操作时间：${escape(merge.completed_at??merge.created_at)}<br>私密快照：${merge.snapshots?.length??0}件</p><details><summary>查看执行记录</summary><ul>${(merge.events??[]).map(event=>`<li>${escape(event.at)} · ${escape(phases[event.phase]??event.phase)}</li>`).join('')}</ul></details><p class="help">日志和快照留在私密目录。恢复入口位于“合并记录与恢复”；恢复发布须重新核对。</p></article>`;
+   const failureMessage=getMergeFailureMessage(merge);
+   if(failureMessage)$('merge-execution-result').innerHTML+=`<p class="help" role="alert">${escape(failureMessage)}</p>`;
    if(merge.status==='committed'&&authoritative){let refreshFailed=false;try{await onCommitted();}catch{refreshFailed=true;}document.dispatchEvent(new CustomEvent('merge-records-updated'));$('execute-dialog').close();$('review-merge').disabled=true;say(refreshFailed?'合并已完成，但列表刷新失败。请刷新页面查看结果；不要再次合并。':capability.online?'合并及线上发布已完成；从编号正式留档。':'本机合并已完成；从编号正式留档，生产未变更。',refreshFailed?'error':'success');}
    else if(authoritative&&terminalMerge(merge)){$('execute-dialog').close();review=null;stopReviewClock();$('review-merge').disabled=false;}
-   status(merge.status==='reverted'?'该合并已撤销，两件已恢复；原日志保留。':phases[merge.phase]??merge.status);
+   status(failureMessage||(merge.status==='reverted'?'该合并已撤销，两件已恢复；原日志保留。':phases[merge.phase]??merge.status));
  };
  async function progress(){if(!pending)return;try{const data=await request(`/api/merge-result/${pending.id}/${pending.step}`,{timeout:5000});status(phases[data.merge.phase]??'操作进行中');}catch{/* 原请求可能尚在排队；不把临时查询失败当作执行失败。 */}}
  async function recover(){

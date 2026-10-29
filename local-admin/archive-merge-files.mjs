@@ -73,3 +73,39 @@ export async function assertFreeSpace(directory,required){
 export const bytesOf=value=>Buffer.from(JSON.stringify(value,null,2)+'\n');
 export const snapshotEntryId=()=>{const date=new Date();return date.toISOString().replace(/[-:TZ.]/g,'').slice(0,8)+'-'+date.toISOString().slice(11,19).replaceAll(':','')+'-'+String(date.getMilliseconds()).padStart(3,'0')+'-'+randomUUID().replaceAll('-','').slice(0,8);};
 export const treeDigest=async directory=>digest(await tree(directory));
+
+// systemd 的独立可写路径可能是同一磁盘上的不同挂载点，不能仅比较 stat.dev。
+// EXDEV 时先在目标挂载内完成并核验副本，再原子落位；源目录也先在原挂载
+// 内原子移出，最后清理该副本。中断时至少保留一份完整目录供事务恢复。
+export async function moveVerifiedDirectory(source,target,expectedDigest,{rename=fs.rename,copy=copyTree,afterTransferPhase=async()=>{}}={}){
+  if(!/^[a-f0-9]{64}$/.test(expectedDigest??''))mergeFail('目录移动缺少有效摘要。','MERGE_COPY_INVALID');
+  const from=await safeDirectory(source),parent=await safeDirectory(path.dirname(target));
+  const to=path.join(parent,path.basename(target));
+  if(inside(from,to)||inside(to,from))mergeFail('目录移动路径不能相互包含。','MERGE_PATH_INVALID');
+  if(await exists(to))mergeFail('目录移动目标已经存在，不能覆盖。','MERGE_RECOVERY_CONFLICT');
+  if(await treeDigest(from)!==expectedDigest)mergeFail('移动前目录内容已变化。','MERGE_BASELINE_CHANGED');
+  try{await rename(from,to);}
+  catch(error){
+    if(error.code!=='EXDEV')throw error;
+    const temporary=path.join(parent,'.merge-transfer-'+randomUUID());
+    const retired=path.join(path.dirname(from),'.merge-retired-'+randomUUID());
+    let installed=false;
+    try{
+      await copy(from,temporary);
+      if(await treeDigest(temporary)!==expectedDigest||await treeDigest(from)!==expectedDigest)mergeFail('跨目录复制后的摘要不一致。','MERGE_COPY_INVALID');
+      await afterTransferPhase('copy-verified');
+      if(await exists(to))mergeFail('目录移动目标已被其他操作创建。','MERGE_RECOVERY_CONFLICT');
+      await rename(temporary,to);installed=true;
+      await afterTransferPhase('target-installed');
+      if(await treeDigest(to)!==expectedDigest||await treeDigest(from)!==expectedDigest)mergeFail('跨目录移动期间内容已变化。','MERGE_RECOVERY_CONFLICT');
+      await rename(from,retired);
+      await afterTransferPhase('source-retired');
+      if(await treeDigest(retired)!==expectedDigest||await treeDigest(to)!==expectedDigest)mergeFail('清理移动副本前摘要不一致。','MERGE_RECOVERY_CONFLICT');
+      await fs.rm(retired,{recursive:true});
+    }finally{
+      // 临时复制目录从未公开。目标落位后发生错误时保留完整副本，交给恢复流程。
+      if(!installed&&await exists(temporary))await fs.rm(temporary,{recursive:true});
+    }
+  }
+  if(await treeDigest(to)!==expectedDigest)mergeFail('移动完成后的目录摘要无效。','MERGE_COPY_INVALID');
+}
