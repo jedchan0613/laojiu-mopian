@@ -25,8 +25,31 @@ const october29PhotoIds = new Set(Array.from({length:20},(_,i)=>`LJM-20260910-PH
 const october29BackIds = new Set([...october29PhotoIds].filter(id=>!['LJM-20260910-PHO-001','LJM-20260910-PHO-003'].includes(id)));
 const october29UnknownPlaceIds = new Set([...october29PhotoIds].filter(id=>id!=='LJM-20260910-PHO-001'));
 
+// 2026-10-30 所有人本人核对13项，批准B04的14件照片按真实缺项公开。
+// 编号已由本地服务端实际分配；仅承认这些记录尚未提供的地点、背面及实物检查资料。
+export const october30PhotoMissingMetadataNotice = '资料说明：未提供可确认属于本件的照片背面，背面文字待核；未提供实物检查结果，实物保存状态及评级待核。';
+const october30PhotoIds = new Set(Array.from({length:14},(_,i)=>`LJM-20260910-PHO-${String(i+21).padStart(3,'0')}`));
+
 export const filterApprovedMetadataIssues = (record, issues) => {
   const core = record?.core;
+  const october30Approval = october30PhotoIds.has(core?.item_id) && core?.object_type === 'PHO' &&
+    core?.batch_id === 'LJM-20260910-B04' && core?.accession_date === '2026-09-10' &&
+    record?.metadata?.schema === 'photo' && record?.public_view?.description?.includes(october30PhotoMissingMetadataNotice);
+  if (october30Approval) {
+    const dims = record.metadata.dimensions ?? {};
+    const empty = (field,dim) => !meaningful(core[field]) && !meaningful(dims[dim]?.[field]);
+    const allowed = new Set();
+    if (empty('condition_grade','D16')) allowed.add('collection_code_required_D16_condition_grade');
+    if (empty('condition_details','D16')) allowed.add('collection_code_required_D16_condition_details');
+    if (empty('condition_grade','D16') && empty('condition_details','D16') && empty('treatment_notes','D16')) allowed.add('collection_required_D16');
+    if (core.place_notes?.includes('未知') &&
+      ['country','province','city','district','street_town','specific_place'].every(field=>empty(field,'D02'))) allowed.add('collection_required_D02');
+    if (empty('verso_types','D12')) {
+      allowed.add('collection_code_required_D12_verso_types');
+      if (empty('verso_transcription','D12')) allowed.add('collection_required_D12');
+    }
+    return issues.filter(issue=>!allowed.has(issue.code));
+  }
   const october29Approval = october29PhotoIds.has(core?.item_id) && core?.object_type === 'PHO' &&
     core?.batch_id === 'LJM-20260910-B03' && core?.accession_date === '2026-09-10' &&
     record?.metadata?.schema === 'photo' && record?.public_view?.description?.includes(october29PhotoMissingMetadataNotice);

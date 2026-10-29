@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { albumMissingMetadataNotice, dalianMissingMetadataNotice, graduationAlbumMissingBackNotice, october29PhotoMissingMetadataNotice, filterApprovedMetadataIssues } from '../../shared/publication-metadata-approvals.mjs';
+import { albumMissingMetadataNotice, dalianMissingMetadataNotice, graduationAlbumMissingBackNotice, october29PhotoMissingMetadataNotice, october30PhotoMissingMetadataNotice, filterApprovedMetadataIssues } from '../../shared/publication-metadata-approvals.mjs';
 
 const record = () => ({core:{item_id:'LJM-20260909-PHO-001',album_id:'LJM-A20260909-01',batch_id:'LJM-20260909-B01',accession_date:'2026-09-09',object_type:'PHO'},metadata:{schema:'photo',dimensions:{}},public_view:{description:albumMissingMetadataNotice}});
 const issues = ['collection_required_D12','collection_required_D16','collection_required_D02','privacy_confirmation','images_empty','collection_code_invalid_D12_verso_types_FAKE'].map(code=>({code}));
@@ -68,4 +68,28 @@ test('10月29日已填值不享受缺项豁免，未知地点还须有公开说�
   const r=october29Record();r.core.country='未知';r.metadata.dimensions.D12={verso_types:['FAKE']};r.core.condition_grade='FAKE';r.core.condition_details=['FAKE'];
   assert.deepEqual(filterApprovedMetadataIssues(r,october29Issues),october29Issues);
   const other=october29Record();other.core.place_notes='';assert.ok(filterApprovedMetadataIssues(other,october29Issues).some(i=>i.code==='collection_required_D02'));
+});
+
+const october30Record = () => ({core:{item_id:'LJM-20260910-PHO-021',batch_id:'LJM-20260910-B04',accession_date:'2026-09-10',object_type:'PHO',place_notes:'拍摄地点未知。'},metadata:{schema:'photo',dimensions:{}},public_view:{description:october30PhotoMissingMetadataNotice}});
+test('B04仅对实际分配的14个照片编号认可已批准空项，其他门禁不变',()=>{
+  for(let sequence=21;sequence<=34;sequence++){
+    const r=october30Record();r.core.item_id=`LJM-20260910-PHO-${String(sequence).padStart(3,'0')}`;
+    assert.deepEqual(filterApprovedMetadataIssues(r,october29Issues),october29Issues.slice(4));
+  }
+});
+test('B04授权不跨编号、批次、日期、类型、schema或缺项说明',()=>{
+  for(const change of [{item_id:'LJM-20260910-PHO-020'},{item_id:'LJM-20260910-PHO-035'},{batch_id:'LJM-20260910-B03'},{accession_date:'2026-09-11'},{object_type:'ALB'}]){
+    const r=october30Record();Object.assign(r.core,change);assert.deepEqual(filterApprovedMetadataIssues(r,october29Issues),october29Issues);
+  }
+  const r=october30Record();r.metadata.schema='common';assert.deepEqual(filterApprovedMetadataIssues(r,october29Issues),october29Issues);
+  r.metadata.schema='photo';r.public_view.description='背面与保存状况待核';assert.deepEqual(filterApprovedMetadataIssues(r,october29Issues),october29Issues);
+});
+test('B04只认可真正缺项，填入的合法或非法代码及地点仍由正常校验处理',()=>{
+  const r=october30Record();r.core.country='未知';r.metadata.dimensions.D12={verso_types:['FAKE']};r.core.condition_grade='FAKE';r.core.condition_details=['FAKE'];
+  assert.deepEqual(filterApprovedMetadataIssues(r,october29Issues),october29Issues);
+  const other=october30Record();other.core.place_notes='';assert.ok(filterApprovedMetadataIssues(other,october29Issues).some(i=>i.code==='collection_required_D02'));
+  const populated=october30Record();populated.metadata.dimensions.D16={condition_grade:'C1',condition_details:['DM-OTH']};
+  const result=filterApprovedMetadataIssues(populated,october29Issues);
+  assert.ok(result.some(i=>i.code==='collection_code_required_D16_condition_grade'));
+  assert.ok(result.some(i=>i.code==='collection_code_required_D16_condition_details'));
 });
