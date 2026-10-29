@@ -198,6 +198,47 @@ test('不修改内容的多次保存不新增方案或版本，原请求仍可�
   repeated.sourceReason+='新增真实说明';assert.equal((await f.planner.save(repeated,actor,operation())).planRevision,2);
 });
 
+test('同源依据及人工选择主件理由均选填，留空、缺省和简短文字不产生待处理项', async t => {
+  const f = await fixture(t);
+  f.records[0].core.created_date = '2000-01-02'; f.records[0].core.updated_date = '2000-01-02';
+  const pf = await f.planner.preflight(f.ids, actor); assert.equal(pf.recommendedPrimary, f.ids[1]);
+  for (const value of [undefined, '', '同']) {
+    const payload = f.payload(pf);
+    if (value === undefined) { delete payload.sourceReason; delete payload.primaryReason; }
+    else { payload.sourceReason = value; payload.primaryReason = value; }
+    const saved = await f.planner.save(payload, actor, operation());
+    assert.equal(saved.sourceReason, value ?? ''); assert.equal(saved.primaryReason, value ?? '');
+    assert.ok(!saved.unresolved.some(row => ['sourceReason', 'primaryReason'].includes(row.path)));
+  }
+  for (const [key, value] of [['sourceReason', '字'.repeat(4001)], ['primaryReason', '字'.repeat(1001)], ['sourceReason', '\u0000'], ['primaryReason', 123]]) {
+    const payload = f.payload(pf); payload[key] = value;
+    await assert.rejects(f.planner.save(payload, actor, operation()), { code: 'MERGE_INVALID' });
+  }
+});
+
+test('旧方案的两项理由阻断按当前规则展示，相同保存不改历史或新增版本，其他缺项保留', async t => {
+  const f = await fixture(t), pf = await f.planner.preflight(f.ids, actor), payload = f.payload(pf);
+  payload.sourceReason = ''; payload.primaryReason = ''; delete payload.fieldChoices['core.title'];
+  const firstOp = operation(), first = await f.planner.save(payload, actor, firstOp);
+  const legacy = { ...first, unresolved: [...first.unresolved,
+    { path: 'sourceReason', message: '请补充同一件/同一套的具体依据。' },
+    { path: 'primaryReason', message: '请说明人工选择主档案的理由。' },
+  ] };
+  const currentFile = path.join(f.directory, 'plans', first.planId + '.json'), versionFile = path.join(f.directory, 'versions', first.planId + '.1.json');
+  const oldBytes = JSON.stringify(legacy, null, 2) + '\n';
+  await fs.writeFile(currentFile, oldBytes); await fs.writeFile(versionFile, oldBytes);
+  const detail = await f.planner.detail(first.planId, actor);
+  assert.deepEqual(detail.plan.unresolved, first.unresolved); assert.ok(detail.plan.unresolved.some(row => row.path === 'core.title'));
+  assert.equal((await f.planner.list(actor))[0].unresolved, first.unresolved.length);
+  assert.deepEqual((await f.planner.byOperation(firstOp.operationId, firstOp.stepId, actor)).unresolved, first.unresolved);
+  const saved = await f.planner.save({ ...payload, planId: first.planId, planRevision: 1 }, actor, operation());
+  assert.equal(saved.saveUnchanged, true); assert.equal(saved.planRevision, 1); assert.deepEqual(saved.unresolved, first.unresolved);
+  const sameNew = await f.planner.save(payload, actor, operation());
+  assert.equal(sameNew.planId, first.planId); assert.equal(sameNew.saveUnchanged, true); assert.deepEqual(sameNew.unresolved, first.unresolved);
+  assert.equal(await fs.readFile(currentFile, 'utf8'), oldBytes); assert.equal(await fs.readFile(versionFile, 'utf8'), oldBytes);
+  assert.equal((await fs.readdir(path.join(f.directory, 'versions'))).length, 1);
+});
+
 test('正式记录、图片、引用明细或标准变更都使原方案失效，仍保留选值', async t => {
   const f = await fixture(t), pf = await f.planner.preflight(f.ids, actor), payload = f.payload(pf);
   payload.fieldChoices['core.title'] = { choice: 'custom', value: '应保留的人工编辑' };

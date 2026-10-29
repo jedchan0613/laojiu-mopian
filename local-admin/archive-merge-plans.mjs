@@ -18,6 +18,8 @@ const dictionaryAliases = { postal_mark_types:'postal_mark', postcard_process:'p
 const safeKeys = values => { if (values.some(key => !/^[A-Za-z][A-Za-z0-9_]*$/.test(key) || ['__proto__','prototype','constructor'].includes(key))) fail('字段路径不在规范中。',422,'MERGE_FIELD_INVALID'); };
 const fail = (message, status=422, code='MERGE_INVALID') => { throw new WriteSafetyError(message,status,code); };
 const hasValue = value => value !== undefined && value !== null && value !== '' && (!Array.isArray(value) || value.length > 0);
+// 依据与理由现为选填；旧诊断只在读取时更新，不重写方案或历史版本。
+const planForCurrentRules = plan => ({...plan,unresolved:plan.unresolved.filter(row=>!['sourceReason','primaryReason'].includes(row.path))});
 const get = (record, key) => key.split('.').reduce((value, name) => value?.[name], record);
 const exists = (record, key) => { const names=key.split('.'),parent=names.slice(0,-1).reduce((v,n)=>v?.[n],record);return parent!==null&&typeof parent==='object'&&Object.hasOwn(parent,names.at(-1)); };
 const put = (record, key, value, present=true) => { const names=key.split('.');safeKeys(names);let parent=record;for(const name of names.slice(0,-1))parent=parent[name]??=(Object.create(null));if(present)parent[names.at(-1)]=structuredClone(value);else delete parent[names.at(-1)]; };
@@ -176,7 +178,7 @@ export function createMergePlanner({ directory, imageRoot, readState, readRecord
     const fingerprints={revisions:Object.fromEntries(summaries.map(row=>[row.itemId,row.revision])),images:attachments.map(({ref,sha256})=>({ref,sha256})),references:digest(references),standards:digest({standards,policies})};
     const seen=new Map();for(const image of attachments){image.duplicateOf=seen.get(image.sha256)??null;seen.set(image.sha256,image.ref);}
     const recommended=[left,right].slice().sort((a,b)=>String(a.core.created_date??'9999').localeCompare(String(b.core.created_date??'9999'))||a.core.item_id.localeCompare(b.core.item_id))[0].core.item_id;
-    warnings.unshift({code:'SAME_SOURCE_REQUIRED',message:'同作者、同相册或版式相似不代表同一件，请填写同源依据。'}, {code:'PHASE_ONE',message:'比较和保存方案不会执行合并；执行前须另行核对合成图文、当前版本和授权范围。'});
+    warnings.unshift({code:'SAME_SOURCE_REQUIRED',message:'同作者、同相册或版式相似不代表同一件，请先核实同源关系；依据说明可选填。'}, {code:'PHASE_ONE',message:'比较和保存方案不会执行合并；执行前须另行核对合成图文、当前版本和授权范围。'});
     return{pass:true,canCompare:true,canExecute:false,phase:1,blockers,warnings,records:summaries,fields,images:attachments,references,fingerprints,fingerprint:digest(fingerprints),recommendedPrimary:recommended,recommendationReason:'按实际建档时间推荐；同日以编号稳定排序。请结合正文首页及现有引用明确选择。'};
   }
   async function saveUnlocked(payload,actor,context) {
@@ -196,8 +198,7 @@ export function createMergePlanner({ directory, imageRoot, readState, readRecord
     if(!choices||typeof choices!=='object'||Array.isArray(choices))fail('字段选值格式无效。');
     for(const key of Object.keys(choices))if(!fieldMap.has(key))fail('没有配置策略的字段不能保存：'+key,422,'MERGE_FIELD_INVALID');
     for(const field of state.fields){const decision=choices[field.path]??(field.defaultChoice?{choice:field.defaultChoice}:null);if(!decision){unresolved.push({path:field.path,message:field.label+'尚未明确选择。'});continue;}const selected=validateChoice(field,decision);put(record,field.path,selected.value,selected.present);}
-    const sourceReason=note(payload.sourceReason??''),primaryReason=note(payload.primaryReason??'',1000);if(sourceReason.trim().length<5)unresolved.push({path:'sourceReason',message:'请补充同一件/同一套的具体依据。'});
-    if(ids[0]!==state.recommendedPrimary&&!primaryReason.trim())unresolved.push({path:'primaryReason',message:'请说明人工选择主档案的理由。'});
+    const sourceReason=note(payload.sourceReason??''),primaryReason=note(payload.primaryReason??'',1000);
     const available=new Map(state.images.map(image=>[image.ref,image])),order=payload.attachmentOrder??state.images.map(image=>image.ref),excluded=payload.excludedImages??[];
     const descriptions=payload.attachmentDescriptions??{};if(!descriptions||typeof descriptions!=='object'||Array.isArray(descriptions)||Object.keys(descriptions).some(ref=>!available.has(ref)))fail('逐图说明引用无效。');for(const value of Object.values(descriptions))note(value,2000);
     if(!Array.isArray(order)||!Array.isArray(excluded)||order.length===0||new Set(order).size!==order.length)fail('附件顺序无效或全部被移除。',422,'MERGE_IMAGES_INVALID');
@@ -224,7 +225,7 @@ export function createMergePlanner({ directory, imageRoot, readState, readRecord
       const operationFile=path.join(directory,'plan-operations',operation.operationId+'.'+operation.stepId+'.json');
       if(await safeRead(operationFile))fail('操作编号已用于另一份方案，请核对原结果。',409,'MERGE_OPERATION_CONFLICT');
       context.markChanged?.();await atomicWrite(operationFile,JSON.stringify({planId:id,planRevision:previous.planRevision,actor,operation,unchanged:true})+'\n');
-      return{...previous,saveUnchanged:true};
+      return{...planForCurrentRules(previous),saveUnchanged:true};
     }
     const bytes=JSON.stringify(plan,null,2)+'\n';if(Buffer.byteLength(bytes)>6*1024*1024)fail('方案内容过大，请先整理原文。',413);
     const versionFile=path.join(directory,'versions',id+'.'+revision+'.json'),operationFile=path.join(directory,'plan-operations',operation.operationId+'.'+operation.stepId+'.json');
@@ -234,8 +235,8 @@ export function createMergePlanner({ directory, imageRoot, readState, readRecord
     await atomicWrite(operationFile,JSON.stringify({planId:id,planRevision:revision,actor,operation})+'\n');return plan;
   }
   const save=(...args)=>{const result=tail.then(()=>saveUnlocked(...args));tail=result.catch(()=>{});return result;};
-  async function byOperation(operationId,stepId,actor){checkActor(actor);operationId=requireId(operationId);stepId=requireId(stepId);const receipt=await safeRead(path.join(directory,'plan-operations',operationId+'.'+stepId+'.json'));if(!receipt||receipt.actor!==actor)fail('保存结果尚待核对，请从方案列表查看。',409,'MERGE_RESULT_UNKNOWN');requireId(receipt.planId);if(!Number.isSafeInteger(receipt.planRevision)||receipt.planRevision<1)fail('保存结果版本异常，须人工核对。',409);const saved=await safeRead(path.join(directory,'versions',receipt.planId+'.'+receipt.planRevision+'.json'));if(!saved)fail('保存版本缺失，请核对。',409,'MERGE_RESULT_UNKNOWN');return{...saved,saveUnchanged:Boolean(receipt.unchanged)};}
-  async function detail(id,actor){checkActor(actor);const plan=await safeRead(planFile(id));if(!plan)fail('方案不存在。',404,'MERGE_PLAN_NOT_FOUND');if(plan.actor!==actor)fail('无权访问这份方案。',403,'MERGE_FORBIDDEN');let current=null;try{current=await preflight([plan.primaryId,plan.secondaryId],actor);}catch{}const execution=await safeRead(path.join(directory,'plan-commits',plan.planId+'.'+plan.planRevision+'.json'));return{plan,current,execution,stale:current?.fingerprint!==plan.basisFingerprint,canExecute:false};}
-  async function list(actor){checkActor(actor);await initialize();const files=(await fs.readdir(path.join(directory,'plans'))).filter(name=>/^[a-f0-9-]{36}\.json$/.test(name));const rows=[];for(const name of files){const plan=await safeRead(path.join(directory,'plans',name));if(plan?.actor===actor){const execution=await safeRead(path.join(directory,'plan-commits',plan.planId+'.'+plan.planRevision+'.json'));rows.push({planId:plan.planId,planRevision:plan.planRevision,primaryId:plan.primaryId,secondaryId:plan.secondaryId,title:plan.proposedRecord.core.title,updatedAt:plan.updatedAt,unresolved:plan.unresolved.length,status:execution?(execution.status??'committed'):'plan-only',mergeId:execution?.mergeId??null});}}return rows.sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));}
+  async function byOperation(operationId,stepId,actor){checkActor(actor);operationId=requireId(operationId);stepId=requireId(stepId);const receipt=await safeRead(path.join(directory,'plan-operations',operationId+'.'+stepId+'.json'));if(!receipt||receipt.actor!==actor)fail('保存结果尚待核对，请从方案列表查看。',409,'MERGE_RESULT_UNKNOWN');requireId(receipt.planId);if(!Number.isSafeInteger(receipt.planRevision)||receipt.planRevision<1)fail('保存结果版本异常，须人工核对。',409);const saved=await safeRead(path.join(directory,'versions',receipt.planId+'.'+receipt.planRevision+'.json'));if(!saved)fail('保存版本缺失，请核对。',409,'MERGE_RESULT_UNKNOWN');return{...planForCurrentRules(saved),saveUnchanged:Boolean(receipt.unchanged)};}
+  async function detail(id,actor){checkActor(actor);const plan=await safeRead(planFile(id));if(!plan)fail('方案不存在。',404,'MERGE_PLAN_NOT_FOUND');if(plan.actor!==actor)fail('无权访问这份方案。',403,'MERGE_FORBIDDEN');let current=null;try{current=await preflight([plan.primaryId,plan.secondaryId],actor);}catch{}const execution=await safeRead(path.join(directory,'plan-commits',plan.planId+'.'+plan.planRevision+'.json'));return{plan:planForCurrentRules(plan),current,execution,stale:current?.fingerprint!==plan.basisFingerprint,canExecute:false};}
+  async function list(actor){checkActor(actor);await initialize();const files=(await fs.readdir(path.join(directory,'plans'))).filter(name=>/^[a-f0-9-]{36}\.json$/.test(name));const rows=[];for(const name of files){const plan=await safeRead(path.join(directory,'plans',name));if(plan?.actor===actor){const execution=await safeRead(path.join(directory,'plan-commits',plan.planId+'.'+plan.planRevision+'.json'));rows.push({planId:plan.planId,planRevision:plan.planRevision,primaryId:plan.primaryId,secondaryId:plan.secondaryId,title:plan.proposedRecord.core.title,updatedAt:plan.updatedAt,unresolved:planForCurrentRules(plan).unresolved.length,status:execution?(execution.status??'committed'):'plan-only',mergeId:execution?.mergeId??null});}}return rows.sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));}
   return{preflight,save,detail,list,byOperation};
 }
