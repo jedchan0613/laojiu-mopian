@@ -43,6 +43,21 @@
     <aside class="panel plans-panel" aria-labelledby="plans-heading"><div class="section-heading"><h2 id="plans-heading">已保存的方案</h2><button class="quiet" id="refresh-plans" type="button">刷新</button></div><label>查找已保存方案<input id="plan-search" type="search" placeholder="题名或编号…"></label><div id="plans-list"></div><button class="quiet" id="more-plans" type="button" hidden>显示更多方案</button><p class="help">关闭页面后仍可从这里继续；方案不会自动变成公开档案。</p></aside>
   </main>
   <dialog id="stale-dialog" aria-labelledby="stale-heading"><h2 id="stale-heading">方案的基础已变化</h2><p>你的选值仍保留。请对照当前资料的新差异，再明确更新检查基础；旧确认不会自动沿用。</p><div id="stale-changes"></div><div class="section-actions"><button id="stale-close" class="quiet" type="button">先保留原方案</button><button id="refresh-basis" class="primary" type="button">重新核对，沿用我的选值</button></div></dialog>
-  <dialog id="execute-dialog" aria-labelledby="execute-heading"><h2 id="execute-heading">核对合并后的整件资料</h2><p>以下勾选表示你本人已核对并完成必要处理，不表示资料没有隐私风险。原来的公开批准不会自动代替本次检查。</p><div id="execute-preview"></div><form id="execute-form"><fieldset id="execute-controls"><legend>本人逐项核对</legend><div id="merge-checklist"></div><label>输入将保留的完整编号<input id="merge-primary-confirm" autocomplete="off" spellcheck="false"></label><label class="merge-check"><input type="checkbox" id="authorize-primary">同意发布合并后的主档案</label><label class="merge-check"><input type="checkbox" id="authorize-secondary">同意从档案正式撤销留档，并将其旧副本撤出公开目录；inbox和私密快照保留</label></fieldset><p id="execute-progress" class="help" role="status" aria-live="polite"></p><div class="section-actions"><button id="execute-close" type="button">返回继续核对</button><button id="cancel-merge" type="button" hidden>取消并等待恢复结果</button><button id="execute-submit" class="primary" type="submit" disabled>确认执行本机合并</button></div></form></dialog>
+  <dialog id="execute-dialog" aria-labelledby="execute-heading">
+    <h2 id="execute-heading">核对合并后的整件资料</h2><p>以下勾选表示你本人已核对并完成必要处理，不表示资料没有隐私风险。原来的公开批准不会自动代替本次检查。</p>
+    <div id="execute-preview"></div>
+    <form id="execute-form"><fieldset id="execute-controls"><legend>本人逐项核对</legend>
+      <p class="help">核对后可逐项勾选，或点击下方“一键全选”同时确认13项检查和2项发布范围。点击后仍需亲自填写完整编号，并确认执行。</p>
+      <div class="execution-check-actions" role="group" aria-label="本人核对勾选操作"><button id="execute-check-all" type="button" disabled>我已核对，一键全选</button><button id="execute-uncheck-all" type="button" disabled>全部取消</button></div>
+      <div id="merge-checklist"></div>
+      <p class="expected-merge-id">将保留的完整编号：<code id="merge-primary-expected"></code></p>
+      <label>输入上方完整编号（必填）<input id="merge-primary-confirm" autocomplete="off" spellcheck="false" placeholder="请在此输入上方完整编号" aria-describedby="merge-primary-help" required></label>
+      <p id="merge-primary-help" class="help">上方显示的是待确认编号，请在输入框实际填写；一键全选不会代填编号或执行合并。</p>
+      <label class="merge-check"><input type="checkbox" id="authorize-primary">同意发布合并后的主档案</label>
+      <label class="merge-check"><input type="checkbox" id="authorize-secondary">同意从档案正式撤销留档，并将其旧副本撤出公开目录；inbox和私密快照保留</label>
+    </fieldset><p id="execute-progress" class="help" role="status" aria-live="polite"></p>
+    <p id="execute-readiness" class="help" role="status" aria-live="polite" aria-atomic="true">请先核对本次资料，并填写完整编号。</p>
+    <div class="section-actions"><button id="execute-close" type="button">返回继续核对</button><button id="cancel-merge" type="button" hidden>取消并等待恢复结果</button><button id="execute-submit" class="primary" type="submit" aria-describedby="execute-readiness" disabled>确认执行本机合并</button></div></form>
+  </dialog>
   <script type="module" src="/admin/merge.js?v=1"></script>
 </body></html>

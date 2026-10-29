@@ -1,4 +1,5 @@
-// 仅由能力接口明确开放的本机内部验收环境加载；不包含自动批准或生产发布逻辑。
+// 仅在能力接口明确开放后加载；本人操作前不勾选、不代填编号、不自动提交。
+import { getMergeExecutionReadiness } from './merge-execution-confirmation.js?v=1';
 const $=id=>document.getElementById(id);
 const escape=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const storageKey='ljm-private-merge-operation';
@@ -24,8 +25,19 @@ export async function initializeMergeExecution({request,getState,setBusy,onCommi
  $('execution-panel').hidden=false;document.querySelector('.phase-badge').textContent=capability.online?'档案合并 · 生产环境':'档案合并 · 本机环境';
  document.querySelector('.stage-note').textContent=capability.online?'当前操作会维护线上正式档案和公开网站。合并和恢复发布均须重新核对13项及编号。':'本机维护：支持合并、恢复草稿和重新核对恢复发布。';
  $('execution-heading').textContent='执行已保存的方案';$('execution-panel').querySelector('.help').textContent='先保存方案，再核对完整图文、13项及保留编号。确认后执行可恢复合并和发布。';if(capability.online){$('execute-submit').textContent='确认合并并发布';document.querySelector('.eyebrow').textContent='老旧默片 · 线上档案工作台';}
- let review=null,pending=null,executing=false,poll=null;
+ let review=null,pending=null,executing=false,poll=null,reviewClock=null;
  const status=text=>{$('merge-execution-status').textContent=text;$('execute-progress').textContent=text;};
+ const checks=()=>[...$('merge-checklist').querySelectorAll('[data-merge-check]')];
+ const confirmation=()=>({confirmPrimaryId:$('merge-primary-confirm').value.trim(),confirmations:checks().map(input=>input.checked),publicationAuthorization:{publishMergedPrimary:$('authorize-primary').checked,withdrawSecondary:$('authorize-secondary').checked}});
+ const updateReadiness=()=>{
+   const readiness=getMergeExecutionReadiness({review,...confirmation(),pending,executing});
+   $('execute-submit').disabled=!readiness.ready;
+   $('execute-check-all').disabled=!readiness.canSelectChecks;$('execute-uncheck-all').disabled=Boolean(pending||executing);
+   const message=readiness.ready?'核对与授权已齐备，可以确认合并。':readiness.reasons.join('\n');
+   if($('execute-readiness').textContent!==message)$('execute-readiness').textContent=message;
+   $('execute-readiness').dataset.ready=String(readiness.ready);return readiness;
+ };
+ const stopReviewClock=()=>{clearInterval(reviewClock);reviewClock=null;};
  const store=()=>{try{pending?sessionStorage.setItem(storageKey,JSON.stringify(pending)):sessionStorage.removeItem(storageKey);}catch{}};
  const resultView=async merge=>{
    $('compare-panel').hidden=false;
@@ -49,7 +61,7 @@ export async function initializeMergeExecution({request,getState,setBusy,onCommi
      await resultView(data.merge);
      if(entry.status==='needs_review'){$('repair-merge').hidden=false;pending.requestHash=entry.requestHash;store();status('结果需要核对；写入保持暂停。可检查日志后点击恢复。');}
      else{pending=null;store();$('recover-merge').hidden=true;$('repair-merge').hidden=true;}
-   }catch(error){status('尚未核实原请求：'+error.message);}finally{setBusy(false);}
+   }catch(error){status('尚未核实原请求：'+error.message);}finally{setBusy(false);updateReadiness();}
  }
  $('review-merge').addEventListener('click',async()=>{
    const state=getState();if(executing||pending)return status('请先核对上一次合并结果。');
@@ -59,29 +71,44 @@ export async function initializeMergeExecution({request,getState,setBusy,onCommi
      review=await request('/api/merge-review',{body:{planId:state.plan.planId,planRevision:state.plan.planRevision},timeout:300000});
      $('execute-preview').innerHTML=`<div class="preview-box"><h3>${escape(review.record.core.title)}</h3><p>${escape(review.primaryId)} ← ${escape(review.secondaryId)}</p><p>当前公开${review.beforePublicCount}件 → 合并后${review.afterPublicCount}件；保留${review.imageCount}幅影像，涉及${review.affectedIds.length}件记录。</p><div class="plain-text">${escape(review.record.public_view.description)}</div><details><summary>核对拟采用的电子转录</summary><pre>${escape(review.record.public_view.transcription??'未维护电子转录')}</pre></details><ol>${review.images.map(image=>`<li><a href="${escape(image.url)}" target="_blank" rel="noopener">第${image.position}幅 · ${escape(image.description||image.filename)}</a></li>`).join('')}</ol><ul>${review.warnings.map(value=>`<li>${escape(value)}</li>`).join('')}</ul></div>`;
      $('merge-checklist').innerHTML=checklist.map((text,index)=>`<label class="merge-check"><input type="checkbox" data-merge-check="${index}"><span>${index+1}. ${escape(text)}</span></label>`).join('');
-     $('execute-form').reset();$('execute-controls').disabled=false;$('merge-primary-confirm').placeholder=review.primaryId;$('execute-submit').disabled=true;status('请本人逐项核对。有效至 '+new Date(review.expiresAt).toLocaleTimeString('zh-CN'));
+     $('execute-form').reset();$('execute-controls').disabled=false;$('merge-primary-confirm').value='';$('merge-primary-expected').textContent=review.primaryId;
+     status('请本人核对下列内容，并在输入框填写完整编号。有效至 '+new Date(review.expiresAt).toLocaleTimeString('zh-CN'));
+     updateReadiness();stopReviewClock();reviewClock=setInterval(()=>{if($('execute-dialog').open)updateReadiness();},1000);
      $('execute-dialog').showModal();
    }catch(error){say(error.message,'error');}finally{setBusy(false);$('review-merge').disabled=false;}
  });
- $('execute-form').addEventListener('input',()=>{$('execute-submit').disabled=executing||!review||Date.now()>=Date.parse(review.expiresAt)||$('merge-primary-confirm').value.trim()!==review.primaryId||[...document.querySelectorAll('[data-merge-check]')].some(input=>!input.checked)||!$('authorize-primary').checked||!$('authorize-secondary').checked;});
+ for(const event of ['input','change'])$('execute-form').addEventListener(event,updateReadiness);
+ $('execute-check-all').addEventListener('click',()=>{
+   if(!updateReadiness().canSelectChecks)return;
+   for(const input of checks())input.checked=true;
+   $('authorize-primary').checked=true;$('authorize-secondary').checked=true;updateReadiness();
+ });
+ $('execute-uncheck-all').addEventListener('click',()=>{
+   if(pending||executing)return;
+   for(const input of checks())input.checked=false;
+   $('authorize-primary').checked=false;$('authorize-secondary').checked=false;updateReadiness();
+ });
  $('execute-form').addEventListener('submit',async event=>{
-   event.preventDefault();if(executing||pending||$('execute-submit').disabled)return;
+   event.preventDefault();if(!updateReadiness().ready)return;
+   const submittedReview=review,submittedConfirmation=confirmation();
    pending={id:crypto.randomUUID(),step:crypto.randomUUID()};store();executing=true;setBusy(true);$('execute-controls').disabled=true;$('execute-submit').disabled=true;$('execute-close').disabled=true;$('cancel-merge').hidden=false;status('正在检查、保存快照和构建独立候选版本…');
+   updateReadiness();
    poll=setInterval(progress,2500);
    try{
-     const response=await request('/api/merge',{body:{planId:review.planId,planRevision:review.planRevision,reviewId:review.reviewId,confirmPrimaryId:$('merge-primary-confirm').value.trim(),confirmations:[...document.querySelectorAll('[data-merge-check]')].map(input=>input.checked),publicationAuthorization:{publishMergedPrimary:$('authorize-primary').checked,withdrawSecondary:$('authorize-secondary').checked}},operation:pending,timeout:900000});
+     const response=await request('/api/merge',{body:{planId:submittedReview.planId,planRevision:submittedReview.planRevision,reviewId:submittedReview.reviewId,...submittedConfirmation},operation:pending,timeout:900000});
      await resultView(response.merge);pending=null;store();
    }catch(error){
      $('recover-merge').hidden=false;status('本次结果需核实，未再次提交。'+error.message);
-   }finally{clearInterval(poll);executing=false;setBusy(false);$('execute-close').disabled=false;$('cancel-merge').hidden=true;if(pending)await recover();}
+   }finally{clearInterval(poll);executing=false;setBusy(false);$('execute-close').disabled=false;$('cancel-merge').hidden=true;if(pending)await recover();updateReadiness();}
  });
  $('execute-close').addEventListener('click',()=>{if(!executing)$('execute-dialog').close();});
  $('execute-dialog').addEventListener('cancel',event=>{if(executing)event.preventDefault();});
+ $('execute-dialog').addEventListener('close',()=>{stopReviewClock();review=null;$('execute-form').reset();$('merge-primary-expected').textContent='';updateReadiness();});
  $('cancel-merge').addEventListener('click',async()=>{if(!pending||!executing)return;$('cancel-merge').disabled=true;status('已请求取消；等待实际构建和恢复结束，不会提前报告成功。');try{await request('/api/cancel-operation',{body:{operationId:pending.id},timeout:900000});}catch(error){status(error.message);}finally{$('cancel-merge').disabled=false;}});
  $('recover-merge').addEventListener('click',recover);
  $('repair-merge').addEventListener('click',async()=>{if(!pending?.requestHash||executing)return;setBusy(true);try{await request('/api/merge-recover',{body:{operationId:pending.id,stepId:pending.step,requestHash:pending.requestHash},timeout:300000});await recover();}catch(error){status('未能证明恢复完成，写入仍暂停：'+error.message);}finally{setBusy(false);}});
  document.addEventListener('merge-show-result',async event=>{try{await resultView((await request('/api/merges/'+event.detail)).merge);}catch(error){say(error.message,'error');}});
- document.addEventListener('merge-workspace-changed',()=>{if(!pending&&!executing){review=null;$('review-merge').disabled=false;$('merge-execution-result').textContent='';}});
+ document.addEventListener('merge-workspace-changed',()=>{if(!pending&&!executing){review=null;stopReviewClock();$('review-merge').disabled=false;$('merge-execution-result').textContent='';updateReadiness();}});
  window.addEventListener('beforeunload',event=>{if(pending){event.preventDefault();event.returnValue='';}});
  await (await import('./merge-undo.js?v=1')).initializeMergeUndo({request,setBusy,onCommitted,say,capability});
  try{const old=JSON.parse(sessionStorage.getItem(storageKey)??'null');if(old&&/^[a-f0-9-]{36}$/i.test(old.id)&&/^[a-f0-9-]{36}$/i.test(old.step)){pending=old;$('recover-merge').hidden=false;$('compare-panel').hidden=false;$('plan-form').hidden=true;await recover();}}catch{}

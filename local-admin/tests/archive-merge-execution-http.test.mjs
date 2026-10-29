@@ -14,7 +14,17 @@ test('内部HTTP完整提交：13项版本门禁、原请求重放与操作详�
  const f=await fixture(t,{http:true,internal:true});
  assert.equal((await f.get('/api/merge-capabilities')).body.internalExecutionEnabled,true);
  const{payload}=await prepare(f);
- assert.equal((await f.post('/api/merge',{...payload,confirmations:Array(13).fill(false)})).status,422);
+ const beforeRejected=await Promise.all(f.ids.map(id=>fs.readFile(path.join(f.archive,id+'.json'),'utf8')));
+ for(const invalid of [
+   {confirmations:Array(13).fill(false)},
+   {confirmPrimaryId:''},
+   {confirmPrimaryId:f.ids[1]},
+   {confirmations:Array(12).fill(true)},
+   {confirmations:[...Array(12).fill(true),'true']},
+   {publicationAuthorization:{publishMergedPrimary:true,withdrawSecondary:false}},
+   {publicationAuthorization:{publishMergedPrimary:false,withdrawSecondary:true}},
+ ])assert.equal((await f.post('/api/merge',{...payload,...invalid})).status,422);
+ assert.deepEqual(await Promise.all(f.ids.map(id=>fs.readFile(path.join(f.archive,id+'.json'),'utf8'))),beforeRejected);
  const op=operation(),first=await f.post('/api/merge',payload,op);assert.equal(first.status,200,JSON.stringify(first.body));assert.equal(first.body.merge.status,'committed');
  const replay=await f.post('/api/merge',payload,op);assert.equal(replay.status,200,JSON.stringify(replay.body));assert.equal(replay.body.merge.merge_id,first.body.merge.merge_id);
  assert.equal((await f.get(`/api/merge-result/${op.operationId}/${op.stepId}`)).body.merge.status,'committed');
