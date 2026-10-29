@@ -2434,10 +2434,10 @@ const withdrawOfficialRecord = async (payload, options = {}) => {
 };
 
 const publishDraftUnlocked = async (payload, options = {}) => {
-	const { signal = null } = options;
+	const { signal = null, batchPublication = false } = options;
 	throwIfOperationCancelled(signal);
-	if (publishInProgress) throw new Error('已有一项发布检查正在进行，请稍候。');
-	publishInProgress = true;
+	if (publishInProgress && !batchPublication) throw new Error('已有一项发布检查正在进行，请稍候。');
+	if (!batchPublication) publishInProgress = true;
 	const itemId = payload.itemId;
 	try {
 		if (!itemIdPattern.test(itemId ?? '')) throw new Error('永久编号无效。');
@@ -2488,18 +2488,64 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 		const previousOfficial = (await pathExists(officialPath)) ? await fs.readFile(officialPath) : null;
 		const previousArchiveSource = await fs.readFile(siteArchiveDataFile);
 		options.markChanged?.();
-		const historySnapshot = await createHistorySnapshot(previousOfficialRecord, {
-			snapshotKind: previousOfficialRecord?.core.record_status === 'WDR'
+		const historySnapshot = await createHistorySnapshot(previousOfficialRecord ?? (batchPublication ? draft.record : null), {
+			snapshotKind: !previousOfficialRecord ? 'draft-before-first-publication' : previousOfficialRecord?.core.record_status === 'WDR'
 				? 'withdrawn-before-reactivation'
 				: 'published-before-update',
 		});
+		if (batchPublication && historySnapshot) {
+			// 原草稿和图片随逐件快照保留；进程中断后可按操作编号核对，不能自动重放。
+			await atomicWrite(path.join(historySnapshot.entryDirectory, 'draft-before.json'), `${JSON.stringify(draft, null, 2)}\n`);
+			await updateEntryManifest(historySnapshot.entryDirectory, { batch_operation_id: options.operationId, batch_step_id: options.stepId });
+		}
 		const copiedNewFiles = [];
 		const removedSiteFiles = [];
 		const removedImages = [...new Set(draft.removed_images ?? [])];
+		const nextOfficial = Buffer.from(`${JSON.stringify(record, null, 2)}\n`);
+		let wroteOfficial = false;
 		let buildOutput = '';
 		let deployment = null;
+		const rollback = async (error) => {
+			if (batchPublication && wroteOfficial) {
+				const current = await fs.readFile(officialPath).catch(cause => { if (cause.code === 'ENOENT') return null; throw cause; });
+				if (!current?.equals(nextOfficial) && !(previousOfficial ? current?.equals(previousOfficial) : current === null)) {
+					throw new WriteSafetyError('批量发布期间正式记录被外部修改，已停止自动覆盖，须核对历史快照。', 409, 'REVISION_CONFLICT');
+				}
+			}
+			if (wroteOfficial) {
+				if (previousOfficial) await atomicWrite(officialPath, previousOfficial);
+				else await fs.rm(officialPath, { force: true });
+			}
+			if (!batchPublication) await atomicWrite(siteArchiveDataFile, previousArchiveSource);
+			for (const filePath of copiedNewFiles) {
+				if (batchPublication && await pathExists(filePath)) {
+					const reviewed = reviewedImages.find(image => image.filename === path.basename(filePath));
+					if (await fileSha256(filePath) !== reviewed?.sha256) throw new Error('新增公开图片被外部修改，已停止自动清理，须核对历史快照。');
+				}
+				await fs.rm(filePath, { force: true });
+			}
+			if (historySnapshot) {
+				for (const siteFile of removedSiteFiles) {
+					const source = path.join(historySnapshot.imageDirectory, path.basename(siteFile));
+					if (!(await pathExists(source))) throw new Error('原公开图片快照缺失，不能证明已恢复发布前状态。');
+					if (batchPublication && await pathExists(siteFile) && await fileSha256(siteFile) !== await fileSha256(source)) throw new Error('原公开图片被外部修改，已停止自动覆盖。');
+					await fs.copyFile(source, siteFile);
+				}
+				await updateEntryManifest(historySnapshot.entryDirectory, { status: 'failed', failed_at: new Date().toISOString(), failure_reason: safeMessage(error) });
+			}
+		};
+		const assertStaged = async () => {
+			options.assertDeploymentLock?.();
+			if (!(await fs.readFile(officialPath)).equals(nextOfficial)) throw new WriteSafetyError('暂存正式记录已变化，已停止批量发布。', 409, 'REVISION_CONFLICT');
+			for (const image of reviewedImages) {
+				for (const directory of [inboxDirectory, siteArchiveDirectory]) {
+					if (await fileSha256(path.join(directory, itemId, image.filename)) !== image.sha256) throw new Error('批量发布图片已变化，原人工确认不再适用。');
+				}
+			}
+		};
 		try {
 			throwIfOperationCancelled(signal);
+			options.assertDeploymentLock?.();
 			const siteItemDirectory = path.join(siteArchiveDirectory, itemId);
 			await fs.mkdir(siteItemDirectory, { recursive: true });
 			for (const publicPath of record.core.publication_file_path) {
@@ -2522,33 +2568,21 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 			}
 			throwIfOperationCancelled(signal);
 			await assertRecordRevision(itemId, payload.expectedRevision);
-			await atomicWrite(officialPath, `${JSON.stringify(record, null, 2)}\n`);
-			await atomicWrite(siteArchiveDataFile, await generateSiteArchiveSource());
-			buildOutput = await runSiteBuild({ signal });
-			throwIfOperationCancelled(signal);
-			if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
+			await atomicWrite(officialPath, nextOfficial);
+			wroteOfficial = true;
+			if (!batchPublication) {
+				await atomicWrite(siteArchiveDataFile, await generateSiteArchiveSource());
+				buildOutput = await runSiteBuild({ signal });
+				throwIfOperationCancelled(signal);
+				if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
+			}
 		} catch (error) {
 			const operationWasCancelled = signal?.aborted || error?.name === 'AbortError' || error?.name === 'OperationCancelledError';
-			if (previousOfficial) await atomicWrite(officialPath, previousOfficial);
-			else await fs.rm(officialPath, { force: true });
-			await atomicWrite(siteArchiveDataFile, previousArchiveSource);
-			for (const filePath of copiedNewFiles) await fs.rm(filePath, { force: true });
-			if (historySnapshot) {
-				for (const siteFile of removedSiteFiles) {
-					const source = path.join(historySnapshot.imageDirectory, path.basename(siteFile));
-					if (await pathExists(source)) await fs.copyFile(source, siteFile);
-				}
-				await updateEntryManifest(historySnapshot.entryDirectory, {
-					status: 'failed',
-					failed_at: new Date().toISOString(),
-					failure_reason: safeMessage(error),
-				});
-			}
+			await rollback(error);
 			let rollbackBuildMessage = '';
-			try {
-				await runSiteBuild();
-			} catch (rollbackError) {
-				rollbackBuildMessage = `；恢复后的构建也未完成：${safeMessage(rollbackError)}`;
+			if (!batchPublication) {
+				try { await runSiteBuild(); }
+				catch (rollbackError) { rollbackBuildMessage = `；恢复后的构建也未完成：${safeMessage(rollbackError)}`; }
 			}
 			if (operationWasCancelled) {
 				throw Object.assign(new OperationCancelledError(`发布已取消，公开网站已恢复到操作前状态${rollbackBuildMessage}。`), { safeToRetry: !rollbackBuildMessage });
@@ -2556,6 +2590,7 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 			throw Object.assign(new Error(`网站构建或安全切换没有完成，已恢复发布前状态：${safeMessage(error)}${rollbackBuildMessage}`), { safeToRetry: !rollbackBuildMessage });
 		}
 
+		const complete = async () => {
 		const warnings = [];
 		for (const filename of removedImages) {
 			try {
@@ -2574,12 +2609,16 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 				warnings.push(`历史版本记录失败：${safeMessage(error)}`);
 			}
 		}
-		if (recordRevision(null, await readJson(draftPath)) === recordRevision(null, draft)) await fs.rm(draftPath, { force: true });
-		else warnings.push('草稿在发布期间发生变化，已保留新的草稿，请重新核对。');
+		try {
+			if (recordRevision(null, await readJson(draftPath)) === recordRevision(null, draft)) await fs.rm(draftPath, { force: true });
+			else warnings.push('草稿在发布期间发生变化，已保留新的草稿，请重新核对。');
+		} catch (error) { warnings.push(`发布已完成，草稿清理需核对：${safeMessage(error)}`); }
 		publicationReviews.complete(payload.reviewId);
 		return { record, buildOutput, deployment, warnings };
+		};
+		return batchPublication ? { itemId, assertStaged, rollback, complete } : await complete();
 	} finally {
-		publishInProgress = false;
+		if (!batchPublication) publishInProgress = false;
 	}
 };
 
@@ -2642,27 +2681,96 @@ const publishDraft = async (payload, options = {}) => {
 	return result;
 };
 
-// 批量发布逐件完成构建后才清理该件草稿；整批占用同一写入队列。
+// 整批占用同一写入队列：逐件校验/暂存，通过项合并一次构建，成功后再清草稿和回收旧图。
 const publishDraftsBatch = async (payload, options = {}) => {
 	const { signal = null } = options;
 	const itemIds = Array.isArray(payload.itemIds) ? payload.itemIds : [];
 	if (!itemIds.length || itemIds.length > 200) throw new Error('请一次提交 1 至 200 件进行批量发布。');
-	const results = [];
-		for (const itemId of itemIds) {
+	if (new Set(itemIds).size !== itemIds.length) throw new RequestError('同一件档案被重复选择，请取消重复项后再发布。');
+	if (publishInProgress) throw new Error('已有一项发布检查正在进行，请稍候。');
+	const results = new Map(), staged = [];
+	const previousArchiveSource = await fs.readFile(siteArchiveDataFile);
+	publishInProgress = true;
+	let nextArchiveSource = null, buildStarted = false, committed = false;
+	let buildOutput = '', deployment = null;
+	try {
+		// 嵌套持有每件投稿的现有授权锁直到构建/切换完成；不留撤回申请与发布之间的空档。
+		const visit = async (index) => {
 			throwIfOperationCancelled(signal);
-			let changed = false;
-			try {
-				const result = await publishDraft(
-					{ itemId, confirmations: payload.confirmations, expectedRevision: payload.expectedRevisions?.[itemId], reviewId: payload.reviewIds?.[itemId] },
-					{ ...options, markChanged: () => { changed = true; options.markChanged?.(); } },
-				);
-				results.push({ itemId, ok: true, warnings: result.warnings ?? [] });
-			} catch (error) {
-				if (changed && !error.safeToRetry) throw error;
-				results.push({ itemId, ok: false, error: safeMessage(error) });
+			if (index === itemIds.length) {
+				if (!staged.length) return;
+				for (const entry of staged) await entry.assertStaged();
+				nextArchiveSource = Buffer.from(await generateSiteArchiveSource());
+				if (!(await fs.readFile(siteArchiveDataFile)).equals(previousArchiveSource)) throw new WriteSafetyError('网站数据源在批量发布期间被外部修改，已停止覆盖。', 409, 'REVISION_CONFLICT');
+				await atomicWrite(siteArchiveDataFile, nextArchiveSource);
+				buildStarted = true;
+				buildOutput = await runSiteBuild({ signal });
+				throwIfOperationCancelled(signal);
+				for (const entry of staged) await entry.assertStaged();
+				if (!(await fs.readFile(siteArchiveDataFile)).equals(nextArchiveSource)) throw new WriteSafetyError('构建期间网站数据源被外部修改，已停止切换。', 409, 'REVISION_CONFLICT');
+				if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
+				committed = true;
+				for (const entry of staged) {
+					const result = await entry.complete();
+					results.set(entry.itemId, { itemId: entry.itemId, ok: true, warnings: result.warnings ?? [] });
+				}
+				return;
 			}
+			const itemId = itemIds[index];
+			let entered = false;
+			try {
+				return await submissionStore.guardPublication(itemId, async () => {
+					entered = true;
+					let changed = false;
+					try {
+						staged.push(await publishDraftUnlocked(
+							{ itemId, confirmations: payload.confirmations, expectedRevision: payload.expectedRevisions?.[itemId], reviewId: payload.reviewIds?.[itemId] },
+							{ ...options, batchPublication: true, markChanged: () => { changed = true; options.markChanged?.(); } },
+						));
+					} catch (error) {
+						if (changed && !error.safeToRetry) throw Object.assign(error, { batchRollbackUncertain: true });
+						if (signal?.aborted || ['AbortError', 'OperationCancelledError'].includes(error?.name)) throw error;
+						results.set(itemId, { itemId, ok: false, error: safeMessage(error) });
+					}
+					return visit(index + 1);
+				});
+			} catch (error) {
+				if (entered) throw error;
+				results.set(itemId, { itemId, ok: false, error: safeMessage(error) });
+				return visit(index + 1);
+			}
+		};
+		await visit(0);
+		// 只在整批正式发布成功后通知；通知失败是提示，不改变已完成的发布收据。
+		for (const entry of staged) {
+			try { await submissionStore.notifyPublished(entry.itemId); }
+			catch (error) { results.get(entry.itemId).warnings.push(`发布已完成，投稿通知未送达：${safeMessage(error)}`); }
 		}
-		return { results };
+		return { results: itemIds.map(id => results.get(id)), buildOutput, deployment };
+	} catch (error) {
+		if (committed) throw error;
+		const rollbackErrors = [];
+		for (const entry of [...staged].reverse()) {
+			try { await entry.rollback(error); }
+			catch (rollbackError) { rollbackErrors.push(`${entry.itemId}：${safeMessage(rollbackError)}`); }
+		}
+		if (nextArchiveSource) {
+			try {
+				const current = await fs.readFile(siteArchiveDataFile);
+				if (!current.equals(nextArchiveSource) && !current.equals(previousArchiveSource)) throw new Error('网站数据源已被外部修改，未自动覆盖');
+				await atomicWrite(siteArchiveDataFile, previousArchiveSource);
+			} catch (rollbackError) { rollbackErrors.push(safeMessage(rollbackError)); }
+		}
+		if (buildStarted && !rollbackErrors.length && !error.batchRollbackUncertain) {
+			try { await runSiteBuild(); }
+			catch (rollbackError) { rollbackErrors.push(`恢复后的构建未完成：${safeMessage(rollbackError)}`); }
+		}
+		const uncertain = rollbackErrors.length || error.batchRollbackUncertain;
+		const message = uncertain ? `批量发布未完成，部分恢复须人工核对：${safeMessage(error)}；${rollbackErrors.join('；')}`
+			: `批量发布未完成，已恢复本批发布前状态，原草稿及历史快照保留：${safeMessage(error)}`;
+		const cancelled = signal?.aborted || ['AbortError', 'OperationCancelledError'].includes(error?.name);
+		throw Object.assign(cancelled ? new OperationCancelledError(message) : new Error(message), { safeToRetry: !uncertain });
+	} finally { publishInProgress = false; }
 };
 
 const mergeExecution = mergeEnabled && !process.argv.includes('--check-config') ? createArchiveMergeExecution({

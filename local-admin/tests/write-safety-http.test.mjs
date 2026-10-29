@@ -76,25 +76,29 @@ else console.log('synthetic build '+count);
 		LJM_INBOX_DIR: inbox, LJM_UPLOAD_STAGING_DIR: path.join(privateRoot, 'uploads'),
 		LJM_SUBMISSION_DATA_DIR: path.join(privateRoot, 'submissions'), LJM_ACCOUNT_DATA_DIR: path.join(privateRoot, 'accounts'),
 		LJM_PUBLIC_RELEASES_DIR: path.join(root, 'releases'), LJM_PUBLIC_LIVE_LINK: path.join(root, 'releases', 'live'), LJM_MAIL_TRANSPORT: 'file' });
-	const child = spawn(process.execPath, [fileURLToPath(new URL('local-admin/server.mjs', projectRoot))], {
+	const startChild = () => spawn(process.execPath, [fileURLToPath(new URL('local-admin/server.mjs', projectRoot))], {
 		env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
 	});
 	let output = '';
-	child.stdout.on('data', chunk => { output += chunk; }); child.stderr.on('data', chunk => { output += chunk; });
+	const attachOutput = process => { process.stdout.on('data', chunk => { output += chunk; }); process.stderr.on('data', chunk => { output += chunk; }); return process; };
+	let child = attachOutput(startChild());
 	t.after(async () => {
 		await rm(path.join(site, 'build-hold'), { force: true });
-		if (child.exitCode === null) { const ended = once(child, 'exit'); child.kill('SIGTERM'); await ended; }
+		if (child.exitCode === null && child.signalCode === null) { const ended = once(child, 'exit'); child.kill('SIGTERM'); await ended; }
 		// 仅删除由本测试 mkdtemp 建立且核对过的隔离目录。
 		assert.ok(path.resolve(root).startsWith(`${path.resolve(os.tmpdir())}${path.sep}ljm-write-safety-http-`));
 		await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 	});
-	let ready = false;
-	for (let attempt = 0; attempt < 250 && child.exitCode === null; attempt++) {
-		try { ready = (await fetch(`${origin}/healthz`)).ok; } catch {}
-		if (ready) break;
-		await sleep(40);
-	}
-	assert.ok(ready, `隔离服务启动失败：${output}`);
+	const waitReady = async () => {
+		let ready = false;
+		for (let attempt = 0; attempt < 250 && child.exitCode === null; attempt++) {
+			try { ready = (await fetch(`${origin}/healthz`)).ok; } catch {}
+			if (ready) break;
+			await sleep(40);
+		}
+		assert.ok(ready, `隔离服务启动失败：${output}`);
+	};
+	await waitReady();
 	const get = async route => { const response = await fetch(`${origin}${route}`); return { status: response.status, body: await response.json() }; };
 	const reviewIds = new Map();
 	const post = async (route, payload, ids = operation(), extraHeaders = {}) => {
@@ -133,8 +137,14 @@ else console.log('synthetic build '+count);
 		assert.fail(`隔离构建 ${number} 未启动：${output}`);
 	};
 	const releaseBuild = () => rm(path.join(site, 'build-hold'), { force: true });
+	const interruptAndRestart = async () => {
+		const ended = once(child, 'exit'); child.kill('SIGKILL'); await ended;
+		// npm 子进程可能继续完成；解除合成等待，再由新进程识别未完成收据，禁止自动重放。
+		await releaseBuild();
+		child = attachOutput(startChild()); await waitReady();
+	};
 	return { root, site, archive, privateRoot, draftDirectory, inbox, origin, post, get, record, savePayload, save, newPayload,
-		buildCount, holdBuild, waitBuild, releaseBuild };
+		buildCount, holdBuild, waitBuild, releaseBuild, interruptAndRestart };
 };
 
 test('管理页、脚本、图片、接口及错误均no-store，应用内ETag协商仍保持原内容', { timeout: 30000 }, async t => {
@@ -364,21 +374,162 @@ test('图片上传重放仍核对实际字节，伪造摘要不能替换原上�
 	assert.equal(query.body.operations.length, 1); assert.equal(query.body.operations[0].status, 'succeeded');
 });
 
-test('批量发布逐件构建，失败件保留草稿并恢复发布前内容', { timeout: 30000 }, async t => {
-	const f = await createFixture(t, { officialCount: 2 }), ids = ['LJM-20000101-LET-001', 'LJM-20000101-LET-002'];
+test('批量发布拒绝重复编号，不进入投稿锁、构建或修改草稿', { timeout: 30000 }, async t => {
+	const f = await createFixture(t), itemId = 'LJM-20000101-LET-001';
+	assert.equal((await f.save(await f.record(itemId))).status, 200);
+	const row = await f.record(itemId), draftFile = path.join(f.draftDirectory, `${itemId}.json`);
+	const before = await readFile(draftFile, 'utf8');
+	const result = await f.post('/api/publish-batch', { itemIds: [itemId, itemId], expectedRevisions: { [itemId]: row._admin.revision }, reviewIds: {}, confirmations });
+	assert.equal(result.status, 400, JSON.stringify(result.body)); assert.match(result.body.error, /不重复|重复选择/);
+	assert.equal(result.body.operation.status, 'failed'); assert.equal(await f.buildCount(), 0);
+	assert.equal(await readFile(draftFile, 'utf8'), before);
+	assert.equal(await exists(path.join(f.privateRoot, 'history', itemId)), false);
+	const submissionEntries = await readdir(path.join(f.privateRoot, 'submissions')).catch(error => { if (error.code === 'ENOENT') return []; throw error; });
+	assert.deepEqual(submissionEntries.filter(name => name.endsWith('.lock')), []);
+});
+
+test('批量发布多件合并一次构建，逐件保留历史，完成重放不再次构建', { timeout: 30000 }, async t => {
+	const f = await createFixture(t, { officialCount: 3 }), ids = ['LJM-20000101-LET-001', 'LJM-20000101-LET-002', 'LJM-20000101-LET-003'];
 	for (const id of ids) { const row = await f.record(id); row.core.title += ' 草稿修改'; assert.equal((await f.save(row)).status, 200); }
 	const rows = await Promise.all(ids.map(id => f.record(id)));
 	const expectedRevisions = Object.fromEntries(rows.map(row => [row.core.item_id, row._admin.revision]));
-	await writeFile(path.join(f.site, 'build-fail-at'), '2');
+	const payload = { itemIds: ids, expectedRevisions, confirmations }, requestIds = operation();
+	const result = await f.post('/api/publish-batch', payload, requestIds);
+	assert.equal(result.status, 200, JSON.stringify(result.body));
+	assert.deepEqual(result.body.results.map(row => row.ok), [true, true, true]);
+	assert.equal(await f.buildCount(), 1, '三件通过项共用一次正式 npm build');
+	for (const [index, id] of ids.entries()) {
+		assert.equal(await exists(path.join(f.draftDirectory, `${id}.json`)), false);
+		assert.equal(JSON.parse(await readFile(path.join(f.archive, `${id}.json`), 'utf8')).core.title, rows[index].core.title);
+		const [entry] = await readdir(path.join(f.privateRoot, 'history', id));
+		const manifest = JSON.parse(await readFile(path.join(f.privateRoot, 'history', id, entry, 'manifest.json'), 'utf8'));
+		assert.equal(manifest.status, 'complete'); assert.equal(manifest.batch_operation_id, requestIds.parent);
+		assert.equal(await exists(path.join(f.privateRoot, 'history', id, entry, 'draft-before.json')), true);
+	}
+	const replay = await f.post('/api/publish-batch', payload, requestIds);
+	assert.equal(replay.status, 200, JSON.stringify(replay.body)); assert.equal(replay.body.replayed, true);
+	assert.deepEqual(replay.body.operation.result.results.map(row => row.ok), [true, true, true]);
+	assert.equal(await f.buildCount(), 1);
+});
+
+test('批量发布中间一件必填校验失败，其余通过项一次构建，失败件不改且保留草稿', { timeout: 30000 }, async t => {
+	const f = await createFixture(t, { officialCount: 3 }), ids = ['LJM-20000101-LET-001', 'LJM-20000101-LET-002', 'LJM-20000101-LET-003'];
 	const beforeSecond = await readFile(path.join(f.archive, `${ids[1]}.json`), 'utf8');
+	for (const [index, id] of ids.entries()) { const row = await f.record(id); row.core.title += ' 草稿修改'; if (index === 1) row.core.physical_location = ''; assert.equal((await f.save(row)).status, 200); }
+	const rows = await Promise.all(ids.map(id => f.record(id)));
+	const expectedRevisions = Object.fromEntries(rows.map(row => [row.core.item_id, row._admin.revision]));
+	const draftBefore = await readFile(path.join(f.draftDirectory, `${ids[1]}.json`), 'utf8');
 	const result = await f.post('/api/publish-batch', { itemIds: ids, expectedRevisions, confirmations });
 	assert.equal(result.status, 200, JSON.stringify(result.body));
-	assert.deepEqual(result.body.results.map(row => row.ok), [true, false]);
-	assert.equal(await exists(path.join(f.draftDirectory, `${ids[0]}.json`)), false);
-	assert.equal(await exists(path.join(f.draftDirectory, `${ids[1]}.json`)), true);
+	assert.deepEqual(result.body.results.map(row => row.ok), [true, false, true]);
+	assert.match(result.body.results[1].error, /物理位置尚未填写/);
+	assert.equal(await f.buildCount(), 1);
 	assert.equal(await readFile(path.join(f.archive, `${ids[1]}.json`), 'utf8'), beforeSecond);
-	assert.equal((await f.record(ids[1])).core.title, rows[1].core.title);
-	assert.equal(await f.buildCount(), 3, '失败构建后执行一次恢复构建');
+	assert.equal(await readFile(path.join(f.draftDirectory, `${ids[1]}.json`), 'utf8'), draftBefore);
+	for (const id of [ids[0], ids[2]]) assert.equal(await exists(path.join(f.draftDirectory, `${id}.json`)), false);
+});
+
+test('批量发布不替代13项人工门禁，全部未确认时零构建且所有草稿保留', { timeout: 30000 }, async t => {
+	const f = await createFixture(t, { officialCount: 2 }), ids = ['LJM-20000101-LET-001', 'LJM-20000101-LET-002'];
+	for (const id of ids) assert.equal((await f.save(await f.record(id))).status, 200);
+	const rows = await Promise.all(ids.map(id => f.record(id)));
+	const expectedRevisions = Object.fromEntries(rows.map(row => [row.core.item_id, row._admin.revision]));
+	const result = await f.post('/api/publish-batch', { itemIds: ids, expectedRevisions, confirmations: Array(13).fill(false) });
+	assert.equal(result.status, 200, JSON.stringify(result.body)); assert.deepEqual(result.body.results.map(row => row.ok), [false, false]);
+	assert.equal(await f.buildCount(), 0);
+	for (const id of ids) assert.equal(await exists(path.join(f.draftDirectory, `${id}.json`)), true);
+});
+
+test('批量共同构建失败整体回退更新与首次发布，图片及原草稿保留，旧副本未回收', { timeout: 30000 }, async t => {
+	const f = await createFixture(t), oldId = 'LJM-20000101-LET-001', old = await f.record(oldId);
+	const officialBefore = await readFile(path.join(f.archive, `${oldId}.json`), 'utf8');
+	const sourceBefore = await readFile(path.join(f.site, 'src', 'data', 'archive.ts'), 'utf8');
+	old.core.title += ' 合成替换';
+	assert.equal((await f.save(old, { images: [{ kind: 'new', originalName: 'synthetic.png', publicationName: 'detail-01-public.png', data: `data:image/png;base64,${png.toString('base64')}` }], removedImages: ['front-public.png'], confirmedPublicationCopies: true })).status, 200);
+	const newPayload = f.newPayload('合成首次发布'); newPayload.confirmedPublicationCopies = true;
+	newPayload.images = [{ kind: 'new', originalName: 'synthetic.png', publicationName: 'front-public.png', data: `data:image/png;base64,${png.toString('base64')}` }];
+	const saved = await f.post('/api/save-draft', newPayload); assert.equal(saved.status, 200, JSON.stringify(saved.body));
+	const newId = saved.body.draft.record.core.item_id, ids = [oldId, newId];
+	const rows = await Promise.all(ids.map(id => f.record(id)));
+	const expectedRevisions = Object.fromEntries(rows.map(row => [row.core.item_id, row._admin.revision]));
+	const draftsBefore = await Promise.all(ids.map(id => readFile(path.join(f.draftDirectory, `${id}.json`), 'utf8')));
+	await writeFile(path.join(f.site, 'build-fail-at'), '1');
+	const requestIds = operation(), result = await f.post('/api/publish-batch', { itemIds: ids, expectedRevisions, confirmations }, requestIds);
+	assert.notEqual(result.status, 200); assert.equal(result.body.operation.status, 'failed', JSON.stringify(result.body));
+	assert.match(result.body.error, /已恢复本批发布前/); assert.equal(result.body.results, undefined);
+	assert.equal(await f.buildCount(), 2, '仅一次共同构建失败和一次恢复构建');
+	assert.equal(await readFile(path.join(f.archive, `${oldId}.json`), 'utf8'), officialBefore);
+	assert.equal(await exists(path.join(f.archive, `${newId}.json`)), false);
+	assert.equal(await readFile(path.join(f.site, 'src', 'data', 'archive.ts'), 'utf8'), sourceBefore);
+	assert.deepEqual(await readFile(path.join(f.site, 'public', 'archive', oldId, 'front-public.png')), png);
+	assert.equal(await exists(path.join(f.site, 'public', 'archive', oldId, 'detail-01-public.png')), false);
+	assert.equal(await exists(path.join(f.site, 'public', 'archive', newId, 'front-public.png')), false);
+	for (const [index, id] of ids.entries()) {
+		assert.equal(await readFile(path.join(f.draftDirectory, `${id}.json`), 'utf8'), draftsBefore[index]);
+		const [entry] = await readdir(path.join(f.privateRoot, 'history', id));
+		const manifest = JSON.parse(await readFile(path.join(f.privateRoot, 'history', id, entry, 'manifest.json'), 'utf8'));
+		assert.equal(manifest.status, 'failed'); assert.equal(manifest.batch_operation_id, requestIds.parent);
+	}
+	assert.deepEqual(await readdir(path.join(f.privateRoot, 'recycle')), []);
+	assert.deepEqual(await readFile(path.join(f.inbox, oldId, 'front-public.png')), png);
+});
+
+test('批量构建中取消等待共同构建实际结束，然后整体回退并允许后续保存', { timeout: 30000 }, async t => {
+	const f = await createFixture(t, { officialCount: 2 }), ids = ['LJM-20000101-LET-001', 'LJM-20000101-LET-002'];
+	const before = await Promise.all(ids.map(id => readFile(path.join(f.archive, `${id}.json`), 'utf8')));
+	for (const id of ids) { const row = await f.record(id); row.core.title += ' 取消验收'; assert.equal((await f.save(row)).status, 200); }
+	const rows = await Promise.all(ids.map(id => f.record(id))), expectedRevisions = Object.fromEntries(rows.map(row => [row.core.item_id, row._admin.revision]));
+	const draftBefore = await Promise.all(ids.map(id => readFile(path.join(f.draftDirectory, `${id}.json`), 'utf8')));
+	const next = await f.holdBuild(), requestIds = operation();
+	const publishing = f.post('/api/publish-batch', { itemIds: ids, expectedRevisions, confirmations }, requestIds);
+	let cancelling;
+	try {
+		await f.waitBuild(next);
+		let ended = false;
+		cancelling = f.post('/api/cancel-operation', { operationId: requestIds.parent }).then(result => { ended = true; return result; });
+		await sleep(200); assert.equal(ended, false); assert.equal(await f.buildCount(), next);
+		await f.releaseBuild();
+		const [cancel, result] = await Promise.all([cancelling, publishing]);
+		assert.equal(cancel.status, 200); assert.equal(cancel.body.cancelled, true);
+		assert.equal(result.status, 409); assert.equal(result.body.operation.status, 'cancelled');
+		assert.equal(await f.buildCount(), 2);
+		for (const [index, id] of ids.entries()) { assert.equal(await readFile(path.join(f.archive, `${id}.json`), 'utf8'), before[index]); assert.equal(await readFile(path.join(f.draftDirectory, `${id}.json`), 'utf8'), draftBefore[index]); }
+		const row = await f.record(ids[1]); row.core.title += ' 后续保存'; assert.equal((await f.save(row)).status, 200);
+	} finally { await f.releaseBuild(); await Promise.allSettled([publishing, cancelling].filter(Boolean)); }
+});
+
+test('批量构建期间正式记录被外部改写时不覆盖该改动，收据转待核对并停止后续写入', { timeout: 30000 }, async t => {
+	const f = await createFixture(t, { officialCount: 2 }), ids = ['LJM-20000101-LET-001', 'LJM-20000101-LET-002'];
+	const beforeSecond = await readFile(path.join(f.archive, `${ids[1]}.json`), 'utf8');
+	for (const id of ids) assert.equal((await f.save(await f.record(id))).status, 200);
+	const rows = await Promise.all(ids.map(id => f.record(id))), expectedRevisions = Object.fromEntries(rows.map(row => [row.core.item_id, row._admin.revision]));
+	const next = await f.holdBuild(), requestIds = operation();
+	const publishing = f.post('/api/publish-batch', { itemIds: ids, expectedRevisions, confirmations }, requestIds);
+	try {
+		await f.waitBuild(next);
+		const file = path.join(f.archive, `${ids[0]}.json`), changed = JSON.parse(await readFile(file, 'utf8')); changed.core.title = '外部新改动必须保留';
+		const bytes = JSON.stringify(changed); await writeFile(file, bytes);
+		await f.releaseBuild(); const result = await publishing;
+		assert.equal(result.body.operation.status, 'needs_review', JSON.stringify(result.body));
+		assert.equal(await readFile(file, 'utf8'), bytes); assert.equal(await readFile(path.join(f.archive, `${ids[1]}.json`), 'utf8'), beforeSecond);
+		assert.equal(await f.buildCount(), 1, '不在无法证明回退时构建混合内容');
+		assert.equal((await f.save(await f.record(ids[1]))).status, 409);
+	} finally { await f.releaseBuild(); await publishing; }
+});
+
+test('批量发布进程中断后不自动续发，重启将原收据标为待核对且保留逐件快照', { timeout: 30000 }, async t => {
+	const f = await createFixture(t, { officialCount: 2 }), ids = ['LJM-20000101-LET-001', 'LJM-20000101-LET-002'];
+	for (const id of ids) assert.equal((await f.save(await f.record(id))).status, 200);
+	const rows = await Promise.all(ids.map(id => f.record(id))), expectedRevisions = Object.fromEntries(rows.map(row => [row.core.item_id, row._admin.revision]));
+	const next = await f.holdBuild(), requestIds = operation(), payload = { itemIds: ids, expectedRevisions, confirmations };
+	const publishing = f.post('/api/publish-batch', payload, requestIds).catch(error => ({ disconnected: true, error }));
+	await f.waitBuild(next); await f.interruptAndRestart(); await publishing;
+	const receipt = await f.get(`/api/operations/${requestIds.parent}`);
+	assert.equal(receipt.body.operations[0].status, 'needs_review');
+	const replay = await f.post('/api/publish-batch', { ...payload, reviewIds: {} }, requestIds);
+	assert.equal(replay.status, 409); assert.equal((await f.save(await f.record(ids[0]))).status, 409);
+	assert.equal(await f.buildCount(), 1);
+	for (const id of ids) { const [entry] = await readdir(path.join(f.privateRoot, 'history', id)); const manifest = JSON.parse(await readFile(path.join(f.privateRoot, 'history', id, entry, 'manifest.json'), 'utf8')); assert.equal(manifest.status, 'pending'); assert.equal(manifest.batch_operation_id, requestIds.parent); assert.equal(await exists(path.join(f.draftDirectory, `${id}.json`)), true); }
 });
 
 test('撤销与恢复都核对当前版本，旧页面不能撤销新版或覆盖恢复草稿', { timeout: 30000 }, async t => {

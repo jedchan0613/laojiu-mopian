@@ -150,6 +150,18 @@ const loadStandards = async () => {
 			if ((entry.input_mode ?? '').includes('多')) slot.multi = true;
 		}
 	}
+	// 字段名还可能与字典键不同（如 postal_mark_types → postal_mark）。
+	// 只采用正式收藏编码规则中的显式对应，不猜别名，也不覆盖已有字段字典。
+	for (const schema of Object.values(standards.collectionCodeRules?.schemas ?? {})) {
+		for (const dimension of schema.required_dimensions ?? []) {
+			for (const field of dimension.code_fields ?? []) {
+				if (typeof field?.field_code !== 'string' || typeof field.dictionary_key !== 'string' || dictionaryByField.has(field.field_code)) continue;
+				const slot = dictionaryByField.get(field.dictionary_key);
+				if (!slot?.codes) continue;
+				dictionaryByField.set(field.field_code, { codes: new Set(slot.codes), multi: slot.multi });
+			}
+		}
+	}
 	const commonFieldByCode = new Map((standards.commonFields?.fields ?? []).map((field) => [field.field_code, field]));
 	for (const field of standards.commonFields?.fields ?? []) {
 		if ((field.dictionary_or_multi_value_rule ?? '').includes('｜是')) {
