@@ -25,7 +25,7 @@ export async function initializeMergeExecution({request,getState,setBusy,onCommi
  $('execution-panel').hidden=false;document.querySelector('.phase-badge').textContent=capability.online?'档案合并 · 生产环境':'档案合并 · 本机环境';
  document.querySelector('.stage-note').textContent=capability.online?'当前操作会维护线上正式档案和公开网站。合并和恢复发布均须重新核对13项及编号。':'本机维护：支持合并、恢复草稿和重新核对恢复发布。';
  $('execution-heading').textContent='执行已保存的方案';$('execution-panel').querySelector('.help').textContent='先保存方案，再核对完整图文、13项及保留编号。确认后执行可恢复合并和发布。';if(capability.online){$('execute-submit').textContent='确认合并并发布';document.querySelector('.eyebrow').textContent='老旧默片 · 线上档案工作台';}
- let review=null,pending=null,executing=false,poll=null,reviewClock=null;
+ let review=null,pending=null,executing=false,poll=null,reviewClock=null,recoveryTimer=null,resolving=false;
  const status=text=>{$('merge-execution-status').textContent=text;$('execute-progress').textContent=text;};
  const checks=()=>[...$('merge-checklist').querySelectorAll('[data-merge-check]')];
  const confirmation=()=>({confirmPrimaryId:$('merge-primary-confirm').value.trim(),confirmations:checks().map(input=>input.checked),publicationAuthorization:{publishMergedPrimary:$('authorize-primary').checked,withdrawSecondary:$('authorize-secondary').checked}});
@@ -39,29 +39,41 @@ export async function initializeMergeExecution({request,getState,setBusy,onCommi
  };
  const stopReviewClock=()=>{clearInterval(reviewClock);reviewClock=null;};
  const store=()=>{try{pending?sessionStorage.setItem(storageKey,JSON.stringify(pending)):sessionStorage.removeItem(storageKey);}catch{}};
- const resultView=async merge=>{
+ const clearPending=()=>{clearTimeout(recoveryTimer);recoveryTimer=null;pending=null;store();$('recover-merge').hidden=true;$('repair-merge').hidden=true;};
+ const terminalMerge=merge=>merge&&['committed','rolled-back','reverted'].includes(merge.status);
+ const sameAttempt=operation=>typeof operation?.operationId==='string'&&typeof operation?.stepId==='string'&&operation.operationId.toLowerCase()===pending?.id?.toLowerCase()&&operation.stepId.toLowerCase()===pending?.step?.toLowerCase();
+ const resultView=async(merge,{authoritative=true}={})=>{
    $('compare-panel').hidden=false;
    if(merge.legacy){$('merge-execution-result').innerHTML=`<article class="preview-box"><h3>历史手工合并 · 只读追溯</h3><p>${escape(merge.primary_id)} ← ${escape(merge.secondary_id)}</p><p>${escape(merge.message)}</p><p>状态：${escape(merge.status)} · 快照${merge.snapshots?.length??0}件</p></article>`;status('历史操作未重新执行。');return;}
    $('merge-execution-result').innerHTML=`<article class="preview-box"><h3>${merge.status==='reverted'?'合并已撤销':merge.operation_kind==='undo'&&merge.status==='committed'?'两件已恢复发布':merge.status==='committed'?'合并完成':merge.status==='rolled-back'?'本次未提交，已恢复':escape(phases[merge.phase]??merge.status)}</h3><p>保留编号：<strong>${escape(merge.primary_id)}</strong><br>从编号：${escape(merge.secondary_id)}（${merge.status==='committed'?'正式撤销留档':'见操作状态'}）</p><p>操作时间：${escape(merge.completed_at??merge.created_at)}<br>私密快照：${merge.snapshots?.length??0}件</p><details><summary>查看执行记录</summary><ul>${(merge.events??[]).map(event=>`<li>${escape(event.at)} · ${escape(phases[event.phase]??event.phase)}</li>`).join('')}</ul></details><p class="help">日志和快照留在私密目录。恢复入口位于“合并记录与恢复”；恢复发布须重新核对。</p></article>`;
-   if(merge.status==='committed'){await onCommitted();document.dispatchEvent(new CustomEvent('merge-records-updated'));$('execute-dialog').close();$('review-merge').disabled=true;say(capability.online?'合并及线上发布已完成；从编号正式留档。':'本机合并已完成；从编号正式留档，生产未变更。','success');}
+   if(merge.status==='committed'&&authoritative){let refreshFailed=false;try{await onCommitted();}catch{refreshFailed=true;}document.dispatchEvent(new CustomEvent('merge-records-updated'));$('execute-dialog').close();$('review-merge').disabled=true;say(refreshFailed?'合并已完成，但列表刷新失败。请刷新页面查看结果；不要再次合并。':capability.online?'合并及线上发布已完成；从编号正式留档。':'本机合并已完成；从编号正式留档，生产未变更。',refreshFailed?'error':'success');}
+   else if(authoritative&&terminalMerge(merge)){$('execute-dialog').close();review=null;stopReviewClock();$('review-merge').disabled=false;}
    status(merge.status==='reverted'?'该合并已撤销，两件已恢复；原日志保留。':phases[merge.phase]??merge.status);
  };
  async function progress(){if(!pending)return;try{const data=await request(`/api/merge-result/${pending.id}/${pending.step}`,{timeout:5000});status(phases[data.merge.phase]??'操作进行中');}catch{/* 原请求可能尚在排队；不把临时查询失败当作执行失败。 */}}
  async function recover(){
-   if(!pending||executing)return;setBusy(true);
+   if(!pending||executing||resolving)return;clearTimeout(recoveryTimer);recoveryTimer=null;resolving=true;setBusy(true);$('recover-merge').disabled=true;
+   const checkLater=()=>{if(pending&&!executing)recoveryTimer=setTimeout(()=>{recoveryTimer=null;recover();},5000);};
    try{
-     const response=await request('/api/operations/'+pending.id),entry=response.operations.find(row=>row.stepId===pending.step);
-     if(!entry){status('原请求尚未有可核实记录；保留本页，稍后再核对。');return;}
-     if(['queued','running'].includes(entry.status)){status('原请求仍在执行；不能再次提交。');return;}
-     let data;
-     try{data=await request(`/api/merge-result/${pending.id}/${pending.step}`);}catch(error){
-       if(['failed','cancelled'].includes(entry.status)&&(error.status===404||error.code==='MERGE_RESULT_UNKNOWN')){pending=null;store();$('recover-merge').hidden=true;status('原操作在提交前已结束；可以保留编辑并重新核对执行条件。');return;}
-       throw error;
+     const resolved=await request('/api/merge-attempt/resolve',{body:{operationId:pending.id,stepId:pending.step},timeout:300000});
+     if(resolved.operation&&!sameAttempt(resolved.operation))throw new Error('返回的操作收据与原请求不一致，继续保留原请求。');
+     if(resolved.state==='running'){status('服务器正在执行上次合并，将自动核对完成结果；不会重复提交。');checkLater();return;}
+     if(resolved.state==='not-started'){
+       if(!sameAttempt(resolved.operation)||!['failed','cancelled'].includes(resolved.operation.status)||resolved.merge)throw new Error('服务器未提供完整的未执行证明，继续保留原请求。');
+       clearPending();$('execute-dialog').close();review=null;stopReviewClock();$('review-merge').disabled=false;
+       status('已核实上次请求未执行，旧请求已关闭，不会迟到执行。'+(getState().plan?'方案已保留，请重新检查执行条件与合并预览。':'请从“已保存的方案”重新打开原方案，再检查执行条件与合并预览。'));return;
      }
-     await resultView(data.merge);
-     if(entry.status==='needs_review'){$('repair-merge').hidden=false;pending.requestHash=entry.requestHash;store();status('结果需要核对；写入保持暂停。可检查日志后点击恢复。');}
-     else{pending=null;store();$('recover-merge').hidden=true;$('repair-merge').hidden=true;}
-   }catch(error){status('尚未核实原请求：'+error.message);}finally{setBusy(false);updateReadiness();}
+     if(resolved.state==='finished'){
+       if(!terminalMerge(resolved.merge)||!sameAttempt(resolved.operation)||!['succeeded','failed','cancelled'].includes(resolved.operation.status))throw new Error('服务器结果尚不一致，继续保留原请求。');
+       clearPending();await resultView(resolved.merge);return;
+     }
+     if(resolved.state==='needs-review'){
+       if(resolved.merge)await resultView(resolved.merge,{authoritative:false});
+       const requestHash=resolved.operation?.requestHash;if(/^[a-f0-9]{64}$/.test(requestHash??'')){pending.requestHash=requestHash;store();$('repair-merge').hidden=false;}
+       status('原请求结果仍需核对，写入保护保留。请检查日志或使用恢复入口；不会重复合并。');return;
+     }
+     throw new Error('服务器未返回可核实的请求状态，继续保留原请求。');
+   }catch(error){if(error.code==='MERGE_DEPLOYMENT_BUSY'){status('服务器正在发布或处理其他操作，稍后会自动核对原请求；方案保留，不会重复合并。');checkLater();}else status('尚未核实原请求：'+error.message);}finally{resolving=false;setBusy(false);$('recover-merge').disabled=false;updateReadiness();}
  }
  $('review-merge').addEventListener('click',async()=>{
    const state=getState();if(executing||pending)return status('请先核对上一次合并结果。');
@@ -96,7 +108,8 @@ export async function initializeMergeExecution({request,getState,setBusy,onCommi
    poll=setInterval(progress,2500);
    try{
      const response=await request('/api/merge',{body:{planId:submittedReview.planId,planRevision:submittedReview.planRevision,reviewId:submittedReview.reviewId,...submittedConfirmation},operation:pending,timeout:900000});
-     await resultView(response.merge);pending=null;store();
+     if(!terminalMerge(response.merge)||!sameAttempt(response.operation)||response.operation.status!=='succeeded')throw new Error('服务器尚未证明合并终态，请核对原请求。');
+     clearPending();await resultView(response.merge);
    }catch(error){
      $('recover-merge').hidden=false;status('本次结果需核实，未再次提交。'+error.message);
    }finally{clearInterval(poll);executing=false;setBusy(false);$('execute-close').disabled=false;$('cancel-merge').hidden=true;if(pending)await recover();updateReadiness();}

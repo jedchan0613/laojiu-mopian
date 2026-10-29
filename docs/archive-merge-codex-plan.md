@@ -244,6 +244,7 @@ flowchart TD
 | POST /api/merge-review | planId、planRevision | reviewId、两件版本/图像/引用/规则/计划摘要、13项清单、有效期；任何变化使确认失效 |
 | POST /api/merge | 下方示例；绑定操作者 | 成功200：mergeId、主/从ID、主URL、WDR/U4、publicRelease、统计变化、warnings；在途用现有操作查询 |
 | GET /api/operations/{operationId} | 现有操作ID，须鉴权 | queued/running/succeeded/failed/cancelled/needs_review等现有收据状态和安全摘要；网络超时先查此结果，不能盲目重发 |
+| POST /api/merge-attempt/resolve | 旧operationId、stepId；沿用维护身份与跨站保护 | not-started/running/finished/needs-review；未登记请求必须在部署锁和写队列屏障内核对真实日志并保存持久取消收据，阻止迟到旧请求后才能解除浏览器待核；不能仅凭空收据或404清除 |
 | POST /api/cancel-operation | 沿用现有接口；operationId，核对操作者及目标权限 | 取消请求是否受理、最终操作收据；已进入提交阶段则先完成或安全回退，不能把“收到请求”当成“已取消” |
 | GET /api/merges、GET /api/merges/{mergeId} | 分页/mergeId | 权限过滤后的合并记录、决策、快照列表、当前可撤销性及阻断原因 |
 | POST /api/merge-undo-review | mergeId及当前版本 | 撤销影响、合并后的新修改/引用冲突、恢复预览及新的审核令牌 |
@@ -292,6 +293,7 @@ flowchart TD
 - 工具栏文案“将两件档案合并为一件”；只在勾选恰好2件时可用，其余提示“请选择两件档案”。展示“两件变一件；另一编号将留档，可追溯”。不要把“同相册”误作为默认合并理由。
 - 选择支持键盘及移动端；离开筛选/分页时明确显示当前仍选中的两件，避免把不可见选中项意外加入。已有未保存表单先保留私密方案再离开。
 - 保存方案须得到服务端成功响应后显示“已保存”，关闭后可从私密方案列表继续；保存失败保留当前编辑并明确提示，不将含完整转录的表单写入localStorage、普通下载日志或公开URL。打开过期方案时显示“已保留你的编辑，请核对标出的新变化”，不会自动提交。
+- 方案保存与合并执行是两个步骤。旧合并请求未受理时通过服务端安全核实并作废后解除；执行中保持防重，未知结果保持待核，已确认完成则先结束待核再刷新列表。列表刷新失败不改变实际合并结果，也不重新发起合并；发布锁繁忙时自动稍后核对（2026-10-29生产故障补充）。
 
 ### 2. 合并对比页
 

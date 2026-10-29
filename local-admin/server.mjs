@@ -27,6 +27,7 @@ import { createArchiveMergeExecution } from './archive-merge-execution.mjs';
 import { createMergeUndo } from './archive-merge-undo.mjs';
 import { acquireDeploymentLock, assertAccountMergeService, assertLikeMergeService, openAccountMergeConnection, createMergePublication } from './archive-merge-production.mjs';
 import { createMergeImageValidator, buildMergeCandidate } from './archive-merge-runtime.mjs';
+import { safeDirectory as safeMergeDirectory, safeBytes as safeMergeBytes } from './archive-merge-files.mjs';
 import { assertPublicationImageSignature, detectPublicationImageMime } from '../shared/publication-image-safety.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -2814,6 +2815,25 @@ const mergeUndo = mergeExecution ? createMergeUndo({
 	},
 }) : null;
 
+// byOperation兼容旧手工记录时会跳过无关损坏项；安全解除必须额外严格扫描，不能把读失败当作不存在。
+const inspectMergeAttempt = async (operationId, stepId, actor) => {
+	try { await safeMergeDirectory(mergeDirectory); }
+	catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+	try { return await mergeExecution.byOperation(operationId, stepId, actor); }
+	catch (error) { if (error.code !== 'MERGE_RESULT_UNKNOWN') throw error; }
+	for (const entry of await fs.readdir(mergeDirectory, { withFileTypes: true })) {
+		if (!operationIdPattern.test(entry.name)) continue;
+		if (!entry.isDirectory() || entry.isSymbolicLink()) throw new WriteSafetyError('合并日志目录无法可靠核对。', 409, 'MERGE_ATTEMPT_UNPROVEN');
+		const log = JSON.parse((await safeMergeBytes(mergeDirectory, entry.name + '/manifest.json')).toString('utf8'));
+		if (!log || typeof log !== 'object' || Array.isArray(log)) throw new WriteSafetyError('合并日志格式无法可靠核对。', 409, 'MERGE_ATTEMPT_UNPROVEN');
+		const legacy = !log.actor && Boolean(log.operator) && ['committed', 'failed'].includes(log.status) && itemIdPattern.test(log.primary_id ?? '') && itemIdPattern.test(log.secondary_id ?? '');
+		if (legacy) continue;
+		if (!operationIdPattern.test(log.operation?.operationId ?? '') || !operationIdPattern.test(log.operation?.stepId ?? '') || typeof log.actor !== 'string' || !log.actor) throw new WriteSafetyError('合并日志操作归属无法可靠核对。', 409, 'MERGE_ATTEMPT_UNPROVEN');
+		if (log.operation.operationId.toLowerCase() === operationId && log.operation.stepId.toLowerCase() === stepId) return mergeExecution.detail(entry.name, actor);
+	}
+	return null;
+};
+
 const adminServer = http.createServer(async (request, response) => {
 	// 管理域名经Tunnel直达本服务，不依赖公开站Caddy；包括早期错误和重定向。
 	response.setHeader('Cache-Control', 'no-store');
@@ -2880,6 +2900,13 @@ const adminServer = http.createServer(async (request, response) => {
 			}
 			if (mergeExecution && request.method === 'GET' && /^\/api\/merges\/[a-f0-9-]{36}$/i.test(url.pathname)) {
 				sendJson(response, 200, { merge: await writes.read(() => mergeExecution.detail(url.pathname.split('/').at(-1), mergeActor)) }, { request }); return;
+			}
+			if (mergeExecution && request.method === 'POST' && url.pathname === '/api/merge-attempt/resolve') {
+				requireSafeMutation(request); const payload = await readSubmissionJson(request, 32 * 1024);
+				if (!payload || typeof payload !== 'object' || Array.isArray(payload) || Object.keys(payload).some(key => !['operationId','stepId'].includes(key)) || !operationIdPattern.test(payload.operationId ?? '') || !operationIdPattern.test(payload.stepId ?? '')) throw new RequestError('原合并请求编号格式无效。');
+				const operationId = payload.operationId.toLowerCase(), stepId = payload.stepId.toLowerCase();
+				const result = await withDeploymentLock(() => writes.resolveMergeAttempt({ operationId, stepId, actor: mergeActor }, () => inspectMergeAttempt(operationId, stepId, mergeActor)));
+				sendJson(response, 200, result, { request }); return;
 			}
 			const mergeResultPath = /^\/api\/merge-result\/([a-f0-9-]{36})\/([a-f0-9-]{36})$/i.exec(url.pathname);
 			if (mergeExecution && request.method === 'GET' && mergeResultPath) {

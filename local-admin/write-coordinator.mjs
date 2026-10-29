@@ -329,5 +329,45 @@ export const createWriteCoordinator = async ({ directory, maxEntries = 10000, ma
       await persist(key,next);return structuredClone(next);
     });
   };
-  return { perform, query, cancel, read, assertReady, drain, all, reconcileMerge };
+  // 仅在调用方持有部署锁、核实真实合并日志后解除旧浏览器请求。
+  // 此屏障同时占住 admission 和串行写队列；取消收据永久阻止迟到原请求。
+  const resolveMergeAttempt = ({operationId,stepId,actor},inspect) => {
+    operationId=normalizeId(operationId);stepId=normalizeId(stepId);
+    if(typeof actor!=='string'||!actor||actor.length>256||typeof inspect!=='function')throw new WriteSafetyError('核对操作的维护身份无效。',403,'MERGE_FORBIDDEN');
+    const key=operationId+'.'+stepId,fenceHash=digest({kind:'merge-not-started',operationId,stepId,actor});
+    const task=admissions.then(async()=>{
+      const first=records.get(key);
+      if(first&&!['merge-records','merge-not-started'].includes(first.kind))throw new WriteSafetyError('原操作不是档案合并，不能按合并请求解除。',409,'MERGE_ATTEMPT_KIND_INVALID');
+      if(first&&(pendingStatuses.has(first.status)||active.has(key)))return{state:'running',operation:structuredClone(first)};
+      return serial(async()=>{
+        const entry=records.get(key);
+        if(entry&&!['merge-records','merge-not-started'].includes(entry.kind))throw new WriteSafetyError('原操作不是档案合并，不能按合并请求解除。',409,'MERGE_ATTEMPT_KIND_INVALID');
+        if(entry?.kind==='merge-not-started'&&entry.requestHash!==fenceHash)throw new WriteSafetyError('无权核对这项合并请求。',403,'MERGE_FORBIDDEN');
+        let merge;
+        try{merge=await inspect(entry?structuredClone(entry):null);}
+        catch(error){if(error.code==='MERGE_FORBIDDEN'||error.statusCode===403)throw error;return{state:'needs-review',...(entry?{operation:structuredClone(entry)}:{}),errorCode:'MERGE_ATTEMPT_UNPROVEN'};}
+        if(merge!==null&&(!merge||typeof merge!=='object'||typeof merge.status!=='string'))return{state:'needs-review',...(entry?{operation:structuredClone(entry)}:{}),errorCode:'MERGE_ATTEMPT_UNPROVEN'};
+        if(entry){
+          const operation=structuredClone(entry);
+          if(entry.kind==='merge-not-started')return merge?{state:'needs-review',operation,merge}:{state:'not-started',operation};
+          if(pendingStatuses.has(entry.status)||active.has(key))return{state:'running',operation};
+          if(entry.status==='needs_review')return{state:'needs-review',operation,...(merge?{merge}:{})};
+          if(entry.status==='succeeded'&&merge&&['committed','reverted'].includes(merge.status))return{state:'finished',operation,merge};
+          if(['failed','cancelled'].includes(entry.status)&&!merge)return{state:'not-started',operation};
+          if(['failed','cancelled'].includes(entry.status)&&merge?.status==='rolled-back')return{state:'finished',operation,merge};
+          return{state:'needs-review',operation,...(merge?{merge}:{})};
+        }
+        if(merge)return{state:'needs-review',merge};
+        assertReady();
+        const reserved=[...records].reduce((total,[storedKey,record])=>total+(pendingStatuses.has(record.status)?maximumRecordBytes-storedSizes.get(storedKey):0),0);
+        if(records.size>=maxEntries||bytes+reserved+maximumRecordBytes>maxBytes)throw new WriteSafetyError('私密操作记录已达到保留上限，不能安全解除原请求。',503,'JOURNAL_LIMIT');
+        // 未登记但已在磁盘出现的收据同样不可覆盖。
+        try{await fs.lstat(fileFor(key));throw invalidJournal();}catch(error){if(error.code!=='ENOENT')throw error;}
+        const at=new Date().toISOString(),fence={version:1,operationId,stepId,kind:'merge-not-started',target:'new',requestHash:fenceHash,status:'cancelled',startedAt:at,finishedAt:at,errorCode:'MERGE_REQUEST_NOT_STARTED',errorStatus:409};
+        await persist(key,fence);return{state:'not-started',operation:structuredClone(fence)};
+      });
+    });
+    admissions=task.then(()=>{},()=>{});return task;
+  };
+  return { perform, query, cancel, read, assertReady, drain, all, reconcileMerge, resolveMergeAttempt };
 };
