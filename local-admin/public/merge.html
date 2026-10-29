@@ -25,6 +25,13 @@
           <label class="source-reason">为什么确认是同一件或同一套？<textarea id="source-reason" rows="3" maxlength="4000" placeholder="例如：同一封信的前后两页，正文有连续衔接。请写具体依据。"></textarea></label>
           <p class="help">有争议的字段可以先留待核对。未知码有明确含义，不能当成空白；私密信息也不能用两份遮盖内容互相补齐。</p>
           <div class="field-head"><h3>字段差异</h3><span id="pending-summary" role="status"></span></div>
+          <div class="field-bulk-controls" role="group" aria-label="批量选择合并后取值" aria-describedby="field-bulk-help">
+            <button id="fields-use-primary" class="quiet" type="button">全部取主档案</button>
+            <button id="fields-use-secondary" class="quiet" type="button">全部取从档案</button>
+            <button id="fields-undo-choice" class="quiet" type="button" hidden>撤销本次选择</button>
+          </div>
+          <p id="field-bulk-help" class="help">批量设置全部可编辑字段，再逐项调整。保留编号、系统字段和图片顺序按各自规则处理。被替换的自定义值和选择依据可撤销恢复；之后逐项修改的字段会保留。</p>
+          <p id="field-bulk-status" class="help" role="status" aria-live="polite"></p>
           <div id="different-fields"></div><details id="same-fields"><summary>相同与系统管理字段</summary><div id="equal-fields"></div></details>
           <section aria-labelledby="images-heading"><h3 id="images-heading">图片顺序与逐图说明</h3><p class="help">拖动或用“上移／下移”排序。图注跟随图片移动；调整顺序后，请同时核对电子转录中的页号。这里不读取原始主档。</p><ol id="image-order" class="image-order"></ol><div id="omitted-images"></div></section>
           <details class="preview-box" open><summary>合并呈现预览</summary><h3 id="preview-title"></h3><p id="preview-count"></p><div id="preview-description" class="plain-text"></div><details><summary>查看拟采用的电子原文</summary><pre id="preview-transcription"></pre></details></details>

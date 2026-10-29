@@ -103,6 +103,45 @@ test('禁止写保护字段、无效代码、陌生字段与原型路径；尺�
   assert.equal({}.polluted, undefined);
 });
 
+test('已有电子转录可选主、选从或自定义保存，转录状态仍使用正式代码', async t => {
+  const f = await fixture(t);
+  f.records[0].public_view.transcription = '合成贺卡题字甲\n姓名〔遮盖〕';
+  f.records[1].public_view.transcription = '合成贺卡题字乙\n疑读〔不清〕';
+  for (const record of f.records) record.core.transcription_status = 'TX2';
+  const before = structuredClone(f.records), pf = await f.planner.preflight(f.ids, actor);
+  assert.deepEqual(pf.fields.find(field => field.path === 'public_view.transcription').options, []);
+  assert.ok(pf.fields.find(field => field.path === 'core.transcription_status').options.some(option => option.code === 'TX2'));
+  for (const [decision, expected] of [
+    [{ choice: 'primary' }, before[0].public_view.transcription],
+    [{ choice: 'secondary' }, before[1].public_view.transcription],
+    [{ choice: 'custom', value: '合成整合原文\n姓名〔遮盖〕\n〔不清〕' }, '合成整合原文\n姓名〔遮盖〕\n〔不清〕'],
+  ]) {
+    const payload = f.payload(pf); payload.fieldChoices['public_view.transcription'] = decision;
+    const saved = await f.planner.save(payload, actor, operation());
+    assert.equal(saved.proposedRecord.public_view.transcription, expected);
+    assert.equal(saved.proposedRecord.core.transcription_status, 'TX2');
+  }
+  const invalid = f.payload(pf); invalid.fieldChoices['core.transcription_status'] = { choice: 'custom', value: '编造状态' };
+  await assert.rejects(f.planner.save(invalid, actor, operation()), { code: 'MERGE_CODE_INVALID' });
+  assert.deepEqual(f.records, before);
+});
+
+test('公开呈现字段不按同名字典校验，正文、检索标签和修订说明保持自由文本', async t => {
+  const f = await fixture(t);
+  for (const name of ['description', 'tags', 'revision_note', 'image_descriptions']) {
+    f.standard.codeDictionary.entries.push({ enabled: true, dictionary_key: name, field: name, code: 'SYNTHETIC', label: '合成同名字典' });
+  }
+  const pf = await f.planner.preflight(f.ids, actor), payload = f.payload(pf);
+  for (const field of pf.fields.filter(field => field.path.startsWith('public_view.'))) assert.deepEqual(field.options, [], field.path);
+  payload.fieldChoices['public_view.description'] = { choice: 'custom', value: '合成整件公开描述' };
+  payload.fieldChoices['public_view.tags'] = { choice: 'custom', value: ['自由检索词', '合成验收'] };
+  payload.fieldChoices['public_view.revision_note'] = { choice: 'custom', value: '按合成图像重新整理说明' };
+  const saved = await f.planner.save(payload, actor, operation());
+  assert.deepEqual(saved.proposedRecord.public_view.tags, ['自由检索词', '合成验收']);
+  assert.equal(saved.proposedRecord.public_view.description, '合成整件公开描述');
+  assert.equal(saved.proposedRecord.public_view.revision_note, '按合成图像重新整理说明');
+});
+
 test('来源代码、日期、整数与新增字段均明确校验，未配置策略不悄悄沿用', async t => {
   const f = await fixture(t); f.records[0].core.date_start = '2000-01-01'; f.records[0].core.people_count = 1;
   let pf = await f.planner.preflight(f.ids, actor), payload = f.payload(pf);

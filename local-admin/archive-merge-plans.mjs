@@ -53,7 +53,8 @@ export function buildMergeFields(left, right, standards, policies) {
     const fieldName=key.split('.').at(-1),masked=/masked|signature|fingerprint/.test(fieldName),readonly=(key.startsWith('core.')&&frozen.has(fieldName))||fieldName==='image_descriptions';
     const declaredDictionary=String(definition.dictionary_or_multi_value_rule??'').split('｜')[0].trim();
     const dictionaryKey=dictionaryAliases[fieldName]??(standards.codeDictionary.entries.some(entry=>entry.enabled&&entry.dictionary_key===declaredDictionary)?declaredDictionary:fieldName);
-    const options=standards.codeDictionary.entries.filter(entry=>entry.enabled&&(entry.dictionary_key===dictionaryKey||entry.field===fieldName)).map(entry=>({code:entry.code,label:entry.label}));
+    // 公开呈现字段是文字；transcription正文不能误绑定转录状态TX0—TX3字典。
+    const options=key.startsWith('public_view.')?[]:standards.codeDictionary.entries.filter(entry=>entry.enabled&&(entry.dictionary_key===dictionaryKey||entry.field===fieldName)).map(entry=>({code:entry.code,label:entry.label}));
     const multi=fieldName==='tags'||String(definition.dictionary_or_multi_value_rule??'').includes('｜是')||String(definition.data_type??'').includes('多值')||Array.isArray(a)||Array.isArray(b);
     const type=multi?'array':typeof a==='boolean'||typeof b==='boolean'?'boolean':integerFields.has(fieldName)||numberFields.has(fieldName)||typeof a==='number'||typeof b==='number'||/整数|小数|数值|数字/.test(definition.data_type??'')?'number':'text';
     rows.push({path:key,label,section:definition.section??(key.startsWith('metadata.')?'对象专属信息':'公开呈现'),rule,required:Boolean(definition.required),readonly,masked,type,options,
