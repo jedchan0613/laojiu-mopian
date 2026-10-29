@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { assertPublicationImageSignature, createPublicationImageInput } from '../shared/publication-image-safety.mjs';
+import { isSubmissionCategory } from '../shared/submission-categories.mjs';
 
 export const submissionLimits = Object.freeze({ images: 8, imageBytes: 5 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, requestBytes: 22 * 1024 * 1024 });
 export const consentVersion = '2026-09-05-v1';
@@ -104,7 +105,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    contact: text(payload.contact, '联系方式', 3, 120), attribution: payload.attribution,
    credit: text(payload.credit ?? '', '公开署名', 0, 40), people: payload.people,
   };
-  if (!['照片', '明信片', '信件', '证件与卡片', '日记与笔记', '其他'].includes(fields.category)) fail('请选择资料类型。');
+  if (!isSubmissionCategory(fields.category)) fail('请选择资料类型。');
   if (!['email', 'wechat', 'phone'].includes(fields.contact_type)) fail('请选择联系方式。');
   if (fields.contact_type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.contact)) fail('邮箱格式不正确。');
   if (fields.contact_type === 'phone' && !/^\+?[\d ()-]{6,30}$/.test(fields.contact)) fail('电话号码格式不正确。');
@@ -225,7 +226,6 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  // 与免注册投稿共用同一个私密收件区、同一套人工隐私检查与发布门禁；
  // 这里只增加"归属账号、草稿、只读版本、进度、撤回与申请"。
  const accountIdPattern = /^usr_[a-f0-9]{24}$/;
- const accountCategories = ['照片', '明信片', '信件', '证件与卡片', '日记与笔记', '其他'];
  const accountStatusLabels = { draft: '草稿', pending: '待审核', needs_info: '待补充', approved: '整理中', declined: '暂不采用', withdrawn: '已撤回' };
  const maximumVersions = 20;
  // 账号级配额（方案 K）：防止单个账号耗尽共享收件区，也不能靠反复删除重传绕过。
@@ -256,9 +256,9 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   };
   if (fields.people && !['none', 'yes', 'unsure'].includes(fields.people)) fail('请说明是否涉及可以识别的真实人物。');
   if (!['anonymous', 'named'].includes(fields.attribution)) fail('请选择署名方式。');
-  if (fields.category && !accountCategories.includes(fields.category)) fail('请选择资料类型。');
+  if (fields.category && !isSubmissionCategory(fields.category)) fail('请选择资料类型。');
   if (strict) {
-   if (!accountCategories.includes(fields.category)) fail('请选择资料类型。');
+   if (!isSubmissionCategory(fields.category)) fail('请选择资料类型。');
    if (!fields.people) fail('请说明是否涉及可以识别的真实人物。');
    if (fields.attribution === 'named' && !fields.credit) fail('请填写希望公开的署名，或选择匿名。');
   }

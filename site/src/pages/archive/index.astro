@@ -18,6 +18,7 @@ import { getResponsiveImage } from '../../data/responsive-images';
 import { serializeHtmlJson } from '../../../../shared/html-json.mjs';
 import {groupArchiveMatches} from '../../data/archive-browse.mjs';
 import {archiveSearchUrl} from '../../data/archive-search-index';
+import { getDecadeOptions, getArchiveTypeOrder } from '../../../../shared/archive-reference.mjs';
 
 const publishedViews = archiveItems
   .filter(isPublishedArchiveItem)
@@ -25,15 +26,10 @@ const publishedViews = archiveItems
 const albumBrowseViews = createAlbumBrowseViews(archiveItems, locale);
 const albumKeyByItemId = new Map(albumBrowseViews.flatMap((album) => album.memberIds.map((id) => [id, album.slug] as const)));
 
-// 目前只读取显示年代中出现的首个四位年份。将来遇到年份不明确的资料时，
-// 它仍会显示在“全部年代”中，但不会被错误归入某个具体年代。
-const availableDecades = [
-  ...new Set(
-    publishedViews
-      .map((view) => view.decade)
-      .filter((decade): decade is string => Boolean(decade)),
-  ),
-].sort((a, b) => Number(a) - Number(b));
+// 各端共同读取首个四位年份；无法确定的记录统一归入“年代未知”。
+const decadeOptions = getDecadeOptions(publishedViews.map((view) => view.item.core.date_display));
+const availableDecades = decadeOptions.filter((option) => option.value !== 'unknown').map((option) => option.value);
+const objectTypeOrder = getArchiveTypeOrder(archiveCategories);
 
 const availablePlaces = [...new Set(publishedViews.flatMap((view) => view.placeFilters))];
 const placeLabels = Object.assign({}, ...publishedViews.map(view => view.placeFilterLabels));
@@ -218,7 +214,7 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
               <label for="archive-decade">{t("年代", locale)}</label>
               <select id="archive-decade" aria-controls="archive-list">
                 <option value="">{t("全部年代", locale)}</option>
-                {availableDecades.map((decade) => <option value={decade}>{t('{0}年代',locale,{0:decade})}</option>)}
+                {decadeOptions.map(({ value, label }) => <option value={value}>{value === 'unknown' ? t(label, locale) : t('{0}年代',locale,{0:value})}</option>)}
               </select>
             </div>
 
@@ -291,6 +287,7 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
               data-card-expanded={initialFullIds.has(view.id)?'true':undefined}
               data-archive-year={view.item.core.date_display.match(/\d{4}/)?.[0] ?? ''}
               data-archive-type-label={view.typeLabel}
+              data-archive-type-order={objectTypeOrder.indexOf(view.objectType)}
               data-archive-title={view.title}
               data-archive-original-index={originalIndex}
             >
@@ -529,7 +526,7 @@ import '../../scripts/archive-likes';
     const definitions = [
       { key: 'q', label: ct("关键词"), value: searchInput.value.trim() },
       { key: 'category', label: ct("分类"), value: categorySelect.value ? categorySelect.selectedOptions[0]?.textContent?.trim() ?? '' : '' },
-      { key: 'decade', label: ct("年代"), value: decadeSelect.value ? ct("{0}年代", {0: (decadeSelect.value)}) : '' },
+      { key: 'decade', label: ct("年代"), value: decadeSelect.value ? (decadeSelect.value === 'unknown' ? ct('年代未知') : ct("{0}年代", {0: (decadeSelect.value)})) : '' },
       { key: 'place', label: ct("地点"), value: placeSelect.value ? placeSelect.selectedOptions[0]?.textContent?.trim() ?? placeSelect.value : '' },
       { key: 'tag', label: ct("标签"), value: tagSelect.value ? tagSelect.selectedOptions[0]?.textContent?.trim() ?? tagSelect.value : '' },
     ].filter((definition) => definition.value);
@@ -590,7 +587,7 @@ import '../../scripts/archive-likes';
           return sortMode === 'date-asc' ? leftYear - rightYear : rightYear - leftYear;
         }
       } else if (sortMode === 'type') {
-        const typeOrder = compareText(left.dataset.archiveTypeLabel ?? '', right.dataset.archiveTypeLabel ?? '');
+        const typeOrder = Number(left.dataset.archiveTypeOrder ?? 999) - Number(right.dataset.archiveTypeOrder ?? 999);
         if (typeOrder !== 0) return typeOrder;
       } else {
         const recentOrder = compareRecentEntries(left, right);
@@ -777,7 +774,7 @@ import '../../scripts/archive-likes';
           ? scoreEntryAgainstFields(terms, fields)
           : null;
       const matchesCategory = !selectedCategory || entry.dataset.archiveCategory === selectedCategory;
-      const matchesDecade = !selectedDecade || entry.dataset.archiveDecade === selectedDecade;
+      const matchesDecade = !selectedDecade || (selectedDecade === 'unknown' ? !entry.dataset.archiveDecade : entry.dataset.archiveDecade === selectedDecade);
       const matchesPlace = !selectedPlace || (entry.dataset.archivePlaces ?? '').includes(`|${selectedPlace}|`);
       const matchesTag = !selectedTag || (entry.dataset.archiveTags ?? '').includes(`|${selectedTag}|`);
       const isMatch = keywordMatch !== null && matchesCategory && matchesDecade && matchesPlace && matchesTag;

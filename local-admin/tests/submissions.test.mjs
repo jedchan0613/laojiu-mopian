@@ -10,6 +10,7 @@ import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { crc32 } from 'node:zlib';
 import { createSubmissionStore, createPublicSubmissionHandler, privacyChecks, submissionId, consentVersion } from '../submissions.mjs';
+import { submissionCategories } from '../../shared/submission-categories.mjs';
 
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const siteDirectory = path.join(project, 'site');
@@ -22,6 +23,16 @@ async function fixture(t, options = {}) {
  const payload = { key: randomBytes(32).toString('hex'), website: '', title: '测试用虚构资料', description: '这是一份自动检查使用的虚构资料，不包含真实人物。', category: '照片', era: '', name: '测试投稿人', contact_type: 'email', contact: 'synthetic@example.invalid', attribution: 'anonymous', credit: '', people: 'none', consent_version: consentVersion, consents: { copies: true, rights: true, privacy: true, processing: true }, images: [{ name: 'screening-copy.jpg', buffer: image }] };
  return { store, root, payload };
 }
+test('免注册投稿接受全站七类，仍保留旧分类并拒绝未定义分类', async t => {
+ const { store, payload } = await fixture(t);
+ for (const category of [...submissionCategories, '证件与卡片']) {
+  const result = await store.create({ ...payload, key: randomBytes(32).toString('hex'), category });
+  assert.equal((await store.detail(result.id)).fields.category, category);
+ }
+ await assert.rejects(store.create({ ...payload, key: randomBytes(32).toString('hex'), category: '伪造分类' }), /请选择资料类型/);
+ assert.equal((await store.list()).length, submissionCategories.length + 1);
+});
+
 test('接收、重试与回执：私密字段不外泄，元数据被移除，重新打开仍可查询', async t => {
  const { store, root, payload } = await fixture(t);
  const first = await store.create(payload); assert.equal(first.id, submissionId(payload.key));

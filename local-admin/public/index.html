@@ -6,7 +6,7 @@
 		<meta name="color-scheme" content="light" />
 		<meta name="robots" content="noindex, nofollow" />
 		<title>档案管理｜老旧默片</title>
-		<link rel="stylesheet" href="./styles.css?v=20261018-mobile-stage4-4" />
+		<link rel="stylesheet" href="./styles.css?v=20261029-nav-reference-1" />
 	</head>
 	<body class="admin-v2">
 		<a class="skip-link" href="#main-editor">跳到档案编辑区</a>
@@ -38,7 +38,10 @@
 							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4zM8 5v15M8 9h12M8 14h12" /></svg>
 							<span>档案管理</span><small id="records-badge">0</small>
 						</button>
-						<a class="desk-nav-button" id="merge-planner-link" href="/admin/merge.html" hidden><span>两件合并方案</span><small>本地</small></a>
+						<a class="desk-nav-button" id="merge-planner-link" href="/admin/merge.html" hidden>
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h6v6H3zM3 14h6v6H3zM9 7h6v10H9M15 12h6M18 9l3 3-3 3" /></svg>
+							<span>两件合并方案</span><small>方案</small>
+						</a>
 					</div>
 
 					<div class="desk-nav-group">
@@ -130,9 +133,9 @@
 						</select>
 					</label>
 					<label>
-						<span class="sr-only">按类型筛选</span>
-						<select id="record-type-filter" aria-label="按类型筛选">
-							<option value="">全部类型</option>
+						<span class="sr-only">按藏品分类筛选</span>
+						<select id="record-category-filter" data-record-filter="category" aria-label="按藏品分类筛选">
+							<option value="">全部分类</option>
 						</select>
 					</label>
 					<label>
@@ -155,9 +158,9 @@
 				</div>
 
 				<details class="record-advanced" id="record-advanced">
-					<summary>更多筛选 <small id="record-advanced-count">研究、证据、权利与图片</small></summary>
+					<summary>更多筛选 <small id="record-advanced-count">精确类型、研究与权利</small></summary>
 					<div class="record-advanced-fields">
-						<label>藏品分类<select id="record-category-filter" data-record-filter="category"><option value="">全部分类</option></select></label>
+						<label>精确类型<select id="record-type-filter" aria-label="按精确类型筛选"><option value="">全部精确类型</option></select></label>
 						<label>研究状态<select id="record-research-filter" data-record-filter="research"><option value="">全部状态</option></select></label>
 						<label>证据等级<select id="record-evidence-filter" data-record-filter="evidence"><option value="">全部等级</option></select></label>
 						<label>权利状态<select id="record-rights-filter" data-record-filter="rights"><option value="">全部状态</option></select></label>
@@ -341,6 +344,6 @@
 		<datalist id="administrative-city-options"></datalist>
 		<datalist id="administrative-district-options"></datalist>
 
-		<script type="module" src="./app.js?v=20261018-mobile-stage4-4"></script>
+		<script type="module" src="./app.js?v=20261029-nav-reference-1"></script>
 	</body>
 </html>

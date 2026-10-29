@@ -2,6 +2,7 @@ import source from './standards/code-dictionary.json';
 import english from '../i18n/archive-labels.en.json';
 import {fixedText} from '../../../shared/fixed-text.mjs';
 import {translationLocales,normalizeLocale} from '../../../shared/locale-config.mjs';
+import { sortDictionaryEntries } from '../../../shared/archive-reference.mjs';
 
 export interface CodeDictionaryEntry {
   dictionary_key: string; dimension_category: string; code: string; label: string;
@@ -19,8 +20,8 @@ export const getCodeEntry = (code: string, locale: string = 'zh-CN') => {
   return entry && isTranslatedArchiveLocale(locale) ? { ...entry, label: translateLabel(englishCodes[code] ?? entry.label, locale) } : entry;
 };
 export const getCodeLabel = (code: string, locale: string = 'zh-CN') => getCodeEntry(code, locale)?.label ?? code;
-export const getDictionaryEntries = (dictionaryKey: string, locale: string = 'zh-CN') => enabledCodeDictionary
-  .filter((entry) => entry.dictionary_key === dictionaryKey).sort((a, b) => a.sort - b.sort)
+export const getDictionaryEntries = (dictionaryKey: string, locale: string = 'zh-CN') => sortDictionaryEntries(enabledCodeDictionary
+  .filter((entry) => entry.dictionary_key === dictionaryKey))
   .map((entry) => getCodeEntry(entry.code, locale)!);
 export const getArchiveTermLabel = (value: string, locale: string = 'zh-CN') => isTranslatedArchiveLocale(locale)
   ? translateLabel((english.terms as Record<string, string>)[value] ?? value, locale) : value;

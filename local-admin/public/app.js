@@ -1,5 +1,7 @@
 import { compareAlbumPositions, parseAlbumPosition, albumPositionIdentity } from './album-position.mjs';
 import { filterApprovedMetadataIssues } from './publication-metadata-approvals.mjs';
+import { getDecade, getDecadeOptions, getArchiveCategoryOptions, getArchiveTypeOrder,
+	sortDictionaryEntries, compareReferenceValues, managementStatusOrder, getManagementStatus } from './archive-reference.mjs';
 
 const managedCoreFields = new Set([
 	'record_status', 'item_id', 'collection_code', 'privacy_level', 'use_status', 'master_file_path',
@@ -1006,12 +1008,7 @@ const refreshInboxPendingBadge = async () => {
 };
 const recordIsWithdrawn = (record) => record?.core?.record_status === 'WDR' && !record?._admin?.hasDraft;
 const statusLabel = (record) => {
-	if (record._admin?.restoredFromWithdrawal) return '恢复草稿';
-	if (record._admin?.hasDraft) return record._admin.hasOfficial ? '有未发布修改' : '草稿';
-	if (record.core.record_status === 'WDR') return '已撤销';
-	if (record.core.use_status === 'U3') return '已发布';
-	if (record.core.use_status === 'U1') return '候选';
-	return '未发布';
+	return getManagementStatus(record);
 };
 
 const recordStatusTone = (record) => {
@@ -1023,8 +1020,7 @@ const recordStatusTone = (record) => {
 };
 
 const recordDecade = (record) => {
-	const year = String(record?.core?.date_display ?? '').match(/(?:18|19|20)\d{2}/)?.[0];
-	return year ? `${year.slice(0, 3)}0` : '';
+	return getDecade(record?.core?.date_display) ?? '';
 };
 
 const recordsInCurrentStatusTab = () => state.records.filter((record) =>
@@ -1176,7 +1172,7 @@ const recordItemDateSortKey = (record) => {
 	const core = record?.core ?? {};
 	const dateStart = normalizeRecordItemDate(core.date_start);
 	if (dateStart) return dateStart;
-	const displayYear = String(core.date_display ?? '').match(/(?:18|19|20)\d{2}/)?.[0];
+	const displayYear = String(core.date_display ?? '').match(/\d{4}/)?.[0];
 	if (displayYear) return `${displayYear}-01-01`;
 	return normalizeRecordItemDate(core.date_end);
 };
@@ -1227,11 +1223,7 @@ const queryCodeLabel = (dictionaryKey, code) => {
 };
 
 const queryStatusLabel = (record) => {
-	if (record.record_status === 'WDR') return '已撤销';
-	if (record.has_draft && record.has_official) return '有未发布修改';
-	if (record.has_draft) return '草稿';
-	if (record.is_published) return '已发布';
-	return '未发布';
+	return getManagementStatus(record);
 };
 
 const queryStructureLabel = (status) => ({
@@ -1239,10 +1231,11 @@ const queryStructureLabel = (status) => ({
 })[status] ?? '状态未知';
 
 
-const queryOptionMarkup = (records, field, currentValue, labelFor = (value) => value) =>
+const queryOptionMarkup = (records, field, currentValue, dictionaryKey) =>
 	[...new Set(records.map((record) => record[field]).filter(Boolean))]
-		.sort((left, right) => String(left).localeCompare(String(right), 'zh-CN'))
-		.map((value) => `<option value="${escapeHtml(value)}" ${value === currentValue ? 'selected' : ''}>${escapeHtml(labelFor(value))}</option>`)
+		.sort((left, right) => compareReferenceValues(left, right,
+			(state.dictionary.get(({ evidence_level: 'evidence', rights_status: 'rights' })[dictionaryKey] ?? dictionaryKey) ?? []).map((entry) => entry.code)))
+		.map((value) => `<option value="${escapeHtml(value)}" ${value === currentValue ? 'selected' : ''}>${escapeHtml(queryCodeLabel(dictionaryKey, value))}</option>`)
 		.join('');
 
 const renderQueryDetails = (record) => {
@@ -1473,20 +1466,16 @@ const getMaintenanceOverview = () => {
 
 const syncRecordToolOptions = (tabRecords) => {
 	const typeLabels = new Map((state.dictionary.get('object_type') ?? []).map((entry) => [entry.code, entry.label]));
-	const types = [...new Set(tabRecords.map((record) => record.core.object_type).filter(Boolean))]
-		.sort((left, right) => chineseCollator.compare(typeLabels.get(left) ?? left, typeLabels.get(right) ?? right));
-	elements.recordTypeFilter.innerHTML = `<option value="">全部类型</option>${types
+	const categories = state.standards?.archiveCategories?.categories ?? [];
+	const types = getArchiveTypeOrder(categories).filter((type) => typeLabels.has(type));
+	elements.recordTypeFilter.innerHTML = `<option value="">全部精确类型</option>${types
 		.map((value) => `<option value="${escapeHtml(value)}" ${value === state.recordTypeFilter ? 'selected' : ''}>${escapeHtml(typeLabels.get(value) ?? value)}（${escapeHtml(value)}）</option>`)
 		.join('')}`;
-	const decades = [...new Set(tabRecords.map(recordDecade).filter(Boolean))]
-		.sort((left, right) => right.localeCompare(left));
+	const decades = getDecadeOptions([...tabRecords.map((record) => record.core.date_display), state.recordDecadeFilter]);
 	elements.recordDecadeFilter.innerHTML = `<option value="">全部年代</option>${decades
-		.map((value) => `<option value="${escapeHtml(value)}" ${value === state.recordDecadeFilter ? 'selected' : ''}>${escapeHtml(value)}年代</option>`)
-		.join('')}<option value="unknown" ${state.recordDecadeFilter === 'unknown' ? 'selected' : ''}>年代未知</option>`;
-	const statusOrder = ['草稿', '恢复草稿', '有未发布修改', '未发布', '候选', '已发布', '已撤销'];
-	const statuses = [...new Set(tabRecords.map(statusLabel))]
-		.sort((left, right) => (statusOrder.indexOf(left) + statusOrder.length) % statusOrder.length
-			- ((statusOrder.indexOf(right) + statusOrder.length) % statusOrder.length));
+		.map(({ value, label }) => `<option value="${escapeHtml(value)}" ${value === state.recordDecadeFilter ? 'selected' : ''}>${escapeHtml(label)}</option>`)
+		.join('')}`;
+	const statuses = managementStatusOrder.filter((status) => status === state.recordQuickStatus || tabRecords.some((record) => statusLabel(record) === status));
 	elements.recordQuickStatusFilter.innerHTML = `<option value="">全部状态</option>${statuses
 		.map((value) => `<option value="${escapeHtml(value)}" ${value === state.recordQuickStatus ? 'selected' : ''}>${escapeHtml(value)}</option>`)
 		.join('')}`;
@@ -1503,14 +1492,13 @@ const syncRecordToolOptions = (tabRecords) => {
 		const control = document.querySelector(`[data-record-filter="${filter}"]`);
 		const values = tabRecords.map((record) => record.core);
 		if (state.recordFilters[filter] && !values.some((core) => core[field] === state.recordFilters[filter])) values.push({ [field]: state.recordFilters[filter] });
-		control.innerHTML = `<option value="">${emptyLabel}</option>${queryOptionMarkup(values, field, state.recordFilters[filter], (value) => queryCodeLabel(dictionary, value))}`;
+		control.innerHTML = `<option value="">${emptyLabel}</option>${queryOptionMarkup(values, field, state.recordFilters[filter], dictionary)}`;
 	}
-	const categories = state.standards?.archiveCategories?.categories ?? [];
-	document.querySelector('#record-category-filter').innerHTML = '<option value="">全部分类</option>' + categories.map((category) =>
-		`<option value="${escapeHtml(category.slug)}" ${category.slug === state.recordFilters.category ? 'selected' : ''}>${escapeHtml(category.label)}</option>`).join('');
+	document.querySelector('#record-category-filter').innerHTML = '<option value="">全部分类</option>' + getArchiveCategoryOptions(categories).map((category) =>
+		`<option value="${escapeHtml(category.value)}" ${category.value === state.recordFilters.category ? 'selected' : ''}>${escapeHtml(category.label)}</option>`).join('');
 	document.querySelector('#record-image-filter').value = state.recordFilters.imageStatus;
-	const advancedCount = Object.values(state.recordFilters).filter(Boolean).length;
-	elements.recordAdvancedCount.textContent = advancedCount ? `已使用 ${advancedCount} 项` : '研究、证据、权利与图片';
+	const advancedCount = [state.recordTypeFilter, ...Object.entries(state.recordFilters).filter(([key]) => key !== 'category').map(([, value]) => value)].filter(Boolean).length;
+	elements.recordAdvancedCount.textContent = advancedCount ? `已使用 ${advancedCount} 项` : '精确类型、研究与权利';
 };
 
 const refreshAlbumBrowserActions = () => {
@@ -3212,8 +3200,7 @@ const pvTypeLabel = (type) => pvCodeLabel(type);
 const pvIsPublished = (record) =>
 	record.core.record_status === 'ACT' && record.core.use_status === 'U3' && record.core.privacy_level === 'G';
 const pvDecade = (dateDisplay) => {
-	const match = dateDisplay?.match(/(\d{4})/);
-	return match ? String(Math.floor(Number(match[1]) / 10) * 10) : undefined;
+	return getDecade(dateDisplay);
 };
 
 // 对应 createArchiveRecordView；gallery 传入时用编辑器当前图片（含未保存草稿图）替代正式发布路径。
@@ -4757,7 +4744,7 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	state.standards = standards;
 	state.commonFields = new Map(standards.commonFields.fields.map((field) => [field.field_code, field]));
 	state.dictionary = new Map();
-	for (const entry of standards.codeDictionary.entries) {
+	for (const entry of sortDictionaryEntries(standards.codeDictionary.entries)) {
 		if (!state.dictionary.has(entry.dictionary_key)) state.dictionary.set(entry.dictionary_key, []);
 		state.dictionary.get(entry.dictionary_key).push(entry);
 	}

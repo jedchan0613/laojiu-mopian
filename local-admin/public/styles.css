@@ -5547,6 +5547,18 @@ body.admin-v2 .desk-nav-button {
 	text-decoration: none;
 }
 
+body.admin-v2 .desk-nav-button > svg {
+	grid-column: 1;
+	grid-row: 1;
+}
+
+body.admin-v2 .desk-nav-button > span {
+	grid-column: 2;
+	grid-row: 1;
+	min-width: 0;
+	white-space: nowrap;
+}
+
 body.admin-v2 .desk-nav-button:hover {
 	color: var(--admin-ink);
 	background: var(--admin-surface-soft);
@@ -5561,6 +5573,9 @@ body.admin-v2 .desk-nav-button.is-active {
 
 body.admin-v2 .desk-nav-button small {
 	display: inline-grid;
+	grid-column: 3;
+	grid-row: 1;
+	justify-self: end;
 	min-width: 1.35rem;
 	height: 1.25rem;
 	padding: 0 0.32rem;
@@ -5569,6 +5584,7 @@ body.admin-v2 .desk-nav-button small {
 	background: #f2f4f7;
 	border-radius: 999px;
 	font-size: 0.6rem;
+	white-space: nowrap;
 }
 
 body.admin-v2 .desk-nav-button.is-active small {

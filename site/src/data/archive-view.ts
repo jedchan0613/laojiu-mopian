@@ -1,4 +1,6 @@
 import {translationLocales,supportedLocales} from '../../../shared/locale-config.mjs';
+import { getDecade } from '../../../shared/archive-reference.mjs';
+export { getDecade };
 import type { ArchiveItem, ObjectType } from './archive-schema';
 import { getCodeEntry, getCodeLabel, getArchiveTermLabel, isTranslatedArchiveLocale } from './code-dictionary';
 import { getDimensionsForItem } from './dimension-definitions';
@@ -18,7 +20,6 @@ const hasText = (value: unknown): value is string => typeof value === 'string' &
 const uniqueText = (values: Array<string | undefined>) => [...new Set(values.filter(hasText).map((value) => value.trim()))];
 export const getObjectTypeLabel = (type: ObjectType, locale: string = 'zh-CN') => getCodeLabel(type, locale);
 export const isPublishedArchiveItem = (item: ArchiveItem) => item.core.record_status === 'ACT' && item.core.use_status === 'U3' && item.core.privacy_level === 'G';
-export const getDecade = (dateDisplay: string) => { const match = dateDisplay.match(/(\d{4})/); return match ? String(Math.floor(Number(match[1]) / 10) * 10) : undefined; };
 // Each static build uses an immutable archive module. HMR/build reloads create a fresh cache.
 const viewCache = new WeakMap<ArchiveItem, Map<string, ArchiveRecordView>>();
 export const createArchiveRecordView = (item: ArchiveItem, requestedLocale: string | number = 'zh-CN'): ArchiveRecordView => {

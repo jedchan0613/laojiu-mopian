@@ -19,6 +19,7 @@ import { createMailer } from './mail.mjs';
 import { enqueueProgressNotification } from './notification-queue.mjs';
 import { createTranslationStore } from './translations.mjs';
 import { filterApprovedMetadataIssues } from '../shared/publication-metadata-approvals.mjs';
+import { getDecade } from '../shared/archive-reference.mjs';
 import { createWriteCoordinator, acquireWriteLease, atomicWrite, recordRevision, WriteSafetyError } from './write-coordinator.mjs';
 import { createPublicationReviews } from './publication-review.mjs';
 import { createMergePlanner } from './archive-merge-plans.mjs';
@@ -1591,7 +1592,6 @@ const createQueryRecords = async () => {
 				specificSummary.push({ dimension_code: dimensionCode, field_code: fieldCode, value });
 			}
 		}
-		const dateYear = String(core.date_display ?? '').match(/(?:18|19|20)\d{2}/)?.[0];
 		return {
 			item_id: core.item_id ?? '',
 			collection_code: core.collection_code ?? '',
@@ -1602,7 +1602,7 @@ const createQueryRecords = async () => {
 			object_type: core.object_type ?? '',
 			object_type_label: objectTypeLabels.get(core.object_type) ?? core.object_type ?? '未填写',
 			date_display: core.date_display ?? '',
-			decade: dateYear ? `${dateYear.slice(0, 3)}0` : '',
+			decade: getDecade(core.date_display) ?? '',
 			date_start: core.date_start ?? '',
 			date_end: core.date_end ?? '',
 			place_summary: placeParts.join(' · '),
@@ -1625,6 +1625,7 @@ const createQueryRecords = async () => {
 			updated_date: core.updated_date ?? core.created_date ?? '',
 			has_draft: Boolean(record._admin?.hasDraft),
 			has_official: Boolean(record._admin?.hasOfficial),
+			restored_from_withdrawal: Boolean(record._admin?.restoredFromWithdrawal),
 			is_published: Boolean(record._admin?.officialPublished),
 			required_issue_count: (record._admin?.issues ?? []).filter((issue) => issue.code !== 'privacy_confirmation').length,
 			publication_image_count: images.length,
@@ -3197,7 +3198,7 @@ const adminServer = http.createServer(async (request, response) => {
 		}
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname.startsWith('/admin/')) {
 			// 仅提供管理页需要的一个共享模块；此分支之前已完成线上 Access 鉴权。
-			if (['/admin/album-position.mjs', '/admin/publication-metadata-approvals.mjs'].includes(url.pathname)) {
+			if (['/admin/album-position.mjs', '/admin/publication-metadata-approvals.mjs', '/admin/archive-reference.mjs'].includes(url.pathname)) {
 				await sendFile(response, sharedAlbumModuleDirectory, `/${path.basename(url.pathname)}`, {
 					cacheControl: 'no-store', request,
 				});

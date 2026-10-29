@@ -1,4 +1,5 @@
 import { clientText as ct, clientLocale, clientPath, clientError } from '../i18n/client';
+import { restoreSubmissionCategory } from '../../../shared/submission-categories.mjs';
 // 投稿工作台：新建、保存草稿、提交审核、查看进度、补充、撤回与申请修改或撤下。
 // 图片只在点击「保存草稿」或「提交审核」时才上传；服务端以真实解码结果为准。
 
@@ -227,7 +228,7 @@ const renderPreview = () => {
 const fill = (record: any) => {
 	const f = record.fields ?? {};
 	if (field<HTMLInputElement>('title')) field<HTMLInputElement>('title')!.value = f.title ?? '';
-	if (field<HTMLSelectElement>('category')) field<HTMLSelectElement>('category')!.value = f.category ?? '';
+	restoreSubmissionCategory(field<HTMLSelectElement>('category'), f.category, ct);
 	if (field<HTMLTextAreaElement>('description')) field<HTMLTextAreaElement>('description')!.value = f.description ?? '';
 	if (field<HTMLInputElement>('era')) field<HTMLInputElement>('era')!.value = f.era ?? '';
 	if (field<HTMLInputElement>('place')) field<HTMLInputElement>('place')!.value = f.place ?? '';

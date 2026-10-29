@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { createSubmissionStore, privacyChecks, consentVersion } from '../submissions.mjs';
 import { createAccountStore, agreementVersion } from '../accounts.mjs';
 import { createMailer } from '../mail.mjs';
+import { submissionCategories } from '../../shared/submission-categories.mjs';
 
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const siteDirectory = path.join(project, 'site');
@@ -65,6 +66,20 @@ async function fixture(t, options = {}) {
 	});
 	return { root, store, notifications, create };
 }
+
+test('账号投稿与免注册采用相同七类，旧合并分类重存后不被自动拆改', async t => {
+ const { store, create } = await fixture(t);
+ for (const category of submissionCategories) {
+  const result = await create(ACCOUNT_A, 'draft', { fields: { ...completeFields(), category }, images: [] });
+  assert.equal((await store.getAccountSubmission({ id: result.id, accountId: ACCOUNT_A })).fields.category, category);
+ }
+ const legacy = await create(ACCOUNT_A, 'draft', { fields: { ...completeFields(), category: '证件与卡片' }, images: [] });
+ const opened = await store.getAccountSubmission({ id: legacy.id, accountId: ACCOUNT_A });
+ await store.saveAccountSubmission({ id: legacy.id, accountId: ACCOUNT_A, revision: opened.revision,
+  payload: { fields: opened.fields, keep: [], images: [], notes: {} } });
+ assert.equal((await store.getAccountSubmission({ id: legacy.id, accountId: ACCOUNT_A })).fields.category, '证件与卡片');
+ await assert.rejects(create(ACCOUNT_A, 'draft', { fields: { ...completeFields(), category: '伪造分类' }, images: [] }), /请选择资料类型/);
+});
 
 test('草稿：允许不完整内容，跨设备可读，保存后图片与说明都能保留，移除的图片进入私密回收区', async t => {
 	const { root, store, create } = await fixture(t);

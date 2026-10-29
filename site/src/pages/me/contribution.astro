@@ -2,6 +2,7 @@
 
 import { t, getLocale, localizePath, canonicalPath } from '../../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
+import { submissionCategories } from '../../../../shared/submission-categories.mjs';
 import AccountShell from '../../components/AccountShell.astro';
 ---
 
@@ -72,7 +73,7 @@ import AccountShell from '../../components/AccountShell.astro';
 						<label for="wb-category">{t("藏品分类", locale)} <span aria-hidden="true">*</span></label>
 						<select id="wb-category" name="category" required>
 							<option value="">{t("请选择", locale)}</option>
-							{['照片', '明信片', '信件', '证件与卡片', '日记与笔记', '其他'].map((label) => <option value={label}>{label}</option>)}
+							{submissionCategories.map((label) => <option value={label}>{t(label, locale)}</option>)}
 						</select>
 					</div>
 					<div class="account-field">

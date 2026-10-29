@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { getDecade, getDecadeOptions } from '../../shared/archive-reference.mjs';
 
 const projectRoot = new URL('../../', import.meta.url);
 
@@ -100,14 +101,26 @@ test('档案管理可按藏品时间从新到旧排序，并将未知年代放�
 	);
 });
 
-test('年代筛选提供“年代未知”选项，覆盖未填写与填写为年代未知', async () => {
+test('年代筛选统一把未填写、待考文字归入“年代未知”，不会借其他日期伪造年代', async () => {
 	const script = await readFile(new URL('local-admin/public/app.js', projectRoot), 'utf8');
-
-	assert.match(script, /<option value="unknown"[^>]*>年代未知<\/option>/);
-	const filterStart = script.indexOf('if (state.recordDecadeFilter) {');
-	const filterEnd = script.indexOf("if (state.recordQuickStatus) {");
-	assert.ok(filterStart >= 0 && filterEnd > filterStart, '应能读取年代筛选逻辑');
-	assert.match(script.slice(filterStart, filterEnd), /!recordDecade\(record\)/);
+	const records = [
+		{ core: { item_id: 'empty', date_display: '', date_start: '1980-01-01' } },
+		{ core: { item_id: 'unknown', date_display: '年代未知' } },
+		{ core: { item_id: 'pending', date_display: '清末待考' } },
+		{ core: { item_id: 'dated', date_display: '约1992年' } },
+	];
+	const state = { search: '', recordBrowseMode: 'records', recordOpenAlbum: '', recordTypeFilter: '',
+		recordDecadeFilter: 'unknown', recordQuickStatus: '', recordAlbumFilter: '', recordFilters: {},
+		query: { records: [] } };
+	const start = script.indexOf('const recordDecade =');
+	const end = script.indexOf('const chineseCollator =', start);
+	const { filteredRecords } = new Function('state', 'getDecade', 'recordIsWithdrawn', 'queryCodeLabel',
+		`${script.slice(start, end)}\nreturn { filteredRecords };`)(
+		{ ...state, records, recordStatusFilter: 'normal' }, getDecade, () => false, (_key, value) => value);
+	assert.deepEqual(getDecadeOptions(records.map(({ core }) => core.date_display)), [
+		{ value: '1990', label: '1990年代' }, { value: 'unknown', label: '年代未知' },
+	]);
+	assert.deepEqual(filteredRecords().map(({ core }) => core.item_id), ['empty', 'unknown', 'pending']);
 });
 
 test('保存发布支持取消，并使用轻量图片与按需巡检', async () => {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { compareAlbumPositions } from '../../shared/album-position.mjs';
+import { getDecade, getManagementStatus, sortDictionaryEntries } from '../../shared/archive-reference.mjs';
 
 // 执行管理页真实函数，只注入合成记录与浏览器控件；不读写真实档案或启动发布流程。
 const script = (await readFile(new URL('../public/app.js', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
@@ -29,7 +30,7 @@ const setup = (records, overrides = {}) => {
   elements.recordBrowseModes = { querySelectorAll: () => [] };
   const calls = [];
   const scope = {
-    state, elements, compareAlbumPositions, albumAwareObjectTypes: new Set(['PHO', 'ALB']),
+    state, elements, compareAlbumPositions, getDecade, getManagementStatus, sortDictionaryEntries, albumAwareObjectTypes: new Set(['PHO', 'ALB']),
     curatedLetterAlbum: { id: 'LJM-CUR-MING-LETTERS', tag: '明的家书', title: '明的家书' },
     chineseCollator: new Intl.Collator('zh-CN'), hasUnsavedChanges: () => state.dirty || state.translation.dirty,
     sortedRecords: (items) => [...items], syncRecordToolOptions: () => {}, maintenanceTasksForRecord: () => [],
