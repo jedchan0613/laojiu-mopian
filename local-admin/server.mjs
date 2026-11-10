@@ -20,6 +20,8 @@ import { enqueueProgressNotification } from './notification-queue.mjs';
 import { createTranslationStore } from './translations.mjs';
 import { filterApprovedMetadataIssues } from '../shared/publication-metadata-approvals.mjs';
 import { getDecade } from '../shared/archive-reference.mjs';
+import { getHomepageCover, remapHomepageCover } from '../shared/homepage-cover.mjs';
+import { validateHomepageCoverRequest, resolveDraftHomepageCover } from './homepage-cover.mjs';
 import { createWriteCoordinator, acquireWriteLease, atomicWrite, recordRevision, WriteSafetyError } from './write-coordinator.mjs';
 import { createPublicationReviews } from './publication-review.mjs';
 import { createMergePlanner } from './archive-merge-plans.mjs';
@@ -1649,6 +1651,9 @@ const assertSafeRecord = (record) => {
 		throw new Error('藏品类型与专属信息结构不匹配。');
 	}
 	if ('master_file_path' in record.core) throw new Error('网站数据不得保存原始主文件路径。');
+	if (Object.hasOwn(record.public_view, 'homepage_cover') && !getHomepageCover(record)) {
+		throw new Error('首页封面设置无效，请重新选择本件档案的发布图片。');
+	}
 	if (record.public_view.revision_note !== undefined) {
 		if (typeof record.public_view.revision_note !== 'string' || record.public_view.revision_note.length > 300) {
 			throw new Error('公开修订说明必须是 300 字以内的文字。');
@@ -1834,11 +1839,14 @@ const nextImageName = async (itemId, reservedNames, position, extension, publica
 const saveDraftUnlocked = async (payload, options = {}) => {
 	const { signal = null, operationId = '' } = options;
 	throwIfOperationCancelled(signal);
+	const homepageCoverRequest = validateHomepageCoverRequest(payload.homepageCover, payload.images ?? []);
 	if (!payload.confirmedPublicationCopies && payload.images?.some((image) => ['new', 'staged'].includes(image.kind))) {
 		throw new Error('上传前必须确认图片是经过筛选和必要脱敏的发布副本。');
 	}
 	const record = structuredClone(payload.record ?? {});
 	delete record._admin;
+	// 展示设置只按本次图片选择及可信旧版本计算，客户端不能伪造时间抢占首页。
+	if (record.public_view && typeof record.public_view === 'object') delete record.public_view.homepage_cover;
 	if (!record.core?.accession_date || !record.core?.object_type || !record.core?.title?.trim()) {
 		throw new Error('保存草稿前，请填写入藏日期、藏品类型和题名。');
 	}
@@ -1945,6 +1953,9 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 		}
 		throwIfOperationCancelled(signal);
 		record.core.publication_file_path = publicationPaths;
+		const homepageCover = resolveDraftHomepageCover(record, existingDraft?.record ?? official, homepageCoverRequest);
+		if (homepageCover) record.public_view.homepage_cover = homepageCover;
+		assertSafeRecord(record);
 		const activeNames = new Set(publicationPaths.map((publicPath) => path.basename(publicPath)));
 		const cleanRemovedImages = removedImages.filter((filename) => !activeNames.has(filename));
 		const currentDescriptions = Array.isArray(record.public_view.image_descriptions)
@@ -2177,6 +2188,8 @@ const writeRestoredDraft = async (
 	restoredFromHistory = null,
 	restoredFromWithdrawal = null,
 ) => {
+	const currentImagePaths = record.core.publication_file_path ?? [];
+	remapHomepageCover(record, currentImagePaths, currentImagePaths);
 	record.core.record_status = 'SUS';
 	record.core.privacy_level = 'Y';
 	record.core.use_status = 'U0';
@@ -2272,6 +2285,7 @@ const restoreHistoryEntry = async (payload, options = {}) => {
 		const restoredName = await copyRestoredImage(itemId, source, filename);
 		restoredPaths.push(`/archive/${itemId}/${restoredName}`);
 	}
+	remapHomepageCover(record, record.core.publication_file_path ?? [], restoredPaths);
 	record.core.publication_file_path = restoredPaths;
 	return writeRestoredDraft(record, manifest.removed_images ?? [], entryId);
 };

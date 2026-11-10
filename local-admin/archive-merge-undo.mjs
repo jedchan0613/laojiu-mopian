@@ -5,6 +5,7 @@ import {randomUUID} from 'node:crypto';
 import {digest,operationIdPattern} from './write-coordinator.mjs';
 import {translationLocales} from '../shared/locale-config.mjs';
 import {validateLikesSnapshot} from '../shared/archive-merge-likes.mjs';
+import {remapHomepageCover} from '../shared/homepage-cover.mjs';
 import {exists,readJson,safeBytes,currentHash,writeExclusive,writeVersionedFile,bytesOf,hashBytes,tree,mergeFail,snapshotEntryId} from './archive-merge-files.mjs';
 
 const published=row=>row?.core?.record_status==='ACT'&&row.core.privacy_level==='G'&&row.core.use_status==='U3';
@@ -179,6 +180,7 @@ export function createMergeUndo({directory,archiveDirectory,draftDirectory,inbox
       if(!proposalOnly&&!await exists(path.join(inboxDirectory,id,filename))){await writeExclusive(inboxDirectory,id+'/'+filename,bytes);log.createdInboxes.push(id+'/'+filename);}
       paths.push('/archive/'+id+'/'+filename);
     }
+    remapHomepageCover(record,record.core.publication_file_path??[],paths);
     record.core.publication_file_path=paths;
     const draft={version:2,write_revision:randomUUID(),saved_at:now().toISOString(),removed_images:[],removed_image_descriptions:{},restored_from_history:value.log.snapshots.find(row=>row.item_id===id).entry_id,restored_from_withdrawal:id===value.log.secondary_id?{item_id:id,merge_id:value.mergeId}:null,merge_undo:{mergeId:value.mergeId,undoId,recordDigest:digest(record)},record};
     await writeExclusive(directory,base+'/proposals/'+id+'.json',bytesOf(draft));log.records.push({itemId:id,title:record.core.title,imageCount:paths.length});

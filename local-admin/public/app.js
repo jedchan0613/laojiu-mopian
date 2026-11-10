@@ -1328,8 +1328,38 @@ const recordImages = (record) => (record.core.publication_file_path ?? []).map((
 		previewUrl: `/api/image/${encodeURIComponent(imageItemId)}/${encodeURIComponent(filename)}?variant=preview`,
 		thumbnailUrl: `/api/image/${encodeURIComponent(imageItemId)}/${encodeURIComponent(filename)}?variant=thumb`,
 		description: record.public_view?.image_descriptions?.[index] ?? '',
+		homepageCover: record.public_view?.homepage_cover?.image === publicPath,
 	};
 });
+
+// 选图依附于图片本身，重排不改变选择；请求只发送快照索引，由服务端映射正式文件名。
+const homepageCoverRequest = (images) => {
+	const index = images.findIndex((image) => image.homepageCover);
+	return { imageIndex: index < 0 ? null : index, promote: index >= 0 && Boolean(images[index].homepageCoverToken) };
+};
+
+const chooseHomepageCover = (imageId) => {
+	if (!state.current || isWithdrawn()) return false;
+	const selected = imageId === null ? null : state.images.find((image) => image.id === imageId);
+	if (imageId !== null && !selected) return false;
+	if (!selected && !state.images.some((image) => image.homepageCover)) return false;
+	for (const image of state.images) {
+		image.homepageCover = image === selected;
+		delete image.homepageCoverToken;
+	}
+	// 重新点击同一图片也算本人重新指定；后端使用自己的时间，不能由浏览器填写时间戳。
+	if (selected) selected.homepageCoverToken = crypto.randomUUID();
+	return true;
+};
+
+const acknowledgeHomepageCoverSave = (snapshotImages, savedRecord) => {
+	const sent = snapshotImages.find((image) => image.homepageCover);
+	const live = state.images.find((image) => image.homepageCover);
+	if (sent?.id !== live?.id || sent?.homepageCoverToken !== live?.homepageCoverToken) return;
+	if (live) delete live.homepageCoverToken;
+	if (savedRecord.public_view?.homepage_cover) state.current.public_view.homepage_cover = deepClone(savedRecord.public_view.homepage_cover);
+	else delete state.current.public_view.homepage_cover;
+};
 
 const fallbackImageDescription = (record, image, index, total) => {
 	const title = record?.core?.title?.trim() || '藏品';
@@ -2634,18 +2664,21 @@ const imageSaveStateLabel = (image) => {
 const renderImages = () => {
 	const hasUnsavedImages = state.images.some((image) => image.kind === 'new');
 	const needsPublicationCopyConfirmation = hasUnsavedImages && !state.confirmedPublicationCopies;
+	const coverIndex = state.images.findIndex((image) => image.homepageCover);
+	const categoryLabel = categoryForObjectType(state.current.core.object_type)?.label ?? '本分类';
 	const imageCards = state.images.map((image, index) => {
 		const altText = displayedImageDescription(state.current, image, index, state.images.length);
 		return `
-	<article class="image-card"><div class="image-preview"><button class="image-preview-open" type="button" data-image-lightbox="${escapeHtml(image.id)}" aria-label="放大查看第 ${index + 1} 张图片：${escapeHtml(altText)}"><img src="${escapeHtml(image.previewUrl)}" alt="${escapeHtml(altText)}" />
+	<article class="image-card ${image.homepageCover ? 'is-homepage-cover' : ''}"><div class="image-preview"><button class="image-preview-open" type="button" data-image-lightbox="${escapeHtml(image.id)}" aria-label="放大查看第 ${index + 1} 张图片：${escapeHtml(altText)}"><img src="${escapeHtml(image.previewUrl)}" alt="${escapeHtml(altText)}" />
 		<span class="image-preview-hint">放大查看</span></button></div>
 		<div class="image-meta"><strong>${escapeHtml(image.filename ?? image.file?.name ?? '新图片')}</strong>
-		<span class="image-order-label">第 ${index + 1} 张${index === 0 ? ' · 首图' : ''}</span>
+		<span class="image-order-label">第 ${index + 1} 张${index === 0 ? ' · 详情首图' : ''}${image.homepageCover ? ' <em class="homepage-cover-badge">首页封面</em>' : ''}</span>
 		<span class="image-save-label ${image.upload?.state === 'failed' ? 'is-upload-failed' : image.upload?.state === 'staged' ? 'is-upload-staged' : ''}">${escapeHtml(imageSaveStateLabel(image))} · 排序和说明修改后需保存草稿</span>
 		<label class="image-description-field"><span>图片说明 <small>访客和屏幕阅读器可见</small></span>
 		<textarea data-image-description data-image-id="${escapeHtml(image.id)}" maxlength="180" rows="3" placeholder="例如：明信片正面，富士山风景图">${escapeHtml(image.description ?? '')}</textarea>
 		<small class="image-description-counter"><output data-image-counter="${escapeHtml(image.id)}">${(image.description ?? '').length}/180</output> · 只描述画面中能够确认的内容，不推断人物身份；不填时使用题名加正面、背面或细节图。</small></label>
 		<div class="image-actions">
+		<button class="small-button homepage-cover-button" data-image-action="homepage-cover" data-image-id="${escapeHtml(image.id)}" type="button" aria-pressed="${Boolean(image.homepageCover)}" title="${image.homepageCover ? '再次指定，优先于同分类其他已指定档案' : '用于本分类首页封面，不改变详情页图片顺序'}">${image.homepageCover ? '首页封面 · 已选' : '设为首页封面'}</button>
 		<button class="small-button" data-image-action="first" data-image-id="${escapeHtml(image.id)}" type="button" ${index === 0 ? 'disabled title="当前已是首图"' : ''}>设为首图</button>
 		<button class="small-button" data-image-action="up" data-image-id="${escapeHtml(image.id)}" type="button" ${index === 0 ? 'disabled' : ''}>向前</button>
 		<button class="small-button" data-image-action="down" data-image-id="${escapeHtml(image.id)}" type="button" ${index === state.images.length - 1 ? 'disabled' : ''}>向后</button>
@@ -2661,6 +2694,11 @@ const renderImages = () => {
 		<ul>${state.imagePreflight.map((entry) => `<li class="${entry.accepted ? 'is-accepted' : 'is-blocked'}"><strong>${escapeHtml(entry.name)}</strong><span>${escapeHtml(entry.messages.join('；'))}</span></li>`).join('')}</ul>
 	</section>` : '';
 	return `<section class="form-section"><div class="section-heading"><div><h3>发布图片</h3><p>一次选择多张图片，再用“向前 / 向后”调整页面顺序。</p></div></div>
+		<section class="homepage-cover-setting" aria-label="首页封面设置">
+			<div><strong>首页封面 <span>${escapeHtml(categoryLabel)}</span></strong><p>${coverIndex >= 0 ? `本件指定第 ${coverIndex + 1} 张` : '本件未指定，保留自动挑选'}<small> · 保存草稿并正式发布后生效</small></p>
+			<small>不改变详情页顺序；同类多件指定时，采用最近指定并正式发布的一件。</small></div>
+			${coverIndex >= 0 ? '<button class="text-button" data-homepage-cover-clear type="button">取消本件指定</button>' : ''}
+		</section>
 		<label class="image-dropzone"><strong>选择 JPG、PNG 或 WebP 发布副本</strong>
 		<span>单张不超过 30 MB；不接收 TIFF、RAW、PSD、DNG 或名称含“主档 / 原始”的文件。</span>
 		<input id="image-input" type="file" accept="image/jpeg,image/png,image/webp" multiple /></label>
@@ -4474,6 +4512,7 @@ const saveDraft = async ({ reload = true, silent = false, operation = null, auto
 		}
 		const data = await apiPost('/api/save-draft', {
 			record: snapshotRecord, images, isNew: wasNewRecord,
+			homepageCover: homepageCoverRequest(snapshotImages),
 			expectedRevision: snapshotRevision,
 			confirmedPublicationCopies: snapshotCopiesConfirmed,
 			removedImages: snapshotRemoved.map((image) => image.filename),
@@ -4510,6 +4549,7 @@ const saveDraft = async ({ reload = true, silent = false, operation = null, auto
 			setSavePhase('saved', autoSaveTimeLabel());
 		} else {
 			// 保存期间用户继续输入：旧响应只确认旧快照的版本信息，不覆盖新输入、不标成全部已保存。
+			acknowledgeHomepageCoverSave(snapshotImages, data.draft.record);
 			state.current._admin = { ...(state.current._admin ?? {}), revision: data.revision,
 				hasDraft: true, savedAt: data.draft.saved_at };
 			state.activeId = assignedItemId;
@@ -5127,7 +5167,7 @@ elements.editorSurface.addEventListener('change', async (event) => {
 		updateHeader();
 		renderEditor();
 		scheduleAutoSaveDraft();
-		showToast('替换已记录在草稿中。请确认新图片是发布副本后再保存。');
+		showToast(previous.homepageCover ? '替换已记录，原首页封面指定已取消。请核对新图后重新指定。' : '替换已记录在草稿中。请确认新图片是发布副本后再保存。');
 		return;
 	}
 	if (control.id === 'image-input') {
@@ -5269,8 +5309,31 @@ elements.editorSurface.addEventListener('click', async (event) => {
 		if (index >= 0) showImageLightbox(index);
 		return;
 	}
+	const clearHomepageCover = event.target.closest('[data-homepage-cover-clear]');
+	if (clearHomepageCover) {
+		if (!chooseHomepageCover(null)) return;
+		state.dirty = true;
+		noteRecordEdit();
+		state.validationIssues = [];
+		updateHeader();
+		renderEditorPreservingViewport(() => elements.editorSurface.querySelector('[data-image-action="homepage-cover"]'));
+		scheduleAutoSaveDraft();
+		return;
+	}
 	const button = event.target.closest('[data-image-action]');
 	if (!button) return;
+	if (isWithdrawn()) return;
+	if (button.dataset.imageAction === 'homepage-cover') {
+		if (!chooseHomepageCover(button.dataset.imageId)) return;
+		state.dirty = true;
+		noteRecordEdit();
+		state.validationIssues = [];
+		updateHeader();
+		renderEditorPreservingViewport(() => elements.editorSurface.querySelector(`[data-image-action="homepage-cover"][data-image-id="${CSS.escape(button.dataset.imageId)}"]`));
+		scheduleAutoSaveDraft();
+		showToast('已指定首页封面，正式发布后生效。');
+		return;
+	}
 	if (button.dataset.imageAction === 'undo-remove') {
 		const filename = button.dataset.imageFilename;
 		const removedIndex = state.pendingRemovedImages.findIndex((image) => image.filename === filename);
@@ -5550,6 +5613,7 @@ elements.reviewButton.addEventListener('click', async () => {
 				state.dirty = false;
 			} else {
 				state.current._admin = { ...(state.current._admin ?? {}), revision: result.revision, hasDraft: true, savedAt: result.draft.saved_at };
+				acknowledgeHomepageCoverSave(pending.recovery.snapshotImages, result.draft.record);
 				for (const [index, sent] of (pending.payload.images ?? []).entries()) {
 					if (sent.kind !== 'staged') continue;
 					const id = pending.recovery.snapshotImages[index]?.id;

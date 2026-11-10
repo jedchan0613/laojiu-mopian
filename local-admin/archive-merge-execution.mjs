@@ -7,6 +7,7 @@ import {archiveSourceForRecords,resolveArchiveMergeProjection} from '../shared/a
 import {translationLocales} from '../shared/locale-config.mjs';
 import {acquirePrivateFileGate,releasePrivateFileGate} from '../shared/private-file-gate.mjs';
 import {validateLikesSnapshot} from '../shared/archive-merge-likes.mjs';
+import {remapHomepageCover} from '../shared/homepage-cover.mjs';
 import {mergeFail,exists,safeDirectory,safeBytes,tree,copyTree,currentHash,writeExclusive,writeVersionedFile,readJson,assertFreeSpace,bytesOf,snapshotEntryId,treeDigest,hashBytes,relativeFile,inside,fileAttributes,moveVerifiedDirectory} from './archive-merge-files.mjs';
 
 const publicRecord=r=>r.core.record_status==='ACT'&&r.core.privacy_level==='G'&&r.core.use_status==='U3';
@@ -72,6 +73,11 @@ export function createArchiveMergeExecution({
   }
   async function propose(plan,records){
     const primary=await normalizeRecord(structuredClone(plan.proposedRecord));
+    const previousPaths=primary.core.publication_file_path??[];
+    remapHomepageCover(primary,previousPaths,previousPaths.map(publicPath=>{
+      const image=plan.attachmentMap.find(row=>row.itemId===plan.primaryId&&publicPath===`/archive/${plan.primaryId}/${row.filename}`);
+      return image?`/archive/${plan.primaryId}/${image.targetFilename}`:undefined;
+    }));
     primary.core.publication_file_path=plan.attachmentMap.map(image=>`/archive/${plan.primaryId}/${image.targetFilename}`);
     primary.public_view.image_descriptions=plan.attachmentMap.map(image=>image.description);
     primary.core.updated_date=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(now());

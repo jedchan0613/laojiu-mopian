@@ -7,6 +7,7 @@ import {createHash} from 'node:crypto';
 import { pointsInRanges, readCompleteFontCoverage } from './complete-font-coverage.mjs';
 import { collectVisibleHan } from '../../shared/public-build-text.mjs';
 import { checkLocalizedPageSeo } from './public-build-seo.mjs';
+import { galleryImageIndexFromHash } from '../src/data/gallery-image-link.mjs';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
@@ -235,9 +236,9 @@ for(const definition of localeDefinitions.filter(entry=>entry.prefix)){
  for(const page of accounts)check(page.html.includes('name="robots"')&&page.html.includes('noindex'),page.relativePath+' 账户页未禁止收录');
  if(translatedHome)check(extractRandomIndexIds(translatedHome.html).length===detailPages.length,definition.locale+' 随机档案集合不一致');
 }
-check(homeSource.includes('const view = views[0];'), '首页精选没有固定为每种分类取一件藏品。');
+check(homeSource.includes('const selection = selectHomepageCover(views);'), '首页精选没有通过统一规则为每种分类取一件藏品。');
 check(homeSource.includes('Boolean(view.images[0])'), '首页精选没有排除缺少图片的藏品。');
-check(homeSource.includes('const source = view?.images[0];'), '首页精选没有固定使用每件藏品的首张图片。');
+check(homeSource.includes('const source = view?.images[imageIndex];') && homeSource.includes('description: view.imageDescriptions[imageIndex]'), '首页精选图片和说明没有使用同一封面位置。');
 check(/views:\s*publishedViews/.test(homeSource) && !homeSource.includes('homeAlbumByRecordId'), '首页精选应逐件选择，不能把档案替换成相册卡。');
 check(homeSource.includes('item.core.created_date?.trim()'), '首页排序没有优先使用首次录入日期。');
 check(!homeSource.includes('homeCarouselMaximumSlides'), '首页精选仍受旧的轮播总数上限限制。');
@@ -366,7 +367,16 @@ if (archiveIndex) {
 		try {
 			const items = JSON.parse(decodeAttribute(itemsAttribute));
 			check(items.length === expectedCategories.length, `${relativeHome} 轮播数据不完整。`);
-			check(items.every((item) => item.href === pathForLocale(`/archive/${item.itemId}/`, definition.locale)), `${relativeHome} 轮播应进入对应语言的单件详情，不能替换成相册入口。`);
+			check(items.every((item) => {
+				const target = pathForLocale(`/archive/${item.itemId}/`, definition.locale);
+				if (item.href === target) return true;
+				if (typeof item.href !== 'string' || !item.href.startsWith(target)) return false;
+				const detailPath = `${definition.prefix ? definition.prefix + '/' : ''}archive/${item.itemId}/index.html`;
+				const detail = htmlEntries.find((page) => page.relativePath === detailPath);
+				const imageCount = Number(detail?.html.match(/data-record-image-count="(\d+)"/)?.[1]);
+				const imageIndex = galleryImageIndexFromHash(item.href.slice(target.length), imageCount);
+				return imageIndex !== undefined && imageIndex > 0;
+			}), `${relativeHome} 轮播应进入对应语言的单件详情及有效图片，不能替换成相册入口。`);
 		} catch { check(false, `${relativeHome} 轮播数据无法解析。`); }
 	}
 }

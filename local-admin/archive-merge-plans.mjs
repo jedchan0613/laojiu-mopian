@@ -6,6 +6,7 @@ import { constants } from 'node:fs';
 import { isDeepStrictEqual as equal } from 'node:util';
 import { atomicWrite, digest, operationIdPattern, WriteSafetyError } from './write-coordinator.mjs';
 import { assertPublicationImageSignature } from '../shared/publication-image-safety.mjs';
+import { remapHomepageCover } from '../shared/homepage-cover.mjs';
 
 const itemPattern = /^LJM-\d{8}-[A-Z]{3}-\d{3}$/;
 const schemaFor = { PHO:'photo', NEG:'photo', SLD:'photo', ALB:'photo', PCD:'postcard', PST:'postcard', DIA:'diary_notebook', NTB:'diary_notebook', IDC:'credential', CRD:'card', LET:'common', RPR:'common', OTH:'common' };
@@ -48,7 +49,7 @@ export function buildMergeFields(left, right, standards, policies) {
   const rows=[],routing=new Set(standards.fieldRouting.core_canonical_fields),common=new Map(standards.commonFields.fields.map(field=>[field.field_code,field]));
   for(const record of [left,right]) {
     for(const key of Object.keys(record.core))if(!common.has(key)&&key!=='collection_code')fail('基本信息字段尚未配置合并策略：'+key,422,'MERGE_POLICY_MISSING');
-    for(const key of Object.keys(record.public_view))if(!Object.hasOwn(publicDefinitions,key))fail('公开字段尚未配置合并策略：'+key,422,'MERGE_POLICY_MISSING');
+    for(const key of Object.keys(record.public_view))if(!Object.hasOwn(publicDefinitions,key)&&key!=='homepage_cover')fail('公开字段尚未配置合并策略：'+key,422,'MERGE_POLICY_MISSING');
   }
   const add=(key,label,definition={},rule='按证据明确选择；不自动把未知当空值。')=>{
     const a=get(left,key),b=get(right,key),aPresent=exists(left,key),bPresent=exists(right,key),same=equal(a,b)&&aPresent===bPresent;
@@ -207,6 +208,12 @@ export function createMergePlanner({ directory, imageRoot, readState, readRecord
     const filenames=new Set(state.images.filter(image=>image.itemId===ids[0]).map(image=>image.filename.toLowerCase()));
     const attachmentMap=order.map((ref,index)=>{const image=available.get(ref);let targetFilename=image.filename;if(image.itemId!==ids[0]){const extension=path.extname(image.filename).toLowerCase();let found=false;for(let n=1;n<=99;n++){const candidate=`detail-${String(n).padStart(2,'0')}-public${extension}`;if(!filenames.has(candidate.toLowerCase())){targetFilename=candidate;found=true;break;}}if(!found)unresolved.push({path:'images',message:'规范图片命名容量不足，执行阶段需先处理。'});}filenames.add(targetFilename.toLowerCase());return{...image,targetFilename,position:index+1,description:note(descriptions[ref]??image.description??'',2000)};});
     record.public_view.image_descriptions=attachmentMap.map(row=>row.description);
+    // 首页设置只跟随主件；不把从件的选择升级为主件的首页封面。
+    const previousPaths=record.core.publication_file_path??[];
+    remapHomepageCover(record,previousPaths,previousPaths.map(publicPath=>{
+      const image=attachmentMap.find(row=>row.itemId===ids[0]&&publicPath===`/archive/${ids[0]}/${row.filename}`);
+      return image?`/archive/${ids[0]}/${image.targetFilename}`:undefined;
+    }));
     const codeResult=collectionCode(record,await getStandards());if(codeResult?.code)record.core.collection_code=codeResult.code;
     for(const issue of codeResult?.issues??[])unresolved.push({path:issue.field??'collection_code',message:issue.message});
     for(const issue of await validateRecord(record,await getStandards()))if(issue.code!=='privacy_confirmation'&&!unresolved.some(row=>row.message===issue.message))unresolved.push({path:issue.field??'record',message:issue.message});

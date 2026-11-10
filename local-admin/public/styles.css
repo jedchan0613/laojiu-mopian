@@ -7266,6 +7266,21 @@ body.admin-v2 .record-overview-empty p {
 .record-filter-panel { display: contents; }
 .draft-version-note { color: #6941c6; font-weight: 600; }
 .image-order-label { font-weight: 650; }
+.homepage-cover-setting { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin: 0.75rem 0 1rem; padding: 0.85rem 1rem; border: 1px solid #dce2ee; border-radius: 12px; background: #f8faff; }
+.homepage-cover-setting > div { min-width: 0; }
+.homepage-cover-setting strong { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.85rem; color: #26334d; }
+.homepage-cover-setting strong span { color: #64748b; font-size: 0.75rem; font-weight: 400; }
+.homepage-cover-setting p { margin: 0.3rem 0 0.2rem; font-size: 0.8rem; line-height: 1.6; }
+.homepage-cover-setting small { color: #64748b; font-size: 0.74rem; line-height: 1.6; }
+.homepage-cover-setting > button { flex-shrink: 0; white-space: nowrap; }
+.image-card.is-homepage-cover { border-color: #b6b0fb; box-shadow: 0 0 0 1px #e7e5ff; }
+.image-meta .homepage-cover-badge { display: inline-block; margin-left: 0.35rem; padding: 0.12rem 0.4rem; border: 1px solid #d8d3ff; border-radius: 5px; background: #f0efff; color: #5145b7; font-size: 0.7rem; font-style: normal; font-weight: 600; }
+.homepage-cover-button[aria-pressed="true"] { color: #5145b7; border-color: #c8c1ff; background: #f0efff; }
+@media (max-width: 480px) {
+	.homepage-cover-setting { flex-wrap: wrap; padding: 0.75rem; }
+	.homepage-cover-setting > button { min-height: 36px; }
+	body.admin-v2 .image-actions .homepage-cover-button { grid-column: 1 / -1; }
+}
 .image-save-label { font-size: 0.75rem; line-height: 1.6; }
 /* 第三阶段：逐张图片保存状态。失败与已暂存用文字加颜色双重表达，不只靠颜色区分。 */
 .image-save-label.is-upload-failed { color: #b3261e; font-weight: 600; }

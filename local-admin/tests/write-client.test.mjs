@@ -80,6 +80,7 @@ test('不刷新保存后立即更新 revision，后续保存使用新版本并�
 	vm.runInContext(`const expectedRecordRevision = () => state.current._admin?.revision;
 		const setSavePhase = () => {}; const scheduleAutoSaveDraft = () => {}; const renderEditorPreservingViewport = () => {};
 		const isOperationCancellation = () => false; const hasPendingImageUploads = () => false; const autoSaveTimeLabel = () => '14:32';
+		${script.slice(script.indexOf('const homepageCoverRequest ='), script.indexOf('const chooseHomepageCover ='))}
 		${script.slice(script.indexOf('const saveDraft ='), script.indexOf('const publishCurrent ='))} globalThis.saveDraft = saveDraft;`, context);
 	await context.saveDraft({ reload: false, silent: true });
 	assert.equal(context.state.current._admin.revision, 'b'.repeat(64));

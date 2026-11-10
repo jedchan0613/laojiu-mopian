@@ -4,6 +4,8 @@ import vm from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 const script = (await readFile(new URL('../public/app.js', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+const coverSaveHelpers = `${script.slice(script.indexOf('const homepageCoverRequest ='), script.indexOf('const chooseHomepageCover ='))}
+  ${script.slice(script.indexOf('const acknowledgeHomepageCoverSave ='), script.indexOf('const fallbackImageDescription ='))}`;
 const gate = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 const id = 'LJM-20000101-LET-001', revision = 'a'.repeat(64), nextRevision = 'b'.repeat(64);
 
@@ -35,6 +37,7 @@ const saveFixture = (apiPost, stageImageUpload = async () => ({})) => {
     loadBootstrap: () => { throw new Error('不应刷新覆盖新输入'); },
   });
   vm.runInContext(`const expectedRecordRevision = () => state.current._admin?.revision; const setSavePhase = (phase) => { state.savePhase=phase; }; const autoSaveTimeLabel=()=> '12:00';
+    ${coverSaveHelpers}
     ${script.slice(script.indexOf('const saveDraft = async'), script.indexOf('const publishCurrent = async'))}\nglobalThis.save = saveDraft;`, context);
   return context;
 };
@@ -82,7 +85,7 @@ test('图片成功但响应丢失后，凭原收据沿用可用令牌而不再�
 });
 
 test('核对新建成功收据后回填同一编号，保留后来输入并允许按现有档案继续保存', async () => {
-  let review;
+  let review; const notices = [];
   const record = { core: { item_id: '', title: '后来继续输入' }, public_view: {} };
   const pending = { operationId: randomUUID(), stepId: randomUUID(), payload: { images: [] }, recovery: { recordAtStart: record, snapshotSequence: 0, snapshotImages: [] } };
   const state = { current: record, editSequence: 1, isNew: true, dirty: true, images: [] };
@@ -91,13 +94,15 @@ test('核对新建成功收据后回填同一编号，保留后来输入并允�
       ? { operations: [{ kind: 'save-draft', stepId: pending.stepId, status: 'succeeded', result: { itemId: id, revision: nextRevision } }] }
       : { draft: { record: { core: { item_id: id }, public_view: {} }, saved_at: 'now' }, revision: nextRevision } }),
     readApiJson: response => response.json(), itemIdPattern: /^LJM-\d{8}-[A-Z]{3}-\d{3}$/, setSavePhase: phase => { state.savePhase = phase; },
-    renderEditor() {}, showToast() {}, autoSaveTimeLabel: () => '12:00', recordImages: () => [],
+    renderEditor() {}, showToast: (message, error) => notices.push({ message, error }), autoSaveTimeLabel: () => '12:00', recordImages: () => [], deepClone: structuredClone,
   });
   context.pending = pending;
-  vm.runInContext(`let pendingWriteReview=pending; ${script.slice(script.indexOf("elements.reviewButton.addEventListener('click'"), script.indexOf('const requestedItem ='))}`, context);
+  vm.runInContext(`let pendingWriteReview=pending; ${coverSaveHelpers} ${script.slice(script.indexOf("elements.reviewButton.addEventListener('click'"), script.indexOf('const requestedItem ='))}\nglobalThis.isPending=()=>!!pendingWriteReview;`, context);
   await review();
   assert.equal(state.current.core.item_id, id); assert.equal(state.isNew, false); assert.equal(state.current.core.title, '后来继续输入');
   assert.equal(state.current._admin.revision, nextRevision); assert.equal(state.dirty, true);
+  assert.equal(context.isPending(), false);
+  assert.equal(notices.some(notice => notice.error), false);
 });
 
 test('图片失败终态改用新子编号重传，仍保持同一父操作', async () => {

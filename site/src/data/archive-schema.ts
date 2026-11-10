@@ -355,6 +355,8 @@ export interface ArchivePublicView {
 	tags: string[];
 	/** 与 publication_file_path 顺序一致；空项由页面使用中性的正面／背面／细节图说明。 */
 	image_descriptions?: string[];
+	/** 首页展示设置；仅引用本件发布副本，不改变详情页图片顺序或档案编码。 */
+	homepage_cover?: { image: string; selected_at: string };
 }
 
 interface ArchiveItemBase<TCore extends ArchiveItemCore, TSchema extends string, TDimensions> {
