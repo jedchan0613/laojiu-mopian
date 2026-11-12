@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
+import {fileURLToPath} from 'node:url';
 import {readManualPdfSettings,manualPdfAvailability} from '../manual-pdf-availability.mjs';
 import {createManualAccountFixture} from './helpers/manual-account-fixture.mjs';
 import {createPdfReviewFixture,reviewRuntime,key,pdfManual} from './helpers/manual-pdf-review-fixture.mjs';
@@ -17,7 +18,7 @@ test('生产PDF默认关闭，本地默认保留；私密总容量明确按MiB�
 test('共用收件区的不同进程入口读取同一环境预算，预留不能被未显式传参的入口绕过',async t=>{
  const previous=process.env.LJM_SUBMISSION_MAX_STORAGE_MIB;process.env.LJM_SUBMISSION_MAX_STORAGE_MIB='1';
  try{const f=await createManualAccountFixture();t.after(()=>f.close());const a=f.users[0].user.id,b=f.users[1].user.id,first=await f.submissions.createAccountManualDraft({accountId:a,payload:{request_key:key(),manual:pdfManual}});await f.submissions.setAccountManualMaterial({id:first.id,accountId:a,payload:{operation_id:key(),revision:1,source_format:'pdf'}});const operation_id=key();await f.submissions.prepareAccountManualPdf({id:first.id,accountId:a,payload:{operation_id,revision:2,name:'synthetic.pdf',bytes:1024**2,sha256:'b'.repeat(64),copies_confirmed:true}});
- const other=createSubmissionStore({root:path.join(f.root,'submissions'),siteDirectory:path.resolve('site')}),second=await other.createAccountManualDraft({accountId:b,payload:{request_key:key(),manual:pdfManual}}),sharp=createRequire(new URL('../../site/package.json',import.meta.url))('sharp'),buffer=await sharp({create:{width:3,height:2,channels:3,background:'white'}}).jpeg().toBuffer(),payload={operation_id:key(),revision:1,copies_confirmed:true,image:{name:'synthetic.jpg',type:'image/jpeg',buffer}};
+ const other=createSubmissionStore({root:path.join(f.root,'submissions'),siteDirectory:fileURLToPath(new URL('../../site/',import.meta.url))}),second=await other.createAccountManualDraft({accountId:b,payload:{request_key:key(),manual:pdfManual}}),sharp=createRequire(new URL('../../site/package.json',import.meta.url))('sharp'),buffer=await sharp({create:{width:3,height:2,channels:3,background:'white'}}).jpeg().toBuffer(),payload={operation_id:key(),revision:1,copies_confirmed:true,image:{name:'synthetic.jpg',type:'image/jpeg',buffer}};
  await assert.rejects(other.uploadAccountManualPage({id:second.id,accountId:b,payload}),{statusCode:503});await f.submissions.cancelAccountManualPdf({id:first.id,accountId:a,operationId:operation_id});assert.equal((await other.uploadAccountManualPage({id:second.id,accountId:b,payload})).image_count,1);
  }finally{if(previous===undefined)delete process.env.LJM_SUBMISSION_MAX_STORAGE_MIB;else process.env.LJM_SUBMISSION_MAX_STORAGE_MIB=previous;}
 });
