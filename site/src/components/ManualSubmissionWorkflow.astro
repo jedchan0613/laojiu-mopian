@@ -1,0 +1,24 @@
+---
+import {manualConsentStatements} from '../../../shared/manual-workflow.mjs';
+import {manualPdfConsentStatements} from '../../../shared/manual-pdf-review.mjs';
+const {part='progress'}=Astro.props;
+---
+{part==='progress'?<section id="manual-workflow-progress" class="manual-workflow-panel" aria-labelledby="manual-workflow-title">
+  <h2 id="manual-workflow-title">我的投稿与进度</h2>
+  <p id="manual-workflow-summary">保存后可在此查看提交记录与处理状态。</p>
+  <p id="manual-workflow-message" class="manual-notice" hidden></p>
+  <p id="manual-workflow-pdf-note" class="manual-notice" hidden></p>
+  <p id="manual-workflow-status" class="manual-draft-status" role="status" aria-live="polite"></p>
+  <div class="manual-draft-actions"><button id="manual-workflow-edit" type="button" class="ui-action ui-action--primary" hidden>按要求补充</button><button id="manual-workflow-withdraw" type="button" class="ui-action ui-action--secondary" hidden>撤回并修改</button><button id="manual-workflow-discard" type="button" class="manual-text-button" aria-describedby="manual-workflow-discard-note" hidden>停止这份草稿</button><button id="manual-workflow-refresh" type="button" class="manual-text-button" disabled>刷新状态</button><button id="manual-workflow-read-current" type="button" class="manual-text-button" disabled>阅读当前整册</button><a id="manual-workflow-go-submit" href="#manual-review-submit-title">前往提交确认 ↓</a></div>
+  <p id="manual-workflow-discard-note" class="manual-muted" hidden>停止草稿会释放一个草稿名额；内容和图片仍私密保留，需要时可恢复，图片继续计入容量。</p>
+  <details id="manual-workflow-history"><summary>处理记录（只读）</summary><ol id="manual-workflow-history-list" class="manual-workflow-history"></ol></details>
+  <details id="manual-workflow-versions" hidden><summary>已提交版本（只读，保留最近20次）</summary><label>选择提交记录<select id="manual-workflow-version"></select></label><p id="manual-workflow-version-summary" class="manual-muted"></p><div class="manual-draft-actions"><button id="manual-workflow-view-version" type="button" class="ui-action ui-action--secondary">查看版本信息</button><button id="manual-workflow-read-version" type="button" class="manual-text-button">阅读此版图片</button></div><section id="manual-workflow-version-preview" class="manual-draft-panel" hidden><h3 id="manual-workflow-version-preview-title">该次提交的信息 · 只读</h3><div id="manual-workflow-version-metadata"></div></section></details>
+</section>:<section id="manual-review-submit" class="manual-workflow-panel" aria-labelledby="manual-review-submit-title">
+  <h2 id="manual-review-submit-title">提交审核</h2><p>本次提交已经保存的文字、页序和图片。请先保存当前修改、完成本批上传，再逐项确认。提交后先锁定为只读版本，接到补充要求后可继续补页；提交不代表公开。</p>
+  <p class="manual-muted">权利情况或提供方式尚未确认时，可继续保留私密草稿。正式公开与下载仍需另行人工核对。</p>
+  <ul id="manual-workflow-problems" class="manual-draft-notes" hidden></ul>
+  <p id="manual-workflow-official-pdf-note" class="manual-notice" hidden>本次只提交官方来源线索。私密保存的PDF和生成页面不会随本次提交提供站内阅读，也不开放原PDF下载。</p>
+  <div id="manual-workflow-pdf-confirmations" hidden><h3>本次PDF整册确认</h3><p class="manual-muted">请先阅读实际生成的整册。以下确认绑定当前PDF、处理配置、全部页面与纸面页码；任何保存或替换后均需重新核对。</p>{Object.entries(manualPdfConsentStatements).map(([key,label])=><label class="manual-workflow-consent"><input type="checkbox" data-manual-pdf-consent={key} disabled/>{label}</label>)}</div>
+  <div id="manual-workflow-consents">{Object.entries(manualConsentStatements).map(([key,label])=><label class="manual-workflow-consent"><input type="checkbox" data-manual-consent={key} disabled/>{label}</label>)}</div>
+  <div class="manual-draft-actions"><button id="manual-workflow-submit" type="button" class="ui-action ui-action--primary" disabled>确认提交审核</button><button id="manual-workflow-retry" type="button" class="ui-action ui-action--secondary" hidden>核对并重试上次投稿操作</button></div><p id="manual-workflow-submit-status" class="manual-draft-status" aria-hidden="true"></p>
+</section>}

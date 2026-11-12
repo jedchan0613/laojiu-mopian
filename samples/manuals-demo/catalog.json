@@ -1,0 +1,407 @@
+{
+  "schema_version": 1,
+  "demo_only": true,
+  "brands": [
+    {
+      "brand_key": "demo-brand-001",
+      "name": "示例甲牌",
+      "aliases": [
+        "DEMO-A"
+      ]
+    },
+    {
+      "brand_key": "demo-brand-002",
+      "name": "示例乙牌",
+      "aliases": [
+        "DEMO-B"
+      ]
+    }
+  ],
+  "models": [
+    {
+      "model_key": "demo-model-001",
+      "brand_key": "demo-brand-001",
+      "model_text": "EX-RC100",
+      "model_aliases": [
+        "EX RC100"
+      ],
+      "product_name": "电饭煲",
+      "category_key": "home-appliances",
+      "product_era_display": "2020年代"
+    },
+    {
+      "model_key": "demo-model-002",
+      "brand_key": "demo-brand-001",
+      "model_text": "EX-RC100A",
+      "model_aliases": [],
+      "product_name": "电饭煲",
+      "category_key": "home-appliances",
+      "product_era_display": "2020年代"
+    },
+    {
+      "model_key": "demo-model-003",
+      "brand_key": "demo-brand-001",
+      "model_text": "EX-RC200",
+      "model_aliases": [],
+      "product_name": "电饭煲",
+      "category_key": "home-appliances",
+      "product_era_display": "2020年代"
+    },
+    {
+      "model_key": "demo-model-004",
+      "brand_key": "demo-brand-002",
+      "model_text": "EX-RC100",
+      "model_aliases": [],
+      "product_name": "小型加热器",
+      "category_key": "home-appliances",
+      "product_era_display": "年代未明"
+    },
+    {
+      "model_key": "demo-model-005",
+      "brand_key": "demo-brand-002",
+      "model_text": "EX-CM20",
+      "model_aliases": [],
+      "product_name": "胶片相机",
+      "category_key": "audio-photo",
+      "product_era_display": "约1980年代"
+    },
+    {
+      "model_key": "demo-model-006",
+      "brand_key": "demo-brand-002",
+      "model_text": "EX-TC10",
+      "model_aliases": [],
+      "product_name": "录音机",
+      "category_key": "audio-photo",
+      "product_era_display": "年代未明"
+    }
+  ],
+  "documents": [
+    {
+      "manual_key": "demo-manual-001",
+      "model_keys": [
+        "demo-model-001"
+      ],
+      "document_kind": "user-guide",
+      "languages": [
+        "zh-CN"
+      ],
+      "region_display": "示例地区",
+      "edition_display": "2020年第一版",
+      "edition_date": null,
+      "completeness": "complete",
+      "missing_note": "",
+      "linked_archive_id": null,
+      "official_sources": [],
+      "page_map": [],
+      "contents": [],
+      "keywords": [],
+      "demo_presentation": {
+        "reader": true,
+        "page_labels": [
+          "封面",
+          "目录",
+          "印刷页1",
+          "印刷页2",
+          "印刷页3",
+          "封底"
+        ],
+        "contents": [
+          {
+            "label": "封面",
+            "page": 1
+          },
+          {
+            "label": "目录",
+            "page": 2
+          },
+          {
+            "label": "部件名称版面",
+            "page": 3
+          },
+          {
+            "label": "日常使用版面",
+            "page": 4
+          },
+          {
+            "label": "保养版面",
+            "page": 5
+          }
+        ]
+      },
+      "publication_status": "published",
+      "publication_approved": true
+    },
+    {
+      "manual_key": "demo-manual-002",
+      "model_keys": [
+        "demo-model-001",
+        "demo-model-003"
+      ],
+      "document_kind": "user-guide",
+      "languages": [
+        "zh-CN",
+        "en"
+      ],
+      "region_display": "示例地区",
+      "edition_display": "2024年修订版",
+      "edition_date": null,
+      "completeness": "unverified",
+      "missing_note": "",
+      "linked_archive_id": null,
+      "official_sources": [
+        {
+          "url": "https://example.invalid/support/ex-rc100",
+          "name": "示例厂家支持页",
+          "checked_on": "2026-11-10",
+          "available": true
+        }
+      ],
+      "page_map": [],
+      "contents": [],
+      "keywords": [],
+      "demo_presentation": {
+        "reader": false
+      },
+      "publication_status": "published",
+      "publication_approved": true
+    },
+    {
+      "manual_key": "demo-manual-003",
+      "model_keys": [
+        "demo-model-001"
+      ],
+      "document_kind": "installation",
+      "languages": [
+        "en"
+      ],
+      "region_display": "示例地区",
+      "edition_display": "版本未注明",
+      "edition_date": null,
+      "completeness": "unverified",
+      "missing_note": "",
+      "linked_archive_id": null,
+      "official_sources": [
+        {
+          "url": "https://example.invalid/support/ex-rc100-install",
+          "name": "示例厂家支持页",
+          "checked_on": "2026-11-10",
+          "available": true
+        }
+      ],
+      "page_map": [],
+      "contents": [],
+      "keywords": [],
+      "demo_presentation": {
+        "reader": false
+      },
+      "publication_status": "published",
+      "publication_approved": true
+    },
+    {
+      "manual_key": "demo-manual-004",
+      "model_keys": [
+        "demo-model-002"
+      ],
+      "document_kind": "user-guide",
+      "languages": [
+        "zh-CN"
+      ],
+      "region_display": "示例地区",
+      "edition_display": "2022年版",
+      "edition_date": null,
+      "completeness": "complete",
+      "missing_note": "",
+      "linked_archive_id": null,
+      "official_sources": [],
+      "page_map": [],
+      "contents": [],
+      "keywords": [],
+      "demo_presentation": {
+        "reader": true,
+        "page_labels": [
+          "封面",
+          "目录",
+          "印刷页1",
+          "印刷页2",
+          "印刷页3",
+          "封底"
+        ],
+        "contents": [
+          {
+            "label": "封面",
+            "page": 1
+          },
+          {
+            "label": "目录",
+            "page": 2
+          },
+          {
+            "label": "部件名称版面",
+            "page": 3
+          }
+        ]
+      },
+      "publication_status": "published",
+      "publication_approved": true
+    },
+    {
+      "manual_key": "demo-manual-005",
+      "model_keys": [
+        "demo-model-004"
+      ],
+      "document_kind": "user-guide",
+      "languages": [
+        "zh-CN"
+      ],
+      "region_display": "地区未注明",
+      "edition_display": "版本未注明",
+      "edition_date": null,
+      "completeness": "unverified",
+      "missing_note": "",
+      "linked_archive_id": null,
+      "official_sources": [
+        {
+          "url": "https://example.invalid/support/heater-ex-rc100",
+          "name": "示例厂家支持页",
+          "checked_on": "2026-11-10",
+          "available": true
+        }
+      ],
+      "page_map": [],
+      "contents": [],
+      "keywords": [],
+      "demo_presentation": {
+        "reader": false
+      },
+      "publication_status": "published",
+      "publication_approved": true
+    },
+    {
+      "manual_key": "demo-manual-006",
+      "model_keys": [
+        "demo-model-005"
+      ],
+      "document_kind": "user-guide",
+      "languages": [
+        "ja"
+      ],
+      "region_display": "地区未注明",
+      "edition_display": "约1980年代，版本未注明",
+      "edition_date": null,
+      "completeness": "incomplete",
+      "missing_note": "缺少印刷页2；现有4张，不能视为全册。",
+      "linked_archive_id": null,
+      "official_sources": [],
+      "page_map": [],
+      "contents": [],
+      "keywords": [],
+      "demo_presentation": {
+        "reader": true,
+        "page_labels": [
+          "封面",
+          "印刷页1",
+          "印刷页3",
+          "封底"
+        ],
+        "contents": [
+          {
+            "label": "封面",
+            "page": 1
+          },
+          {
+            "label": "印刷页1",
+            "page": 2
+          },
+          {
+            "label": "印刷页3",
+            "page": 3
+          }
+        ]
+      },
+      "publication_status": "published",
+      "publication_approved": true
+    },
+    {
+      "manual_key": "demo-manual-007",
+      "model_keys": [
+        "demo-model-006"
+      ],
+      "document_kind": "user-guide",
+      "languages": [
+        "zh-CN"
+      ],
+      "region_display": "地区未注明",
+      "edition_display": "版本未注明",
+      "edition_date": null,
+      "completeness": "unverified",
+      "missing_note": "",
+      "linked_archive_id": null,
+      "official_sources": [
+        {
+          "url": "https://example.invalid/support/ex-tc10",
+          "name": "示例厂家支持页",
+          "checked_on": "2026-11-10",
+          "available": false
+        }
+      ],
+      "page_map": [],
+      "contents": [],
+      "keywords": [],
+      "demo_presentation": {
+        "reader": false
+      },
+      "publication_status": "published",
+      "publication_approved": true
+    },
+    {
+      "manual_key": "demo-manual-008",
+      "model_keys": [
+        "demo-model-003"
+      ],
+      "document_kind": "quick-start",
+      "languages": [
+        "zh-CN"
+      ],
+      "region_display": "地区未注明",
+      "edition_display": "版本未注明",
+      "edition_date": null,
+      "completeness": "unverified",
+      "missing_note": "",
+      "linked_archive_id": null,
+      "official_sources": [],
+      "page_map": [],
+      "contents": [],
+      "keywords": [],
+      "demo_presentation": {
+        "reader": false
+      },
+      "publication_status": "draft",
+      "publication_approved": false
+    },
+    {
+      "manual_key": "demo-manual-009",
+      "model_keys": [
+        "demo-model-005"
+      ],
+      "document_kind": "user-guide",
+      "languages": [
+        "zh-CN"
+      ],
+      "region_display": "地区未注明",
+      "edition_display": "版本未注明",
+      "edition_date": null,
+      "completeness": "unverified",
+      "missing_note": "",
+      "linked_archive_id": null,
+      "official_sources": [],
+      "page_map": [],
+      "contents": [],
+      "keywords": [],
+      "demo_presentation": {
+        "reader": false
+      },
+      "publication_status": "withdrawn",
+      "publication_approved": false
+    }
+  ]
+}

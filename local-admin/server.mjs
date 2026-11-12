@@ -32,6 +32,11 @@ import { acquireDeploymentLock, assertAccountMergeService, assertLikeMergeServic
 import { createMergeImageValidator, buildMergeCandidate } from './archive-merge-runtime.mjs';
 import { safeDirectory as safeMergeDirectory, safeBytes as safeMergeBytes } from './archive-merge-files.mjs';
 import { assertPublicationImageSignature, detectPublicationImageMime } from '../shared/publication-image-safety.mjs';
+import { createManualStore } from './manuals.mjs';
+import {createManualPdfPublicationBackup,assertManualPdfPublicArtifacts} from './manual-pdf-publication.mjs';
+import { manualReviewChecks,manualPdfReviewChecks } from '../shared/manual-review.mjs';
+import { manualSubmissionStates } from '../shared/manual-workflow.mjs';
+import { manualDraftChoices } from '../shared/manual-submission.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
@@ -228,6 +233,9 @@ if (mergeLikesFile && [siteDirectory,publicDirectory,publicReleasesDirectory].so
 if (mergeEnabled && !mergeLikesFile) throw new Error('启用合并须配置实际私密点赞库，不能把未知状态当作0。');
 if (mergeOnlineEnabled && process.platform !== 'linux') throw new Error('线上合并必须在Linux服务器运行。');
 
+for (const publicRoot of [siteDirectory, publicDirectory, publicReleasesDirectory, path.join(projectRoot, 'public-assets')]) {
+	if (pathIsInside(publicRoot, path.join(adminDataRoot, 'manuals'))) throw new Error('说明书私密维护资料不能放在公开文件目录中。');
+}
 for (const publicRoot of [siteDirectory, publicDirectory, path.join(projectRoot, 'public-assets')]) {
 	if (pathIsInside(publicRoot, submissionDirectory)) throw new Error('私密投稿目录不能位于网站、管理页面或公开素材目录内。');
 	if (pathIsInside(publicRoot, uploadStagingDirectory)) throw new Error('临时上传目录不能位于网站、管理页面或公开素材目录内。');
@@ -1798,7 +1806,7 @@ const stageUploadedImage = async (request, operationId, signal) => {
 	}
 };
 
-const nextImageName = async (itemId, reservedNames, position, extension, publicationName) => {
+const nextImageName = async (itemId, reservedNames, position, extension, publicationName, maximumDetails = 99) => {
 	const inboxItemDirectory = path.join(inboxDirectory, itemId);
 	// 批量资料已经区分正面、背面和组内其他图片，不能再按上传顺序改写其角色。
 	if (publicationName !== undefined) {
@@ -1827,7 +1835,7 @@ const nextImageName = async (itemId, reservedNames, position, extension, publica
 	) {
 		return backName;
 	}
-	for (let sequence = 1; sequence <= 99; sequence += 1) {
+	for (let sequence = 1; sequence <= maximumDetails; sequence += 1) {
 		const candidate = `detail-${String(sequence).padStart(2, '0')}-public${extension}`;
 		if (!reservedNames.has(candidate) && !(await pathExists(path.join(inboxItemDirectory, candidate)))) {
 			return candidate;
@@ -1906,6 +1914,13 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 	try {
 		for (const [position, image] of (payload.images ?? []).entries()) {
 			throwIfOperationCancelled(signal);
+			if(image.kind==='manual-reviewed'&&typeof options.manualImageReader==='function'){
+				if(position>=200||!/^MP-[a-f0-9]{24}$/.test(image.page_id??''))throw new RequestError('说明书待入站页序或页面身份无效。');
+				const buffer=await options.manualImageReader(image.page_id);validateImageSignature(buffer,'image/jpeg',image.originalName);
+				if(!buffer.length||buffer.length>maximumImageBytes)throw new RequestError('说明书图片大小无法核对。');
+				const filename=await nextImageName(itemId,reservedNames,position,'.jpg',undefined,198),targetPath=path.join(inboxItemDirectory,filename);
+				await fs.writeFile(targetPath,buffer,{flag:'wx',signal});newlyWrittenFiles.push(targetPath);reservedNames.add(filename);publicationPaths.push(`/archive/${itemId}/${filename}`);continue;
+			}
 			if (image.kind === 'existing') {
 				const filename = path.basename(image.filename ?? '');
 				if (!filename || filename !== image.filename || !/^[-A-Za-z0-9_.]+$/.test(filename)) {
@@ -1974,6 +1989,7 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 		}));
 		const draft = {
 			version: 2, write_revision: randomUUID(),
+			...(typeof options.manualImageReader==='function'?{manual_submission:{...payload.manualSubmission,pages:payload.manualSubmission.pages.map((page,index)=>({...page,attachment_ref:publicationPaths[index]}))}}:existingDraft?.manual_submission?{manual_submission:existingDraft.manual_submission}:{}),
 			...(payload.sourceSubmissionId ? { source_submission_id: payload.sourceSubmissionId } : existingDraft?.source_submission_id ? { source_submission_id: existingDraft.source_submission_id } : {}),
 			saved_at: new Date().toISOString(),
 			removed_images: cleanRemovedImages,
@@ -2017,18 +2033,19 @@ const saveDraft = saveDraftUnlocked;
 
 const submissionToDraft = async (input, options = {}) => {
 	const previous = (await loadDrafts()).find((draft) => draft.source_submission_id === input.id);
-	if (previous) return previous.record.core.item_id;
+	const manualResult=draft=>({item_id:draft.record.core.item_id,page_map:draft.manual_submission.pages.map(p=>({attachment_ref:p.attachment_ref,printed_label:p.printed_label}))});
+	if(previous){if(!input.manual_submission)return previous.record.core.item_id;if(previous.manual_submission?.digest!==input.manual_submission.digest||previous.manual_submission?.submitted_revision!==input.manual_submission.submitted_revision)throw new RequestError('已有该投稿的档案草稿，来源版本不同，已停止覆盖。',409);return manualResult(previous);}
 	if (!objectSchema[input.object_type]) throw new RequestError('请选择正式的藏品类型。');
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(input.accession_date ?? '') || new Date(input.accession_date).toISOString().slice(0, 10) !== input.accession_date) throw new RequestError('请填写有效的实际接收或获得日期。');
 	const draft = await saveDraft({
-		isNew: true, sourceSubmissionId: input.id, confirmedPublicationCopies: true, images: input.images,
+		isNew: true, sourceSubmissionId: input.id, confirmedPublicationCopies: true, images: input.images,...(input.manual_submission?{manualSubmission:input.manual_submission}:{}),
 		record: {
 			core: { item_id: '', title: input.title, accession_date: input.accession_date, object_type: input.object_type, date_display: '年代未知', record_status: 'SUS', privacy_level: 'Y', rights_status: 'UNK', research_status: 'R0', evidence_level: 'D', digitization_status: 'DG0', transcription_status: 'TX0', use_status: 'U0', publication_file_path: [] },
 			metadata: { schema: objectSchema[input.object_type], dimensions: {} },
 			public_view: { description: input.description, transcription: '', tags: [] },
 		},
-	}, options);
-	return draft.record.core.item_id;
+	}, input.manual_submission?{...options,manualImageReader:input.readImage}:options);
+	return input.manual_submission?manualResult(draft):draft.record.core.item_id;
 };
 
 const validateForPublication = async (record, confirmations) => {
@@ -2310,6 +2327,7 @@ const restoreWithdrawnRecord = async (payload, options = {}) => {
 const runSiteBuild = async (options = {}) => {
 	const { signal = null } = options;
 	throwIfOperationCancelled(signal);
+	if (!options.manualsStaged) await manualStore.sync();
 	// 每次档案更新后重新对照来源，只导出已审核且仍有效的英文；中文发布不会覆盖私有译文。
 	await generateSiteTranslationLayer();
 	const buildCommand = process.platform === 'win32'
@@ -2327,6 +2345,13 @@ const runSiteBuild = async (options = {}) => {
 	throwIfOperationCancelled(signal);
 	return `${stdout}\n${stderr}`.trim();
 };
+
+// 只使用现有本地服务、写入队列和正式构建。线上仅继承／核验公开投影，不开放维护接口。
+const manualStore = createManualStore({
+	root: path.join(adminDataRoot, 'manuals'), siteDirectory, readArchives: loadOfficialRecords,
+ build: async options => {const output=await runSiteBuild({ ...options, manualsStaged: true });await assertManualPdfPublicArtifacts({dist:path.join(siteDirectory,'dist'),...await submissionStore.manualPdfPrivatePublicationValues()});return output;},
+	guardCatalog: catalog => submissionStore.manualCatalogPublicationIssues(catalog),
+});
 
 const publishEnglishTranslation = async (itemId, payload, options = {}) => {
  const locale=options.locale ?? 'en';
@@ -2449,6 +2474,8 @@ const withdrawOfficialRecord = async (payload, options = {}) => {
 	}
 };
 
+const preparePdfBuildBackup=createManualPdfPublicationBackup({root:path.join(historyDirectory,'pdf-builds'),siteDirectory});
+const scanPdfPublication=async()=>assertManualPdfPublicArtifacts({dist:path.join(siteDirectory,'dist'),...await submissionStore.manualPdfPrivatePublicationValues()});
 const publishDraftUnlocked = async (payload, options = {}) => {
 	const { signal = null, batchPublication = false } = options;
 	throwIfOperationCancelled(signal);
@@ -2482,6 +2509,7 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 		}
 		await validateForPublication(record, payload.confirmations);
 		const reviewedImages = await publicationReviews.verify(payload);
+  await options.assertSubmissionPublication?.({draft,images:reviewedImages});
 		for (const image of reviewedImages) {
 			const destination = path.join(siteArchiveDirectory, itemId, image.filename);
 			if (await pathExists(destination) && await fileSha256(destination) !== image.sha256) {
@@ -2521,6 +2549,7 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 		let wroteOfficial = false;
 		let buildOutput = '';
 		let deployment = null;
+  let pdfBuildBackup = null;
 		const rollback = async (error) => {
 			if (batchPublication && wroteOfficial) {
 				const current = await fs.readFile(officialPath).catch(cause => { if (cause.code === 'ENOENT') return null; throw cause; });
@@ -2551,6 +2580,7 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 			}
 		};
 		const assertStaged = async () => {
+   await options.assertSubmissionPublication?.({draft,images:reviewedImages});
 			options.assertDeploymentLock?.();
 			if (!(await fs.readFile(officialPath)).equals(nextOfficial)) throw new WriteSafetyError('暂存正式记录已变化，已停止批量发布。', 409, 'REVISION_CONFLICT');
 			for (const image of reviewedImages) {
@@ -2560,6 +2590,7 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 			}
 		};
 		try {
+   if(options.assertSubmissionPublication&&!batchPublication)pdfBuildBackup=await preparePdfBuildBackup();
 			throwIfOperationCancelled(signal);
 			options.assertDeploymentLock?.();
 			const siteItemDirectory = path.join(siteArchiveDirectory, itemId);
@@ -2590,14 +2621,16 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 				await atomicWrite(siteArchiveDataFile, await generateSiteArchiveSource());
 				buildOutput = await runSiteBuild({ signal });
 				throwIfOperationCancelled(signal);
+    if(options.assertSubmissionPublication){await scanPdfPublication();await assertStaged();}
 				if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
+    if(pdfBuildBackup)await pdfBuildBackup.complete();
 			}
 		} catch (error) {
 			const operationWasCancelled = signal?.aborted || error?.name === 'AbortError' || error?.name === 'OperationCancelledError';
 			await rollback(error);
 			let rollbackBuildMessage = '';
 			if (!batchPublication) {
-				try { await runSiteBuild(); }
+    try { if(pdfBuildBackup)await pdfBuildBackup.restore();else await runSiteBuild(); }
 				catch (rollbackError) { rollbackBuildMessage = `；恢复后的构建也未完成：${safeMessage(rollbackError)}`; }
 			}
 			if (operationWasCancelled) {
@@ -2691,7 +2724,7 @@ const printConfigurationSummary = () => {
 };
 
 const publishDraft = async (payload, options = {}) => {
-	const result = await submissionStore.guardPublication(payload.itemId, () => publishDraftUnlocked(payload, options));
+ const result = await submissionStore.guardPublication(payload.itemId, assertSubmissionPublication => publishDraftUnlocked(payload, {...options,assertSubmissionPublication}));
 	// 发布成功后才通知投稿人；通知失败不影响发布结果，也不会重复执行发布。
 	await submissionStore.notifyPublished(payload.itemId);
 	return result;
@@ -2709,6 +2742,7 @@ const publishDraftsBatch = async (payload, options = {}) => {
 	publishInProgress = true;
 	let nextArchiveSource = null, buildStarted = false, committed = false;
 	let buildOutput = '', deployment = null;
+ let pdfBuildBackup = null;
 	try {
 		// 嵌套持有每件投稿的现有授权锁直到构建/切换完成；不留撤回申请与发布之间的空档。
 		const visit = async (index) => {
@@ -2723,8 +2757,10 @@ const publishDraftsBatch = async (payload, options = {}) => {
 				buildOutput = await runSiteBuild({ signal });
 				throwIfOperationCancelled(signal);
 				for (const entry of staged) await entry.assertStaged();
+    if(pdfBuildBackup){await scanPdfPublication();for(const entry of staged)await entry.assertStaged();}
 				if (!(await fs.readFile(siteArchiveDataFile)).equals(nextArchiveSource)) throw new WriteSafetyError('构建期间网站数据源被外部修改，已停止切换。', 409, 'REVISION_CONFLICT');
 				if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
+    if(pdfBuildBackup)await pdfBuildBackup.complete();
 				committed = true;
 				for (const entry of staged) {
 					const result = await entry.complete();
@@ -2735,13 +2771,14 @@ const publishDraftsBatch = async (payload, options = {}) => {
 			const itemId = itemIds[index];
 			let entered = false;
 			try {
-				return await submissionStore.guardPublication(itemId, async () => {
+    return await submissionStore.guardPublication(itemId, async assertSubmissionPublication => {
 					entered = true;
 					let changed = false;
 					try {
+      if(assertSubmissionPublication&&!pdfBuildBackup)pdfBuildBackup=await preparePdfBuildBackup();
 						staged.push(await publishDraftUnlocked(
 							{ itemId, confirmations: payload.confirmations, expectedRevision: payload.expectedRevisions?.[itemId], reviewId: payload.reviewIds?.[itemId] },
-							{ ...options, batchPublication: true, markChanged: () => { changed = true; options.markChanged?.(); } },
+       { ...options, assertSubmissionPublication, batchPublication: true, markChanged: () => { changed = true; options.markChanged?.(); } },
 						));
 					} catch (error) {
 						if (changed && !error.safeToRetry) throw Object.assign(error, { batchRollbackUncertain: true });
@@ -2757,6 +2794,7 @@ const publishDraftsBatch = async (payload, options = {}) => {
 			}
 		};
 		await visit(0);
+  if(!buildStarted&&pdfBuildBackup)await pdfBuildBackup.complete();
 		// 只在整批正式发布成功后通知；通知失败是提示，不改变已完成的发布收据。
 		for (const entry of staged) {
 			try { await submissionStore.notifyPublished(entry.itemId); }
@@ -2778,9 +2816,10 @@ const publishDraftsBatch = async (payload, options = {}) => {
 			} catch (rollbackError) { rollbackErrors.push(safeMessage(rollbackError)); }
 		}
 		if (buildStarted && !rollbackErrors.length && !error.batchRollbackUncertain) {
-			try { await runSiteBuild(); }
+   try { if(pdfBuildBackup)await pdfBuildBackup.restore();else await runSiteBuild(); }
 			catch (rollbackError) { rollbackErrors.push(`恢复后的构建未完成：${safeMessage(rollbackError)}`); }
 		}
+  if(!buildStarted&&pdfBuildBackup&&!rollbackErrors.length&&!error.batchRollbackUncertain)await pdfBuildBackup.restore().catch(e=>rollbackErrors.push(safeMessage(e)));
 		const uncertain = rollbackErrors.length || error.batchRollbackUncertain;
 		const message = uncertain ? `批量发布未完成，部分恢复须人工核对：${safeMessage(error)}；${rollbackErrors.join('；')}`
 			: `批量发布未完成，已恢复本批发布前状态，原草稿及历史快照保留：${safeMessage(error)}`;
@@ -2859,10 +2898,34 @@ const adminServer = http.createServer(async (request, response) => {
 		if (!onlineMode && await publicContacts(request, response, url.pathname)) return;
 		if (!onlineMode && accountService && await accountService.handler(request, response, url.pathname)) return;
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/healthz') {
-			sendJson(response, 200, { ok: true, capabilities: { publicationImageNames: true, writeProtocol: 2, publicationReviewVersion: 1 } });
+   sendJson(response, 200, { ok: true, capabilities: { publicationImageNames: true, writeProtocol: 2, publicationReviewVersion: 1, manualsMaintenanceVersion: onlineMode ? 0 : 1,manualReviewVersion:onlineMode?0:1,manualPdfHandoffVersion:onlineMode?0:1 } });
 			return;
 		}
 		const adminIdentity = onlineMode ? await accessAuthenticator.verifyRequest(request) : null;
+		const manualRequest = /^\/api\/manuals(?:\/|$)/.test(url.pathname);
+		if (onlineMode && (manualRequest || /^\/admin\/manuals(?:[.-]|\/|$)/i.test(decodeURIComponent(url.pathname)))) {
+			sendJson(response, 404, { error: '说明书维护仅在本机管理入口开放。' }); return;
+		}
+		if (manualRequest) {
+			if (request.method === 'GET' && url.pathname === '/api/manuals') {
+				sendJson(response, 200, await writes.read(() => manualStore.bootstrap()), { request }); return;
+			}
+			if (request.method === 'GET' && url.pathname === '/api/manuals/preview') {
+				sendJson(response, 200, await writes.read(() => manualStore.preview(url.searchParams.get('revision'), url.searchParams.get('manual'))), { request }); return;
+			}
+			const actions = { save: manualStore.save, review: manualStore.prepare, publish: manualStore.publish, withdraw: manualStore.withdraw, restore: manualStore.restore };
+			const action = url.pathname.slice('/api/manuals/'.length);
+			if (request.method === 'POST' && Object.hasOwn(actions, action)) {
+				requireSafeMutation(request);
+				const payload = await readRequestJson(request);
+				if (Buffer.byteLength(JSON.stringify(payload)) > 4 * 1024 * 1024) throw new RequestError('本次目录过大，请分批维护。', 413);
+				const result = action === 'review' ? await writes.read(() => manualStore.prepare(payload)) : await writes.perform({
+					operationId: requestOperationId(request), stepId: request.headers['x-ljm-step-id'], kind: `manuals-${action}`, target: 'new', payload,
+				}, context => actions[action](payload, context), value => ({ revision: value.revision }));
+				sendJson(response, 200, result, { request }); return;
+			}
+			sendJson(response, 404, { error: '说明书维护地址不存在。' }); return;
+		}
 		const mergeActor = onlineMode ? 'access:' + adminIdentity.email : localMergeActor;
 		const mergeRequest = /^\/api\/(?:merge(?:-|$)|merges(?:\/|$))/.test(url.pathname);
 		if (onlineMode && !mergeOnlineEnabled && (mergeRequest || /^\/admin\/merge[.-]/.test(url.pathname))) {
@@ -3034,6 +3097,17 @@ const adminServer = http.createServer(async (request, response) => {
 					: null,
 			}));
 			sendJson(response, 200, { submissions, states: submissionStates, privacy_checks: privacyChecks }, { request }); return;
+		}
+		const manualReviewRoute=/^\/api\/admin\/manual-submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer)|\/versions\/(\d+)\/images\/(manual-[a-f0-9]{64}\.jpg))?$/.exec(url.pathname);
+		if(onlineMode&&(manualReviewRoute||/^\/admin\/manual-review(?:[.-]|\/|$)/i.test(decodeURIComponent(url.pathname)))){sendJson(response,404,{error:'说明书专用审核只在本机工作台开放。'});return;}
+		if(manualReviewRoute){
+			const [,id,action,version,imageName]=manualReviewRoute;
+			if(request.method==='GET'&&imageName){const image=await submissionStore.getManualReviewImage(id,Number(version),imageName);response.writeHead(200,{...securityHeaders(),'Content-Type':'image/jpeg','Cache-Control':'no-store','Cross-Origin-Resource-Policy':'same-origin','X-Robots-Tag':'noindex, nofollow'});response.end(image);return;}
+			if(request.method==='GET'&&!action){const [record,catalog]=await writes.read(()=>Promise.all([submissionStore.getManualReview(id),manualStore.bootstrap()]));sendJson(response,200,{record,catalog_revision:catalog.revision,checks:manualReviewChecks,pdf_checks:manualPdfReviewChecks,pdf_review_version:1,privacy_checks:privacyChecks,states:manualSubmissionStates,choices:manualDraftChoices},{request});return;}
+			if(request.method==='POST'&&action){requireSafeMutation(request);const payload=await readSubmissionJson(request,48*1024);
+				const result=await runManagedOperation(request,'manual-'+action,payload,context=>action==='review'?submissionStore.reviewManualSubmission(id,payload,context):submissionStore.transferManualSubmission(id,payload,{planCatalog:manualStore.planReviewedImport,createArchive:input=>submissionToDraft(input,context),importCatalog:input=>manualStore.importReviewed(input,context)},context),{target:id,checkVersion:false});
+				sendJson(response,200,result,{request});return;}
+			sendJson(response,405,{error:'不支持此说明书审核操作。'});return;
 		}
 		const submissionRoute = /^\/api\/admin\/submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer|request-review|copy-\d{2}\.jpg))?$/.exec(url.pathname);
 		if (submissionRoute) {
@@ -3263,6 +3337,7 @@ if (process.argv.includes('--check-config')) {
 		writes.assertReady();
 		await atomicWrite(siteArchiveDataFile, await generateSiteArchiveSource());
 		await generateSiteTranslationLayer();
+		await manualStore.sync();
 		console.log('网站档案数据已根据正式 JSON 重新生成。');
 	} finally {
 		accountService?.store.close(); accountReader?.close(); mergeAccountConnection?.close();

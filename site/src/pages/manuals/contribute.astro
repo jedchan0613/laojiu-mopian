@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ManualsNavigation from '../../components/ManualsNavigation.astro';
+import ManualDraftPages from '../../components/ManualDraftPages.astro';
+import ManualPdfDraft from '../../components/ManualPdfDraft.astro';
+import ManualPdfGeneration from '../../components/ManualPdfGeneration.astro';
+import ManualPdfPageLabels from '../../components/ManualPdfPageLabels.astro';
+import ManualSubmissionWorkflow from '../../components/ManualSubmissionWorkflow.astro';
+import {manualsChineseOnly} from '../../data/manuals-catalog';
+import {manualDraftChoices} from '../../../../shared/manual-submission.mjs';
+import '../../styles/manuals.css';
+import '../../styles/manual-submission.css';
+---
+<BaseLayout title="提供说明书｜老旧默片" description="登记品牌、完整型号、版本与来源，保存自己的私密说明书草稿，稍后继续完善。" translationAvailability={manualsChineseOnly} robots="noindex, nofollow">
+  <article class="manuals manual-submission" data-manual-submission>
+    <ManualsNavigation active="contribute"/>
+    <header class="manual-hero"><p class="manual-eyebrow">老旧默片 · 一起保存物件资料</p><h1>提供一份说明书</h1><p>先记下品牌、完整型号和资料来源。不确定的内容可以留空，保存后再继续补充。</p></header>
+    <p class="manual-notice">先保存资料，再继续添加文件。图片可以逐页整理并提交；PDF可在已配置的本地环境生成整册，核对后提交阅读图片审核。原PDF私密留存，资料不会因此自动公开。</p>
+    <p id="manual-draft-status" class="manual-draft-status" role="status" aria-live="polite">正在读取草稿服务…</p>
+    <section id="manual-draft-unauth" class="manual-draft-panel" hidden><h2>登录后保存到自己的草稿</h2><p>登录后可以跨设备继续填写。请勿填写设备序列号、私人地址、账号密码或其他人的联系方式。</p><div class="manual-actions"><a id="manual-draft-login" class="ui-action ui-action--primary" href="/login/?next=%2Fmanuals%2Fcontribute%2F">登录并继续 →</a><a href="/manuals/">返回说明书库</a></div></section>
+    <section id="manual-draft-error" class="manual-draft-panel" hidden><h2>草稿暂时无法打开</h2><p id="manual-draft-error-text"></p><button type="button" class="ui-action ui-action--secondary" id="manual-draft-retry">重新读取</button></section>
+    <div id="manual-draft-content" hidden>
+      <div class="manual-draft-summary"><p id="manual-draft-identity">新建说明书草稿</p><a href="/me/contributions/">我的投稿与草稿 →</a></div>
+      <p class="manual-muted">请勿填写设备序列号、私人地址、账号密码或其他人的联系方式。</p>
+      <ManualSubmissionWorkflow part="progress"/>
+      <form id="manual-draft-form" autocomplete="off" novalidate>
+        <fieldset><legend><span>01</span> 品牌与完整型号</legend><div class="manual-draft-fields">
+          <label>品牌名称<input name="brand_name" maxlength="100" placeholder="按机身或手册上的品牌填写"/></label>
+          <label>物件名称<input name="product_name" maxlength="120" placeholder="例如：电饭煲、胶片相机"/></label>
+          <label>物件品类<select name="category_key"><option value="">尚未确定</option>{Object.entries(manualDraftChoices.categories).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+          <label>文档用途<select name="document_kind"><option value="">尚未确定</option>{Object.entries(manualDraftChoices.kinds).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+          <label class="manual-draft-wide">明确适用型号<textarea name="model_texts" rows="3" maxlength="2400" placeholder="每行一个完整型号，保留字母、数字和后缀。"></textarea><small>一册适用多个型号时分别填写；相近型号不要自行合并。</small></label>
+        </div></fieldset>
+        <fieldset><legend><span>02</span> 语言、版本与完整程度</legend><div class="manual-draft-fields">
+          <div class="manual-draft-wide"><p class="manual-draft-label">原文语言</p><div class="manual-draft-language">{Object.entries(manualDraftChoices.languages).map(([key,label])=><label><input type="checkbox" name="languages" value={key}/>{label}</label>)}</div></div>
+          <label>适用地区<input name="region_display" maxlength="120" placeholder="未注明时可留空"/></label>
+          <label>资料版本<input name="edition_display" maxlength="150" placeholder="例如：第一版、修订版；未注明可留空"/></label>
+          <label>明确标注的文档日期<input name="edition_date" type="date"/><small>没有标注时留空，不以购买或接收日期代替。</small></label>
+          <label>完整程度<select name="completeness"><option value="">尚未确定</option>{Object.entries(manualDraftChoices.completeness).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+          <label class="manual-draft-wide">缺页说明<textarea name="missing_note" rows="2" maxlength="500" placeholder="如：缺封底、印刷第2页；无法核实时如实说明。"></textarea></label>
+        </div></fieldset>
+        <fieldset><legend><span>03</span> 来源与授权说明</legend><div class="manual-draft-fields">
+          <label class="manual-draft-wide">厂家官方来源网址<input name="official_url" type="url" maxlength="2048" placeholder="https://…（选填）"/><small>只填写公开来源，不填写需要登录的临时地址或带密码、密钥的网址。</small></label>
+          <label>希望提供的方式<select name="sharing_scope"><option value="">尚未确定</option>{Object.entries(manualDraftChoices.sharing).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+          <label>目前了解的权利情况<select name="rights_basis"><option value="">尚未确定</option>{Object.entries(manualDraftChoices.rights).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+          <label class="manual-draft-wide">资料从哪里获得<textarea name="source_note" rows="3" maxlength="500" placeholder="描述来源即可，不填写精确私人地址或其他人的联系方式。"></textarea></label>
+          <label class="manual-draft-wide">授权依据与希望保留的限制<textarea name="rights_note" rows="3" maxlength="1000" placeholder="例如：仅提供官网线索；或说明已有许可的范围与依据。尚未确认可留空。"></textarea></label>
+        </div><p class="manual-muted">这里记录您的说明与意向，公开展示和下载范围仍需另行核对，不因保存草稿而自动开放。</p></fieldset>
+        <fieldset><legend><span>04</span> 补充说明与署名</legend><div class="manual-draft-fields">
+          <label class="manual-draft-wide">补充说明<textarea name="description" rows="4" maxlength="3000" placeholder="可说明资料特点、疑问或还需要补充的内容。请区分事实、推测与未知。"></textarea></label>
+          <label>是否涉及可识别的真实人物<select name="people"><option value="">尚未确定</option>{Object.entries(manualDraftChoices.people).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+          <label>希望的署名方式<select name="attribution"><option value="anonymous">匿名</option><option value="named">希望署名</option></select></label>
+          <label id="manual-draft-credit-field" hidden>希望公开的署名<input name="credit" maxlength="40"/></label>
+        </div></fieldset>
+        <label class="manual-draft-honeypot" aria-hidden="true">网站<input name="website" tabindex="-1" autocomplete="off"/></label>
+        <div class="manual-draft-actions"><button id="manual-draft-save" class="ui-action ui-action--primary" type="submit">保存私密草稿</button><button id="manual-draft-preview-button" class="ui-action ui-action--secondary" type="button">预览当前填写</button><button id="manual-draft-reload" class="manual-text-button" type="button">读取已保存版本</button></div>
+        <p id="manual-draft-save-status" class="manual-draft-status" aria-hidden="true"></p>
+        <p class="manual-muted">可先保存不完整的内容。未经另行确认，资料不会进入公开说明书库。</p>
+      </form>
+      <ManualPdfDraft/>
+      <ManualPdfGeneration/>
+      <ManualPdfPageLabels/>
+      <ManualDraftPages/>
+      <section id="manual-draft-preview" class="manual-draft-panel" hidden aria-labelledby="manual-draft-preview-title"><h2 id="manual-draft-preview-title">当前填写预览</h2><p id="manual-draft-preview-state" class="manual-muted"></p><div id="manual-draft-preview-body"></div></section>
+      <ManualSubmissionWorkflow part="submit"/>
+      <div class="manual-draft-footer"><a href="/me/contributions/">查看我的投稿与草稿</a><a id="manual-draft-login-again" href="/login/?next=%2Fmanuals%2Fcontribute%2F" target="_blank" rel="noopener" hidden>在新窗口登录后继续</a></div>
+    </div>
+    <noscript><p class="manual-notice">请启用浏览器脚本后登录、填写与保存草稿；当前不会提交任何内容。</p></noscript>
+  </article>
+  <script>import '../../scripts/manual-submission';</script>
+</BaseLayout>

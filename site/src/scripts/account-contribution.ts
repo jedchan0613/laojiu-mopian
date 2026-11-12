@@ -298,10 +298,15 @@ const validate = (strict: boolean) => {
 const reload = async () => {
 	if (!editing) return;
 	detail = await accountFetch(`/api/account/submissions/${submissionId}`);
+	if (detail.submission_kind === 'manual') {
+		window.location.replace(`/manuals/contribute/?id=${encodeURIComponent(submissionId)}`);
+		return false;
+	}
 	fill(detail);
 	renderState(detail);
 	toggle(form, detail.status === 'draft');
 	dirty = false;
+	return true;
 };
 
 const saveDraft = async () => {
@@ -436,7 +441,7 @@ const load = async () => {
 		}
 		consentVersion = String((submissionConfig as { consent_version?: string })?.consent_version ?? '');
 		if (editing) {
-			await reload();
+			if (await reload() === false) return;
 			toggle(statePanel, true);
 			// 只有草稿可以继续编辑；其他状态只能查看进度与申请。
 			toggle(form, detail.status === 'draft');

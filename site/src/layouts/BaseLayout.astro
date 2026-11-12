@@ -47,6 +47,8 @@ const title = t(originalTitle, locale);
 const description = t(originalDescription, locale);
 const isHome = pathWithoutLocale === '/';
 const isArchive = pathWithoutLocale.startsWith('/archive') || pathWithoutLocale.startsWith('/albums/');
+const isManuals = /^\/manuals(?:\/|$)/.test(pathWithoutLocale);
+const manualNavLabels = {'zh-CN':'说明书',en:'Manuals (Chinese)',th:'คู่มือ (ภาษาจีน)',ja:'説明書（中国語）',ko:'설명서(중국어)','zh-Hant':'說明書（簡體中文）'};
 const isAbout = pathWithoutLocale.startsWith('/about');
 const isContribute = pathWithoutLocale.startsWith('/contribute');
 const isAccount = pathWithoutLocale.startsWith('/login') || pathWithoutLocale.startsWith('/me');
@@ -104,10 +106,11 @@ const serializedStructuredData = structuredData
 					</a>
 					<div class="site-links">
 						<a href={localizePath("/archive/", locale)} aria-current={isArchive ? 'page' : undefined}>{t("档案", locale)}</a>
+						<a href="/manuals/" aria-current={isManuals ? 'page' : undefined}>{manualNavLabels[locale]}</a>
 						<a href={localizePath("/about/", locale)} aria-current={isAbout ? 'page' : undefined}>{t("关于", locale)}</a>
 						<a href={localizePath("/contribute/", locale)} aria-current={isContribute ? 'page' : undefined}>{t("我要投稿", locale)}</a>
 						<a href={localizePath("/login/", locale)} data-account-nav aria-current={isAccount ? 'page' : undefined}>{t("登录", locale)}</a>
-						<LanguagePicker pathname={errorPage ? '/' : undefined} />
+						<LanguagePicker pathname={errorPage || isManuals ? '/' : undefined} />
 					</div>
 				</nav>
 			</header>

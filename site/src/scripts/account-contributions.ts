@@ -18,6 +18,12 @@ interface SubmissionSummary {
 	withdrawal_requested: boolean;
 	change_request: { kind: string; status: string } | null;
 	public_message: string;
+	submission_kind?: 'manual';
+	manual_draft_reason?: string;
+	source_format?: 'images'|'pdf';
+	pdf_saved?: boolean;
+	pdf_preview_pages?: number;
+	pdf_preview_current?: boolean;
 }
 
 const loading = document.querySelector('#contributions-loading');
@@ -49,6 +55,7 @@ const visibleState = (item: SubmissionSummary, publishedIds: Set<string>, public
 
 // 每张卡片只给一个当前最需要的操作，避免堆满按钮。
 const primaryAction = (item: SubmissionSummary) => {
+	if (item.submission_kind === 'manual') return { label: item.status==='draft'?(item.manual_draft_reason==='supplement'?'继续补充':'继续编辑'):item.status==='needs_info'?'查看补充要求':'查看投稿进度', href: `/manuals/contribute/?id=${encodeURIComponent(item.id)}` };
 	if (item.status === 'draft') return { label: ct('继续编辑'), href: clientPath(`/me/contribution/?id=${item.id}`) };
 	if (item.status === 'needs_info') return { label: ct('查看补充要求'), href: clientPath(`/me/contribution/?id=${item.id}`) };
 	if (item.change_request || item.withdrawal_requested) return { label: ct('查看处理情况'), href: clientPath(`/me/contribution/?id=${item.id}`) };
@@ -62,7 +69,7 @@ const card = (item: SubmissionSummary, publishedIds: Set<string>, publicListAvai
 
 	const placeholder = document.createElement('span');
 	placeholder.className = 'account-card-placeholder';
-	placeholder.textContent = ct("{0} 张图片", {"0": (item.image_count)});
+	placeholder.textContent = item.submission_kind === 'manual' ? item.source_format==='pdf'?`说明书PDF · ${item.pdf_preview_pages?item.pdf_preview_pages+'页'+(item.pdf_preview_current?'私密预览':'旧版预览'):item.pdf_saved?'已私密保存，待生成':'待上传'}`:`说明书${item.status==='draft'?'草稿':'投稿'} · ${item.image_count} 页` : ct("{0} 张图片", {"0": (item.image_count)});
 	node.append(placeholder);
 
 	const pill = document.createElement('span');
@@ -76,7 +83,7 @@ const card = (item: SubmissionSummary, publishedIds: Set<string>, publicListAvai
 	node.append(title);
 
 	const meta = document.createElement('p');
-	meta.textContent = [ct(item.category) || ct('未选分类'), ct("最近更新 {0}", {"0": (new Date(item.updated_at).toLocaleDateString(clientLocale()))})].join(' · ');
+	meta.textContent = [item.submission_kind === 'manual' ? '说明书' : ct(item.category) || ct('未选分类'), ct("最近更新 {0}", {"0": (new Date(item.updated_at).toLocaleDateString(clientLocale()))})].join(' · ');
 	node.append(meta);
 
 	if (item.public_message) {

@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ManualsNavigation from '../../../components/ManualsNavigation.astro';
+import {manualsBrowse,manualsDemo,manualsChineseOnly} from '../../../data/manuals-catalog';
+import '../../../styles/manuals.css';
+---
+<BaseLayout title="按品牌查说明书｜老旧默片" description="浏览已收录的品牌，再按完整型号选择适合的说明书。" translationAvailability={manualsChineseOnly} robots={manualsDemo||!manualsBrowse.brands.length?'noindex, nofollow':undefined}>
+  <article class="manuals" data-manual-brand-directory>
+    {manualsDemo&&<p class="manual-demo-notice" data-manual-demo>本地演示：以下品牌及资料均为虚构，仅用于检查页面。</p>}
+    <ManualsNavigation active="brands"/>
+    <header class="manual-hero"><p class="manual-eyebrow">老旧默片 · 物件资料</p><h1>按品牌找说明书</h1><p>先选择机身上的品牌，再核对完整型号。品牌不同的同名型号分别收录。</p></header>
+    <p class="manual-browse-count">{manualsBrowse.brands.length} 个已收录品牌 · {manualsBrowse.modelCount} 个可用型号 · {manualsBrowse.documentCount} 份独立文档版本</p>
+    {manualsBrowse.brands.length?<div class="manual-browse-grid">{manualsBrowse.brands.map(brand=><a class="manual-browse-card" href={brand.path} data-manual-brand={brand.brand_key}><span class="manual-brand-initial" aria-hidden="true">{Array.from(brand.name)[0]}</span><div><h2>{brand.name}<span aria-hidden="true"> →</span></h2>{brand.aliases.length>0&&<p class="manual-browse-aliases">{brand.aliases.join(' · ')}</p>}<p>{brand.modelCount} 个可用型号 · {brand.documentCount} 份文档版本</p><p class="manual-browse-secondary">{brand.categories.map(category=>category.name).join('、')}{brand.unavailableDocumentCount>0&&` · ${brand.unavailableDocumentCount} 份来源暂不可用`}</p></div></a>)}</div>:<section class="manual-empty"><h2>品牌资料正在整理</h2><p>正式目录暂未加入品牌资料，您可以先查找型号位置或提供说明书线索。</p><div class="manual-actions"><a href="/manuals/help/">查看型号查找方法 →</a><a href="/manuals/contribute/">提供资料线索</a></div></section>}
+  </article>
+</BaseLayout>

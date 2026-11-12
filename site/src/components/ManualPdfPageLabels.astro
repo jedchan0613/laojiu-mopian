@@ -1,0 +1,7 @@
+<section id="manual-pdf-labels" class="manual-pdf-generation" aria-labelledby="manual-pdf-labels-title" hidden>
+  <h2 id="manual-pdf-labels-title">纸面页码与本页说明</h2>
+  <p>源PDF的页序固定。这里可以补记纸上印的页码和本页说明，例如“封面”“第3页印字不清”；整册缺页情况仍在上方“缺页说明”中填写。</p>
+  <div class="manual-pdf-label-form"><label>选择源PDF页面<select id="manual-pdf-label-page"></select></label><label>纸面印刷页码<input id="manual-pdf-label-value" maxlength="40" placeholder="未印页码可留空"/></label><label class="manual-pdf-label-note">本页说明（私密，最多300字）<textarea id="manual-pdf-label-note" rows="3" maxlength="300"></textarea></label></div>
+  <div class="manual-draft-actions"><button id="manual-pdf-label-save" type="button" class="ui-action ui-action--secondary" disabled>保存本页页码与说明</button><button id="manual-pdf-label-reset" type="button" class="manual-text-button" disabled>放弃本页未保存填写</button><button id="manual-pdf-label-retry" type="button" class="ui-action ui-action--secondary" hidden>核对并重试页码保存</button></div>
+  <p id="manual-pdf-label-status" class="manual-draft-status" role="status" aria-live="polite"></p>
+</section>

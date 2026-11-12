@@ -1,0 +1,34 @@
+<section id="manual-pdf-editor" class="manual-pdf-editor" aria-labelledby="manual-pdf-title">
+  <h2 id="manual-pdf-title">资料保存方式</h2>
+  <p>一册使用图片或一份PDF。先保存上方文字，再选择资料方式；已有文件的草稿继续沿用原方式。</p>
+  <p id="manual-pdf-availability" class="manual-muted">正在核对PDF保存是否可用…</p>
+  <div id="manual-material-controls" class="manual-material-controls" hidden>
+    <button id="manual-material-images" type="button" class="ui-action ui-action--secondary" aria-pressed="true" disabled>逐页图片</button>
+    <button id="manual-material-pdf" type="button" class="ui-action ui-action--secondary" aria-pressed="false" disabled>一份PDF</button>
+  </div>
+  <p id="manual-material-note" class="manual-muted"></p>
+  <div id="manual-pdf-content" hidden>
+    <p class="manual-notice">PDF私密保存，可在下方生成逐页预览。逐页核对后可提交阅读图片审核；生成不代表已完成隐私遮盖或人工核对，原PDF不提供下载或公开入口。</p>
+    <div id="manual-pdf-saved" class="manual-pdf-saved" hidden>
+      <p class="manual-pdf-state">已私密保存 · 未公开</p>
+      <h3 id="manual-pdf-saved-name"></h3>
+      <p id="manual-pdf-saved-detail" class="manual-muted"></p>
+    </div>
+    <p id="manual-pdf-usage" class="manual-pages-usage"></p>
+    <div id="manual-pdf-upload-controls">
+      <label class="manual-pages-picker">选择一份PDF副本<input id="manual-pdf-file" type="file" accept=".pdf,application/pdf" disabled/><small>最多20 MiB。请先在本机筛选和遮盖私人号码、地址、签名等内容；原始主档另行保存。</small></label>
+      <label class="manual-pages-confirm"><input id="manual-pdf-confirm" type="checkbox" disabled/>我已检查整份文件，提供的是经过筛选和必要遮盖的PDF副本，主档另行保存。</label>
+      <p id="manual-pdf-selected" class="manual-muted">尚未选择文件。</p>
+      <div id="manual-pdf-progress-wrap" class="manual-pdf-progress-wrap" hidden><progress id="manual-pdf-progress" max="100" value="0" aria-label="PDF传输进度"></progress><span id="manual-pdf-progress-text"></span></div>
+      <div class="manual-draft-actions">
+        <button id="manual-pdf-start" type="button" class="ui-action ui-action--primary" disabled>上传并私密保存</button>
+        <button id="manual-pdf-check" type="button" class="ui-action ui-action--secondary" hidden>核对上传回执</button>
+        <button id="manual-pdf-cancel" type="button" class="manual-text-button" hidden>取消未完成上传</button>
+        <button id="manual-pdf-clear" type="button" class="manual-text-button" disabled>清除本页选择</button>
+      </div>
+      <p class="manual-muted">重新选择不同PDF会保留旧副本，最多留存5份。账号合计200 MiB，包含图片、历史副本和上传预留；替换或停止草稿不会释放完整文件占用。</p>
+    </div>
+  </div>
+  <button id="manual-material-retry" type="button" class="ui-action ui-action--secondary" hidden>核对并重试资料方式</button>
+  <p id="manual-pdf-status" class="manual-draft-status" role="status" aria-live="polite"></p>
+</section>

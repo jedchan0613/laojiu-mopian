@@ -23,7 +23,8 @@ const api = async (url, payload) => {
  if (result.replayed) { if (transferWrite) pendingTransferReview = operationId; throw Object.assign(new Error('这项操作已经执行过，当前审核输入已保留。请刷新核对关联草稿后再继续。'), { code: 'OPERATION_REPLAYED', operation: result.operation }); }
  return result;
 };
-const badge = r => `<span class="badge${r.withdrawal_requested ? ' alert' : ''}">${esc(r.withdrawal_requested ? '停止处理申请' : states[r.status] || (r.status === 'draft' ? '草稿（未提交）' : r.status))}</span>`;
+const badge = r => (r.submission_kind==='manual'?'<span class="badge">说明书</span>':'')+`<span class="badge${r.withdrawal_requested ? ' alert' : ''}">${esc(r.withdrawal_requested ? '停止处理申请' : states[r.status] || (r.status === 'draft' ? '草稿（未提交）' : r.status))}</span>`;
+const manualFilter=document.createElement('option');manualFilter.value='manual';manualFilter.textContent='说明书投稿';$('#inbox-filter').insertBefore(manualFilter,$('#inbox-filter option[value="draft"]'));
 // 账号投稿与免注册投稿必须一眼可分；账号已被暂停或正在注销时一并提示。
 const accountBadge = r => {
  if (!r.account) return '<span class="badge">免注册投稿</span>';
@@ -41,7 +42,7 @@ function renderList() {
  const keyword = $('#inbox-search').value.trim().toLowerCase(); const filter = $('#inbox-filter').value;
  const filtered = records.filter(r => {
   const stateMatch = filter === 'all'
-   || (filter === 'withdrawal' ? r.withdrawal_requested : filter === 'account' ? Boolean(r.account) : filter === 'change-request' ? ['received', 'processing'].includes(r.change_request?.status) : r.status === filter);
+   || (filter === 'manual' ? r.submission_kind==='manual' : filter === 'withdrawal' ? r.withdrawal_requested : filter === 'account' ? Boolean(r.account) : filter === 'change-request' ? ['received', 'processing'].includes(r.change_request?.status) : r.status === filter);
   return stateMatch && `${r.id} ${r.title} ${r.category}`.toLowerCase().includes(keyword);
  });
  page = Math.min(page, Math.max(0, Math.ceil(filtered.length / 20) - 1));
@@ -67,6 +68,9 @@ const draftTypeOptions = () => {
  }).join('');
 };
 function renderDetail(r) {
+ if(r.submission_kind==='manual'){
+  const box=$('#review-detail');box.replaceChildren();const heading=document.createElement('h2');heading.textContent=r.fields.title;const notice=document.createElement('p');notice.className='notice';notice.textContent=`说明书投稿 · ${r.images.length}页。请在本机说明书专用审核页查看已提交版本、逐页核对并记录审核，再接入未公开整理草稿。`;const link=document.createElement('a');link.className='primary';link.href='/admin/manual-review.html?id='+encodeURIComponent(r.id);link.textContent='打开说明书专用审核 →';box.append(heading,notice,link);return;
+ }
  const f = r.fields; const frozen = Boolean(r.linked_item_id || r.status === 'withdrawn' || r.withdrawal_requested || r.status === 'draft');
  const contactLabel = { email: '电子邮箱', wechat: '微信', phone: '电话' }[f.contact_type];
  const peopleLabel = { none: '投稿人表示没有', yes: '涉及真实人物，必须人工判断', unsure: '投稿人无法确定，必须人工判断' }[f.people];

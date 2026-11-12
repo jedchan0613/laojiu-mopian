@@ -1,0 +1,22 @@
+---
+import {manualPdfProfiles} from '../../../shared/manual-pdf-generation.mjs';
+---
+<section id="manual-pdf-generation" class="manual-pdf-generation" aria-labelledby="manual-pdf-generation-title" hidden>
+  <h2 id="manual-pdf-generation-title">生成整册预览</h2>
+  <p>把已私密保存的PDF逐页制作成阅读图片。整册完成后一起更新；生成期间仍可阅读上一次完成的预览。</p>
+  <p class="manual-muted">可以离开此页，稍后从“我的投稿”回来查看；请保持本地启动窗口运行。</p>
+  <p id="manual-generation-availability" class="manual-muted"></p>
+  <div class="manual-generation-actions">
+    <label>清晰度配置<select id="manual-generation-profile">{Object.entries(manualPdfProfiles).map(([key,value])=><option value={key}>{value.label} · 长边最高{value.longEdge}像素</option>)}</select><small>精细配置仍受800万像素与每页5 MiB限制。不会自动降质或丢页。</small></label>
+    <div class="manual-draft-actions"><button id="manual-generation-start" type="button" class="ui-action ui-action--primary" disabled>生成整册预览</button><button id="manual-generation-check" type="button" class="ui-action ui-action--secondary" hidden>核对生成回执</button><button id="manual-generation-stop" type="button" class="manual-text-button" hidden>停止本次生成</button></div>
+  </div>
+  <div id="manual-generation-progress-wrap" class="manual-generation-progress" hidden><progress id="manual-generation-progress" max="200" value="0" aria-label="整册页面生成进度"></progress><p id="manual-generation-progress-text"></p></div>
+  <p id="manual-generation-status" class="manual-draft-status" role="status" aria-live="polite"></p>
+  <ul id="manual-generation-warnings" class="manual-draft-notes" hidden></ul>
+  <div id="manual-generation-preview" class="manual-generation-preview" hidden>
+    <h3>已完成的整册预览</h3><p id="manual-generation-preview-detail"></p><p id="manual-generation-source-note" class="manual-muted"></p>
+    <button id="manual-generation-open-reader" type="button" class="ui-action ui-action--secondary">预览整册</button>
+  </div>
+  <p id="manual-generation-usage" class="manual-muted"></p>
+  <p class="manual-notice">生成图片不等于已完成隐私遮盖或人工核对。阅读图片需逐页确认后提交私密审核，原PDF不提供下载；原文件、旧预览及失败任务已生成的图片均私密保留并计入容量。</p>
+</section>

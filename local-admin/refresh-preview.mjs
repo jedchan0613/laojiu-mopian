@@ -35,7 +35,8 @@ try{
     console.log('正在更新本地页面，地址仍为 http://127.0.0.1:4173/，请等待检查完成。');
     const backup=path.join(root,'outputs','local-preview-backups',new Date().toISOString().replace(/[:.]/g,'-'));
     await fs.mkdir(backup,{recursive:true});
-    const generated=['src/data/archive.ts','src/data/archive-translations.json','src/data/archive-translations.th.json','src/data/archive-translations.ja.json','src/data/archive-translations.ko.json','src/data/archive-translations.zh-Hant.json','src/data/generated/image-manifest.json'];
+    const generated=['src/data/archive.ts','src/data/archive-translations.json','src/data/archive-translations.th.json','src/data/archive-translations.ja.json','src/data/archive-translations.ko.json','src/data/archive-translations.zh-Hant.json','src/data/generated/image-manifest.json','src/data/generated/manuals-catalog.json'];
+    const hadManualsSource=await exists(path.join(site,'src/data/generated/manuals-catalog.json'));
     const saved=[];
     for(const p of generated){const source=path.join(site,p);if(await exists(source)){const target=path.join(backup,p);await fs.mkdir(path.dirname(target),{recursive:true});await fs.copyFile(source,target);saved.push(p);}}
     const hadDist=await exists(dist);
@@ -51,6 +52,7 @@ try{
       if(await exists(dist))await fs.rename(dist,path.join(backup,'failed-dist'));
       if(hadDist)await fs.rename(path.join(backup,'dist'),dist);
       for(const p of saved)await fs.copyFile(path.join(backup,p),path.join(site,p));
+      if(!hadManualsSource&&await exists(path.join(site,'src/data/generated/manuals-catalog.json')))await fs.rename(path.join(site,'src/data/generated/manuals-catalog.json'),path.join(backup,'failed-manuals-catalog.json'));
       throw error;
     }
   }

@@ -15,7 +15,7 @@ const dryRun = process.argv.includes('--dry-run');
 
 const byteThreshold = 1.5 * 1024 * 1024;
 const maxDimension = 2560;
-const publicationImagePattern = /^(front-public|back-public|detail-(0[1-9]|[1-9]\d)-public)\.(jpe?g|png|webp)$/i;
+const publicationImagePattern = /^(front-public|back-public|detail-(0[1-9]|[1-9]\d|1\d{2})-public)\.(jpe?g|png|webp)$/i;
 
 const isInside = (parent, candidate) => {
 	const relative = path.relative(parent, candidate);

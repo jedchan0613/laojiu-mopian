@@ -3,8 +3,20 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
+import {createManualPdfPlatformRuntime} from './manual-pdf-platform-runtime.mjs';
+import {readManualPdfSettings} from './manual-pdf-availability.mjs';
 import { assertPublicationImageSignature, createPublicationImageInput } from '../shared/publication-image-safety.mjs';
 import { isSubmissionCategory } from '../shared/submission-categories.mjs';
+import { normalizeManualSubmission, manualSubmissionFields } from '../shared/manual-submission.mjs';
+import { submissionStorageUsage } from './submission-storage.mjs';
+import { createManualPdfStore } from './manual-pdf-uploads.mjs';
+import { createManualPdfJobStore } from './manual-pdf-jobs.mjs';
+import { createManualPdfReviewStore } from './manual-pdf-review.mjs';
+import { manualPdfSnapshotSummary } from '../shared/manual-pdf-review.mjs';
+import { createManualPageStore } from './manual-pages.mjs';
+import { createManualWorkflowStore } from './manual-workflow.mjs';
+import { createManualReviewStore } from './manual-review.mjs';
+import { manualSubmissionLabel } from '../shared/manual-workflow.mjs';
 
 export const submissionLimits = Object.freeze({ images: 8, imageBytes: 5 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, requestBytes: 22 * 1024 * 1024 });
 export const consentVersion = '2026-09-05-v1';
@@ -33,7 +45,7 @@ const atomicJson = async (file, value) => {
  await fs.rename(temporary, file);
 };
 
-export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, maxStorageBytes = 10 * 1024 ** 3, notifier = null }) {
+export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, maxStorageBytes = readManualPdfSettings('development').maxStorageBytes, notifier = null, pdfOptions = {}, pdfGenerationRuntime, pdfGenerationOptions = {} }) {
  root = path.resolve(root);
  const require = createRequire(path.join(siteDirectory, 'package.json'));
  let sharp;
@@ -122,8 +134,9 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
     return { id, created_at: old.created_at, repeated: true };
    }
    const records = await all();
-   if (records.length >= maxEntries || records.reduce((n, r) => n + r.images.reduce((s, i) => s + i.bytes, 0), 0) + submissionLimits.totalBytes > maxStorageBytes) fail('投稿收件区暂满，请稍后再试。', 503);
+   if (records.length >= maxEntries) fail('投稿收件区暂满，请稍后再试。', 503);
    const images = await processImages(staged);
+   await checkGlobalStorage(images.reduce((sum, image) => sum + image.bytes, 0));
    const now = new Date().toISOString();
    const record = { version: 1, revision: 1, id, created_at: now, updated_at: now, key_hash: hash(payload.key), fingerprint,
     fields, consent: { version: consentVersion, confirmed_at: now, copies: true, rights: true, privacy: true, processing: true },
@@ -142,6 +155,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   if (!idPattern.test(id ?? '') || !keyPattern.test(key ?? '')) fail('投稿编号或查询密钥不正确。', 404);
   let record;
   try { record = await read(id); } catch (error) { if (error.statusCode === 404) fail('投稿编号或查询密钥不正确。', 404); throw error; }
+  if(record.submission_kind==='manual')fail('说明书投稿请登录原账号查看。',404);
   if (!timingSafeEqual(Buffer.from(record.key_hash, 'hex'), Buffer.from(hash(key), 'hex'))) fail('投稿编号或查询密钥不正确。', 404);
   return record;
  };
@@ -172,6 +186,8 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    const r = await read(id);
    if (payload.revision !== r.revision) fail('投稿已被其他操作更新，请刷新后再保存。', 409);
    if (r.status === 'draft') fail('投稿人尚未提交草稿，不能审核或通过初审。', 409);
+   if(r.submission_kind==='manual'&&payload.status==='approved')fail('说明书需经过专用人工审核，当前普通审核入口不能通过初审；可先反馈补充要求。',409);
+   if(r.submission_kind==='manual'&&r.manual_handoff)fail('这份说明书已进入整理，请从专用审核页核对关联状态，不能使用普通审核表更改。',409);
    if (!Object.hasOwn(submissionStates, payload.status)) fail('审核状态无效。');
    if ((r.linked_item_id || r.status === 'withdrawn' || r.withdrawal_requested) && payload.status !== r.status) fail('此投稿已转入草稿或申请停止处理，不能直接更改审核状态。');
    const publicMessage = text(payload.public_message ?? '', '给投稿人的说明', 0, 1000);
@@ -191,7 +207,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   return result;
  };
  const detail = (r) => { const { key_hash, fingerprint, ...safe } = r; return safe; };
- const list = async () => (await all()).map((r) => ({ id: r.id, revision: r.revision, title: r.fields.title, category: r.fields.category, status: r.status, created_at: r.created_at, updated_at: r.updated_at, image_count: r.images.length, people: r.fields.people, linked_item_id: r.linked_item_id, withdrawal_requested: Boolean(r.withdrawal_requested), change_request: r.change_request ?? null, account_id: r.account_id ?? null }));
+ const list = async () => (await all()).map((r) => ({ id: r.id, revision: r.revision, title: r.fields.title, category: r.fields.category, status: r.status, created_at: r.created_at, updated_at: r.updated_at, image_count: r.images.length, people: r.fields.people, linked_item_id: r.linked_item_id, withdrawal_requested: Boolean(r.withdrawal_requested), change_request: r.change_request ?? null, account_id: r.account_id ?? null,...(r.submission_kind==='manual'?{submission_kind:'manual',manual_catalog_key:r.manual_catalog_key??'',manual_handoff_status:r.manual_handoff?.status??''}:{}) }));
  const getImage = async (id, filename) => {
   const r = await read(id);
   if (!r.images.some((image) => image.filename === filename)) fail('图片不存在。', 404);
@@ -199,6 +215,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  };
  const transfer = async (id, payload, createDraft) => locked(safeId(id), async () => {
   const r = await read(id);
+  if(r.submission_kind==='manual')fail('说明书专用审核与转档案衔接尚未开放，不能从普通投稿入口转入。',409);
   if (r.linked_item_id) return { item_id: r.linked_item_id, repeated: true };
   if (payload.revision !== r.revision) fail('投稿已发生变化，请刷新后再操作。', 409);
   if (r.status !== 'approved' || r.withdrawal_requested) fail('只有初审通过且没有撤回申请的投稿才能转入草稿。');
@@ -216,9 +233,19 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  const guardPublication = async (itemId, operation) => {
   const linked = (await all()).find(r => r.linked_item_id === itemId);
   if (!linked) return operation();
+  if(linked.submission_kind==='manual'&&linked.source_format==='pdf'){
+   const verify=async options=>{
+    const before=await read(linked.id);await manualReview.assertArchivePublication(before,options);
+    if(JSON.stringify(await read(linked.id))!==JSON.stringify(before))fail('PDF校验期间投稿已变化，请重新读取并核对当前状态，不能继续发布。',409);
+   };
+   await verify();
+   // PDF构建期间允许同册的停止申请立即落盘，再在切换结果前复核。
+   return operation(verify);
+  }
   return locked(linked.id, async () => {
    const current = await read(linked.id);
    if (current.withdrawal_requested || current.status !== 'approved') fail('投稿人已申请停止处理或审核状态不允许发布，请先核查。', 409);
+   if(current.submission_kind==='manual')await manualReview.assertArchivePublication(current);
    return operation();
   });
  };
@@ -272,13 +299,14 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  const accountSummary = (r) => ({
   id: r.id, revision: r.revision,
   title: r.fields.title || '（未命名草稿）', category: r.fields.category,
-  status: r.status, status_label: accountStatusLabels[r.status] ?? r.status,
+  status: r.status, status_label: r.submission_kind==='manual'?manualSubmissionLabel(r):accountStatusLabels[r.status] ?? r.status,
   created_at: r.created_at, updated_at: r.updated_at, image_count: r.images.length,
   people: r.fields.people ?? '', linked_item_id: r.linked_item_id ?? null,
   withdrawal_requested: Boolean(r.withdrawal_requested),
   change_request: r.change_request ?? null,
   version_count: Array.isArray(r.versions) ? r.versions.length : 0,
   public_message: r.public_message ?? '',
+  ...(r.submission_kind==='manual'?{submission_kind:'manual',source_format:r.source_format??'images',pdf_saved:Boolean(r.manual_pdf_current_source_id),pdf_preview_pages:r.manual_pdf_preview?.pages??0,pdf_preview_current:Boolean(r.manual_pdf_preview)&&r.manual_pdf_preview.source_id===r.manual_pdf_current_source_id,manual_draft_reason:r.manual_draft_reason??'',submitted_revision:r.manual_submitted_revision??null,manual_in_preparation:Boolean(r.manual_handoff||r.manual_catalog_key),manual_handoff_status:r.manual_handoff?.status??'',manual_catalog_key:r.manual_catalog_key??''}:{}),
  });
  // 以投稿记录为真实来源。索引写入可能在服务异常退出时落后，不能用它决定权限或配额。
  const accountRecords = async (accountId) => {
@@ -302,36 +330,13 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    fail(`今天提交审核的次数已达上限（${accountQuota.perDay} 件），请明天再试。`, 429);
   }
  };
- // 已移入私密回收区的图片依然占用空间，不能通过移除/撤回绕过账号配额。
- const storageUsage = async (accountId, suppliedRecords = null) => {
-  const records = suppliedRecords ?? await accountRecords(accountId);
-  let usedBytes = 0;
-  for (const record of records) {
-   // 直接统计私密目录中的真实文件，连异常中断留下的未引用图片也计入容量。
-   const folder = path.join(root, record.id);
-   const currentFiles = await fs.readdir(folder, { withFileTypes: true });
-   for (const file of currentFiles) {
-    if (file.isFile() && /^copy-\d+\.jpg$/.test(file.name)) {
-     try { usedBytes += (await fs.stat(path.join(folder, file.name))).size; }
-     catch (error) { if (error.code !== 'ENOENT') throw error; }
-    }
-   }
-   const recycle = path.join(root, '.recycle', record.id);
-   let batches;
-   try { batches = await fs.readdir(recycle, { withFileTypes: true }); }
-   catch (error) { if (error.code === 'ENOENT') continue; throw error; }
-   for (const batch of batches) {
-    if (!batch.isDirectory()) continue;
-    const files = await fs.readdir(path.join(recycle, batch.name), { withFileTypes: true });
-    for (const file of files) {
-     if (file.isFile() && /^copy-\d+\.jpg$/.test(file.name)) {
-      try { usedBytes += (await fs.stat(path.join(recycle, batch.name, file.name))).size; }
-      catch (error) { if (error.code !== 'ENOENT') throw error; }
-     }
-    }
-   }
-  }
-  return usedBytes;
+ // 图片、PDF历史副本、未完成字节和未过期预留共用容量；回收区仍计量。
+ const usageOptions = () => ({now:pdfOptions.now?.()??Date.now()});
+ const globalUsage = async () => submissionStorageUsage(root, await all(), usageOptions());
+ const storageBreakdown = async (accountId, suppliedRecords = null) => submissionStorageUsage(root, suppliedRecords??await accountRecords(accountId), usageOptions());
+ const storageUsage = async (accountId) => (await storageBreakdown(accountId)).allocatedBytes;
+ const checkGlobalStorage = async addedBytes => {
+  if ((await globalUsage()).allocatedBytes + addedBytes > maxStorageBytes) fail('私密暂存区空间不足，已有文件仍保留。',503);
  };
  const checkStorageLimit = async (accountId, addedBytes) => {
   const usedBytes = await storageUsage(accountId);
@@ -343,10 +348,12 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   const account = safeAccountId(accountId);
   const records = await accountRecords(account);
   const today = new Date().toISOString().slice(0, 10);
+  const used = await storageBreakdown(account,records);
   return {
    drafts_left: Math.max(0, accountQuota.maxDrafts - records.filter(record => record.status === 'draft').length),
    submissions_left_today: Math.max(0, accountQuota.perDay - records.reduce((count, record) => count + (record.history ?? []).filter(entry => entry.action === 'submitted' && String(entry.at ?? '').startsWith(today)).length, 0)),
-   storage_left_bytes: Math.max(0, accountQuota.maxBytes - await storageUsage(account, records)),
+   storage_left_bytes: Math.max(0, accountQuota.maxBytes - used.allocatedBytes),
+   storage_used_bytes: used.actualBytes, storage_reserved_bytes: used.reservedBytes,
   };
  };
  const nextImageIndex = async (record) => {
@@ -369,18 +376,21 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   });
   record.versions = versions.slice(-maximumVersions);
  };
- const createAccountSubmission = async ({ accountId, mode, payload }) => {
+ const createAccountSubmission = async ({ accountId, mode, payload, manualDraft = false }) => {
   const account = safeAccountId(accountId);
   if (payload?.website) fail('提交未通过，请稍后重试。');
   if (!/^[a-f0-9]{64}$/.test(String(payload?.request_key ?? ''))) fail('本次提交凭证无效，请刷新页面后重试。');
   const submitting = mode === 'pending';
-  const fields = accountFields(payload?.fields, submitting);
+  if(manualDraft&&(submitting||(payload?.images?.length??0)>0))fail('说明书当前仅支持保存文字草稿，图片上传与提交审核尚未开放。');
+  const manual=manualDraft?normalizeManualSubmission(payload?.manual):null;
+  const fields = accountFields(manual?manualSubmissionFields(manual):payload?.fields, submitting);
   if (submitting) requireAccountConsents(payload);
   const suppliedImages = Array.isArray(payload?.images) ? payload.images : [];
   if (submitting && !suppliedImages.length) fail('请至少选择一张经过筛选的图片副本。');
   const staged = suppliedImages.length ? await stageImages(suppliedImages) : [];
   const fingerprint = hash(JSON.stringify({
    account, submitting, fields, consent_version: payload.consent_version,
+   ...(manual?{manual}:{}),
    images: staged.map((image, index) => [image.name, hash(image.buffer), String(suppliedImages[index]?.note ?? '').trim().slice(0, 300)]),
   }));
   // 同一账号的一次提交使用稳定编号；网络超时后用同一凭证重试，只会找回原记录。
@@ -397,14 +407,16 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    if (submitting) await checkSubmitLimit(account);
    else await checkDraftLimit(account);
    const records = await all();
-   if (records.length >= maxEntries || records.reduce((n, r) => n + r.images.reduce((s, i) => s + i.bytes, 0), 0) + submissionLimits.totalBytes > maxStorageBytes) fail('投稿收件区暂满，请稍后再试。', 503);
+   if (records.length >= maxEntries) fail('投稿收件区暂满，请稍后再试。', 503);
    const processed = await processImages(staged);
    await checkStorageLimit(account, processed.reduce((sum, image) => sum + image.bytes, 0));
+   await checkGlobalStorage(processed.reduce((sum, image) => sum + image.bytes, 0));
    const images = processed.map(({ buffer, ...image }, index) => ({ ...image, note: String(payload.images[index]?.note ?? '').trim().slice(0, 300) }));
    const record = {
     version: 1, revision: 1, id, created_at: now, updated_at: now,
     key_hash: hash(key), fingerprint,
     account_id: account, fields,
+    ...(manual?{submission_kind:'manual',manual_metadata:manual,source_format:'images'}:{}),
     consent: submitting
      ? { version: consentVersion, confirmed_at: now, copies: true, rights: true, privacy: true, processing: true }
      : { version: consentVersion, confirmed_at: '', copies: false, rights: false, privacy: false, processing: false },
@@ -421,16 +433,22 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    return { id, created_at: now, status: record.status, revision: record.revision };
   })));
  };
- const saveAccountSubmission = async ({ id, accountId, revision, payload }) => {
+ const saveAccountSubmission = async ({ id, accountId, revision, payload, manualDraft = false }) => {
   const account = safeAccountId(accountId);
   if (payload?.website) fail('提交未通过，请稍后重试。');
-  return locked(`account-quota-${account}`, async () => locked(safeId(id), async () => {
+  return locked(`account-quota-${account}`, async () => locked('intake', async () => locked(safeId(id), async () => {
    const r = await read(id);
    ownedBy(r, account);
    if (r.status !== 'draft') fail('这份投稿已经提交，不能再作为草稿编辑；如需修改请先撤回。');
+   if(manualDraft!==(r.submission_kind==='manual'))fail('请使用这份资料对应的专用编辑页面，当前草稿没有改变。',409);
+   if(manualDraft&&(payload?.images?.length??0)>0)fail('图片请通过专用逐页上传入口保存。');
+   const manual=manualDraft?normalizeManualSubmission(payload?.manual):null;
+   if(manual){await manualPdfs.assertNotBusy(r);if(r.source_format==='pdf'&&manual.sharing_scope!=='reading-copy')fail('PDF草稿请保留站内阅读副本方式；如需仅提供官方来源，请另建草稿。',409);}
+   const manualHash=manual?hash(JSON.stringify(manual)):null;
+   if(manual&&revision!==r.revision&&r.manual_last_save?.revision===revision&&r.revision===revision+1&&r.manual_last_save.fingerprint===manualHash&&hash(JSON.stringify(r.manual_metadata))===manualHash)return {...accountSummary(r),repeated:true};
    if (revision !== r.revision) fail('草稿已被其他操作更新，请刷新后再试。', 409);
-   const fields = accountFields(payload?.fields, false);
-   const keep = Array.isArray(payload?.keep) ? payload.keep.map(String) : r.images.map((image) => image.filename);
+   const fields = accountFields(manual?manualSubmissionFields(manual):payload?.fields, false);
+   const keep = !manualDraft&&Array.isArray(payload?.keep) ? payload.keep.map(String) : r.images.map((image) => image.filename);
    if (new Set(keep).size !== keep.length) fail('保留的图片有重复，请刷新后重试。');
    const kept = keep.map((filename) => {
     const image = r.images.find((item) => item.filename === filename);
@@ -438,12 +456,15 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
     return image;
    });
    const incoming = Array.isArray(payload?.images) ? payload.images : [];
-   if (kept.length + incoming.length > submissionLimits.images) fail(`一件投稿最多 ${submissionLimits.images} 张图片。`, 413);
+   if (!manualDraft&&kept.length + incoming.length > submissionLimits.images) fail(`一件投稿最多 ${submissionLimits.images} 张图片。`, 413);
    const staged = incoming.length ? await stageImages(incoming, submissionLimits.images - kept.length) : [];
    const start = await nextImageIndex(r);
    const processed = staged.length ? await processImages(staged, (index) => `copy-${String(start + index).padStart(2, '0')}.jpg`) : [];
-   if (processed.length) await checkStorageLimit(account, processed.reduce((sum, image) => sum + image.bytes, 0));
-   const notes = payload?.notes && typeof payload.notes === 'object' ? payload.notes : {};
+   if (processed.length) {
+    const added=processed.reduce((sum, image) => sum + image.bytes, 0);
+    await checkStorageLimit(account, added);await checkGlobalStorage(added);
+   }
+   const notes = !manualDraft&&payload?.notes && typeof payload.notes === 'object' ? payload.notes : {};
    const images = [
     ...kept.map((image) => ({ ...image, note: typeof notes[image.filename] === 'string' ? notes[image.filename].trim().slice(0, 300) : (image.note ?? '') })),
     ...processed.map(({ buffer, ...image }, index) => ({ ...image, note: String(incoming[index]?.note ?? '').trim().slice(0, 300) })),
@@ -454,6 +475,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    // 先保存新记录，再把不再引用的旧图片移入私密回收区；保存失败时旧记录仍指向原图片。
    const removed = r.images.filter((image) => !keep.includes(image.filename));
    const next = { ...r, fields, images, revision: r.revision + 1, updated_at: now };
+   if(manual){next.manual_metadata=manual;next.manual_last_save={revision,fingerprint:manualHash};}
    next.history = [...r.history, { at: now, action: 'draft_saved' }];
    await atomicJson(recordPath(id), next);
    if (removed.length) {
@@ -465,7 +487,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
     await atomicJson(path.join(entry, 'manifest.json'), { at: now, reason: 'draft_image_removed', images: removed.map((image) => image.filename) });
    }
    return accountSummary(next);
-  }));
+  })));
  };
  const submitAccountSubmission = async ({ id, accountId, revision, payload }) => {
   const account = safeAccountId(accountId);
@@ -473,6 +495,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   return locked(`account-quota-${account}`, async () => locked(safeId(id), async () => {
    const r = await read(id);
    ownedBy(r, account);
+   if(r.submission_kind==='manual')fail('说明书提交审核尚未开放，请继续保存私密草稿。',409);
    if (r.status !== 'draft') fail('只有草稿可以提交审核。');
    if (revision !== r.revision) fail('草稿已被其他操作更新，请刷新后再试。', 409);
    await checkSubmitLimit(account);
@@ -495,10 +518,16 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   .filter((entry) => entry)
   .map((entry) => ({ at: entry.at, action: entry.action, status: entry.status ?? '', public_message: entry.public_message ?? '' }));
  const accountDetail = (r) => {
-  const { key_hash, fingerprint, private_note, history, ...rest } = r;
-  return { ...rest, history: publicHistory(history) };
+  const { key_hash, fingerprint, private_note, manual_last_save, manual_page_receipts, manual_page_archive, manual_workflow_receipts, manual_review_binding, manual_handoff, manual_material_receipts, manual_pdf_sources, manual_pdf_current_source_id, manual_pdf_saved_operations, manual_pdf_preview, manual_pdf_render_saved, manual_pdf_label_receipts, versions, history, ...rest } = r;
+  const safeVersions=(versions??[]).map(v=>v.source_format==='pdf'?{revision:v.revision,at:v.at,action:v.action,fields:v.fields,manual_metadata:v.manual_metadata,images:v.images,consent:{version:v.consent.version,confirmed_at:v.consent.confirmed_at,copies:v.consent.copies,rights:v.consent.rights,privacy:v.consent.privacy,processing:v.consent.processing,sharing_scope:v.consent.sharing_scope,...(v.consent.pdf_confirmation?{pdf_confirmation:{version:v.consent.pdf_confirmation.version,checks:v.consent.pdf_confirmation.checks}}:{})},digest:v.digest,source_format:'pdf',pdf_summary:manualPdfSnapshotSummary(v)}:v);
+  return { ...rest,...(versions?{versions:safeVersions}:{}), history: publicHistory(history),...(r.submission_kind==='manual'?{manual_in_preparation:Boolean(manual_handoff||r.manual_catalog_key),manual_handoff_status:manual_handoff?.status??''}:{}) };
  };
  const getAccountSubmission = async ({ id, accountId }) => accountDetail(ownedBy(await read(id), safeAccountId(accountId)));
+ const getAccountManualDraft = async ({ id, accountId }) => {
+  const record=ownedBy(await read(id),safeAccountId(accountId));
+  if(record.submission_kind!=='manual'||record.status!=='draft')fail('找不到可编辑的说明书草稿。',404);
+  return {...accountDetail(record),manual_upload_usage:await manualPages.usage(record),manual_pdf:await manualPdfs.describe(record),manual_pdf_generation:await manualPdfJobs.describe(record),manual_pdf_review:await manualPdfReview.describe(record)};
+ };
  const listAccountSubmissions = async ({ accountId }) => {
   const account = safeAccountId(accountId);
   const records = await accountRecords(account);
@@ -509,15 +538,24 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  const getAccountImage = async ({ id, accountId, filename }) => {
   const r = await read(id);
   ownedBy(r, safeAccountId(accountId));
+  if(r.submission_kind==='manual')return r.source_format==='pdf'?manualPdfJobs.image({id,accountId,filename}):manualPages.image({id,accountId,filename});
   if (!r.images.some((image) => image.filename === filename)) fail('图片不存在。', 404);
   return fs.readFile(path.join(root, safeId(id), filename));
  };
+ const manualPdfs=createManualPdfStore({root,read,locked,ownedBy,safeAccountId,writeRecord:(id,record)=>atomicJson(recordPath(id),record),atomicJson,summary:accountSummary,checkStorageLimit,globalUsage,maxStorageBytes,options:pdfOptions,assertGenerationIdle:r=>manualPdfJobs.assertIdle(r)});
+ const manualPdfJobs=createManualPdfJobStore({root,read,all,locked,ownedBy,safeAccountId,writeRecord:(id,record)=>atomicJson(recordPath(id),record),atomicJson,uploadStore:manualPdfs,checkStorageLimit,globalUsage,maxStorageBytes,runtime:pdfGenerationRuntime??createManualPdfPlatformRuntime({siteDirectory}),options:pdfGenerationOptions});
+ const manualPdfReview=createManualPdfReviewStore({root,read,locked,ownedBy,safeAccountId,writeRecord:(id,record)=>atomicJson(recordPath(id),record),summary:accountSummary,jobs:manualPdfJobs,uploads:manualPdfs,trustFile:pdfGenerationOptions.pdfGenerationTrustFile});
+ const manualPages=createManualPageStore({root,read,locked,ownedBy,safeAccountId,stageImages,processImages,
+  writeRecord:(id,record)=>atomicJson(recordPath(id),record),summary:accountSummary,checkAccountStorage:checkStorageLimit,accountUsage,maxStorageBytes,globalUsage,assertMaterialWritable:manualPdfs.assertNotBusy});
+ const manualWorkflow=createManualWorkflowStore({root,read,locked,ownedBy,safeAccountId,writeRecord:(id,record)=>atomicJson(recordPath(id),record),summary:accountSummary,accountDetail,pageUsage:manualPages.usage,checkSubmitLimit,checkDraftLimit,pdfDescription:manualPdfs.describe,generationDescription:manualPdfJobs.describe,pdfReview:manualPdfReview,assertMaterialWritable:manualPdfs.assertNotBusy});
+ const manualReview=createManualReviewStore({root,siteDirectory,read,all,locked,writeRecord:(id,record)=>atomicJson(recordPath(id),record),detail,privacyChecks,deliverNotification,pdfReview:manualPdfReview});
  const withdrawAccountSubmission = async ({ id, accountId }) => {
   const account = safeAccountId(accountId);
   return locked(safeId(id), async () => {
    const r = await read(id);
    ownedBy(r, account);
    const now = new Date().toISOString();
+   if(r.submission_kind==='manual')fail('请从说明书专用页面核对版本后再撤回或补充。',409);
    if (r.status === 'draft') fail('草稿不需要撤回；可以直接移入回收区。');
    // 已经转入档案草稿的投稿沿用现有"停止处理申请"机制，由站主核查。
    if (r.linked_item_id || r.withdrawal_requested) {
@@ -540,6 +578,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   return locked(safeId(id), async () => {
    const r = await read(id);
    ownedBy(r, account);
+   if(r.submission_kind==='manual')fail('请从说明书专用页面核对版本后再停止草稿。',409);
    if (r.status !== 'draft') fail('只有草稿可以移入回收区。');
    const now = new Date().toISOString();
    r.status = 'withdrawn'; r.updated_at = now; r.revision++;
@@ -610,6 +649,15 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  return {
   create, lookup, withdraw, review, list, detail: async (id) => detail(await read(id)), getImage, transfer, guardPublication,
   createAccountSubmission, saveAccountSubmission, submitAccountSubmission, getAccountSubmission, listAccountSubmissions,
+  createAccountManualDraft: options=>createAccountSubmission({...options,mode:'draft',manualDraft:true}),
+  saveAccountManualDraft: options=>saveAccountSubmission({...options,manualDraft:true}),getAccountManualDraft,
+  uploadAccountManualPage:manualPages.upload,editAccountManualPages:manualPages.edit,getAccountManualPage:async options=>{const r=ownedBy(await read(options.id),safeAccountId(options.accountId));return r.source_format==='pdf'?manualPdfJobs.image(options):manualPages.image(options);},
+  getAccountManualPageOperation:manualPages.operationStatus,
+  setAccountManualMaterial:manualPdfs.material,prepareAccountManualPdf:manualPdfs.prepare,receiveAccountManualPdf:manualPdfs.receive,cancelAccountManualPdf:manualPdfs.cancel,getAccountManualPdfOperation:manualPdfs.status,
+  beginAccountManualPdfGeneration:manualPdfJobs.begin,getAccountManualPdfGeneration:manualPdfJobs.status,cancelAccountManualPdfGeneration:manualPdfJobs.cancel,manualPdfRuntimeStatus:manualPdfJobs.runtimeStatus,waitForPdfGenerationIdle:manualPdfJobs.waitForIdle,
+  getAccountManualSubmission:manualWorkflow.get,operateAccountManualSubmission:manualWorkflow.operate,getAccountManualWorkflowOperation:manualWorkflow.operationStatus,getAccountManualVersionImage:manualWorkflow.versionImage,
+  saveAccountManualPdfLabel:manualPdfReview.label,getAccountManualPdfLabelOperation:manualPdfReview.labelStatus,
+  getManualReview:manualReview.get,getManualReviewImage:manualReview.image,reviewManualSubmission:manualReview.review,transferManualSubmission:manualReview.transfer,manualCatalogPublicationIssues:manualReview.publicationIssues,manualPdfPrivatePublicationValues:manualReview.privatePublicationValues,
   getAccountImage, withdrawAccountSubmission, discardAccountSubmission, requestAccountChange, reviewAccountChange, claimSubmission, notifyPublished,
   accountUsage,
  };
@@ -628,7 +676,7 @@ export async function readSubmissionJson(request, maximum = submissionLimits.req
 }
 
 // 投稿正文使用 multipart 表单直传，图片不再经 base64 膨胀；文字字段与图片在读取时统一转成内部结构。
-export async function readSubmissionForm(request, maximum = submissionLimits.requestBytes) {
+export async function readSubmissionForm(request, maximum = submissionLimits.requestBytes, strictManual = false) {
  const contentType = String(request.headers['content-type'] ?? '');
  if (!contentType.startsWith('multipart/form-data')) fail('提交格式无效。', 415);
  if (Number(request.headers['content-length']) > maximum) fail('提交内容过大。', 413);
@@ -649,7 +697,10 @@ export async function readSubmissionForm(request, maximum = submissionLimits.req
   fail('提交内容无法读取。');
  }
  const payload = { consents: {}, images: [] };
+ const seen=new Set(),manualFields=new Set(['operation_id','revision','target_page_id','copies_confirmed','website','images']);
  for (const [key, value] of form.entries()) {
+  if(strictManual&&(!manualFields.has(key)||seen.has(key)))fail('每次只接收一张图片及对应的页面操作信息。');
+  seen.add(key);
   if (typeof value !== 'string') {
    if (key !== 'images') fail('提交内容无法读取。');
    payload.images.push({ name: value.name, type: value.type, buffer: Buffer.from(await value.arrayBuffer()) });

@@ -1,0 +1,41 @@
+[Unit]
+Description=Laojiu Mopian private PDF bridge
+After=local-fs.target
+
+[Service]
+Type=exec
+User=root
+Group=ljmadmin
+UMask=0077
+WorkingDirectory=/opt/laojiumopian-manual-pdf/current
+ExecStart=/snap/node/current/bin/node --max-old-space-size=64 /opt/laojiumopian-manual-pdf/current/local-admin/manual-pdf-linux-bridge.mjs /etc/laojiumopian-manual-pdf.json
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillMode=control-group
+RuntimeDirectory=laojiumopian-manual-pdf
+RuntimeDirectoryMode=0750
+StateDirectory=laojiumopian-manual-pdf
+StateDirectoryMode=0700
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_CHOWN
+PrivateNetwork=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictSUIDSGID=yes
+ReadWritePaths=/var/lib/laojiumopian-manual-pdf /run/laojiumopian-manual-pdf
+InaccessiblePaths=/srv/laojiumopian-admin/data /etc/laojiumopian-accounts.env
+MemoryMax=128M
+MemorySwapMax=0
+CPUQuota=50%
+TasksMax=16
+OOMPolicy=kill
+
+[Install]
+WantedBy=multi-user.target

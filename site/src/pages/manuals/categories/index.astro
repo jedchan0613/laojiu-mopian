@@ -1,0 +1,16 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ManualsNavigation from '../../../components/ManualsNavigation.astro';
+import {manualsBrowse,manualsDemo,manualsChineseOnly} from '../../../data/manuals-catalog';
+import '../../../styles/manuals.css';
+---
+<BaseLayout title="按品类查说明书｜老旧默片" description="从物件品类进入说明书目录，再按品牌、完整型号和语言查询。" translationAvailability={manualsChineseOnly} robots={manualsDemo||!manualsBrowse.categories.length?'noindex, nofollow':undefined}>
+  <article class="manuals" data-manual-category-directory>
+    {manualsDemo&&<p class="manual-demo-notice" data-manual-demo>本地演示：以下型号及说明书均为虚构，仅用于检查页面。</p>}
+    <ManualsNavigation active="categories"/>
+    <header class="manual-hero"><p class="manual-eyebrow">老旧默片 · 物件资料</p><h1>按品类找说明书</h1><p>从物件的用途进入目录，再选择品牌与完整型号。新旧物件都可以收录。</p></header>
+    <p class="manual-browse-count">{manualsBrowse.categories.length} 个已收录品类 · {manualsBrowse.modelCount} 个可用型号 · {manualsBrowse.documentCount} 份独立文档版本</p>
+    {manualsBrowse.categories.length?<div class="manual-browse-grid">{manualsBrowse.categories.map((category,index)=><a class="manual-browse-card" href={category.path} data-manual-category={category.category_key}><span class="manual-category-number" aria-hidden="true">{String(index+1).padStart(2,'0')}</span><div><h2>{category.name}<span aria-hidden="true"> →</span></h2><p>{category.modelCount} 个可用型号 · {category.documentCount} 份文档版本</p><p class="manual-browse-secondary">{category.brands.length} 个品牌{category.unavailableDocumentCount>0&&` · ${category.unavailableDocumentCount} 份来源暂不可用`}</p></div></a>)}</div>:<section class="manual-empty"><h2>品类资料正在整理</h2><p>目录中有经过审核的资料后，会在这里显示对应品类及数量。</p><div class="manual-actions"><a href="/manuals/">返回型号查询 →</a><a href="/manuals/help/">查看型号查找方法</a></div></section>}
+    {manualsBrowse.categories.length>0&&<p class="manual-browse-footnote">同一份说明书可能适用于多个型号或品类；各品类数量相加可能大于全库独立文档数量。</p>}
+  </article>
+</BaseLayout>

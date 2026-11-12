@@ -152,6 +152,7 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 					</p>
 					<div class="introduction-actions">
 						<a class="browse-link ui-action ui-action--primary" href={localizePath("/archive/", locale)}>{t("进入馆藏 →", locale)}</a>
+						{locale==='zh-CN'&&<a class="browse-link" href="/manuals/">查找说明书 →</a>}
 						<button class="browse-link random-record-link" type="button" data-random-record-button>{t("随手翻一件", locale)}</button>
 					</div>
 				</section>

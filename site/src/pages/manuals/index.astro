@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ManualModelGroup from '../../components/ManualModelGroup.astro';
+import ManualsNavigation from '../../components/ManualsNavigation.astro';
+import {manualsCatalog,manualsDemo,manualsSearchUrl,manualsSearchVersion,manualsChineseOnly} from '../../data/manuals-catalog';
+import {manualCategories,manualLanguages,manualKinds,manualCompleteness,searchManualCatalog} from '../../../../shared/manual-catalog.mjs';
+import {serializeHtmlJson} from '../../../../shared/html-json.mjs';
+import '../../styles/manuals.css';
+const initial=searchManualCatalog(manualsCatalog,{});
+const categories=Object.entries(manualCategories).filter(([key])=>manualsCatalog.models.some(m=>m.category_key===key));
+const languages=Object.entries(manualLanguages).filter(([key])=>manualsCatalog.documents.some(d=>d.languages.includes(key)));
+const regions=[...new Set(manualsCatalog.documents.map(d=>d.region_display))].sort();
+const eras=[...new Set(manualsCatalog.models.map(m=>m.product_era_display).filter(Boolean))].sort();
+---
+<BaseLayout title="说明书库｜老旧默片" description="按品牌、完整型号或物件名称查找新旧物件的使用说明，核对语言、地区与版本后阅读。" translationAvailability={manualsChineseOnly} robots={manualsDemo?'noindex, nofollow':undefined}>
+  <div class="manuals" data-manual-search>
+    {manualsDemo&&<p class="manual-demo-notice" data-manual-demo>本地演示：品牌、型号及说明书页面均为虚构，仅用于检查功能。</p>}
+    <header class="manual-hero"><p class="manual-eyebrow">老旧默片 · 物件资料</p><h1>说明书库</h1><p>按品牌、型号或物件名称，查找新旧物件的使用说明。</p></header>
+    <ManualsNavigation active="search"/>
+    <form class="manual-search-form" id="manual-search-form" action="/manuals/" method="get" role="search">
+      <label for="manual-query">品牌、型号或物件名称</label>
+      <div class="manual-search-row"><input id="manual-query" name="q" type="search" maxlength="200" placeholder="输入品牌或机身上的完整型号" autocomplete="off"/><button class="ui-action ui-action--primary" type="submit">查找</button></div>
+      <div class="manual-search-hint"><a href="/manuals/help/">不知道型号在哪里？</a><span>年代不限，请保留型号的字母和后缀。</span></div>
+      <div class="manual-filters">
+        <label>品类<select name="category"><option value="">全部品类</option>{categories.map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+        <label>品牌<select name="brand"><option value="">全部品牌</option>{manualsCatalog.brands.map(b=><option value={b.brand_key}>{b.name}</option>)}</select></label>
+        <label>语言<select name="language"><option value="">全部语言</option>{languages.map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+        <button class="manual-text-button" type="button" data-manual-clear>清空条件</button>
+      </div>
+      <details class="manual-more-filters"><summary>更多筛选</summary><div class="manual-filters">
+        <label>文档用途<select name="kind"><option value="">全部用途</option>{Object.entries(manualKinds).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+        <label>适用地区<select name="region"><option value="">全部地区</option>{regions.map(value=><option value={value}>{value}</option>)}</select></label>
+        <label>产品年代<select name="era"><option value="">全部年代</option>{eras.map(value=><option value={value}>{value}</option>)}</select></label>
+        <label>完整程度<select name="complete"><option value="">全部状态</option>{Object.entries(manualCompleteness).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+        <label>获取方式<select name="access"><option value="">全部方式</option><option value="reader">站内阅读</option><option value="official">官方来源可用</option></select></label>
+      </div></details>
+    </form>
+    <noscript><p class="manual-notice">启用浏览器脚本后可以搜索和筛选。当前可以直接浏览下方目录并打开详情。</p><style>.manual-search-form{display:none}</style></noscript>
+    <p class="manual-load-status" role="status" aria-live="polite" id="manual-load-status"></p>
+    <section class="manual-load-error" id="manual-load-error" role="alert" hidden><h2>查询暂时没有加载完成</h2><p>关键词和筛选条件已保留，请重新加载。当前状态不能用来判断是否收录了该型号。</p><button class="ui-action ui-action--secondary" type="button" data-manual-retry>重试查询</button></section>
+    <section id="manual-results" aria-label="说明书查询结果">
+      <header class="manual-results-heading"><h2>可用资料</h2><p role="status" aria-live="polite">{initial.modelCount} 个型号 · {initial.documentCount} 份独立文档版本</p></header>
+      {initial.groups.length?initial.groups.map(group=><ManualModelGroup group={group}/>):<div class="manual-empty"><h3>说明书资料正在整理</h3><p>您可以先查看型号查找方法，或提供希望寻找的品牌与完整型号。</p><a href="/manuals/help/">查看型号查找方法 →</a></div>}
+      {initial.unavailable.length>0&&<section class="manual-unavailable"><h2>来源暂不可用</h2><p>下列资料暂时没有可用的阅读入口，不计入上方可用数量。</p>{initial.unavailable.map(group=><ManualModelGroup group={group} unavailable/>)}</section>}
+    </section>
+    <div class="manual-contribute"><p>没找到需要的说明书？</p><button type="button" class="manual-text-button" data-manual-contact>请帮我找</button><a href="/manuals/contribute/">提供说明书线索</a></div>
+    <script type="application/json" id="manual-search-config" set:html={serializeHtmlJson({url:manualsSearchUrl,version:manualsSearchVersion,demo:manualsDemo})}/>
+  </div>
+  <script>import '../../scripts/manuals-search';</script>
+</BaseLayout>

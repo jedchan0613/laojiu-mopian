@@ -1,5 +1,7 @@
 param(
-	[string]$OutputDirectory = (Join-Path ([Environment]::GetFolderPath('UserProfile')) 'Downloads')
+	[string]$OutputDirectory = (Join-Path ([Environment]::GetFolderPath('UserProfile')) 'Downloads'),
+	# 默认只打程序包。私密数据导出属于独立操作，必须明确指定并取得相应授权。
+	[switch]$IncludePrivateData
 )
 
 $ErrorActionPreference = 'Stop'
@@ -26,6 +28,7 @@ function Assert-SafeTemporaryPath {
 function Copy-FilePreservingPath {
 	param([string]$SourceRoot, [string]$RelativePath, [string]$DestinationRoot)
 	$source = Join-Path $SourceRoot $RelativePath
+	if ((Get-Item -LiteralPath $source -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "打包源文件不能为链接：$RelativePath" }
 	$destination = Join-Path $DestinationRoot $RelativePath
 	$destinationParent = Split-Path -Parent $destination
 	if (-not (Test-Path -LiteralPath $destinationParent)) {
@@ -42,18 +45,26 @@ function Copy-TreeFiles {
 		[string[]]$ExcludedFiles = @()
 	)
 	$sourcePath = [IO.Path]::GetFullPath($SourceRoot)
-	Get-ChildItem -LiteralPath $sourcePath -File -Recurse | ForEach-Object {
+	if ((Get-Item -LiteralPath $sourcePath -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw '打包源目录不能为链接。' }
+	$pending = [Collections.Generic.Stack[string]]::new()
+	$pending.Push($sourcePath)
+	while ($pending.Count -gt 0) {
+	 Get-ChildItem -LiteralPath $pending.Pop() -Force | ForEach-Object {
 		$relative = $_.FullName.Substring($sourcePath.Length).TrimStart('\', '/').Replace('/', '\')
+		$matchPath = if ($_.PSIsContainer) { "$relative\" } else { $relative }
 		$excludedByPrefix = $false
 		foreach ($prefix in $ExcludedPrefixes) {
-			if ($relative.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+			if ($matchPath.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
 				$excludedByPrefix = $true
 				break
 			}
 		}
 		if (-not $excludedByPrefix -and $ExcludedFiles -notcontains $relative) {
-			Copy-FilePreservingPath -SourceRoot $sourcePath -RelativePath $relative -DestinationRoot $DestinationRoot
+			if ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "打包候选包含链接，已停止：$relative" }
+			if ($_.PSIsContainer) { $pending.Push($_.FullName) }
+			else { Copy-FilePreservingPath -SourceRoot $sourcePath -RelativePath $relative -DestinationRoot $DestinationRoot }
 		}
+	}
 	}
 }
 
@@ -91,28 +102,40 @@ function New-PackageManifest {
 
 function Assert-PackageContents {
 	param([string]$AppRoot, [string]$DataRoot)
-	$forbiddenAppPaths = @('local-admin\drafts', 'local-admin\history', 'local-admin\recycle-bin', 'local-admin\submissions',
-		'site\node_modules', 'site\dist', 'site\.astro', 'site\public\archive-responsive')
+	$forbiddenAppPaths = @('local-admin\drafts', 'local-admin\history', 'local-admin\recycle-bin', 'local-admin\submissions', 'local-admin\manuals',
+		'local-admin\accounts', 'local-admin\pdf-runtime', 'local-admin\translations', 'local-admin\operations', 'local-admin\merges',
+		'local-admin\uploads', 'local-admin\upload-staging', 'local-admin\batch-import',
+		'site\node_modules', 'site\dist', 'site\.astro', 'site\public\archive', 'site\public\archive-responsive',
+		'site\src\data\archive.ts', 'site\src\data\generated\manuals-catalog.json', 'site\src\data\generated\image-manifest.json')
 	foreach ($forbidden in $forbiddenAppPaths) {
 		if (Test-Path -LiteralPath (Join-Path $AppRoot $forbidden)) {
 			throw "管理程序包混入了不应打包的目录：$forbidden"
 		}
 	}
 	$forbiddenExtensions = @('.tif', '.tiff', '.raw', '.dng', '.psd')
-	$unsafeFiles = @(Get-ChildItem -LiteralPath $AppRoot, $DataRoot -File -Recurse |
+	$roots = @($AppRoot)
+	if ($IncludePrivateData) { $roots += $DataRoot }
+	$unsafeFiles = @(Get-ChildItem -LiteralPath $roots -File -Recurse -Force |
 		Where-Object { $forbiddenExtensions -contains $_.Extension.ToLowerInvariant() })
 	if ($unsafeFiles.Count -gt 0) {
 		throw "部署包中出现 TIFF、RAW、DNG 或 PSD 主档格式，已停止打包。"
 	}
+	$secrets = @(Get-ChildItem -LiteralPath $AppRoot -File -Recurse -Force | Where-Object {
+		($_.Name -match '(^|\.)env($|\.)' -and $_.Name -notmatch '\.example$') -or
+		$_.Extension -in @('.db', '.sqlite', '.sqlite3', '.pem', '.key', '.log') -or $_.Name -match '\.(sqlite|sqlite3|db)-(wal|shm)$'
+	})
+	if ($secrets.Count -gt 0) { throw '程序包混入环境密钥、账号数据库或运行日志，已停止打包。' }
 	foreach ($required in @(
 		(Join-Path $AppRoot 'local-admin\server.mjs'),
 		(Join-Path $AppRoot 'local-admin\access-auth.mjs'),
 		(Join-Path $AppRoot 'local-admin\release-deployer.mjs'),
 		(Join-Path $AppRoot 'site\package-lock.json'),
-		(Join-Path $DataRoot 'archive-data\metadata-template.json')
+		(Join-Path $AppRoot 'shared\manual-pdf-upload.mjs'),
+		(Join-Path $AppRoot 'samples\manuals-demo\catalog.json')
 	)) {
 		if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { throw "部署包缺少必要文件：$required" }
 	}
+	if ($IncludePrivateData -and -not (Test-Path -LiteralPath (Join-Path $DataRoot 'archive-data\metadata-template.json') -PathType Leaf)) { throw '私密数据包缺少档案模板。' }
 }
 
 function New-VerifiedZip {
@@ -164,19 +187,25 @@ if ((Test-Path -LiteralPath $appZip) -or (Test-Path -LiteralPath $dataZip)) {
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 try {
-	New-Item -ItemType Directory -Path $appStage, $dataStage | Out-Null
+	New-Item -ItemType Directory -Path $appStage | Out-Null
 
 	$localAdminSource = Join-Path $projectRoot 'local-admin'
 	Copy-TreeFiles -SourceRoot $localAdminSource -DestinationRoot (Join-Path $appStage 'local-admin') `
-		-ExcludedPrefixes @('drafts\', 'history\', 'recycle-bin\', 'submissions\')
+		-ExcludedPrefixes @('drafts\', 'history\', 'recycle-bin\', 'submissions\', 'manuals\', 'accounts\', 'pdf-runtime\',
+			'translations\', 'operations\', 'merges\', 'uploads\', 'upload-staging\', 'batch-import\')
 
 	$siteSource = Join-Path $projectRoot 'site'
 	Copy-TreeFiles -SourceRoot $siteSource -DestinationRoot (Join-Path $appStage 'site') `
-		-ExcludedPrefixes @('node_modules\', 'dist\', '.astro\', '.vscode\', 'public\archive-responsive\') `
-		-ExcludedFiles @('.gitignore', 'AGENTS.md', 'CLAUDE.md')
+		-ExcludedPrefixes @('node_modules\', 'dist\', '.astro\', '.vscode\', 'public\archive\', 'public\archive-responsive\') `
+		-ExcludedFiles @('.gitignore', 'AGENTS.md', 'CLAUDE.md', 'src\data\archive.ts', 'src\data\generated\manuals-catalog.json', 'src\data\generated\image-manifest.json')
+	Copy-TreeFiles -SourceRoot (Join-Path $projectRoot 'shared') -DestinationRoot (Join-Path $appStage 'shared')
+	Copy-TreeFiles -SourceRoot (Join-Path $projectRoot 'samples\manuals-demo') -DestinationRoot (Join-Path $appStage 'samples\manuals-demo')
 
-	Copy-FilePreservingPath -SourceRoot $projectRoot -RelativePath 'deployment\laojiumopian-admin.service' -DestinationRoot $appStage
+	foreach ($deploymentFile in @('laojiumopian-admin.service', 'ljm-manual-pdf-bridge.service', 'prepare-manual-pdf-linux.mjs', 'install-manual-pdf-bridge.sh')) {
+		Copy-FilePreservingPath -SourceRoot $projectRoot -RelativePath (Join-Path 'deployment' $deploymentFile) -DestinationRoot $appStage
+	}
 
+	if ($IncludePrivateData) {
 	foreach ($directory in @('archive-data', 'inbox', 'drafts', 'history', 'recycle-bin')) {
 		New-Item -ItemType Directory -Path (Join-Path $dataStage $directory) | Out-Null
 	}
@@ -185,12 +214,16 @@ try {
 	Copy-TreeFiles -SourceRoot (Join-Path $projectRoot 'local-admin\drafts') -DestinationRoot (Join-Path $dataStage 'drafts')
 	Copy-TreeFiles -SourceRoot (Join-Path $projectRoot 'local-admin\history') -DestinationRoot (Join-Path $dataStage 'history')
 	Copy-TreeFiles -SourceRoot (Join-Path $projectRoot 'local-admin\recycle-bin') -DestinationRoot (Join-Path $dataStage 'recycle-bin')
+	}
 
 	Assert-PackageContents -AppRoot $appStage -DataRoot $dataStage
 	$appManifest = New-PackageManifest -StageRoot $appStage -PackageType 'laojiumopian-admin-application'
-	$dataManifest = New-PackageManifest -StageRoot $dataStage -PackageType 'laojiumopian-admin-private-data'
 	$appResult = New-VerifiedZip -StageRoot $appStage -ZipPath $appZip -Manifest $appManifest
-	$dataResult = New-VerifiedZip -StageRoot $dataStage -ZipPath $dataZip -Manifest $dataManifest
+	$dataResult = $null
+	if ($IncludePrivateData) {
+		$dataManifest = New-PackageManifest -StageRoot $dataStage -PackageType 'laojiumopian-admin-private-data'
+		$dataResult = New-VerifiedZip -StageRoot $dataStage -ZipPath $dataZip -Manifest $dataManifest
+	}
 
 	[ordered]@{ application = $appResult; private_data = $dataResult } | ConvertTo-Json -Depth 4
 } finally {

@@ -148,6 +148,10 @@ archive-data/*
 # Generated output files
 outputs/
 
+# 说明书查询的真实发布投影与私密维护数据不作为代码提交；样例在samples中独立保存。
+site/src/data/generated/manuals-catalog.json
+local-admin/manuals/
+
 # Environment variables and secrets
 .env
 .env.*
@@ -191,3 +195,6 @@ site/public/archive-responsive/
 .baiduyun.uploading.cfg
 .DS_Store
 ._*
+
+# 仅本机的PDF工具位置与编译缓存，不进入仓库或公开发布。
+local-admin/pdf-runtime/

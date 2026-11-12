@@ -1,0 +1,17 @@
+---
+import {manualKinds,manualLanguages} from '../../../shared/manual-catalog.mjs';
+import {manualBrandPath} from '../../../shared/manual-browse.mjs';
+interface Props { group:any; unavailable?:boolean; linkBrand?:boolean; returnTo?:string; anchorId?:string; }
+const {group,unavailable=false,linkBrand=true,returnTo,anchorId}=Astro.props;
+const {model,brand,documents}=group;
+---
+<article class:list={['manual-model',{ 'manual-model--unavailable':unavailable }]} data-manual-model={model.model_key} id={anchorId}>
+  <div class="manual-model-mark" aria-hidden="true"><span>说明</span><small>{model.model_text}</small></div>
+  <div class="manual-model-body">
+    <h3>{linkBrand?<a class="manual-brand-link" href={manualBrandPath(brand.brand_key)}>{brand.name}</a>:brand.name} <span class="manual-model-code">{model.model_text}</span></h3>
+    <p class="manual-model-meta">{model.product_name}{model.product_era_display&&` · ${model.product_era_display}`} · {documents.length} 份{unavailable?'暂不可用':'可用'}文档</p>
+    <ul class="manual-documents">
+      {documents.map((d:any)=><li><a class="manual-document-link" href={`/manuals/${d.manual_key}/${returnTo?'?return='+encodeURIComponent(returnTo):''}`} data-manual-link data-manual-key={d.manual_key}><span>{d.languages.map((l:string)=>manualLanguages[l]??l).join('／')} · {manualKinds[d.document_kind]} · {d.edition_display}</span><small>{unavailable?'来源暂不可用':d.pages?.length?'站内阅读 →':'官网查看 ↗'}{d.completeness==='incomplete'?' · 有缺页':''}</small></a></li>)}
+    </ul>
+  </div>
+</article>

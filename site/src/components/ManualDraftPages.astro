@@ -1,0 +1,23 @@
+---
+import {manualPageLimits} from '../../../shared/manual-pages.mjs';
+---
+<section id="manual-pages-editor" class="manual-pages-editor" aria-labelledby="manual-pages-title">
+  <h2 id="manual-pages-title"><span>05</span> 说明书页面</h2>
+  <p>已保存的图片按本册页序展示。草稿可以分批添加筛选后的图片副本，完成后请在“提交审核”中逐项确认。提交后内容只读，按要求补充时仍使用原编号。</p>
+  <p class="manual-muted">JPG、PNG、WebP，每张最多5 MB；每批最多{manualPageLimits.queueFiles}张，每册最多{manualPageLimits.pages}页。系统逐张保存，断开后已保存页面仍在；关闭页面后，请重新选择剩余文件继续上传。PDF、TIFF与原始主档不接收。</p>
+  <p id="manual-pages-usage" class="manual-pages-usage">每册私密副本最多100 MB，账号合计沿用200 MB。替换、移出和中断留下的副本继续计入容量。</p>
+  <p id="manual-pages-status" class="manual-draft-status" role="status" aria-live="polite">先保存文字草稿，再上传说明书页面。</p>
+  <div id="manual-pages-upload-controls">
+  <label class="manual-pages-confirm"><input id="manual-pages-confirm" type="checkbox" disabled/>我已逐张筛选，上传的是图片副本，已排除原始主档并完成必要的隐私遮盖。</label>
+  <label class="manual-pages-picker">选择本批图片<input id="manual-pages-files" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple disabled/><small>按当前选择顺序加入，上传后可以调整页序。请勿选择含私人号码、地址、签名等敏感内容的未处理图片。</small></label>
+  <input id="manual-pages-replacement" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" hidden aria-label="选择替换图片"/>
+  <div class="manual-draft-actions"><button id="manual-pages-start" type="button" class="ui-action ui-action--primary" disabled>开始上传</button><button id="manual-pages-pause" type="button" class="ui-action ui-action--secondary" disabled>本页完成后暂停</button><button id="manual-pages-clear" type="button" class="manual-text-button" disabled>清空未上传队列</button><button id="manual-pages-retry" type="button" class="ui-action ui-action--primary" hidden>核对并重试上次页面操作</button></div>
+  <ol id="manual-pages-queue" class="manual-upload-queue" aria-label="本批上传进度" hidden></ol>
+  </div>
+  <details class="manual-pages-organize" open><summary>已保存页面与页序 <span id="manual-pages-count">0页</span></summary><p class="manual-muted">页序是本册的阅读顺序，印刷页码按纸面原文填写。修改后请保存页序；替换或移出本册前，先保存当前页序。</p><p id="manual-pages-empty">尚未上传图片，可以分批继续添加。</p><ol id="manual-pages-list" class="manual-page-list"></ol><div class="manual-draft-actions"><button id="manual-pages-save-order" type="button" class="ui-action ui-action--primary" disabled>保存页序与页码</button><button id="manual-pages-open-reader" type="button" class="ui-action ui-action--secondary" disabled>预览整册</button></div><p id="manual-pages-order-status" class="manual-draft-status" aria-hidden="true"></p></details>
+  <section id="manual-pages-reader" class="manual-draft-panel" aria-labelledby="manual-pages-reader-title" hidden>
+    <h3 id="manual-pages-reader-title">整册预览 · 私密草稿</h3><p id="manual-pages-reader-state" class="manual-muted"></p>
+    <div class="manual-pages-reader-controls"><button id="manual-pages-prev" type="button" class="ui-action ui-action--secondary">上一页</button><label>跳到页序<select id="manual-pages-jump"></select></label><button id="manual-pages-next" type="button" class="ui-action ui-action--secondary">下一页</button><button id="manual-pages-zoom" type="button" class="manual-text-button" aria-pressed="false">原尺寸查看</button></div>
+    <p id="manual-pages-reader-caption"></p><div id="manual-pages-reader-viewport" class="manual-pages-reader-viewport" tabindex="0" aria-label="本页图片阅读区"><img id="manual-pages-reader-image" alt="" width="1200" height="1600"/></div><p id="manual-pages-reader-error" class="manual-notice" hidden>本页图片暂时无法读取，请核对登录状态后重新打开草稿。</p>
+  </section>
+</section>

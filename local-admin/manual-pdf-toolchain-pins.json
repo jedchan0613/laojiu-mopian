@@ -1,0 +1,2812 @@
+{
+  "schema": 1,
+  "version": "26.09.0-0",
+  "archive_sha256": "7a6f256a0ddf7536182246a5733331bf4677cbcc34f4663774947ad34556c8d0",
+  "files": [
+    {
+      "file": "Library/bin/api-ms-win-core-console-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "015bd08815c7b934a8952c3a7578e9ce59f21136e8a880d42bbd414bec2c6058"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-console-l1-2-0.dll",
+      "bytes": 22872,
+      "sha256": "dcb4b82b6177fae57fdf0f3e05ab62ff75e05560b54547c16d6a1d83b33e07d4"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-datetime-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "5534812cdbdae94ba45cb216e5eb9af686b853948df54365103555abbbaf9d9a"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-debug-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "837d2b1b2cd03e03fc6ccb050698b6b5763af17c201304872342a5eae9e0a2d2"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-errorhandling-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "de43b165f568c276c00e95acd454e3092f352a18e95874595f4f4658c06d2ec7"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-fibers-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "3cebc45bf479ad74cfabf2c6bfd4994d7ad639ed1221025981d19cedf9ce0416"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-fibers-l1-1-1.dll",
+      "bytes": 22872,
+      "sha256": "5ef70308bcca628ce6b0e2856b15b1c7ae340c3f9bbbc4c1071d8c191a34a5c3"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-file-l1-1-0.dll",
+      "bytes": 27008,
+      "sha256": "250ac829f2617bcac1c6e5b8c4f630462e20765863ba573526a3e11bbfb94a9a"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-file-l1-2-0.dll",
+      "bytes": 22888,
+      "sha256": "ae14079a114733f60ce87b92cba42acd8083c2cd67594e53bc37dc0b97a4b465"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-file-l2-1-0.dll",
+      "bytes": 22912,
+      "sha256": "914bf26a298713119477ea0a8e7bd43171b91344ebe24fb47ad77c49686e3d87"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-handle-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "ab5489955e371b15f77906c08ec3c7affe2c7a46a08c514ca628768b4478974b"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-heap-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "c70f9644d8377fa39c5b71f2e9734c1400d7598904fdeb772e8502099982dcb7"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-interlocked-l1-1-0.dll",
+      "bytes": 22888,
+      "sha256": "f8129710188e407bb0e6f46d30aeba277d67b947ece5fe09e883fde2323f3ae6"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-kernel32-legacy-l1-1-1.dll",
+      "bytes": 22888,
+      "sha256": "5200b16cb2ddc61cfc07373a9a84aa85a3ab50806ca96c879c883275832944c1"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-libraryloader-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "48786fb88b001dcd1f63acea903d3ca9cc0b3060d5a325e3f2f3cbc3bfd53166"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-localization-l1-2-0.dll",
+      "bytes": 22872,
+      "sha256": "9ec3898f7eba91faa28b51616c211a2689e3a13aeef8de6e13cb674e49d689eb"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-memory-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "3a6cbc524c99e1cd80d5368f5601402a37ad602528b1ab628093573ef638eb3b"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-namedpipe-l1-1-0.dll",
+      "bytes": 22888,
+      "sha256": "97145ef89c44949fcf0f04ac834a8bc7d687ef49ee73ae9fc32f3c11136b7201"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-processenvironment-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "8bc7c10b1851aea644e9c9f381cdb935e091fee6b0be3d3aedc6fffaac96adb7"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-processthreads-l1-1-0.dll",
+      "bytes": 22912,
+      "sha256": "d8030b777617c71f0f94564607699dbf7561487d779db9756aed378c5675213f"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-processthreads-l1-1-1.dll",
+      "bytes": 22872,
+      "sha256": "f5e676713340f73a03a3d41a6ec9883b431da7d16c7f07bd0a920fb80e6c0753"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-profile-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "f023d47e44d3eea6b0743580f57e8c6ba81e79d5ebfa7da26250076c647b980e"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-rtlsupport-l1-1-0.dll",
+      "bytes": 22888,
+      "sha256": "9746d8930704153578a628c010638a5f818ffe5a927e25591b108e256dc6afca"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-string-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "7c53ae24c982d16ffd1bf7f918d115b11b7f30e57bc7feaa18cb9781e4abb926"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-synch-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "56d9d62ca5dba79a6581b8d574a7d8b2a64a5ecb71e47dcf06ed0285708b1859"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-synch-l1-2-0.dll",
+      "bytes": 22888,
+      "sha256": "f6482bbec5612c39ecb4822787a333f2b7570f7a5f922a4059be41ba957bb372"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-sysinfo-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "272d02765fdd3582618236c2d309abba069642f9bc1062ede069d0c144e17007"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-sysinfo-l1-2-0.dll",
+      "bytes": 22912,
+      "sha256": "8a0900788859d0eb51c2f48f50cc6ed376a120b518100fa20e11d7702ccde260"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-timezone-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "ff35de6c03812b332e140f17dade25c5dd4775156da9eeb1eaae3fddd27236ec"
+    },
+    {
+      "file": "Library/bin/api-ms-win-core-util-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "191ef3e98641a57296f19d572d8eb62489470ff1ef6030d136af170c2f835173"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-conio-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "54ee5ec719a051496ff60aa00dbeaa94b9a7d2cdac27fe9b7317f1a666b6a2aa"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-convert-l1-1-0.dll",
+      "bytes": 26992,
+      "sha256": "8b94662429171019fcd63c70bbf2095a075170599704a5e7dcdbe3da13f3a429"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-environment-l1-1-0.dll",
+      "bytes": 22912,
+      "sha256": "39e5929593709e8af3bc9e0a75ec1155778d6f4a247f4cdfc58928ad6db88434"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-filesystem-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "5a8ecebac32edf4e1f3c5c6c1c8ea1a1add6cda4f9c9cb26f752fb295bea6865"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-heap-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "c71080cbcb43bf1f8f3e391deb12a582eb0abefc80946f340675a2c616e4feb4"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-locale-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "6c68648e524187e03c4ad9aaa4a99113c6ee9f29fb39cc0ed93f951975138e63"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-math-l1-1-0.dll",
+      "bytes": 31064,
+      "sha256": "d4fbcccbe29371cbce431e43b2eb4f7ba9a6f04a3d740a071f02457a505e9dc8"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-multibyte-l1-1-0.dll",
+      "bytes": 31064,
+      "sha256": "41b98a59bea1c86ab3b2357acb77de4eae7ff1132f130b1d9669ab9c2b456a2a"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-private-l1-1-0.dll",
+      "bytes": 76120,
+      "sha256": "29bf3d90617d3781d19b332d6ceb9f20ba5ce082ec74bf6c34d5d4aee56e48a1"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-process-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "47c1935942e3ac0812e4dcf18c0e265e565f0194a3349111c299712f5565f7ac"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-runtime-l1-1-0.dll",
+      "bytes": 26968,
+      "sha256": "72adc1b3677e0814d9c4ebf0964000e84bb2acf67336c8963061665e44f78029"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-stdio-l1-1-0.dll",
+      "bytes": 26968,
+      "sha256": "900afc3989673c9bb1a687ed38c192f46db9e6ba6d11a668898a539e7fc23798"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-string-l1-1-0.dll",
+      "bytes": 26968,
+      "sha256": "fcf12466cc12fd3b73611fc0763a5a1f9d44e90349513c34a0c83b0f36421793"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-time-l1-1-0.dll",
+      "bytes": 22912,
+      "sha256": "886e57c4a6adb299b38f02945369f590a67da4e79a798359fc60aaa067212d7c"
+    },
+    {
+      "file": "Library/bin/api-ms-win-crt-utility-l1-1-0.dll",
+      "bytes": 22912,
+      "sha256": "5f8f26b216ade615b67a41f6fbbb910972fc6153315a65bb8f09912be50215b1"
+    },
+    {
+      "file": "Library/bin/cairo-gobject.dll",
+      "bytes": 28160,
+      "sha256": "81004b56943ea2e999c98f0c181a061cd486cb99e33d58b0615ceb1fdbc51d36"
+    },
+    {
+      "file": "Library/bin/cairo-script-interpreter.dll",
+      "bytes": 136704,
+      "sha256": "60f6ace6da60a776c18f3fc7f91860d8d7e5db668c913b45c64db8db20403f1f"
+    },
+    {
+      "file": "Library/bin/cairo.dll",
+      "bytes": 1040896,
+      "sha256": "cc0a1a102163cc2e310cd12fac3cdc85d1092635bf6ee6df50f778ecc45afd58"
+    },
+    {
+      "file": "Library/bin/charset.dll",
+      "bytes": 12800,
+      "sha256": "4983c202d0424ad6e271741fb9453b7a833bb1697854bc37046db39618234f14"
+    },
+    {
+      "file": "Library/bin/comerr64.dll",
+      "bytes": 21504,
+      "sha256": "244d7f39f1333cfbeb37cbc6a4623c13bca9a3a29980bfd4658ec57bf2c44221"
+    },
+    {
+      "file": "Library/bin/concrt140.dll",
+      "bytes": 374200,
+      "sha256": "54716f0738af891f283d213b5c8d11b25896bb8ee3097d301eae718560cf974e"
+    },
+    {
+      "file": "Library/bin/deflate.dll",
+      "bytes": 177664,
+      "sha256": "6dd36dd208f18c6b44b3a78ae2c9462f28430e39b7e5bdb00faaec22b495021b"
+    },
+    {
+      "file": "Library/bin/expat.dll",
+      "bytes": 266752,
+      "sha256": "8f322ea819d3e90490d8931634e6b681ed10b8b86b2b6e4a762b600c7030f351"
+    },
+    {
+      "file": "Library/bin/ffi-8.dll",
+      "bytes": 31232,
+      "sha256": "922fe231d83f412d351e2560714e248d097aae0b44c8410fb1826411e2528e69"
+    },
+    {
+      "file": "Library/bin/fontconfig-1.dll",
+      "bytes": 452096,
+      "sha256": "4f2111b152301942e2ee2cd9b3b11b7f927769b86c8bcd47b102772385bd4c6f"
+    },
+    {
+      "file": "Library/bin/freetype.dll",
+      "bytes": 684032,
+      "sha256": "7a7fb5cf51bfab4f6b640c1850fc6371e9650c111f20af08a20479186d9058b5"
+    },
+    {
+      "file": "Library/bin/gio-2.0-0.dll",
+      "bytes": 1622016,
+      "sha256": "da9046029102dd10af350971550a286574b1a271f5dcadd1c1f4bd7444ff374f"
+    },
+    {
+      "file": "Library/bin/girepository-2.0-0.dll",
+      "bytes": 138240,
+      "sha256": "540bab885f42f2fc1dea6627744aefc55297ac7d661e474d76fe65efca9c1eb4"
+    },
+    {
+      "file": "Library/bin/glib-2.0-0.dll",
+      "bytes": 1359872,
+      "sha256": "8a8f3c366a6aed62e4cfb84d4e3dc3ca1d590c7542f053d9a8ff0be4da98cea4"
+    },
+    {
+      "file": "Library/bin/gmodule-2.0-0.dll",
+      "bytes": 19968,
+      "sha256": "d25b6b0e7f8e0672766b6c65d148b818029d9660ee74feeb7f6722c93c2af519"
+    },
+    {
+      "file": "Library/bin/gobject-2.0-0.dll",
+      "bytes": 320512,
+      "sha256": "4ddb7a512d3fe164e0c4cd785ba158fb634cc617bfd517772009a6d6ecf8acc7"
+    },
+    {
+      "file": "Library/bin/graphite2.dll",
+      "bytes": 131072,
+      "sha256": "e477faad350b1641f08d4d20acd92dc5568a9b8edb34400d5fe436d3bf26b044"
+    },
+    {
+      "file": "Library/bin/gssapi64.dll",
+      "bytes": 397824,
+      "sha256": "4f7ad046630d7869c40a35a3114cf297659012d44fa56a8c64e006c9200ec784"
+    },
+    {
+      "file": "Library/bin/gthread-2.0-0.dll",
+      "bytes": 10752,
+      "sha256": "18bc6e9cf9696616f45dc785d882e60c742af0a5719767bd79c1143a50e23c54"
+    },
+    {
+      "file": "Library/bin/harfbuzz-cairo.dll",
+      "bytes": 36864,
+      "sha256": "bfa8d49cf115767cbc72fe1a4030c2ece61452764a1c285de896c8d760855925"
+    },
+    {
+      "file": "Library/bin/harfbuzz-gobject.dll",
+      "bytes": 91136,
+      "sha256": "10d60af7f39d9ca84a034e00bf8fb58c8ae9c3710b2558cfcf8d752757cb7d19"
+    },
+    {
+      "file": "Library/bin/harfbuzz-gpu.dll",
+      "bytes": 171520,
+      "sha256": "78f7d705d75d6206c4762545cc0ca1adcbecc476b5f12692ca45ba0a14daa0a6"
+    },
+    {
+      "file": "Library/bin/harfbuzz-icu.dll",
+      "bytes": 13824,
+      "sha256": "88aebf16ddb6d6a1b907a2e53de7da1271a324061fd509b04a6aa90b3fce6a1b"
+    },
+    {
+      "file": "Library/bin/harfbuzz-raster.dll",
+      "bytes": 86528,
+      "sha256": "0bb0fdc67684d2384d3e4291f83b49488a35ab2b54eeea1691e1746b20454f65"
+    },
+    {
+      "file": "Library/bin/harfbuzz-subset.dll",
+      "bytes": 1261056,
+      "sha256": "4daaa8bb1e96d3ae08e4fe38b2b27105d7ff8f4bbb82ef576068a130cc23ed3a"
+    },
+    {
+      "file": "Library/bin/harfbuzz-vector.dll",
+      "bytes": 128000,
+      "sha256": "ed1f8ac118cb6811a507c6a3e38a5da71a9c05ecf9974ee2575fc740a4f22919"
+    },
+    {
+      "file": "Library/bin/harfbuzz.dll",
+      "bytes": 1192960,
+      "sha256": "729820052b07d76d4a20a99017fcd2a8f30016aeda6048846b878922c1996f7e"
+    },
+    {
+      "file": "Library/bin/iconv.dll",
+      "bytes": 1086464,
+      "sha256": "4fe67a10b7455892ac546d79bc0b2ab2e3483135495255ea2c31d2c794c28e38"
+    },
+    {
+      "file": "Library/bin/icudt.dll",
+      "bytes": 1024,
+      "sha256": "5410cc846d4f6bbfe6cc9bdb8ccab48ef92b2f7244a54d50c562beeb2786e60b"
+    },
+    {
+      "file": "Library/bin/icudt78.dll",
+      "bytes": 33110528,
+      "sha256": "18dd8e1881c5d378de868f8f2c2309d95d3f6757ef40868b76657e7a1f061a51"
+    },
+    {
+      "file": "Library/bin/icuin.dll",
+      "bytes": 4221952,
+      "sha256": "365ea33b3b204bc06a57c1c3c611f4c7f14e08153ee27ffcd9aacbd4dafeb60a"
+    },
+    {
+      "file": "Library/bin/icuin78.dll",
+      "bytes": 4221952,
+      "sha256": "365ea33b3b204bc06a57c1c3c611f4c7f14e08153ee27ffcd9aacbd4dafeb60a"
+    },
+    {
+      "file": "Library/bin/icuio.dll",
+      "bytes": 272384,
+      "sha256": "7a057b2a7c7dc3029087b0c0882a09c059bca26b29e934d0aefac8ffbf552927"
+    },
+    {
+      "file": "Library/bin/icuio78.dll",
+      "bytes": 272384,
+      "sha256": "7a057b2a7c7dc3029087b0c0882a09c059bca26b29e934d0aefac8ffbf552927"
+    },
+    {
+      "file": "Library/bin/icutest.dll",
+      "bytes": 262144,
+      "sha256": "2c24b0f11d4710ebafd9334fa22534aabb14b449327c5dde9903db2b2b48808b"
+    },
+    {
+      "file": "Library/bin/icutest78.dll",
+      "bytes": 262144,
+      "sha256": "2c24b0f11d4710ebafd9334fa22534aabb14b449327c5dde9903db2b2b48808b"
+    },
+    {
+      "file": "Library/bin/icutu.dll",
+      "bytes": 581120,
+      "sha256": "5b04f0dbe6d16226c16cc2ff425fb990e6800abc63e1bcd82673b0b2496d499b"
+    },
+    {
+      "file": "Library/bin/icutu78.dll",
+      "bytes": 581120,
+      "sha256": "5b04f0dbe6d16226c16cc2ff425fb990e6800abc63e1bcd82673b0b2496d499b"
+    },
+    {
+      "file": "Library/bin/icuuc.dll",
+      "bytes": 2728448,
+      "sha256": "af525f3cb120014ded7c1b5c346ea00a5a488dee5d17b18e0172b6421e730737"
+    },
+    {
+      "file": "Library/bin/icuuc78.dll",
+      "bytes": 2728448,
+      "sha256": "af525f3cb120014ded7c1b5c346ea00a5a488dee5d17b18e0172b6421e730737"
+    },
+    {
+      "file": "Library/bin/intl-8.dll",
+      "bytes": 224256,
+      "sha256": "19b198c14e5d54f3dd7b966f09458cc31566d9f2406c64ffc13b4386ce92ee6e"
+    },
+    {
+      "file": "Library/bin/jpeg8.dll",
+      "bytes": 694784,
+      "sha256": "c8ae4649b8bcf41ec8bfd359bd6239ff7622e2041554cee3e99f740698db848f"
+    },
+    {
+      "file": "Library/bin/k5sprt64.dll",
+      "bytes": 165376,
+      "sha256": "c125a20add80639b9d92cf06ba47dff004f85b432cd1981af3c842819cd53feb"
+    },
+    {
+      "file": "Library/bin/kfwlogon.dll",
+      "bytes": 36864,
+      "sha256": "f56dbc097129f1c2a82782895794457ccc302d9d62284238186cae2a59e5b838"
+    },
+    {
+      "file": "Library/bin/krb5_64.dll",
+      "bytes": 1226240,
+      "sha256": "5943f70ec700335ca1edda41fae1efbbf7bf7cb6048628265a6aa44c2f788e86"
+    },
+    {
+      "file": "Library/bin/krbcc64.dll",
+      "bytes": 112640,
+      "sha256": "af7d4feeb0fd776caf7fb3d08e12e6c9b08d0d91882c49dca681da1967f700b1"
+    },
+    {
+      "file": "Library/bin/lcms2.dll",
+      "bytes": 581632,
+      "sha256": "d183dc2474a957dbfb455192a64049d6b273577539955ddc8f7ab8ed3e138d95"
+    },
+    {
+      "file": "Library/bin/leashw64.dll",
+      "bytes": 152576,
+      "sha256": "723d03066fa5d60730ba133d3f931e239f0eb09b894307fb475436e5b22fd37d"
+    },
+    {
+      "file": "Library/bin/Lerc.dll",
+      "bytes": 548864,
+      "sha256": "451cd3d0eaede32c199886717ec7484b8ca7effda47ee89febea957540058975"
+    },
+    {
+      "file": "Library/bin/libbz2.dll",
+      "bytes": 77824,
+      "sha256": "7f3ddbb88b670d79ada028480067ccdf240601319128e40eec8dce1daf4a9238"
+    },
+    {
+      "file": "Library/bin/libcrypto-3-x64.dll",
+      "bytes": 7434240,
+      "sha256": "16c775b3f2c381aff5c5e1bbb28a7527a5378c162ffafa0239aa8e4383e04b90"
+    },
+    {
+      "file": "Library/bin/libcurl.dll",
+      "bytes": 795136,
+      "sha256": "f4a617c5d17d4a1b87389e443fbd32de0d38bb16b35506da9f2fd8e7f3d85114"
+    },
+    {
+      "file": "Library/bin/libexpat.dll",
+      "bytes": 266752,
+      "sha256": "8f322ea819d3e90490d8931634e6b681ed10b8b86b2b6e4a762b600c7030f351"
+    },
+    {
+      "file": "Library/bin/liblzma.dll",
+      "bytes": 188416,
+      "sha256": "8439ed3564a8dbbf6355e29c92e88fdf1f6dee096504149fc051104155c868a9"
+    },
+    {
+      "file": "Library/bin/libpng16.dll",
+      "bytes": 198656,
+      "sha256": "fd80ce925fc2bdce591c3f74ac0bbb2b36d72e5f55a0b686aa66453a1e388ff3"
+    },
+    {
+      "file": "Library/bin/libssh2.dll",
+      "bytes": 260608,
+      "sha256": "69c35872dae1ed72e67388a4c64d51004dd15fc1be0901b2025da721d1496bb4"
+    },
+    {
+      "file": "Library/bin/libssl-3-x64.dll",
+      "bytes": 1320960,
+      "sha256": "4735f827a4dcec560540b2361aef5f5a6d289e1640531782db3b4f369c50d45a"
+    },
+    {
+      "file": "Library/bin/libtiff.dll",
+      "bytes": 504320,
+      "sha256": "e5555ff9f826a47885c87d9a648f9823d8bf6967b7c848e4d4824abcf518e356"
+    },
+    {
+      "file": "Library/bin/libzstd.dll",
+      "bytes": 657408,
+      "sha256": "fcc1dc71b7df5489e37a78abab9c31d763570d55e93c67f388058c41c0d7b8df"
+    },
+    {
+      "file": "Library/bin/msvcp140.dll",
+      "bytes": 643512,
+      "sha256": "7c26614e1d733892c2deac7e245ce115504b1d80592dd0a01b08e3e5a55f89ca"
+    },
+    {
+      "file": "Library/bin/msvcp140_1.dll",
+      "bytes": 35768,
+      "sha256": "206c931bf90fdad8816de3b5e2ef80b2bcaa9406c89ecc05fe6fddffe251e982"
+    },
+    {
+      "file": "Library/bin/msvcp140_2.dll",
+      "bytes": 274872,
+      "sha256": "d50d7883f20d1dc6191768d3746f52dd9cac89c346ffaed5be1f110c2f34a838"
+    },
+    {
+      "file": "Library/bin/msvcp140_atomic_wait.dll",
+      "bytes": 57792,
+      "sha256": "3d0cbfaa1bf3eecf5a3f4491d2960ee803cb994f30292c6adc4a07c498f60e2b"
+    },
+    {
+      "file": "Library/bin/msvcp140_codecvt_ids.dll",
+      "bytes": 31160,
+      "sha256": "8a65c7596ef2e6938731f5a1058e7e40145b6d97967cc649231a076b9a608d78"
+    },
+    {
+      "file": "Library/bin/openjp2.dll",
+      "bytes": 360448,
+      "sha256": "5d11a0abfa2b679c22f0d91df66bd2abc83acb6988b050ad9e75ea0b0025e2b0"
+    },
+    {
+      "file": "Library/bin/pcre2-16.dll",
+      "bytes": 566272,
+      "sha256": "aece7fc5bc5ea30f10ea269a5371c51b5a8c7e9ba7d7c7a72f74595023ac1fe9"
+    },
+    {
+      "file": "Library/bin/pcre2-32.dll",
+      "bytes": 545280,
+      "sha256": "fa32bdbd5472f1cb7e9dae79b6a5912c568d52d83311ae9925f8d113f709d4ea"
+    },
+    {
+      "file": "Library/bin/pcre2-8.dll",
+      "bytes": 603648,
+      "sha256": "324af6d564a81800d8e8103f2e9c1f57d3041422dcaf91bd86d805963862bde2"
+    },
+    {
+      "file": "Library/bin/pcre2-posix.dll",
+      "bytes": 13824,
+      "sha256": "9c06c6c7abf1c254c61bd5cd62555bae9cef8d4709ee62ca934bccbec620225d"
+    },
+    {
+      "file": "Library/bin/pdfattach.exe",
+      "bytes": 23040,
+      "sha256": "de3591fe58df360e03a793f74d266d9eeaca497e5fbe9412731d16e0a6217749"
+    },
+    {
+      "file": "Library/bin/pdfdetach.exe",
+      "bytes": 47104,
+      "sha256": "3e1cdb8a1ff164fbce45a46078b5d3708c37e96fcfa904d528d94b219dcec0f0"
+    },
+    {
+      "file": "Library/bin/pdffonts.exe",
+      "bytes": 26112,
+      "sha256": "4a527929a92e016c3b3f7a30d7815849e331f85215f6d0b529b1fd4acc3b4224"
+    },
+    {
+      "file": "Library/bin/pdfimages.exe",
+      "bytes": 52736,
+      "sha256": "be80837821a99cbfcbb2f3fcf4f81d575993bfd09ea96db4837067a204a23088"
+    },
+    {
+      "file": "Library/bin/pdfinfo.exe",
+      "bytes": 66048,
+      "sha256": "0824a83354a331469be7d0c2ab3691af46bef6ed89799cbdc5fb532dc4886c72"
+    },
+    {
+      "file": "Library/bin/pdfseparate.exe",
+      "bytes": 24064,
+      "sha256": "533c57c5a48e30d0d6a06ee601dadbae80d5a56742b565f44e648f0ca5c41d10"
+    },
+    {
+      "file": "Library/bin/pdftocairo.exe",
+      "bytes": 160256,
+      "sha256": "3fc023711543b0ad4008f8d57a0685f3ada3f2e613e10cce56fe02d250f43770"
+    },
+    {
+      "file": "Library/bin/pdftohtml.exe",
+      "bytes": 134144,
+      "sha256": "0d9106e04b89dcb25387dc342748eaf2aee6352adcba8a1cb1b50c2393c5be78"
+    },
+    {
+      "file": "Library/bin/pdftoppm.exe",
+      "bytes": 50176,
+      "sha256": "0c7853d56bc7a0679417b2f84d58608c1c381c4ec712b07c8e4e29d36582f67e"
+    },
+    {
+      "file": "Library/bin/pdftops.exe",
+      "bytes": 48640,
+      "sha256": "eafd30dcb00706cc261ccce8fe7cd98c6100089bf32322e8979011d1de6dace4"
+    },
+    {
+      "file": "Library/bin/pdftotext.exe",
+      "bytes": 71680,
+      "sha256": "eedb0417a5a70eae7901151cb1a8902d7890187c4bd0535ca54e2c3924584db5"
+    },
+    {
+      "file": "Library/bin/pdfunite.exe",
+      "bytes": 39936,
+      "sha256": "3d5f64aee82948a4224fc557890e86d6641e192e4ba6825b848d446ff358cef2"
+    },
+    {
+      "file": "Library/bin/pixman-1-0.dll",
+      "bytes": 600064,
+      "sha256": "8bd9175343f28fd439bac2fd4fb6859d9b98ac0f1571717aad0fd01b4c125fa3"
+    },
+    {
+      "file": "Library/bin/poppler-cpp.dll",
+      "bytes": 178688,
+      "sha256": "b4938c8d05a7dda442d14cf861ad0ee03b9c46371e1180dfe0edc39461ea3c42"
+    },
+    {
+      "file": "Library/bin/poppler-glib.dll",
+      "bytes": 457728,
+      "sha256": "041240fd91a6e089b042de30af4230d03c9414e992db491c6b2625d6c8c35153"
+    },
+    {
+      "file": "Library/bin/poppler.dll",
+      "bytes": 6739968,
+      "sha256": "333805d80f0a301e1626a72ecc7d2b4b149350b44f971927f2a08eb9cb29bb28"
+    },
+    {
+      "file": "Library/bin/psl-5.dll",
+      "bytes": 77312,
+      "sha256": "24a1963f1684f342fbd2740c498cddd8f4dbf12846414d2b95637a1a24f86ba1"
+    },
+    {
+      "file": "Library/bin/tiff.dll",
+      "bytes": 504320,
+      "sha256": "e5555ff9f826a47885c87d9a648f9823d8bf6967b7c848e4d4824abcf518e356"
+    },
+    {
+      "file": "Library/bin/turbojpeg.dll",
+      "bytes": 1165312,
+      "sha256": "ba53786a4935b86753e7eaf56e48745e59c210572e878d569958ef85cf0c0e0d"
+    },
+    {
+      "file": "Library/bin/ucrtbase.dll",
+      "bytes": 1362264,
+      "sha256": "3239227d27667ba20d10a880751924e5719de0078f9fce232d149d383f7681f6"
+    },
+    {
+      "file": "Library/bin/vcamp140.dll",
+      "bytes": 417728,
+      "sha256": "dc283ffb87e9b82e687ed4e899ae062a209aa338207abfc9a89d61407d678bd4"
+    },
+    {
+      "file": "Library/bin/vccorlib140.dll",
+      "bytes": 350648,
+      "sha256": "09f93d5ff96ae09767f3e1af3cdd43a5a58f2598654fc63089429bb6f9f4737f"
+    },
+    {
+      "file": "Library/bin/vcomp140.dll",
+      "bytes": 212920,
+      "sha256": "95d4ce4a6802d1e18b5e0e1722cc30ea72ca7e033f83828f05c0b7b993fe7cbf"
+    },
+    {
+      "file": "Library/bin/vcruntime140.dll",
+      "bytes": 178616,
+      "sha256": "d1f4225df2cd877dbf130d5668a021dce3f94118455ff5ec952061c30afc9ce7"
+    },
+    {
+      "file": "Library/bin/vcruntime140_1.dll",
+      "bytes": 50112,
+      "sha256": "a7146c08f89fe5b04541ab507cdb59ff7b44534d4ba3c668a426c6450a03434e"
+    },
+    {
+      "file": "Library/bin/vcruntime140_threads.dll",
+      "bytes": 38840,
+      "sha256": "40f39e8cee5f5a531b4010e18b807e8fe265b908dc58f959ecb7ebc6ea6cb11a"
+    },
+    {
+      "file": "Library/bin/xpprof64.dll",
+      "bytes": 54784,
+      "sha256": "4d11aa50a246f13750079bbcddf8d86efc636e1fbfbc9d354ad939f8f9ff8037"
+    },
+    {
+      "file": "Library/bin/zlib.dll",
+      "bytes": 90624,
+      "sha256": "f4f26ea6300c8449daad4650915e01ac80aafc6ca8b73a50be450f1fb66cdd63"
+    },
+    {
+      "file": "Library/bin/zstd.dll",
+      "bytes": 657408,
+      "sha256": "fcc1dc71b7df5489e37a78abab9c31d763570d55e93c67f388058c41c0d7b8df"
+    },
+    {
+      "file": "Library/include/poppler/Annot.h",
+      "bytes": 62151,
+      "sha256": "4d35ae5a2b1a64cfdae6b33a17349693cab6e77f7eb8e5d9e0f16db8f82f4176"
+    },
+    {
+      "file": "Library/include/poppler/AnnotStampImageHelper.h",
+      "bytes": 2221,
+      "sha256": "3962560f04589948da0ea43f29e3d619db2f20115cbf4c3006cc62b53e4adb0a"
+    },
+    {
+      "file": "Library/include/poppler/Array.h",
+      "bytes": 3444,
+      "sha256": "be47a298dd89d77fcbb5c16098d14f78cc2de843028b6442d2b997c7a2a29e4d"
+    },
+    {
+      "file": "Library/include/poppler/BBoxOutputDev.h",
+      "bytes": 2384,
+      "sha256": "d7fdb009f39ce9f013f62c91026fa03aff00589cdf38e24124cc1eface4c689f"
+    },
+    {
+      "file": "Library/include/poppler/CachedFile.h",
+      "bytes": 4186,
+      "sha256": "96a77312970f0ebf5325cd611dae5307dedda394477680554fc287faf48d7060"
+    },
+    {
+      "file": "Library/include/poppler/Catalog.h",
+      "bytes": 11270,
+      "sha256": "c91597bd11959962c7d7c4cddee1b635965ebbfeb5cf6cc5636dfa7e8af6263b"
+    },
+    {
+      "file": "Library/include/poppler/CertificateInfo.h",
+      "bytes": 5025,
+      "sha256": "79391fcd74f8586790c83766456e828a69dae8a289e51a32311c4080dbf225d3"
+    },
+    {
+      "file": "Library/include/poppler/CharTypes.h",
+      "bytes": 526,
+      "sha256": "8abb956ab97428d7233e352ae8d17cf5bb049fd4dec6f8ffbedf54792ddfd807"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-destination.h",
+      "bytes": 1866,
+      "sha256": "319b71304ca9315e0b836022ce7cb23a6282713a2e19bb1378d26b5a6fc5e3da"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-document.h",
+      "bytes": 4574,
+      "sha256": "db55bed4921ca6d254c6e75bc5fd33506cc171d77ef4a7c8bc1558cc544ccf99"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-embedded-file.h",
+      "bytes": 1643,
+      "sha256": "f792421ceb2ab670d18c64a03505c984bdf0b901e556a0fec7ce75da269408e7"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-font-private.h",
+      "bytes": 2361,
+      "sha256": "88849917bc5100c29689ef43f9e30f9556f104b8b9f0b7d594b8b8269dd6c12a"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-font.h",
+      "bytes": 2225,
+      "sha256": "bf940cbe938f108e9371244a90732ab0a9740ae20292c04a40ad80ef1421ad6e"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-global.h",
+      "bytes": 3418,
+      "sha256": "6d37918bbdb6f67bd08453d0df0ff697a6f3310918fc4af9472baec561b8af98"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-image.h",
+      "bytes": 1973,
+      "sha256": "1d722bd6284be70b1576ba1a5cd0fef78c471ed1abd99c54a259dc7f6e3a9686"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-page-renderer.h",
+      "bytes": 2227,
+      "sha256": "760e5747397be8a42c8b392b2fed0308ff0fac9638a28bc799e0b047fac4bb98"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-page-transition.h",
+      "bytes": 1959,
+      "sha256": "5699fdfd0705eeb3528f16ac157503d96feb724edda31dddcafb40cd478608e3"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-page.h",
+      "bytes": 5966,
+      "sha256": "290a9a2e3b415050db0ab3758bbab51fe44333382e826ec3af187ad8059b42fe"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-rectangle.h",
+      "bytes": 1953,
+      "sha256": "7c1729a45441e358d1a98e1fc637ca98710cf4dbdbb5ddfc3b1201a0311f6abf"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-toc.h",
+      "bytes": 1607,
+      "sha256": "d88887aa3013e8ef32ac4aa387e4016b79dfa4b33499210e00ff598b2bdd2b71"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler-version.h",
+      "bytes": 1247,
+      "sha256": "6f4abfc028f30892fd2c7f855834f58ebe8a4f709a5d645d85732d7752e4e9cb"
+    },
+    {
+      "file": "Library/include/poppler/cpp/poppler_cpp_export.h",
+      "bytes": 1159,
+      "sha256": "9516bc281aea27c56d40040adfb1e2e0f551119970bf7a18a33dfba8cc0886d6"
+    },
+    {
+      "file": "Library/include/poppler/CryptoSignBackend.h",
+      "bytes": 4907,
+      "sha256": "bc2f32caaf473c0df008aa94c0978006d3a3cc9943cab1dcf85814cd34fbbe70"
+    },
+    {
+      "file": "Library/include/poppler/CurlCachedFile.h",
+      "bytes": 903,
+      "sha256": "c2f930df960e3099613653272944ec282131af2ef15df547961f50e7b19117ac"
+    },
+    {
+      "file": "Library/include/poppler/CurlPDFDocBuilder.h",
+      "bytes": 1137,
+      "sha256": "68b46acab34d7559d3a9414403860b4bb1189e7ef6bf6502fb4318ab31a6fdb4"
+    },
+    {
+      "file": "Library/include/poppler/DateInfo.h",
+      "bytes": 1951,
+      "sha256": "4743bd02e5b45e3d6a4ef7898c69e770c12571ed0cec6813dd7a82d2308340d3"
+    },
+    {
+      "file": "Library/include/poppler/Dict.h",
+      "bytes": 6208,
+      "sha256": "14e32c5db70edd31eac6d16f0522235fbd4310f371bf2a5379af551cddfce5b8"
+    },
+    {
+      "file": "Library/include/poppler/Error.h",
+      "bytes": 3842,
+      "sha256": "c55affe60fbf9af13d0f3bb53f000813f5a2ca5ccb42fc546ce3ab98dfc02fc9"
+    },
+    {
+      "file": "Library/include/poppler/ErrorCodes.h",
+      "bytes": 1994,
+      "sha256": "afe519252227a003d48c182fc3eef2c9d9287693df0b8944bbfe68098094ffc2"
+    },
+    {
+      "file": "Library/include/poppler/FILECacheLoader.h",
+      "bytes": 871,
+      "sha256": "763215a0583a7fb5a11200abe0290c6e3e3da76be83ff2a7e9f93acb5281d9e8"
+    },
+    {
+      "file": "Library/include/poppler/FileSpec.h",
+      "bytes": 2731,
+      "sha256": "cf6163853966c08dbc71d062e1e606314565baa7a2eaf7cc3557ec7cd67a4ff9"
+    },
+    {
+      "file": "Library/include/poppler/fofi/FoFiBase.h",
+      "bytes": 2546,
+      "sha256": "b56460833616b5fa3ae81dcda50555120b602c6a6dd3c4e863e9216454b258b6"
+    },
+    {
+      "file": "Library/include/poppler/fofi/FoFiEncodings.h",
+      "bytes": 1625,
+      "sha256": "cfd9d70bc666138b8d83d7669252522db0f9c9463619b483059a9986410b5cd4"
+    },
+    {
+      "file": "Library/include/poppler/fofi/FoFiIdentifier.h",
+      "bytes": 1769,
+      "sha256": "be79b18e379088bbe8c9220571dafea3dbee5998b6472e7d858a777f8cf62d21"
+    },
+    {
+      "file": "Library/include/poppler/fofi/FoFiTrueType.h",
+      "bytes": 8547,
+      "sha256": "de43d21569b621e11a140ff68de2d1487ee8ac1aa461c634e8874c4218006149"
+    },
+    {
+      "file": "Library/include/poppler/fofi/FoFiType1C.h",
+      "bytes": 8746,
+      "sha256": "48ab3c2c956641cc3c3fe1e0a07de98a86efd93f3ba90225dc0a29fb3b8261eb"
+    },
+    {
+      "file": "Library/include/poppler/FontInfo.h",
+      "bytes": 3096,
+      "sha256": "d01fee678401a657a63fc33051483f89b18deaec14c4eb23734a01255beb4a04"
+    },
+    {
+      "file": "Library/include/poppler/Form.h",
+      "bytes": 31329,
+      "sha256": "09c039ebd321bc8b746927b376a078a56385ba053169875fbc4b470e7a34eeb0"
+    },
+    {
+      "file": "Library/include/poppler/Function.h",
+      "bytes": 9137,
+      "sha256": "2432763cbe1a5e44b411fe98417d2c89dfb7d2d3658382965dad8af41c3e6906"
+    },
+    {
+      "file": "Library/include/poppler/Gfx.h",
+      "bytes": 14916,
+      "sha256": "1f863dddef4323a851cc32c6a960d2db18ac29e48bd80e95c5aa14c9f1d3a856"
+    },
+    {
+      "file": "Library/include/poppler/GfxFont.h",
+      "bytes": 16454,
+      "sha256": "72db6b5fdaaa1928a8eaca59d02dae4578cf101ebf66c3059332bc97fa56ecaf"
+    },
+    {
+      "file": "Library/include/poppler/GfxState.h",
+      "bytes": 70881,
+      "sha256": "e444695f8d2c05769ad6ffc736fdc584a2373027ce5c9acba8bc8462ccb99c20"
+    },
+    {
+      "file": "Library/include/poppler/GfxState_helpers.h",
+      "bytes": 2615,
+      "sha256": "ba9f581c2489fa5a3108c5f0d8e204cc0dc16e9753d9fe190c70e24f39a5ac41"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-action.h",
+      "bytes": 12461,
+      "sha256": "744ceceba822918c3455668480832eab3467ddff443e27a60cceb172a67e0f9e"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-annot.h",
+      "bytes": 22679,
+      "sha256": "90fe015cedac22ec4eef67c6b4c90b53015df0af93f966c9febe54cca9e621f8"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-attachment.h",
+      "bytes": 4815,
+      "sha256": "944ac42b64c10b2a235ecceceb29572a105a0bc75b0806795ecce8d7ee12df28"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-date.h",
+      "bytes": 1040,
+      "sha256": "ae6e54a108ff3bf5d35ea4b2e7fecd6ff726a84af41ecdf7ecfeb47e1790417d"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-document.h",
+      "bytes": 22409,
+      "sha256": "b1e4b60cbb77c6cfa01f97d4ca1c51243d1b3ac06ea88d2804a930cc44e85305"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-enums.h",
+      "bytes": 9153,
+      "sha256": "acfdecd0d3f11d5e76578e9ad8efeeaf815dee2805160d452e38425276802f77"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-features.h",
+      "bytes": 2785,
+      "sha256": "1b28ff85febb39f5ce5bc0e642ef91996f81ba115348c19bf40e4a63b9a848b0"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-form-field.h",
+      "bytes": 17538,
+      "sha256": "4b6f7b4b5a59a1dc13998ef2b0d6f22276aeec0a96a7e5b2f3b7df2666049c42"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-layer.h",
+      "bytes": 1989,
+      "sha256": "1f4653fdf6e7fc60156d1e437b4688f023afe04dba6ddf65fa561a67a85ce1d9"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-macros.h",
+      "bytes": 1143,
+      "sha256": "9767df423646c8014b57a33a33f0954acacd804b34697aea7b9c4efedbe42178"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-media.h",
+      "bytes": 3285,
+      "sha256": "054d3c0bf01b211324e4bb9246c9806a8c41711a7654076dcab749c362de7390"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-movie.h",
+      "bytes": 3337,
+      "sha256": "89e43671f4c5b42136b9f40097a6248ee6c4142d68b67069f0332ec24b11fa19"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-page.h",
+      "bytes": 16330,
+      "sha256": "a02f244c67f8919c7ae3607d862c9ca59791291ca9f568e4c3298eb6a500a206"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler-structure-element.h",
+      "bytes": 17329,
+      "sha256": "fb7f3d71eeccde33fd82e7e776732b232156d1660cd51be0edb08e25039667fc"
+    },
+    {
+      "file": "Library/include/poppler/glib/poppler.h",
+      "bytes": 15047,
+      "sha256": "947733bed1bf57cd79b266ca2851c85a9fe79fde6b7c34c275d982780ef0d7a4"
+    },
+    {
+      "file": "Library/include/poppler/GlobalParams.h",
+      "bytes": 9528,
+      "sha256": "9ebc11486a484459fa7be17fbf6253c62157265b8873fb5b6ae32a3b80873897"
+    },
+    {
+      "file": "Library/include/poppler/goo/gfile.h",
+      "bytes": 3919,
+      "sha256": "16cafc7883aa3a3ddf5199c1f7ba34ebadb337c313a26b5cc6f0f9b738780164"
+    },
+    {
+      "file": "Library/include/poppler/goo/gmem.h",
+      "bytes": 4604,
+      "sha256": "66ec0e5bde39c12903f17f61f893857fa8b21e7b7c3683f27c289bc0b1f73a71"
+    },
+    {
+      "file": "Library/include/poppler/goo/GooCheckedOps.h",
+      "bytes": 3302,
+      "sha256": "2ae4756ddd0b874166b9c356cc8444d783f5daf76ec4080cb4974f3723a1be00"
+    },
+    {
+      "file": "Library/include/poppler/goo/GooLikely.h",
+      "bytes": 594,
+      "sha256": "8902d31d3878db66da1e11aab80fd07b9be128f2888389057730422787c3e62d"
+    },
+    {
+      "file": "Library/include/poppler/goo/GooString.h",
+      "bytes": 7099,
+      "sha256": "ed60a82baebbf2b4c6fa4081bf51313fe48e2851c235d9a8d54be1d4962bb7ce"
+    },
+    {
+      "file": "Library/include/poppler/goo/GooTimer.h",
+      "bytes": 1180,
+      "sha256": "0b2143d74d88c41c704eb9207f1fe86f55d14094dfb01ca81923d5fcee24aea2"
+    },
+    {
+      "file": "Library/include/poppler/goo/grandom.h",
+      "bytes": 441,
+      "sha256": "01233724bfc1799d069cacc871b77ba00acc30cd26caa29285309690dc405440"
+    },
+    {
+      "file": "Library/include/poppler/goo/gstrtod.h",
+      "bytes": 1505,
+      "sha256": "bf74f333a382783abd56648a1e095a4f8aea5049fd95275e0377f8d2ed6705a7"
+    },
+    {
+      "file": "Library/include/poppler/goo/ImgWriter.h",
+      "bytes": 1154,
+      "sha256": "5dab0e8320b6c402f0657ab1c4b1ebb01769bea9aab5517669eacaac8cea49eb"
+    },
+    {
+      "file": "Library/include/poppler/goo/JpegWriter.h",
+      "bytes": 1920,
+      "sha256": "80827dba9f3e423f45be405078047c2e2f8ba77def0e325c431fb2112f90c84a"
+    },
+    {
+      "file": "Library/include/poppler/goo/PNGWriter.h",
+      "bytes": 1708,
+      "sha256": "ca1c858423aad04699885b0260510b4ec26562b77b4c4547a28f6c8448409e3c"
+    },
+    {
+      "file": "Library/include/poppler/goo/TiffWriter.h",
+      "bytes": 1804,
+      "sha256": "8ab339170bfb7733ac0ca6c6b8fdbad907552f36e34ee807fbacfacee5eab1a0"
+    },
+    {
+      "file": "Library/include/poppler/HashAlgorithm.h",
+      "bytes": 508,
+      "sha256": "f93478eed8d6abc4230a3233c6fcb82627e087173cb87b3353187255cfd1f62f"
+    },
+    {
+      "file": "Library/include/poppler/JPEG2000Stream.h",
+      "bytes": 2183,
+      "sha256": "96c4af4e28f2fdacca517ea0dbfb55e6279005ee62e47f6b081dd1f1ebcda7f9"
+    },
+    {
+      "file": "Library/include/poppler/JSInfo.h",
+      "bytes": 1895,
+      "sha256": "48b97381a2f82ed63cc7b251b91d22112984a1e6f51375993e878b5f8a086ba7"
+    },
+    {
+      "file": "Library/include/poppler/Lexer.h",
+      "bytes": 3709,
+      "sha256": "2553d0781b18acef0ba94d09fa8438ba6e4a67b9957b4c67b26433069d2c3941"
+    },
+    {
+      "file": "Library/include/poppler/Link.h",
+      "bytes": 18594,
+      "sha256": "d7c1ee8ba9e2ac542f5c2f3bc596af4eba42087ef0d2fd3ce7606a7100f13b84"
+    },
+    {
+      "file": "Library/include/poppler/MarkedContentOutputDev.h",
+      "bytes": 3545,
+      "sha256": "85776fefecd3560074e4eecb73adc5c2c351a614161dac8bd3ca6f11c0ac59dc"
+    },
+    {
+      "file": "Library/include/poppler/Movie.h",
+      "bytes": 3567,
+      "sha256": "fb0b3d545343f718202d94438dbe2e6a1704ef162bfeb4123d082758ef0650a6"
+    },
+    {
+      "file": "Library/include/poppler/NameToUnicodeTable.h",
+      "bytes": 451690,
+      "sha256": "cb644ef8e9b13c0f28cccee58db17bfd6c90be3e8bfef09cb3e6e055cbbd1169"
+    },
+    {
+      "file": "Library/include/poppler/Object.h",
+      "bytes": 19520,
+      "sha256": "93be97342ac2959ffdabc851213dc37ff7ba82d7ba6213adda4029664425e3ba"
+    },
+    {
+      "file": "Library/include/poppler/OptionalContent.h",
+      "bytes": 3287,
+      "sha256": "0aef9c8ab07531358c2cf389956d0a37a81de05ad924442e91f432c471ce9910"
+    },
+    {
+      "file": "Library/include/poppler/Outline.h",
+      "bytes": 3868,
+      "sha256": "7651b5aef85e7b6a0a0100e19140257d81769578faec406994cad27953af719a"
+    },
+    {
+      "file": "Library/include/poppler/OutputDev.h",
+      "bytes": 19188,
+      "sha256": "505c2e73062468d56d6494a4aae408ea19c3eb91d6c0c13808417c9bf5cdc89a"
+    },
+    {
+      "file": "Library/include/poppler/Page.h",
+      "bytes": 10902,
+      "sha256": "330ba28624d88c91cbaccfe2e514a83f979a015360a664e6cce178905743577e"
+    },
+    {
+      "file": "Library/include/poppler/PageTransition.h",
+      "bytes": 3107,
+      "sha256": "03cb74f54181b1b005c65c6097bc3bde51f6f2a29e1894ef824d3db266c9b5c1"
+    },
+    {
+      "file": "Library/include/poppler/Parser.h",
+      "bytes": 2798,
+      "sha256": "68fb8aed0ca4ca523ea92c27de2db4a5f2d2c579971efae89406fa840d6f0123"
+    },
+    {
+      "file": "Library/include/poppler/PDFDoc.h",
+      "bytes": 21862,
+      "sha256": "03435d654823474bfdd544aa2f8b1d0efa008703830888506e0e37c1004795c7"
+    },
+    {
+      "file": "Library/include/poppler/PDFDocBuilder.h",
+      "bytes": 1526,
+      "sha256": "9727a2bfe358324c92aec7d10a22673077d7b57db120a52f7f73e0372e5626a3"
+    },
+    {
+      "file": "Library/include/poppler/PDFDocEncoding.h",
+      "bytes": 1423,
+      "sha256": "aa21954e32f921f3828070bb61b3d1425ae6fa05772a689f0d697928f7cdebbf"
+    },
+    {
+      "file": "Library/include/poppler/PDFDocFactory.h",
+      "bytes": 1969,
+      "sha256": "3114e4cfee123712ad6fa52ada4ffafea16a04b47079233a9293bb0e906e1f1d"
+    },
+    {
+      "file": "Library/include/poppler/PDFRectangle.h",
+      "bytes": 2343,
+      "sha256": "cf614b9fc6a89a32f02f1e5561af9a2b8a4d604853c42efef4502c9f22ca703b"
+    },
+    {
+      "file": "Library/include/poppler/poppler-config.h",
+      "bytes": 3001,
+      "sha256": "d3130d85122c7a3c051656df083a6b030b8259041dce238031643a472012baa1"
+    },
+    {
+      "file": "Library/include/poppler/poppler_private_export.h",
+      "bytes": 1247,
+      "sha256": "806c8145350da7baef885d042e07bc1ab93febfe0d1f062172d2e4a3151a57c0"
+    },
+    {
+      "file": "Library/include/poppler/PopplerCache.h",
+      "bytes": 2079,
+      "sha256": "c1671897ba7dd91845a082bbbdfbdeb4a567506311bdb34811966bfe016b1e51"
+    },
+    {
+      "file": "Library/include/poppler/ProfileData.h",
+      "bytes": 996,
+      "sha256": "72b89775dd0d2fc02a6322e4276524fa0cf85dd49ea13c79a566a7bf0b9eac6c"
+    },
+    {
+      "file": "Library/include/poppler/PSOutputDev.h",
+      "bytes": 25814,
+      "sha256": "c570165bc44416cac8e2bae99831f670ac258c8c3ac96994ddd3f04e493c029e"
+    },
+    {
+      "file": "Library/include/poppler/Ref.h",
+      "bytes": 3985,
+      "sha256": "73b1ba7f09ee25c8c1f9e5f8495903fef518b37a83d88596e636ca0e4c50a9a5"
+    },
+    {
+      "file": "Library/include/poppler/Rendition.h",
+      "bytes": 4616,
+      "sha256": "4c72fbb5c69ff9c19ee6113501398fea708a74e0723574efd6b5df61aa6f722b"
+    },
+    {
+      "file": "Library/include/poppler/SignatureInfo.h",
+      "bytes": 3261,
+      "sha256": "8205291257ec199de6e725cfc91a95c912bb39d69182dad7bb0718d67b8d55a2"
+    },
+    {
+      "file": "Library/include/poppler/Sound.h",
+      "bytes": 2458,
+      "sha256": "3fffad6396ef7adecb9acaa07332d74e3ed0921f9881e18ae225290908939aa5"
+    },
+    {
+      "file": "Library/include/poppler/splash/Splash.h",
+      "bytes": 17121,
+      "sha256": "1c20e61a0071eaad18ab15ee7d3754abc29de3cb9e1cd52289695e5f2cf35070"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashBitmap.h",
+      "bytes": 5432,
+      "sha256": "ccaf1f96094d214b4bf29059de6d7d669896e136f2066ae08049922eed238f4b"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashClip.h",
+      "bytes": 4425,
+      "sha256": "4fc10c29b7d73984c3f892efa8f5160d6e4c266cc8e22482f18d8577a848bfca"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashErrorCodes.h",
+      "bytes": 1337,
+      "sha256": "3efdddea975da1de33bff870e5f91c62261c1c8db85e05b0628a1e220558efaf"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashFont.h",
+      "bytes": 4789,
+      "sha256": "cf2ee029c67f59a69bdaf3db0b14ad26025282cb4e8688e1bbee30e21bca3508"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashFontEngine.h",
+      "bytes": 4018,
+      "sha256": "13866cd7b5fe9c0bfcb27dec2726193c9ecefc94426b16f8d4e10692396f8f62"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashFontFile.h",
+      "bytes": 2796,
+      "sha256": "3b07e2f287209412e3f0f76befd3fd36f4fc2f75fa26be7050a9f0288039030a"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashFontFileID.h",
+      "bytes": 1389,
+      "sha256": "032472dde17e854a9f06371606427500d3fa5cd4c78163ee57d4b98100810f6f"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashGlyphBitmap.h",
+      "bytes": 690,
+      "sha256": "860aa5c5e46ff7cfaeaec0898fd45c6a4bc4104ef53d1aaf7b3e9599ad296904"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashMath.h",
+      "bytes": 5953,
+      "sha256": "abafa05bef7e6c3d646980d16bfd5bac241b02d63d77b477975fd1257dbf8d9e"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashPath.h",
+      "bytes": 4344,
+      "sha256": "286468cee8846b96292ad9e25e2ea8ca56d23b58dffd8d6154a6dc95651193c6"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashPattern.h",
+      "bytes": 3452,
+      "sha256": "85f6c889dec5bf80785d096ca185ce5810b55cb85f38e663004873039afbd08a"
+    },
+    {
+      "file": "Library/include/poppler/splash/SplashTypes.h",
+      "bytes": 6679,
+      "sha256": "541b59061730b32770fc4feb023a1fd76de8941489c587028a3f0695ddc3da1c"
+    },
+    {
+      "file": "Library/include/poppler/SplashOutputDev.h",
+      "bytes": 16797,
+      "sha256": "cc781f7b3fb575e1916f0d236c0be1bcb8ef898c377c380ef4cd71d387f782bb"
+    },
+    {
+      "file": "Library/include/poppler/Stream-CCITT.h",
+      "bytes": 36948,
+      "sha256": "85a74cbfcd562fcc279845d4ed97e0a65ad4912261b315db98b1b4c8f0acd839"
+    },
+    {
+      "file": "Library/include/poppler/Stream.h",
+      "bytes": 47337,
+      "sha256": "59203542f525998dd9fbdb29e8aafe163e9694ec802f4494d7118b6afb9d246a"
+    },
+    {
+      "file": "Library/include/poppler/StructElement.h",
+      "bytes": 11623,
+      "sha256": "eed6fc18784a5adcfda08b36d248d22fd7841eb2389558f9daeeb42bb5532771"
+    },
+    {
+      "file": "Library/include/poppler/StructTreeRoot.h",
+      "bytes": 2445,
+      "sha256": "20e171e3c72c3ae95203f56964942f121b00d4397f9ea55728af1d2461642c9c"
+    },
+    {
+      "file": "Library/include/poppler/TextOutputDev.h",
+      "bytes": 35315,
+      "sha256": "e4846f0a41b5139f665d2c2a8f93af7f1bd19fabbdee5e28b67647827e5e24f5"
+    },
+    {
+      "file": "Library/include/poppler/UnicodeCClassTables.h",
+      "bytes": 107148,
+      "sha256": "ccdda34382d5277dfdee9d1eb271ba70814d2ed2174fc3987af3cb7ad60601ce"
+    },
+    {
+      "file": "Library/include/poppler/UnicodeCompTables.h",
+      "bytes": 40842,
+      "sha256": "3129a44f2e75c890e09158a182aaf96a5d59e0410548eb1f221b90756835dda2"
+    },
+    {
+      "file": "Library/include/poppler/UnicodeDecompTables.h",
+      "bytes": 457321,
+      "sha256": "5fe1ed51fd6f382a8f676a59cd29fbf66269567abd99e6664e7315ad6c25b643"
+    },
+    {
+      "file": "Library/include/poppler/UnicodeMap.h",
+      "bytes": 3750,
+      "sha256": "c52bfc4a9be94fd6ae339a2ca84297db617938bd97fd49052dba3b51b83369d9"
+    },
+    {
+      "file": "Library/include/poppler/UnicodeMapFuncs.h",
+      "bytes": 1196,
+      "sha256": "0084c6717d42277f909edd4078c1a6b5314b052689e6ef4ca6c186ed0302ffd8"
+    },
+    {
+      "file": "Library/include/poppler/UnicodeMapTables.h",
+      "bytes": 23967,
+      "sha256": "b50ee8d03c48ba96e163e93175a7be95082d1cf9d2785825900a5ea4f51b746a"
+    },
+    {
+      "file": "Library/include/poppler/UnicodeTypeTable.h",
+      "bytes": 1736,
+      "sha256": "2a907f92691acf9ef1f781cb840a702a726ce47ec45e543d328d063e9b9389a3"
+    },
+    {
+      "file": "Library/include/poppler/UTF.h",
+      "bytes": 6148,
+      "sha256": "6c3010f5c113077a352d2e9bc3c1671832be307c1e500d0987d92ec042597efd"
+    },
+    {
+      "file": "Library/include/poppler/ViewerPreferences.h",
+      "bytes": 2564,
+      "sha256": "56db2a1ffeed5e6ec2211e9e9fd0258d9d5f7f07592cb43e1b1c3a2b46cdbeda"
+    },
+    {
+      "file": "Library/include/poppler/XRef.h",
+      "bytes": 13217,
+      "sha256": "1579cabebb42c67e294a31c62bdf362f299c254a1a96c06fbe8e9340f88067e2"
+    },
+    {
+      "file": "Library/lib/pkgconfig/poppler-cpp.pc",
+      "bytes": 414,
+      "sha256": "f96f1dddfd723877120a23dfde89c6f18fe591e8307e59f8182a65497da8366e"
+    },
+    {
+      "file": "Library/lib/pkgconfig/poppler-glib.pc",
+      "bytes": 520,
+      "sha256": "9d962d69647640a499281516122fe2259568bf843156533dd6e757e59deadd59"
+    },
+    {
+      "file": "Library/lib/pkgconfig/poppler.pc",
+      "bytes": 464,
+      "sha256": "1238bdee1b1b6980ce589236b14b1494a31b23b9259699ba3bbe3070d89fd3d9"
+    },
+    {
+      "file": "Library/lib/poppler-cpp.lib",
+      "bytes": 191502,
+      "sha256": "8ceda149591594fe47fdaacbd3d6ea5fc1b9f3f47bdd8786a40660a4dc6c4e31"
+    },
+    {
+      "file": "Library/lib/poppler-glib.lib",
+      "bytes": 163860,
+      "sha256": "749af8bbba7d3538cf1e13a9f65681a13c85e5f262a6328ec087dda8b42a3d42"
+    },
+    {
+      "file": "Library/lib/poppler.lib",
+      "bytes": 17037826,
+      "sha256": "d467a05746b57ff9810aa5e2541cb42eebdf01e6658968cfa98cc459b70803bc"
+    },
+    {
+      "file": "Library/share/man/man1/pdfattach.1",
+      "bytes": 1128,
+      "sha256": "85da5b4ca51aad4bdd1d6c15a668560a2b983e31bc1344d9f617a0cfc2de00a9"
+    },
+    {
+      "file": "Library/share/man/man1/pdfdetach.1",
+      "bytes": 2464,
+      "sha256": "8c3ac8470e2c066aec161912b4abe2773d320bf1a859eaea1b0619bb63ed16b4"
+    },
+    {
+      "file": "Library/share/man/man1/pdffonts.1",
+      "bytes": 2379,
+      "sha256": "e69df2498573a49506d87a663678ef4c1278a443a6b173131c24b54bbde3f08b"
+    },
+    {
+      "file": "Library/share/man/man1/pdfimages.1",
+      "bytes": 6481,
+      "sha256": "760483481806194ec6480e0f715087b9c652006480a3dc86f98c3d3020d4e1d7"
+    },
+    {
+      "file": "Library/share/man/man1/pdfinfo.1",
+      "bytes": 3897,
+      "sha256": "9f614f435eaa90f21e91537b947bc0dd25cc4baf67f0b3c78a7a617ea4525d8c"
+    },
+    {
+      "file": "Library/share/man/man1/pdfseparate.1",
+      "bytes": 1585,
+      "sha256": "73f02af30f653bb2a999572f28abff089f39d622c0065c1ea876969f176b4668"
+    },
+    {
+      "file": "Library/share/man/man1/pdftocairo.1",
+      "bytes": 11693,
+      "sha256": "08b4fbcca2ac5f322878e9a28e7737e68261ec82ffd798974deb1bcca23e4bfb"
+    },
+    {
+      "file": "Library/share/man/man1/pdftohtml.1",
+      "bytes": 2694,
+      "sha256": "56946903c5f4c1a2025dbb4d5fff345e9b67e65329331c3fd23d36b6560581d2"
+    },
+    {
+      "file": "Library/share/man/man1/pdftoppm.1",
+      "bytes": 6663,
+      "sha256": "71ac1db50a3f00afafb4d6af6e9babc8aa56a26c6ce197e292ef8f8da0e3acd1"
+    },
+    {
+      "file": "Library/share/man/man1/pdftops.1",
+      "bytes": 9151,
+      "sha256": "7f1397439a77e5f57cefdea7a9aa308ddfbf7f888cb4700c1d605f097d576d31"
+    },
+    {
+      "file": "Library/share/man/man1/pdftotext.1",
+      "bytes": 4825,
+      "sha256": "fdfa02a846e9c63756c2e91c1b36226022e33415b73acee477944a4d2af37cfa"
+    },
+    {
+      "file": "Library/share/man/man1/pdfunite.1",
+      "bytes": 1165,
+      "sha256": "ec2601f61b4407a773f7e0686609d894a15564b61703798425bc3bf6f9311a99"
+    },
+    {
+      "file": "share/poppler/cidToUnicode/Adobe-CNS1",
+      "bytes": 97321,
+      "sha256": "3e72e52c617851408a410008bd6dc87b925f627e8285acfc5753274d4131c8f5"
+    },
+    {
+      "file": "share/poppler/cidToUnicode/Adobe-GB1",
+      "bytes": 151426,
+      "sha256": "3fd9899c969014a638572b2806eacc2a96bcd3bb8b6f096f3623db137382fa01"
+    },
+    {
+      "file": "share/poppler/cidToUnicode/Adobe-Japan1",
+      "bytes": 115643,
+      "sha256": "3b54706d4d6c20672f1c85b945a182dacbc647a406014083be611da67990e051"
+    },
+    {
+      "file": "share/poppler/cidToUnicode/Adobe-Korea1",
+      "bytes": 91760,
+      "sha256": "e98ad4e7e04f6572f517aa68ccd45708ae51e99d22d2cb9136f1370a77be1f68"
+    },
+    {
+      "file": "share/poppler/CMakeLists.txt",
+      "bytes": 9332,
+      "sha256": "e81a666bd247bda7d36f266efcb1e20e93c38931becc4c5511699bd9232a3349"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-0",
+      "bytes": 3829,
+      "sha256": "56d35ab2f323b75b7e30dbcfcd9184f4dab5fc156241b5495ac4e503e1ed72fb"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-1",
+      "bytes": 4002,
+      "sha256": "2512a3e2b81537a4b7b2a8f900294aafe77fed61b5c4b21e0fa5d13b786c293f"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-2",
+      "bytes": 4022,
+      "sha256": "a06ea178e6ce30d3e7b2fe8a379ddcf18eccbc0ec1a77502cb31a743e377f769"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-3",
+      "bytes": 4122,
+      "sha256": "fb482584a7f58f5b93012dd7067c83cfffdae2b65053eac5bd0cfa71ef1525bc"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-4",
+      "bytes": 4142,
+      "sha256": "e3893b8c006f6c7800f94aafcad26ae98d2a57e566789e7c8d6cc7141fd3276c"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-5",
+      "bytes": 4142,
+      "sha256": "4917e58066ea121406a0fb18f7defc57032c554a283b9f2e4c6740a8d25fc9b3"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-6",
+      "bytes": 4142,
+      "sha256": "48ad3013cf2ec9690ba4e6127e992d2f94704ee43376b28fbf4d138f6064cff3"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-7",
+      "bytes": 4118,
+      "sha256": "a95c2506de496acc0b004a36b6f93ff290e39a2581db9d6c6fe0f47e82829bb0"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-B5pc",
+      "bytes": 9061,
+      "sha256": "945cb62a8cca3b8f5a51c16167b9736bafd7e14f8bcc0fa358f364063d5441fa"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-ETen-B5",
+      "bytes": 9462,
+      "sha256": "37522e04405b94256489cb5f9054bbedf2177c843a03b83cce6e906e1eb47143"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-H-CID",
+      "bytes": 3355,
+      "sha256": "d334a96b462701fa98c70164d63841a45212cce943d4d252d74877c7b484ffc9"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-H-Host",
+      "bytes": 9570,
+      "sha256": "f54edd3e0098771c322747db03ef1ee5a5d4913bc8a88945559da4a5a97b1934"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-H-Mac",
+      "bytes": 9126,
+      "sha256": "e563fe7f214934059c47cd80790830722a5646219a8ae6d76bcca3984ff5cf4d"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/Adobe-CNS1-UCS2",
+      "bytes": 266531,
+      "sha256": "8375afd535e153a7e3bcf448be93e5012b26229547a20d52520e46e3c386351f"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/B5-H",
+      "bytes": 7493,
+      "sha256": "02abbc88dbcde53821e9bdde921348f7e36aa49bcee8a85524cc4286c39e9da0"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/B5-V",
+      "bytes": 2924,
+      "sha256": "449ff860b710a27095feccbc46e12c042ca2370f85ff34a1e4e49ede825c6765"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/B5pc-H",
+      "bytes": 7547,
+      "sha256": "7a2af623d66158fd9b2eae590d3b0373b2e73125f008befda26c40a6c5d396fb"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/B5pc-UCS2",
+      "bytes": 2647,
+      "sha256": "eb8fe097b09622b4ae7a5d0b3817e5269e4bcb12bbaa1e6603e9e7b532e34c99"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/B5pc-UCS2C",
+      "bytes": 272945,
+      "sha256": "c9d390d9df334e83817caf2b2ead6182b80b692ca153895e7b911f3c29b6a1bf"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/B5pc-V",
+      "bytes": 2936,
+      "sha256": "f1b09f3752437a802f0992297a18361fd3bceed8e208cfbb97f2e6c035a29d2e"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/CNS-EUC-H",
+      "bytes": 12246,
+      "sha256": "61a5163ddf2dcbeed5efc4c8e9a612c7b3c5a0c062df75b2b3d73e3e46e7a299"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/CNS-EUC-V",
+      "bytes": 13278,
+      "sha256": "91faeda86c64df62c57b434a5b1322e1a6236c8520db3d4ee58b6ae5fee4c01e"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/CNS1-H",
+      "bytes": 5611,
+      "sha256": "47d18805d2cc13717d13a68244cf52c82f0a27e2581c9f390da1a8d250010312"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/CNS1-V",
+      "bytes": 2932,
+      "sha256": "47b710e5e4f8e6115e49dc94bdebff328d10e25b1214ea1a7deab61f4780f94a"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/CNS2-H",
+      "bytes": 4275,
+      "sha256": "eed3779e35db477b1f2dba0f6c338cc4a1dd504b47089bbebca7612faa0cb395"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/CNS2-V",
+      "bytes": 2683,
+      "sha256": "b9550e27b3290e40e8db266fc9a65213d8b58c5dc253ff6654d305f305950c78"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/ETen-B5-H",
+      "bytes": 7703,
+      "sha256": "b6e5e42d94f6642842f6a42445c1df29d3874c6d1a91a38a05c9d7e4b57f0ce6"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/ETen-B5-UCS2",
+      "bytes": 276625,
+      "sha256": "b99956d31b813c55df64bada4ac35de2fd214d7ad03a7ae01ff14d0ae08a89b3"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/ETen-B5-V",
+      "bytes": 2974,
+      "sha256": "0e6f041edd60516e92c9470254c4d45522b4cf079f1809b82862d43a3f1e1663"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/ETenms-B5-H",
+      "bytes": 2729,
+      "sha256": "051a38392481d6069608f41962ef9393e142797a8977d7f7fbd534b051a6e231"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/ETenms-B5-V",
+      "bytes": 3041,
+      "sha256": "477e42501dd0c27301b992ab004d6044bf5406277ee7a353d3b04cc08092a9e0"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/ETHK-B5-H",
+      "bytes": 23202,
+      "sha256": "8de4c7aa047ec7ea035585dc42d0465cba4ced088b12f3dfa21014133493d376"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/ETHK-B5-V",
+      "bytes": 2955,
+      "sha256": "552daa355f17027489d57e4a9b0ce517760f16eb3039d966e48fba7bdd2a6829"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKdla-B5-H",
+      "bytes": 23268,
+      "sha256": "1918350beee3ed4a46136c8b9c07bf3748c84d7175b6718636486758fed10bc4"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKdla-B5-V",
+      "bytes": 2941,
+      "sha256": "0ef767fb0c28ab6068183f2253e47f1b1fff1779260e73d15ac01b138da57367"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKdlb-B5-H",
+      "bytes": 20928,
+      "sha256": "47cd11c336ee7c6f4ce15d1e0217c0d34c71397b0e30b8417b6427ddef335aa7"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKdlb-B5-V",
+      "bytes": 2941,
+      "sha256": "aef49aa9c31386b7a57aba5822bf4269975eb05ea4fe51bda9ca0fb5bf31edba"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKgccs-B5-H",
+      "bytes": 13724,
+      "sha256": "5a9648732d1245acfd3156e21f879b77cb091c14fa304056b402fe2e64c995e8"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKgccs-B5-V",
+      "bytes": 2947,
+      "sha256": "d164ee025e214dd64a3921d826e9ef9dcc3cd3e6381c527302f6802b9a4c7043"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKm314-B5-H",
+      "bytes": 13537,
+      "sha256": "700102c297ad373396a6dc20c8282e6c16882ae51d52251b46da6863c3b76ced"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKm314-B5-V",
+      "bytes": 2947,
+      "sha256": "28258c0aeea002495a13190786f3d4025ae426248a6a872b21958d8d4a22f957"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKm471-B5-H",
+      "bytes": 16507,
+      "sha256": "c602791848693d92e496b8f449b16e39a93306c37e272fede3b88fb9031eaa13"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKm471-B5-V",
+      "bytes": 2947,
+      "sha256": "7f97034b0baaeaa2a3cc01f691534e61a5425b3ff9a89025082a9c14bff02a4b"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKscs-B5-H",
+      "bytes": 23253,
+      "sha256": "46b4d44a0d38cf188a88f42688f10a03aed8d67be80c141a1404abacc01ee191"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/HKscs-B5-V",
+      "bytes": 2961,
+      "sha256": "1f6f7f06216987d973c18e23d1a8c79044d9f1b301e01c738867ca1fdf50e237"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/UCS2-B5pc",
+      "bytes": 273255,
+      "sha256": "e6cf8fa5ef648e3ed57dcf32f4825582a12314e9cfbe83bc878c37ef1b28262b"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/UCS2-ETen-B5",
+      "bytes": 286940,
+      "sha256": "f86e56811a2d7f3dcb6c2eb32a4efa7cbeb56436adc5ece4f7ff8886ede56591"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/UniCNS-UCS2-H",
+      "bytes": 326349,
+      "sha256": "fe9c7f1557d58875bc4a16edf377ee0d8c579eaee778135adefbbed1f868c017"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/UniCNS-UCS2-V",
+      "bytes": 2971,
+      "sha256": "745fd7a922bedd2d124006a4b5e6a909aaaa9f11eebefbb0477c22a01439a3a8"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/UniCNS-UTF16-H",
+      "bytes": 253253,
+      "sha256": "074d175c8c6827184d064f2c48cbe0ba4957bd525fd864184717518acf4db970"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/UniCNS-UTF16-V",
+      "bytes": 2960,
+      "sha256": "d21175d1f8a083b606a9a1e17fa98d1cb901a0e833e19d47a6c08fb452c91c11"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/UniCNS-UTF32-H",
+      "bytes": 324657,
+      "sha256": "be10503afb2d8c081c8ceb62d39b107f23022646e3204d99c0a9e9b4c441b9b8"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/UniCNS-UTF32-V",
+      "bytes": 3040,
+      "sha256": "85e38fda8328d3a7917486cb18094a7a18c4fb52dfe76c36e4eeaca0444aa101"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/UniCNS-UTF8-H",
+      "bytes": 290056,
+      "sha256": "51032588b2d4748e933744c531e9e7d9cd826f3427d23fff1a9bc19db24f84de"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-CNS1/UniCNS-UTF8-V",
+      "bytes": 2996,
+      "sha256": "b609e60fb74b493ce46d2f3b2393d0bc81244ac9a10711a96d61fa476e684a94"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-0",
+      "bytes": 3292,
+      "sha256": "72509e2ace6c096d5ef0946e894edf8e77923d8004d519a06ff28a5e56d67c85"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-1",
+      "bytes": 3446,
+      "sha256": "b667f1b2e8773a3f05ef66177ad0bd2fc6a0adc470fa9de50f3a343bf041f97a"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-2",
+      "bytes": 4400,
+      "sha256": "3bc73a22b6e919733e7b5945d79c6c1393a930217f559c7b981cd06bd106661f"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-3",
+      "bytes": 4399,
+      "sha256": "fc5490ec245dda01c8b46797ff1429d70734355968db4d2eaffd9a4aae17086e"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-4",
+      "bytes": 4951,
+      "sha256": "270433b0479dd5ebed7f2ecff0ea481f1e3734f397893fb7e1b2d871486e206b"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-5",
+      "bytes": 5051,
+      "sha256": "ab3ce0efbaeefe12bc41711a276386989026c88bc4c3f81da3f33344f7df3421"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-GBK-EUC",
+      "bytes": 90971,
+      "sha256": "f095a0a55783ac2ed81ddbfe11b8fd6dc3816e9b0f04acab5bc4a3a2eb4e7f7f"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-GBpc-EUC",
+      "bytes": 5503,
+      "sha256": "b4d9fdc2e43b1289ba5f4063446de5d89633e84871381065f2f5e7e4b27f5f60"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-H-CID",
+      "bytes": 3470,
+      "sha256": "05840c56d9566e8e3d69e5e94ceaea2ef2d98cddc23f9e3a6afdf9e260341fed"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-H-Host",
+      "bytes": 91549,
+      "sha256": "94ccbe34dbfec57c7f4f28f10591a2fdc7b13da2f3763442547be1034ad7eaa9"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-H-Mac",
+      "bytes": 5484,
+      "sha256": "26d4cff1065573ef0516ca49413bc7ed1c48d5857b2e63948a6122932c692858"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/Adobe-GB1-UCS2",
+      "bytes": 221211,
+      "sha256": "368b40ec05568faf323cfbbddf23c60d566bbc88e366981eb6541b026381a3b8"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GB-EUC-H",
+      "bytes": 4427,
+      "sha256": "9c2b268c5fbcc9a23aa76d2f199c97fa9fbfcc0ef43f9f320bb367a6b0a47b20"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GB-EUC-V",
+      "bytes": 3100,
+      "sha256": "5acf07ba8e65be8aad1c7a4535574e41cb326abd295e9e5c1eb3e96037260397"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GB-H",
+      "bytes": 4322,
+      "sha256": "80e3b6caac7f23cb56e2b841464daefd9c32f14d902d67cfd8deba346ad2a35d"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GB-V",
+      "bytes": 3076,
+      "sha256": "8183888d47318ee30bf2b4f2a07aa953137ab43ac72df265c83f79f2b6180a62"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBK-EUC-H",
+      "bytes": 83102,
+      "sha256": "6c88b308f122966de14696d819800bc89be2538fa14fa41f474e36b20cea11c6"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBK-EUC-UCS2",
+      "bytes": 224247,
+      "sha256": "25b3158ed0bad3fe9529873c0108e2cac9ade4e4824860568dc1deea1ddb9916"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBK-EUC-V",
+      "bytes": 3089,
+      "sha256": "73381a5bc2d0aacbf6b2ec211f34e042e7c74895342fcee073b0f9be2dbc8703"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBK2K-H",
+      "bytes": 90926,
+      "sha256": "c7693cc2b7b235dad5ecd428ecc0d56cf9e5245c05eb992816a6cdcb446c97b1"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBK2K-V",
+      "bytes": 3482,
+      "sha256": "80a5a087821c9f6829fadafc971d5bdae9bbc4b54714733fe22c64802b4301ae"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBKp-EUC-H",
+      "bytes": 83083,
+      "sha256": "d6ef0e6c393bd065f5b646b7dc87fe8df88f3608a9264fb5727b552418352d5a"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBKp-EUC-V",
+      "bytes": 3095,
+      "sha256": "43c8fa12dcef0b1b584fdd077996fff388fc0e9a9d332e08556640ceefa9fa0e"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBpc-EUC-H",
+      "bytes": 4455,
+      "sha256": "ec6132762b28650eb0c8483ea9387af39acb9d8aca432cb1e4f79a1058e1cd40"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBpc-EUC-UCS2",
+      "bytes": 2729,
+      "sha256": "2c95f737e6631e8120a88c1f5165a201292681642a6c01a13623509c4ce58809"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBpc-EUC-UCS2C",
+      "bytes": 142756,
+      "sha256": "43ef886a6293f4d1c99eefab304af9388b65a10f53c543231c3f6e6ff9770c75"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBpc-EUC-V",
+      "bytes": 3112,
+      "sha256": "5fec79fd4f5f95d7638a150eec9b551268b8c29103446f0eee26866769ff384f"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBT-EUC-H",
+      "bytes": 46773,
+      "sha256": "21dca4424cff890670aee8ad6b045844d3b05ed879e87a79aab34bd7f722530b"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBT-EUC-V",
+      "bytes": 3108,
+      "sha256": "100af66255a2f363059da703be769e6227c74e353df71329d1a18d83f5b808f2"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBT-H",
+      "bytes": 46668,
+      "sha256": "ff770615091901ebfc9c2bfc39b8e7da4481ac38816e0849db149dac34f9ff86"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBT-V",
+      "bytes": 3084,
+      "sha256": "04f4f5ddfd909d8a9f127957b3dcd549d121dba9b3459da396ae80abea94a0b1"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBTpc-EUC-H",
+      "bytes": 46803,
+      "sha256": "274e76732cb5f12fe0081ac872a034b4adb8705a24221b5add479f4dd86efed2"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/GBTpc-EUC-V",
+      "bytes": 3120,
+      "sha256": "f26971e59f62956eb6d8d27782c5c993cff89097ccab8e93ec682bf4b9302122"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/UCS2-GBK-EUC",
+      "bytes": 234056,
+      "sha256": "56d84b19a9fd0822981072073aa88c1f7110d7c4b6f44a3eb89eaccec6f4fcc2"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/UCS2-GBpc-EUC",
+      "bytes": 189539,
+      "sha256": "778bedf71cbfdb2c3aff1725ee96d0eeaebe5909fb52d1f381037952acecb940"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/UniGB-UCS2-H",
+      "bytes": 274383,
+      "sha256": "d2b100a68c016190347c6e0ecee3e7d6d1accd7395d7e803bf88b7ffef156725"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/UniGB-UCS2-V",
+      "bytes": 3167,
+      "sha256": "d94d2e56a9a5cb89e0a68c31eba1ff40aa604b3a504be844c67de64af64eec96"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/UniGB-UTF16-H",
+      "bytes": 199981,
+      "sha256": "4edbe1789ffb0564c14e1b245bbd01eb56bc41326f75d8b041de6847d2ee1d20"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/UniGB-UTF16-V",
+      "bytes": 3061,
+      "sha256": "7d40dc464b46ad8da9bf4d063dae76b0dc190e29805cbd2826e1599e4b432001"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/UniGB-UTF32-H",
+      "bytes": 267909,
+      "sha256": "ac2fe0ff7876345122fdd9eb38629644b5660054c002027fa0e1b0694d430188"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/UniGB-UTF32-V",
+      "bytes": 3177,
+      "sha256": "5d949af5f7525b5c97afd644d7fe6a5477b2ed227c20fb1dbfbbbb40fdec55de"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/UniGB-UTF8-H",
+      "bytes": 237834,
+      "sha256": "226464afd3a4b5a8323539f2f58b118f30d85b3b6aded33839486e4114efe5bd"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-GB1/UniGB-UTF8-V",
+      "bytes": 3115,
+      "sha256": "0368772441ebec46e8f0eeb78f72b0d618a62072d2e3ada31e9ff6aca5a6ddbd"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/78-EUC-H",
+      "bytes": 14796,
+      "sha256": "41fe69bd5adba9896742967fcb39252770ab28a15b24c86b3d23c94c91f45d0e"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/78-EUC-V",
+      "bytes": 3222,
+      "sha256": "2afa8f3de6e615d7ee712c6943b2a6f68f19509b49c5beb2dde17e34d5c70b91"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/78-H",
+      "bytes": 14673,
+      "sha256": "bf1b3dcae13713e5c1ba7422c7803561d46762448ef433d06405b766f5142e73"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/78-RKSJ-H",
+      "bytes": 14827,
+      "sha256": "06656b02f09cdc41db22938423ebb4b04dbd5f243ee01001ed69910d4f34aaf2"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/78-RKSJ-V",
+      "bytes": 3228,
+      "sha256": "892fc562b81f6ac8ac6fbbc70b3f81de6aa20b1851285c78bc574df80021bce1"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/78-V",
+      "bytes": 3198,
+      "sha256": "8ccfde871c49abec58f124b7bef505f4c96e1d9ec05a45d02cd93bec4ad0d238"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/78ms-RKSJ-H",
+      "bytes": 16500,
+      "sha256": "44d36d66e4b19bd86b97f36037f6b0e7946be6d2e8be2c7cac9b40e38038d74d"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/78ms-RKSJ-V",
+      "bytes": 4209,
+      "sha256": "916ca2a7b58e54df7859bb2d8e6ca65366f52a0d72343614f4975fb7954b9553"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/83pv-RKSJ-H",
+      "bytes": 7080,
+      "sha256": "77f7a0f11fe2ee160baa6446b47b8a66cda41aac4ab777fb92c192198a521377"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/90ms-RKSJ-H",
+      "bytes": 6070,
+      "sha256": "e0b104bcc8dfb3c2d3e025e12c59182d7e0ee1b5df6f55bc8550d4b3fc83ecd3"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/90ms-RKSJ-UCS2",
+      "bytes": 106193,
+      "sha256": "84ef5ef34cced7dbc6443d115f921799fd65c46d4d7d92d525c55af86371c175"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/90ms-RKSJ-V",
+      "bytes": 4229,
+      "sha256": "a588f7d20d0c8dbf09693480e62bf3ab80b7453858e4425d4b47650d48e7757b"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/90msp-RKSJ-H",
+      "bytes": 6001,
+      "sha256": "10b15c3b208d35f9b2764b0dd00e52de59170aa3f102387e7c388dfaa2290fc0"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/90msp-RKSJ-V",
+      "bytes": 4212,
+      "sha256": "05b5adf56096c0f1baeb267ec63f4018c85e3c3cff01f3457ffa10672a225c09"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/90pv-RKSJ-H",
+      "bytes": 7815,
+      "sha256": "bda3f87262c61ef5a34097737f7306fb160d769f357b72ad251d11384a3848d2"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/90pv-RKSJ-UCS2",
+      "bytes": 3254,
+      "sha256": "f2fbb5ed652f3d64f90153fd23ae7034f09385138184379822b1ee0077f1b841"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/90pv-RKSJ-UCS2C",
+      "bytes": 97291,
+      "sha256": "4a8c34374f1738bdccbfade7bfbf9b4ee0baa8c66b988266bc58431e1f234d75"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/90pv-RKSJ-V",
+      "bytes": 3715,
+      "sha256": "36ab76110635e300971cfeaaa9bc049e28ba3214d2a880dd3b97cf1a041cbca2"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Add-H",
+      "bytes": 14854,
+      "sha256": "6b3c605f5d390ea59e837f244052b6adc3712dcbc872000edca089f9642e9c92"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Add-RKSJ-H",
+      "bytes": 15038,
+      "sha256": "630d4689f3d17000208452c855d9360dc1f769f102b7d29c17ea11973b28aaa7"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Add-RKSJ-V",
+      "bytes": 3823,
+      "sha256": "5664073e91e61009d72d5f007207f29bb8561c05939f3b185909ab92424bf039"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Add-V",
+      "bytes": 3793,
+      "sha256": "3a481b10d8a8094675cd4549cb9a0515445698b4e971b9605684ccda00d43839"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-0",
+      "bytes": 3341,
+      "sha256": "cd25cfa492cda6db43620d29cea4df50708a591f4729d50275d4c026d82565a8"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-1",
+      "bytes": 3342,
+      "sha256": "1dc50c51406581ae5557bf1eee49b80d096f01d203a52887ee7cfd9e8f979065"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-2",
+      "bytes": 3380,
+      "sha256": "6bf4b9b04107f55cf0c2952b82870c7efbed165d305325ea80854e329ee2bf4e"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-3",
+      "bytes": 3390,
+      "sha256": "985f507dd29652fa887a5bfc67de0ecaf5a777b9f91f41eae58d23011409e5d0"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-4",
+      "bytes": 3868,
+      "sha256": "27d4a3c748bf5c1d76afa8d9346ccd47d6f09002b1676c2bfbc52884ea69e4b1"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-5",
+      "bytes": 4248,
+      "sha256": "c6d32cea2fe9b42bd5efc33e323b44ead86375af0787d1543f6a6203666cb882"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-6",
+      "bytes": 4468,
+      "sha256": "d5081ac9777ef9c4ac56a1f7d361c879948ab16229aad869c0e22ff82efd38ab"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-7",
+      "bytes": 4444,
+      "sha256": "7290cf1ef3c5f4c1d2efd7c6ef32c18fafc33ded7154b99b37386aa8b3b7ccdd"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-90ms-RKSJ",
+      "bytes": 7536,
+      "sha256": "e9acbc8720418ee9a543384d76055b41580ed448791c549f74067db202cc7f64"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-90pv-RKSJ",
+      "bytes": 9527,
+      "sha256": "9d92e638ab8c2a149c8c209339e0ff08a33f58ce9090ebcfefe7706451793132"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-H-CID",
+      "bytes": 3654,
+      "sha256": "deec273456ab8c7cd3c7403b9f5c00d06ebf6bcfd900ef9ed4bcdec93e1a2eba"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-H-Host",
+      "bytes": 7786,
+      "sha256": "e0993b3301962b9d2929b4a5ba23f5743d6734a0af48b22db11db04c3fd91bdf"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-H-Mac",
+      "bytes": 6713,
+      "sha256": "433f7549ae70d6e965f7ab8ec6914b91c1635ab7fd5b8c61dc4833ad1202ebff"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-PS-H",
+      "bytes": 23434,
+      "sha256": "b49d2346ac84859e65d5669264252a40f770fa600896adec350433bfdcebc426"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-PS-V",
+      "bytes": 14214,
+      "sha256": "939ad87eb2619294699240e03e6f90aa8df8d787fdc6eafc5e0f5b7593c165cb"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Adobe-Japan1-UCS2",
+      "bytes": 294111,
+      "sha256": "6a9693361647a37996312cc57071bb79f8c06411207be7c730a83fda1254cd82"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/EUC-H",
+      "bytes": 5075,
+      "sha256": "5cceeaf017e9f813079bbc17d8e750072e50042a01e521c9f9c18efabd596cba"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/EUC-V",
+      "bytes": 3223,
+      "sha256": "d35c5ce976385980244040037152d92d321b738bca885ad0976c10658cd0acab"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Ext-H",
+      "bytes": 15424,
+      "sha256": "fc053d2a17e4ccb7daa94d3a5bac13da692b27e93fd188e6485d6482c183ff78"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Ext-RKSJ-H",
+      "bytes": 15607,
+      "sha256": "00cd02206daf64e633d1c13b979fb20652a554d87fd9f2f0ca94065156ea8b71"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Ext-RKSJ-V",
+      "bytes": 3481,
+      "sha256": "8a84926990144b043f2e5ebda194bf3560cc5f29096cafab8a6079a9d86e2d6b"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Ext-V",
+      "bytes": 3451,
+      "sha256": "72a86d3fe3889fba7f86388f29b773e771d8b63f46beb0c16d5291a69d105d90"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/H",
+      "bytes": 4941,
+      "sha256": "f90323c3fd16e107b02c888167739f210af7144beba1bda83949069535db3346"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Hankaku",
+      "bytes": 2821,
+      "sha256": "a582e384265b625921729f6fa344f38f100502cd969a3310f8d17b236b67a2c8"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Hiragana",
+      "bytes": 2795,
+      "sha256": "f41d2a00f8411311cf8643830fd02eb255bd79afde8c07eb2c147de8e1f4b992"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Hojo-EUC-H",
+      "bytes": 4626,
+      "sha256": "7521eb2d9f4b343322e30568a0067e784be8381b4595e74d83334609375e6f5a"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Hojo-EUC-V",
+      "bytes": 2709,
+      "sha256": "477e837dd1cd806b2e928009a1aefb1737969601d88b2242e619f1cdbd77b93f"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Hojo-H",
+      "bytes": 4276,
+      "sha256": "c53fc89b4939d0bfba02ecf74acbd974bb4173fefa4b72dee754e86c091ce728"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Hojo-V",
+      "bytes": 2685,
+      "sha256": "ae9513f7da1dfdce7342254f7a1d322c7669f67be32f573997c0bb4f5d7dfdcc"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Katakana",
+      "bytes": 2711,
+      "sha256": "d2f827654583b9d243593a9bdbf9407fc1a1c4ba6ffab1f7789155bd3b4f52ba"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/NWP-H",
+      "bytes": 17298,
+      "sha256": "c1b7b550dbb8e03c727fcf67460ca2182904decbcc747f035c08a50d6dec9001"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/NWP-V",
+      "bytes": 3603,
+      "sha256": "cb8f27411228a9f26f0d6371a6db2a3ac48b1df888b058ca38cf1c5dd1e35a75"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/RKSJ-H",
+      "bytes": 5124,
+      "sha256": "9272806c3b27b367a1aa253dfb0a2e508e2d87875c755680f7bd77f459b18d08"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/RKSJ-V",
+      "bytes": 3229,
+      "sha256": "56eac0dd5cbb334f037b3353d66089c7cc2f0326121006c4f6467981955245bf"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/Roman",
+      "bytes": 2688,
+      "sha256": "561c18239a2c308fac2fb53bb3a4af385577b7399fae9bcbfcb5cce5e7f44a55"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UCS2-90ms-RKSJ",
+      "bytes": 149695,
+      "sha256": "1f9207c7abaea5078cf13735e6e2ed3992782d1a2a9f6fdf97d55d05c7b40377"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UCS2-90pv-RKSJ",
+      "bytes": 142968,
+      "sha256": "3caa573e5d5a64a6dcb320d725bcba5491b112fb638b1f88ea0cab30fc420d57"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniHojo-UCS2-H",
+      "bytes": 83592,
+      "sha256": "5f41b1da5150325b132c7d9ca8055c06381c51407c3d1a0d1e6bfb4e3ba4dea2"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniHojo-UCS2-V",
+      "bytes": 2714,
+      "sha256": "5042a83903735c08c373a553b0906d1a3726ca6bf9a15ce7f11b2536bfac14a5"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniHojo-UTF16-H",
+      "bytes": 62948,
+      "sha256": "25507d1e9ace0ffdd08a5268b76d30f421e924e1c4d595997095b411f744ca75"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniHojo-UTF16-V",
+      "bytes": 2720,
+      "sha256": "0a92bbf2dec4bf7bbf39439d0ffab3a8edc09e716be086aacc99dcb046089aa7"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniHojo-UTF32-H",
+      "bytes": 84821,
+      "sha256": "3596f5e997cf3d746339d06e023e0d3a67dffb3906f688ab90cedf9d93d25172"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniHojo-UTF32-V",
+      "bytes": 2720,
+      "sha256": "68ff399f2bccdfb4663b55d9d86720af6f3ed0e0f9ba7381304b8a40e57ffecd"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniHojo-UTF8-H",
+      "bytes": 73701,
+      "sha256": "58c47e65b947dfdf9aca91a16179dd7649797d2c283d0c5ffee7e776299bb75f"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniHojo-UTF8-V",
+      "bytes": 2716,
+      "sha256": "5691edb1eb6581036b938077807d585b42104ef48f5c052d4646a356fdb364a7"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS-UCS2-H",
+      "bytes": 168597,
+      "sha256": "05d064e6b373edf83890e26d7d2a2339482fad265eaf0a2b92ab528af33b5a54"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS-UCS2-HW-H",
+      "bytes": 2820,
+      "sha256": "782f9d14dffa2a538302c8aa02b7d4650ff41d3bbe49215546c66a786be92bed"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS-UCS2-HW-V",
+      "bytes": 6591,
+      "sha256": "eb1fe9bd104770efb0fda13b211fee88cc5487a653e5cdf6d89bb782336e7673"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS-UCS2-V",
+      "bytes": 6509,
+      "sha256": "b487b2602348ef9c69222fd1a82cd45eea4f756d98e974b94183390c9bd8b6c3"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS-UTF16-H",
+      "bytes": 188225,
+      "sha256": "5cf77ed38c25262dba845676738a887afe45e44425c3dd2489334c4d8c510fcb"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS-UTF16-V",
+      "bytes": 5806,
+      "sha256": "03bfb4e91452da537f347b8676e52adfa5dd10f8b920fa2cc34d343580354056"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS-UTF32-H",
+      "bytes": 245445,
+      "sha256": "1c6a4b07e994dfb29e32522a928e86cfa3d18dfd3ae287044de97a923fa578fd"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS-UTF32-V",
+      "bytes": 6838,
+      "sha256": "e15ff77629f5bd1989ed602a01d48d80f91856055ed357c4fcd5214d46422a76"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS-UTF8-H",
+      "bytes": 216459,
+      "sha256": "60d25aa628b23f7e00f8c5fef78eb1145836adabd159e380835aedfd650064f3"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS-UTF8-V",
+      "bytes": 6331,
+      "sha256": "a80206433cf6b59b6a51c74b13f158aa58d495b4a9b062e9c8bb893fd0903711"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS2004-UTF16-H",
+      "bytes": 188305,
+      "sha256": "e8fd0aad9f372ccc42157a71ce567aa481bc008b0a5534a4759e4c207887922d"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS2004-UTF16-V",
+      "bytes": 5830,
+      "sha256": "5428bc3a7cebac290e636ca90af7f9308b0a947b2eb38692cd84eb6b540320d9"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS2004-UTF32-H",
+      "bytes": 245525,
+      "sha256": "25bab401c87758b7c69e4d4d1b1b3396b5786eb99b1c12ba8239bf19747f9633"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS2004-UTF32-V",
+      "bytes": 6862,
+      "sha256": "46f6df69d9d9679916fa739afd0048b52631e99bbe5bd9102ded7f6ae10b34af"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS2004-UTF8-H",
+      "bytes": 216537,
+      "sha256": "086e1d4ce648b0eff727c57831e1d5e264245aa1c296bec291e647b85f9fba94"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJIS2004-UTF8-V",
+      "bytes": 6353,
+      "sha256": "4fc68ac57e3f00c82f128de570788d7f64930c5cf6f812ea9beac4f637360926"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJISPro-UCS2-HW-V",
+      "bytes": 6729,
+      "sha256": "f1f62deb037d76f63246fc690cdd324a160a6ea04ca89df5fae97c2776ee3464"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJISPro-UCS2-V",
+      "bytes": 6618,
+      "sha256": "21ad45929c300cfbb97e3d133ec8ea8f1e1bbed64ea32133e9dcae2c8dcfba64"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJISPro-UTF8-V",
+      "bytes": 7467,
+      "sha256": "f8b358dcba9beee97135be71af105147fe017d2470aaeb28d22695c3f521365a"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJISX0213-UTF32-H",
+      "bytes": 245434,
+      "sha256": "01c4ebb0a44e34766140d304d7a5aed3e51d92c0853a77b6cbef5dd6a075910e"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJISX0213-UTF32-V",
+      "bytes": 6804,
+      "sha256": "7054fdf47fae19305cfec715d681353c85dad4a0515a54c7a7f7592610c6fe62"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJISX02132004-UTF32-H",
+      "bytes": 245515,
+      "sha256": "d884040ff6b96e3e9820072713d1b4d77c6b89b48c862f2bf8367e96d50a0c93"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/UniJISX02132004-UTF32-V",
+      "bytes": 6828,
+      "sha256": "983f4d18c5e31078b714b28156e16a5017ec98580741fa0f7dd9e6c4c50fd322"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/V",
+      "bytes": 3199,
+      "sha256": "1ccdbf3451794ddb929a9e2e43f562b20a8d9de5ec44174317c8a149ab498aa1"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan1/WP-Symbol",
+      "bytes": 3093,
+      "sha256": "6174dd5cd3acaf8439764be7596f5aea1d0515ba81aa9ad01270d92e171fea87"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Japan2/Adobe-Japan2-0",
+      "bytes": 3168,
+      "sha256": "ae0766c1f1654dd3dbdb8ef530b77de39521aa52ec9ccef80c8996e16fc2f07e"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/Adobe-Korea1-0",
+      "bytes": 3433,
+      "sha256": "da2c6c123f6d1d21abadb8a070e5c6379a1ca97b753532aeb21aedf99759f51b"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/Adobe-Korea1-1",
+      "bytes": 4089,
+      "sha256": "bd20feed570d8bb2e9162829eb6a144542b9c75a41a83931f154915e244afdee"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/Adobe-Korea1-2",
+      "bytes": 4088,
+      "sha256": "6921eab77426a8b608e942b6552b521354a2d97c51c5bf35520c24bf19096f31"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/Adobe-Korea1-H-CID",
+      "bytes": 3039,
+      "sha256": "eb36f4842548ffa4875de20057e21a1b3b77786eeb043b3a13abe10374fc4e35"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/Adobe-Korea1-H-Host",
+      "bytes": 16800,
+      "sha256": "c743f13d53963ce91a3f72249402aff124494c5b23426ca209819a399e78b471"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/Adobe-Korea1-H-Mac",
+      "bytes": 12278,
+      "sha256": "f7e7dcca184e043487979b7caddbd9b6e6f6790b58c9d046bab89ec7dbb080c1"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/Adobe-Korea1-KSCms-UHC",
+      "bytes": 16605,
+      "sha256": "fd78abd6c0faf47936f5790b58bdc11fe4d3ad6f0e3b5c3d75b0b86ad0547387"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/Adobe-Korea1-KSCpc-EUC",
+      "bytes": 12452,
+      "sha256": "07a88a9c2a9b709282dc27c723bd0a2adf975af80dcd05c08f918bffc49c421a"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/Adobe-Korea1-UCS2",
+      "bytes": 146807,
+      "sha256": "45bcf869acdcec2507f75836919e589e7137b9f9dbaa8e4975747035024248ef"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSC-EUC-H",
+      "bytes": 11728,
+      "sha256": "90e9250027a7a84fc7a2542f91fe61e3a71299214aaa75c617e12a55dfaa0943"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSC-EUC-V",
+      "bytes": 3036,
+      "sha256": "a51f69ff435ff83b3c200b2043572492be05ac08e98f4662f3938b3f6a1b9a6c"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSC-H",
+      "bytes": 11637,
+      "sha256": "b07bdc0889f15e22caec8101bb34952eb02b5cdf1ec4c929125800167adaf60f"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSC-Johab-H",
+      "bytes": 84250,
+      "sha256": "79e2b557f21e761978671c395aa71b6877ebac2e04ddcec7a3df206efaa5e718"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSC-Johab-V",
+      "bytes": 3050,
+      "sha256": "3894ebe91d454fca07dd0a3fa68473188580d63f0d7ccdf2b24e248507a86d27"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSC-V",
+      "bytes": 3012,
+      "sha256": "c06c74a7f1e76a6797432e2b2b29bb30d65acbfcc80dc3c6dae60e0e045ee9e1"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSCms-UHC-H",
+      "bytes": 15940,
+      "sha256": "f3e3719b2db01f1c27e5f8b85cfec0d6f018239fb999cd03bbe10084a9f4645a"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSCms-UHC-HW-H",
+      "bytes": 15936,
+      "sha256": "129c4892d7d21a5f188af469d06673994c9395bd61c33987a0652261d27a7f7b"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSCms-UHC-HW-V",
+      "bytes": 3049,
+      "sha256": "b6052023250b12413fe7ac8552d64362720374df3c0d1beb2406922856a504fa"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSCms-UHC-UCS2",
+      "bytes": 182560,
+      "sha256": "6d145e9e58084a7dce133721a7063909c5ebb890c8e26b60979ecf1fd94c6d84"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSCms-UHC-V",
+      "bytes": 3050,
+      "sha256": "1ca4c9a90aa3079ffdc8ceb7e288f034d0afbc7142a7fae705416368fc581186"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSCpc-EUC-H",
+      "bytes": 12555,
+      "sha256": "6d2ec35d3aad68c4cba6d93849d8b7b9b8c34572c50b7361ccb6bf338c36f330"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSCpc-EUC-UCS2",
+      "bytes": 17200,
+      "sha256": "f53b5d1db587a20a2bf9786cf6fd41f6814a884009ae5362c7aa6897efb1b7ab"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSCpc-EUC-UCS2C",
+      "bytes": 151061,
+      "sha256": "63cc58a299e3b5ece4f7d92ed4240a9d4feaf0f51f9c63ef677cc49d5cb1e35b"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/KSCpc-EUC-V",
+      "bytes": 3048,
+      "sha256": "2fc9b120724cea591b2ffd2bb4206a31329a085815e45d73e2b93ab5c1ac9f5a"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/UCS2-KSCms-UHC",
+      "bytes": 188853,
+      "sha256": "6b6a7b9ec4eaf3c4ca935bcd948154b5878c76c38df8354fb793c2564fd0c302"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/UCS2-KSCpc-EUC",
+      "bytes": 147723,
+      "sha256": "bea1c7768eea9fe5bdab4b31669bcafd41f053a929ee3a3365ca2be300306fb0"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/UniKS-UCS2-H",
+      "bytes": 166009,
+      "sha256": "bb28e3e84154f49c311128a5700cc0187ce4957b10f18dee88089002db7e5501"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/UniKS-UCS2-V",
+      "bytes": 3076,
+      "sha256": "76c08c4aace48d92a252e686f9d748ebde009337b59361ec286c4bdc037e5933"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/UniKS-UTF16-H",
+      "bytes": 122938,
+      "sha256": "0a1dc38d8dd4e1f55b5a3ab978a2b091109f88f4d08587bbb7864370cda8cfd5"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/UniKS-UTF16-V",
+      "bytes": 3030,
+      "sha256": "681aecd86956265504f7875af43eae3985ab263175aa782baa884b0f514f2aa6"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/UniKS-UTF32-H",
+      "bytes": 165010,
+      "sha256": "576367b865cd64eee2b9a70824176597e0f0639b4a4073b13078a2d9fd6ebd0c"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/UniKS-UTF32-V",
+      "bytes": 3130,
+      "sha256": "03567fb73e9635aa655a463b47da3b62f9f0e7a7bcdcd3caf9c1fae9b0880873"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/UniKS-UTF8-H",
+      "bytes": 145845,
+      "sha256": "944b45d9fd3e7266ac9b03b8ce5a7b308ad47967b60c685896fa9aecaa699290"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-Korea1/UniKS-UTF8-V",
+      "bytes": 3076,
+      "sha256": "ee17a18a7dc48249938263110745162835fc77e6648616c03464c1de1ecce499"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-0",
+      "bytes": 2879,
+      "sha256": "ca58ef1abc2de732d5ff285ded96bb70700e293c19c416a89bae92a163037618"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-1",
+      "bytes": 3012,
+      "sha256": "3b470c60b3d6196322be671571325b5025097fa97bedc51964948a7c6f927f7d"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-2",
+      "bytes": 3512,
+      "sha256": "12d13fd0610ef3006add8169c59f4faaddc19c2629939417caaf70e9dfcec290"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-3",
+      "bytes": 3532,
+      "sha256": "b922373bf0b75b6b8ab57bb5c7200e9ba10c9067a63561577739218692459603"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-4",
+      "bytes": 3552,
+      "sha256": "6d7ebdae3b448592e18871ebd42eb62e4bd4e6c2a2846e7bbae6fdfcc7cede78"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-5",
+      "bytes": 3572,
+      "sha256": "579d94396eafb215c694430bcd08e6fd612eadcdb53ca34a6f9f8e2ada378a74"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-6",
+      "bytes": 3732,
+      "sha256": "6b8c3481b89d3aed99a19120ba365f649b2d82aacb1e15ec71c29697db97e9df"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-7",
+      "bytes": 4092,
+      "sha256": "a6a76ebf76ace408bde2e69f04a17f47c3439e60100391297b10dbf7ec8b4574"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-8",
+      "bytes": 4372,
+      "sha256": "ce6c2a24761aa8376e37a97c3c8740de1e84e9c7fea63a33265d91de97809a7e"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-9",
+      "bytes": 4412,
+      "sha256": "ee0486530d138fbd4f3ae6c58f96cf5766dcd83eff72e39677d1ab5ec3906e10"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/Adobe-KR-UCS2",
+      "bytes": 203264,
+      "sha256": "6861a3208f331ecd73369c5d51eacf3b72c820fe3c87524f79c9ac1bb16830ec"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/UniAKR-UTF16-H",
+      "bytes": 186571,
+      "sha256": "f6f25740407e835538a8ec2bee34b82ee92969ba28771cf138fb2cc966998ef7"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/UniAKR-UTF32-H",
+      "bytes": 250512,
+      "sha256": "43a55f98fa1b83b03741c97f9a1bac1f1369c6c2ae825799fd3e6460ce9f2059"
+    },
+    {
+      "file": "share/poppler/cMap/Adobe-KR/UniAKR-UTF8-H",
+      "bytes": 220026,
+      "sha256": "0a4c6316bc6c6aa98dc359a724cccc32b18956321a52e985296858c4c4fe1acf"
+    },
+    {
+      "file": "share/poppler/COPYING",
+      "bytes": 1560,
+      "sha256": "36f27791549113cecd00013233101026452c872f79215a93d33a4a9bd0678672"
+    },
+    {
+      "file": "share/poppler/COPYING.adobe",
+      "bytes": 1565,
+      "sha256": "4d367131f33e9f0daa6acf84ccc20e6468aa379bc053f5fa72dab201ec017b39"
+    },
+    {
+      "file": "share/poppler/COPYING.gpl2",
+      "bytes": 17987,
+      "sha256": "ab15fd526bd8dd18a9e77ebc139656bf4d33e97fc7238cd11bf60e2b9b8666c6"
+    },
+    {
+      "file": "share/poppler/Makefile",
+      "bytes": 10918,
+      "sha256": "8670c7500e62c2586f2b67cd1f60d94162d46f44c7be44c10a03e1b871243176"
+    },
+    {
+      "file": "share/poppler/nameToUnicode/Bulgarian",
+      "bytes": 630,
+      "sha256": "00efe0a6ddd763df4fd239465d353dcd326738e396da805ab7994ae7b5315b3b"
+    },
+    {
+      "file": "share/poppler/nameToUnicode/Greek",
+      "bytes": 125,
+      "sha256": "eb4bd7a5aeb9c4f99308674d7df009612ea21cd7b76b5023043656327e9db529"
+    },
+    {
+      "file": "share/poppler/nameToUnicode/Thai",
+      "bytes": 3074,
+      "sha256": "3f7acc1a23fc18e81d6cee5046deb591936228fac624c2a6012cd0902502fb2d"
+    },
+    {
+      "file": "share/poppler/poppler-data.pc",
+      "bytes": 179,
+      "sha256": "a26042dc6fd17cc5b4c44c7bf333f4776e71ae68032cf34115dee56a3897b77e"
+    },
+    {
+      "file": "share/poppler/poppler-data.pc.in",
+      "bytes": 158,
+      "sha256": "fbad0d8bb14d2bd295063e929cb66e1f2e6f1280be05f1980cbc25760e24d2b1"
+    },
+    {
+      "file": "share/poppler/README",
+      "bytes": 1027,
+      "sha256": "ec35d882cab521a243396beb9182a6a85f399ededb974a60a25bb55bd324a0cc"
+    },
+    {
+      "file": "share/poppler/unicodeMap/Big5",
+      "bytes": 133464,
+      "sha256": "31c276592bc6aa44bf0338757d73dede5dc4dd09eb79472ee7c0215282d47c46"
+    },
+    {
+      "file": "share/poppler/unicodeMap/Big5ascii",
+      "bytes": 133839,
+      "sha256": "2a92ebe937550cefba3abaf33d20056234de3bc81c0e3a336349eb9499d12983"
+    },
+    {
+      "file": "share/poppler/unicodeMap/EUC-CN",
+      "bytes": 67589,
+      "sha256": "4f90e3fd8ba4ca94bfe1eea1cacdf15ed5d02d77d09a55aa2bb9ef03816c4b1d"
+    },
+    {
+      "file": "share/poppler/unicodeMap/EUC-JP",
+      "bytes": 66176,
+      "sha256": "f4bacc9e75a81fc86414f686bf05b89e0396728994ff1bc5bb8ea503340b0ba0"
+    },
+    {
+      "file": "share/poppler/unicodeMap/GBK",
+      "bytes": 117814,
+      "sha256": "2693e8933084f2bebe5da193b7616cd25bd62fab38641bd8fec3f4af34c50e03"
+    },
+    {
+      "file": "share/poppler/unicodeMap/ISO-2022-CN",
+      "bytes": 67033,
+      "sha256": "8696d96951fef68e182891c707f1ee66d25a1785b2a0d09c60d422db3df51dd7"
+    },
+    {
+      "file": "share/poppler/unicodeMap/ISO-2022-JP",
+      "bytes": 65913,
+      "sha256": "2f4641fac5148e6bb712a9bc9be8655c760c7596974ba3d05ad671d28dcebcf7"
+    },
+    {
+      "file": "share/poppler/unicodeMap/ISO-2022-KR",
+      "bytes": 68259,
+      "sha256": "c19749f40658338a772262a23a64f7962c156ab0f12f385f9c8c61208e6d26ff"
+    },
+    {
+      "file": "share/poppler/unicodeMap/ISO-8859-6",
+      "bytes": 524,
+      "sha256": "a620e0c7ef3d6c8ae8f56f590ac21bbd5e42314f71077e7bcbf53d808c76c58e"
+    },
+    {
+      "file": "share/poppler/unicodeMap/ISO-8859-7",
+      "bytes": 584,
+      "sha256": "5246aef75d0ed7ea4796f48a4f3e0ec1c3be7bef5138b5f041dcfb7aff022f20"
+    },
+    {
+      "file": "share/poppler/unicodeMap/ISO-8859-8",
+      "bytes": 605,
+      "sha256": "82be4e7e2d0f084319542e4868631f440bacdd67f7b3f15179993108e04ec805"
+    },
+    {
+      "file": "share/poppler/unicodeMap/ISO-8859-9",
+      "bytes": 626,
+      "sha256": "049882b3cc7adfabe0f21ec640d3975a932c19746762e9380a426d49d462a998"
+    },
+    {
+      "file": "share/poppler/unicodeMap/KOI8-R",
+      "bytes": 904,
+      "sha256": "e46b7a351dd44b17670a671dfe21c54b328c15a183d8333817dc820d4a6cf226"
+    },
+    {
+      "file": "share/poppler/unicodeMap/Latin2",
+      "bytes": 1346,
+      "sha256": "02542912156229b76e3254e5f12c130fe8b33bc4242791f7f794325336fda3ed"
+    },
+    {
+      "file": "share/poppler/unicodeMap/Shift-JIS",
+      "bytes": 65988,
+      "sha256": "938c672143600d578e589965647580d4ea303e823adfdebf46239b923fec3842"
+    },
+    {
+      "file": "share/poppler/unicodeMap/TIS-620",
+      "bytes": 451,
+      "sha256": "4c1d7fd7e1792dbc115b61c34b61954efa7bfe00dc5bc2b0f3f5c3624df7db36"
+    },
+    {
+      "file": "share/poppler/unicodeMap/Windows-1255",
+      "bytes": 638,
+      "sha256": "41d788d5b7c7e8cee377f633dffec6514afcb82e84a377a48154a908d6afaf49"
+    }
+  ]
+}

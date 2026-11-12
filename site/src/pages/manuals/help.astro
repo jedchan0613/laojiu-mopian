@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ManualsNavigation from '../../components/ManualsNavigation.astro';
+import {manualsDemo,manualsChineseOnly} from '../../data/manuals-catalog';
+import '../../styles/manuals.css';
+---
+<BaseLayout title="怎样找到产品型号｜说明书库｜老旧默片" description="查看机身铭牌，区分产品型号与设备序列号，保留完整型号的字母、数字和后缀。" translationAvailability={manualsChineseOnly} robots={manualsDemo?'noindex, nofollow':undefined}>
+  <article class="manuals manual-help"><ManualsNavigation active="help"/><a class="manual-back" href="/manuals/">← 返回说明书库</a><header class="manual-hero"><p class="manual-eyebrow">查找帮助</p><h1>在哪里找到产品型号</h1><p>先找到机身上的完整型号，再选择适合的语言与版本。</p></header>
+    <section><h2>先看机身铭牌</h2><p>铭牌通常在机身背部、底部或侧面；部分产品会在电池仓、门框或面板附近标注。只查看日常能够安全接触的位置，不为找型号拆开设备。</p><div class="manual-nameplate" aria-label="虚构的产品铭牌示意"><p>机身铭牌示意</p><dl><div><dt>品牌</dt><dd>示例甲牌</dd></div><div class="manual-nameplate-model"><dt>型号 / Model</dt><dd>EX-RC100A</dd></div><div><dt>设备序列号</dt><dd>无需提供</dd></div></dl></div></section>
+    <section><h2>完整保留字母与后缀</h2><p>例如 EX-RC100 与 EX-RC100A 应分别核对，不能省略末尾的 A。数字 0 与字母 O 也不同；看不清时先核对，不自行替换。</p></section>
+    <section><h2>型号与序列号不同</h2><p>型号用来查找一类产品的说明书；序列号识别具体一台设备。查找说明书通常无需提交设备序列号、私人账号、手机号、详细地址或保修卡照片。</p></section>
+    <section><h2>再核对地区和资料版本</h2><p>同一名称可能有不同地区、语言或修订版本。优先选择明确列出您完整型号的文档，留意适用范围、缺页和安全提示。</p></section>
+    <div class="manual-actions"><a class="ui-action ui-action--primary" href="/manuals/">返回查询 →</a><a class="ui-action ui-action--secondary" href="/manuals/contribute/">提供资料线索</a></div>
+  </article>
+</BaseLayout>

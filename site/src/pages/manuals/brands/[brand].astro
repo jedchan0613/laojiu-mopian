@@ -1,0 +1,7 @@
+---
+import ManualBrowseProfile from '../../../components/ManualBrowseProfile.astro';
+import {manualsBrowse} from '../../../data/manuals-catalog';
+export function getStaticPaths(){return manualsBrowse.brands.map(entry=>({params:{brand:entry.brand_key},props:{entry}}));}
+const {entry}=Astro.props;
+---
+<ManualBrowseProfile kind="brand" entry={entry}/>

@@ -259,7 +259,7 @@ install -d -o "$ADMIN_USER" -g "$ADMIN_GROUP" -m 0750 "$staging_directory"
 
 archive_file="$BUILD_ROOT/github-source-$short_commit-$$.tar"
 run_as_admin git --git-dir="$REPOSITORY_DIR" archive --format=tar --output="$archive_file" \
-	"$candidate_commit" -- deployment local-admin site shared \
+	"$candidate_commit" -- deployment local-admin site shared samples/manuals-demo \
 	':(exclude,glob)**/*_冲突文件_*' \
 	':(exclude)local-admin/drafts/**' \
 	':(exclude)local-admin/history/**' \
@@ -270,11 +270,17 @@ run_as_admin git --git-dir="$REPOSITORY_DIR" archive --format=tar --output="$arc
 	':(exclude)local-admin/uploads/**' \
 	':(exclude)local-admin/accounts/**' \
 	':(exclude)local-admin/submissions/**' \
+	':(exclude)local-admin/manuals/**' \
+	':(exclude)local-admin/pdf-runtime/**' \
+	':(exclude)local-admin/upload-staging/**' \
+	':(exclude)local-admin/batch-import/**' \
 	':(exclude)site/node_modules/**' \
 	':(exclude)site/dist/**' \
 	':(exclude)site/.astro/**' \
 	':(exclude)site/public/archive/**' \
 	':(exclude)site/public/archive-responsive/**' \
+	':(exclude)site/src/data/generated/manuals-catalog.json' \
+	':(exclude)site/src/data/generated/image-manifest.json' \
 	':(exclude)site/src/data/archive.ts'
 run_as_admin tar -xf "$archive_file" -C "$staging_directory"
 rm -f -- "$archive_file"
@@ -289,16 +295,25 @@ for forbidden_path in \
 	"$staging_directory/local-admin/uploads" \
 	"$staging_directory/local-admin/accounts" \
 	"$staging_directory/local-admin/submissions" \
+	"$staging_directory/local-admin/manuals" \
+	"$staging_directory/local-admin/pdf-runtime" \
+	"$staging_directory/local-admin/upload-staging" \
+	"$staging_directory/local-admin/batch-import" \
 	"$staging_directory/site/dist" \
 	"$staging_directory/site/public/archive-responsive"; do
 	[[ ! -e "$forbidden_path" ]] || fail "程序版本混入了运行数据或生成目录：$forbidden_path"
 done
+
+unsafe_source="$(find "$staging_directory" \( -type l -o -type f \( -iname '*.env' -o \( -iname '*.env.*' ! -iname '*.example' \) -o -iname '*.db' -o -iname '*.sqlite' -o -iname '*.sqlite3' -o -iname '*.db-wal' -o -iname '*.db-shm' -o -iname '*.sqlite-wal' -o -iname '*.sqlite-shm' -o -iname '*.sqlite3-wal' -o -iname '*.sqlite3-shm' -o -iname '*.pem' -o -iname '*.key' -o -iname '*.log' \) \) -print -quit)"
+[[ -z "$unsafe_source" ]] || fail '程序版本混入链接、正式环境文件、数据库、密钥或运行日志；停止采用新版本。'
 
 require_file "$staging_directory/local-admin/server.mjs" '新版本管理服务'
 require_file "$staging_directory/local-admin/submission-server.mjs" '新版本私密投稿与联系接收服务'
 require_file "$staging_directory/site/server/likes/server.mjs" '新版本公开点赞服务'
 require_file "$staging_directory/site/package-lock.json" '新版本依赖锁定清单'
 require_file "$staging_directory/deployment/publish-built-site.mjs" '新版本公开切换程序'
+require_file "$staging_directory/shared/manual-pdf-upload.mjs" 'PDF账号与服务共用规则'
+require_file "$staging_directory/samples/manuals-demo/catalog.json" '说明书合成测试目录'
 
 install -d -o "$ADMIN_USER" -g "$ADMIN_GROUP" -m 0750 "$NPM_CACHE" "$NPM_HOME"
 log "安装并检查新程序版本：$short_commit"
@@ -339,6 +354,12 @@ sync_runtime_site_data() {
 		chown "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/src/data/archive-merge-aliases.json"
 	fi
 	chown "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/src/data/generated/image-manifest.json"
+	# 只继承已审核的说明书公开投影；私密草稿、依据、历史不进入应用发布包。
+	if [[ -e "$previous_app_directory/site/src/data/generated/manuals-catalog.json" ]]; then
+		[[ ! -L "$previous_app_directory/site/src/data/generated/manuals-catalog.json" ]] || fail '说明书公开目录不能是软链接'
+		cp -a -- "$previous_app_directory/site/src/data/generated/manuals-catalog.json" "$staging_directory/site/src/data/generated/manuals-catalog.json"
+		chown "$ADMIN_USER:$ADMIN_GROUP" "$staging_directory/site/src/data/generated/manuals-catalog.json"
+	fi
 	"$RUNUSER" -u "$ADMIN_USER" --preserve-environment -- \
 		"$NODE" "$staging_directory/local-admin/server.mjs" --sync-site-data
 }

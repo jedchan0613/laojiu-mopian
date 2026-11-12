@@ -4,6 +4,7 @@
 
 - `server.mjs` 使用 Node.js 内置模块提供本机服务、草稿保存、图片待入站、发布检查和正式构建，不引入额外依赖。
 - `public/` 保存管理界面。
+- 说明书维护位于 `/admin/manuals.html`，仅本地模式开放；草稿、依据、历史和发布前备份保存在被忽略的 `manuals/`，不进入公开目录。只关联既有已审核附件；新图片仍走原入站流程。操作与验收见 [第三阶段记录](../docs/manuals-phase3-review.md)。
 - `accounts.mjs`、`mail.mjs`、`account-server.mjs` 组成账号模块（阶段二、阶段三）：分别负责账号业务数据（SQLite）、邮件发送（零依赖）与账户接口。本地模式由 `server.mjs` 在本机服务内挂载；线上模式由 `account-server.mjs` 独立进程提供，只转发 `/api/account/` 前缀。
 - 账户投稿与免注册投稿共用同一个私密收件区（`local-admin/submissions/`）、同一套图片真实解码与人工隐私检查、同一个转草稿与发布门禁。账号侧只增加 `account_id` 归属、`draft` 草稿状态、只读版本快照与修改/撤下申请；投稿人详情不会返回管理员的内部备注。
 - 私密收件区里的 `_account-index.json` 只是"账号 → 投稿编号"的索引，状态仍以每条投稿的 `record.json` 为准，不维护第二套审核状态。

@@ -5,16 +5,18 @@ import { clientText as ct, clientLocale, clientError } from '../i18n/client';
 
 export type AccountResponse = Record<string, any>;
 
-export const accountFetch = async (path: string, options: { method?: string; body?: unknown } = {}): Promise<AccountResponse> => {
+export const accountFetch = async (path: string, options: { method?: string; body?: unknown; signal?: AbortSignal } = {}): Promise<AccountResponse> => {
 	const headers: Record<string, string> = { 'X-LJM-Account-Request': '1', 'X-LJM-Language': clientLocale() };
-	if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+	const multipart=options.body instanceof FormData;
+	if (options.body !== undefined&&!multipart) headers['Content-Type'] = 'application/json';
 	let response: Response;
 	try {
 		response = await fetch(path, {
 			method: options.method ?? 'GET',
 			credentials: 'same-origin',
+			signal: options.signal,
 			headers,
-			body: options.body === undefined ? undefined : JSON.stringify(options.body),
+			body: options.body === undefined ? undefined : multipart ? options.body as FormData : JSON.stringify(options.body),
 		});
 	} catch {
 		throw new Error(ct('网络连接失败，请检查网络后重试；已填写的内容不会自动丢失。'));

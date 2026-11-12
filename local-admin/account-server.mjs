@@ -14,6 +14,11 @@ import { createAccountStore, AccountError, accountLimits, agreementVersion, acco
 import { createMailer, MailError } from './mail.mjs';
 import { createSubmissionStore, readSubmissionForm, SubmissionError } from './submissions.mjs';
 import { processProgressNotifications } from './notification-queue.mjs';
+import { manualPageLimits } from '../shared/manual-pages.mjs';
+import { manualPdfUploadLimits } from '../shared/manual-pdf-upload.mjs';
+import {manualPdfGenerationLimits,manualPdfProfiles} from '../shared/manual-pdf-generation.mjs';
+import { manualConsentVersion,manualConsentStatements } from '../shared/manual-workflow.mjs';
+import {manualPdfAvailability,readManualPdfSettings} from './manual-pdf-availability.mjs';
 
 export const sessionCookieName = 'ljm_account_session';
 const maximumBodyBytes = 16 * 1024;
@@ -55,14 +60,20 @@ export function createAccountHandler({
 	secureCookies = false,
 	registrationOpen = true,
 	uploadsOpen = true,
+	pdfOpen = local,
 	ipRateLimit = { maximum: 120, windowSeconds: 600 },
+	manualRateLimit = { maximum: 800, windowSeconds: 600 },
 }) {
 	if (!store) throw new Error('账户服务必须提供数据层。');
 	if (!origin) throw new Error('账户服务必须显式配置公开站来源地址。');
+	if (typeof pdfOpen !== 'boolean') throw new Error('PDF能力开关必须为明确的布尔值。');
+	const pdfAvailability = () => manualPdfAvailability({local,pdfOpen,submissionStore});
+	const requirePdfWrites = async () => {const capability=await pdfAvailability();if(!capability.uploads)throw new AccountError(capability.message,503);};
 	const publicOrigins = new Set([stripTrailingSlash(origin)]);
 	if (local) publicOrigins.add(stripTrailingSlash(origin).replace('127.0.0.1', 'localhost'));
 	const adminOrigins = new Set([stripTrailingSlash(adminOrigin || origin)]);
 	const globalRate = new Map();
+	const manualRate = new Map(),sessions = new WeakMap(),activeManualUploads = new Set();
 
 	const send = (response, status, value, extraHeaders = {}) => {
 		if (response.headersSent) return;
@@ -79,14 +90,14 @@ export function createAccountHandler({
 		throw new AccountError(message, status);
 	};
 
-	const readJson = async (request) => {
+	const readJson = async (request, maximum = maximumBodyBytes) => {
 		const declared = Number.parseInt(request.headers['content-length'] ?? '0', 10);
-		if (Number.isFinite(declared) && declared > maximumBodyBytes) fail('提交内容过大。', 413);
+		if (Number.isFinite(declared) && declared > maximum) fail('提交内容过大。', 413);
 		const chunks = [];
 		let total = 0;
 		for await (const chunk of request) {
 			total += chunk.length;
-			if (total > maximumBodyBytes) fail('提交内容过大。', 413);
+			if (total > maximum) fail('提交内容过大。', 413);
 			chunks.push(chunk);
 		}
 		if (!total) return {};
@@ -141,10 +152,22 @@ export function createAccountHandler({
 	};
 
 	const requireSession = (request) => {
+		if (sessions.has(request)) return sessions.get(request);
 		const token = parseCookies(request.headers.cookie).get(sessionCookieName);
 		const session = store.resolveSession(token);
 		if (!session) fail('登录状态已过期，请重新登录。', 401);
+		sessions.set(request, session);
 		return session;
+	};
+	// 长册逐页请求使用单独且有上限的账号/IP配额；普通账号、注册和八图投稿限制不变。
+	const throttleManual = (request, accountId) => {
+		const address=clientAddress(request);if(!address)fail('无法确认请求来源。',403);
+		const now=Date.now();
+		for(const key of ['ip:'+address,'account:'+accountId]){
+			let bucket=manualRate.get(key);if(!bucket||bucket.until<=now)bucket={count:0,until:now+manualRateLimit.windowSeconds*1000};
+			bucket.count++;manualRate.set(key,bucket);if(bucket.count>manualRateLimit.maximum)fail('说明书访问过于频繁，请稍后继续；已保存页面仍保留。',429);
+		}
+		if(manualRate.size>5000)for(const [key,bucket] of manualRate)if(bucket.until<=now)manualRate.delete(key);
 	};
 
 	const withCookies = (response, cookies = [], status = 200, value = {}) => {
@@ -202,7 +225,11 @@ export function createAccountHandler({
 		if (!isAccount && !isAdmin) return false;
 		response.ljmLanguage = isAdmin ? 'zh-CN' : normalizeAccountLanguage(request.headers['x-ljm-language']);
 		try {
-			throttleAddress(request);
+			if(/^\/api\/account\/manual-(?:drafts|submissions)(?:\/|$)/.test(pathname)){
+				requireAccountOrigin(request,!['GET','HEAD'].includes(request.method));
+				let session;try{session=requireSession(request);}catch(error){throttleAddress(request);throw error;}
+				throttleManual(request,session.user.id);
+			}else throttleAddress(request);
 			if (isAdmin) return await handleAdmin(request, response, pathname);
 			return await handleAccount(request, response, pathname);
 		} catch (error) {
@@ -221,8 +248,9 @@ export function createAccountHandler({
 
 		if (pathname === '/api/account/config') {
 			if (method !== 'GET') fail('不支持此操作。', 405);
+			const pdf=await pdfAvailability();
 			// 这里不读取会话：可用性检查不应产生会话副作用，登录态由 /api/account/me 判断。
-			return withCookies(response, [], 200, { ...store.status(), registration_open: registrationOpen, uploads_open: uploadsOpen }), true;
+			return withCookies(response, [], 200, { ...store.status(), registration_open: registrationOpen, uploads_open: uploadsOpen, manual_drafts_version: submissionStore ? 1 : 0, manual_page_uploads_version: submissionStore ? 1 : 0, manual_page_limits: manualPageLimits,manual_workflow_version:submissionStore?1:0,manual_consent_version:manualConsentVersion,manual_consent_statements:manualConsentStatements,manual_pdf_uploads_version:pdf.uploads?1:0,manual_pdf_upload_limits:manualPdfUploadLimits,manual_pdf_generation_version:pdf.generation?1:0,manual_pdf_generation_message:pdf.message,manual_pdf_generation_limits:manualPdfGenerationLimits,manual_pdf_profiles:manualPdfProfiles,manual_pdf_workflow_version:pdf.workflow?1:0 }), true;
 		}
 		requireAccountOrigin(request, mutation);
 		const address = clientAddress(request);
@@ -319,6 +347,128 @@ export function createAccountHandler({
 			return withCookies(response, result.signed_out ? [clearedCookie(secureCookies)] : [], 200, result), true;
 		}
 
+		// 说明书5.3：归属账号可查看进度/留存版本、提交与补充；仍不执行专用初审或公开。
+		const manualVersionImageRoute=/^\/api\/account\/manual-submissions\/(TG-[A-F0-9]{24})\/versions\/(\d+)\/images\/(manual-[a-f0-9]{64}\.jpg)$/.exec(pathname);
+		if(manualVersionImageRoute&&method==='GET'){
+			const session=requireSession(request),image=await requireSubmissionStore().getAccountManualVersionImage({id:manualVersionImageRoute[1],accountId:session.user.id,revision:Number(manualVersionImageRoute[2]),filename:manualVersionImageRoute[3]});
+			response.writeHead(200,{...securityHeaders(),'Content-Type':'image/jpeg','Content-Length':String(image.length),'Cross-Origin-Resource-Policy':'same-origin'});response.end(image);return true;
+		}
+		const manualWorkflowReceipt=/^\/api\/account\/manual-submissions\/(TG-[A-F0-9]{24})\/operations\/([a-f0-9]{64})$/.exec(pathname);
+		if(manualWorkflowReceipt&&method==='GET'){
+			const session=requireSession(request);return withCookies(response,[],200,await requireSubmissionStore().getAccountManualWorkflowOperation({id:manualWorkflowReceipt[1],accountId:session.user.id,operationId:manualWorkflowReceipt[2]})),true;
+		}
+		const manualSubmissionRoute=/^\/api\/account\/manual-submissions\/(TG-[A-F0-9]{24})(?:\/(operate))?$/.exec(pathname);
+		if(manualSubmissionRoute){
+			const session=requireSession(request),instances=requireSubmissionStore(),id=manualSubmissionRoute[1];
+			if(method==='GET'&&!manualSubmissionRoute[2])return withCookies(response,[],200,await instances.getAccountManualSubmission({id,accountId:session.user.id})),true;
+			if(method==='POST'&&manualSubmissionRoute[2]){
+				const record=await instances.getAccountManualSubmission({id,accountId:session.user.id});
+				const payload=await readJson(request);if(record.source_format==='pdf'&&payload.action==='submit')await requirePdfWrites();if(!uploadsOpen&&!['withdraw','discard'].includes(payload.action))fail('说明书提交与补充暂时暂停，已有记录仍可查看、撤回或停止草稿。',503);
+				return withCookies(response,[],200,await instances.operateAccountManualSubmission({id,accountId:session.user.id,payload})),true;
+			}
+			fail('不支持此操作。',405);
+		}
+		// 6.4纸面页码只改文字，不提供图片换序、删页、替换或PDF下载。
+		const pdfLabel=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/pdf\/page-labels$/.exec(pathname);
+		const pdfLabelReceipt=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/pdf\/label-operations\/([a-f0-9]{64})$/.exec(pathname);
+		if(pdfLabel||pdfLabelReceipt){
+			const session=requireSession(request),instances=requireSubmissionStore();
+			if(pdfLabelReceipt&&method==='GET')return withCookies(response,[],200,await instances.getAccountManualPdfLabelOperation({id:pdfLabelReceipt[1],accountId:session.user.id,operationId:pdfLabelReceipt[2]})),true;
+			if(!pdfLabel||method!=='POST')fail('不支持此操作。',405);await requirePdfWrites();if(!uploadsOpen)fail('PDF暂时暂停保存，已有记录仍可查看。',503);
+			await instances.getAccountManualDraft({id:pdfLabel[1],accountId:session.user.id});const payload=await readJson(request);
+			return withCookies(response,[],200,await instances.saveAccountManualPdfLabel({id:pdfLabel[1],accountId:session.user.id,payload})),true;
+		}
+		// 受限生成；查询与停止不依赖上传开关或PDF独立开关。
+		const pdfGenerate=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/pdf\/generations$/.exec(pathname);
+		const pdfGenerationReceipt=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/pdf\/generation-operations\/([a-f0-9]{64})(\/cancel)?$/.exec(pathname);
+		if(pdfGenerate||pdfGenerationReceipt){
+			const session=requireSession(request),instances=requireSubmissionStore();
+			if(pdfGenerationReceipt){const options={id:pdfGenerationReceipt[1],accountId:session.user.id,operationId:pdfGenerationReceipt[2]};if(method==='GET'&&!pdfGenerationReceipt[3])return withCookies(response,[],200,await instances.getAccountManualPdfGeneration(options)),true;if(method==='POST'&&pdfGenerationReceipt[3])return withCookies(response,[],200,await instances.cancelAccountManualPdfGeneration(options)),true;fail('不支持此操作。',405);}
+			if(method!=='POST')fail('不支持此操作。',405);await requirePdfWrites();if(!uploadsOpen)fail('PDF暂时暂停新生成，已有预览和回执仍可查看，也可停止未完成任务。',503);
+			await instances.getAccountManualDraft({id:pdfGenerate[1],accountId:session.user.id});const payload=await readJson(request);
+			return withCookies(response,[],200,await instances.beginAccountManualPdfGeneration({id:pdfGenerate[1],accountId:session.user.id,payload})),true;
+		}
+		// 6.2本机私密PDF暂存；没有源文件下载或送审入口。
+		const pdfMaterial=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/material$/.exec(pathname);
+		const pdfInit=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/pdf\/uploads$/.exec(pathname);
+		const pdfContent=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/pdf\/uploads\/(PU-[a-f0-9]{24})\/content$/.exec(pathname);
+		const pdfReceipt=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/pdf\/operations\/([a-f0-9]{64})(\/cancel)?$/.exec(pathname);
+		if(pdfMaterial||pdfInit||pdfContent||pdfReceipt){
+			const session=requireSession(request),instances=requireSubmissionStore();
+			if(pdfReceipt){
+				const options={id:pdfReceipt[1],accountId:session.user.id,operationId:pdfReceipt[2]};
+				if(method==='GET'&&!pdfReceipt[3])return withCookies(response,[],200,await instances.getAccountManualPdfOperation(options)),true;
+				if(method==='POST'&&pdfReceipt[3])return withCookies(response,[],200,await instances.cancelAccountManualPdf(options)),true;
+				fail('不支持此操作。',405);
+			}
+			if(method!=='POST')fail('不支持此操作。',405);
+			await requirePdfWrites();
+			if(!uploadsOpen)fail('PDF暂时暂停保存，已有私密文件仍保留，可查询回执或取消未完成上传。',503);
+			const id=(pdfMaterial||pdfInit||pdfContent)[1];
+			await instances.getAccountManualDraft({id,accountId:session.user.id});
+			if(pdfMaterial||pdfInit){
+				const payload=await readJson(request);
+				const result=pdfMaterial?await instances.setAccountManualMaterial({id,accountId:session.user.id,payload}):await instances.prepareAccountManualPdf({id,accountId:session.user.id,payload});
+				return withCookies(response,[],200,result),true;
+			}
+			if(activeManualUploads.has(session.user.id))fail('本账号已有文件正在保存，请等待当前上传完成。',409);
+			if(activeManualUploads.size>=manualPdfUploadLimits.concurrency)fail('当前文件上传较多，请稍后继续。',429);
+			activeManualUploads.add(session.user.id);
+			try{return withCookies(response,[],200,await instances.receiveAccountManualPdf({id,accountId:session.user.id,uploadId:pdfContent[2],request})),true;}
+			finally{activeManualUploads.delete(session.user.id);}
+		}
+		// 文字与逐页图片写入仍只允许可编辑草稿。
+		const manualOperationRoute=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/pages\/operations\/([a-f0-9]{64})$/.exec(pathname);
+		if(manualOperationRoute&&method==='GET'){
+			const session=requireSession(request);
+			return withCookies(response,[],200,await requireSubmissionStore().getAccountManualPageOperation({id:manualOperationRoute[1],accountId:session.user.id,operationId:manualOperationRoute[2]})),true;
+		}
+		const manualImageRoute=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/images\/(manual-[a-f0-9]{64}\.jpg)$/.exec(pathname);
+		if(manualImageRoute&&method==='GET'){
+			const session=requireSession(request),image=await requireSubmissionStore().getAccountManualPage({id:manualImageRoute[1],accountId:session.user.id,filename:manualImageRoute[2]});
+			response.writeHead(200,{...securityHeaders(),'Content-Type':'image/jpeg','Content-Length':String(image.length),'Cross-Origin-Resource-Policy':'same-origin'});response.end(image);return true;
+		}
+		const manualPagesRoute=/^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})\/pages(?:\/(upload))?$/.exec(pathname);
+		if(manualPagesRoute){
+			const session=requireSession(request),instances=requireSubmissionStore(),id=manualPagesRoute[1];
+			if(method!=='POST')fail('不支持此操作。',405);
+			if(!uploadsOpen)fail('说明书暂时暂停保存，已上传页面仍可查看。',503);
+			// 先核对归属，再读取、解码图片；每账号同时一张，整个服务最多同时两张。
+			await instances.getAccountManualDraft({id,accountId:session.user.id});
+			if(manualPagesRoute[2]){
+				if(activeManualUploads.has(session.user.id))fail('本账号已有文件正在保存，请等待当前上传完成。',409);
+				if(activeManualUploads.size>=2)fail('当前文件上传较多，请稍后继续。',429);
+				activeManualUploads.add(session.user.id);
+				try{
+					const form=await readSubmissionForm(request,manualPageLimits.requestBytes,true);
+					if(form.images.length!==1)fail('每个上传请求只接收一张图片。');
+					if(!/^[1-9]\d{0,14}$/.test(form.revision??''))fail('草稿版本无效，请重新读取后核对。',428);
+					const result=await instances.uploadAccountManualPage({id,accountId:session.user.id,payload:{operation_id:form.operation_id,revision:Number(form.revision),target_page_id:form.target_page_id??'',copies_confirmed:form.copies_confirmed==='true',website:form.website??'',image:form.images[0]}});
+					return withCookies(response,[],200,result),true;
+				}finally{activeManualUploads.delete(session.user.id);}
+			}
+			return withCookies(response,[],200,await instances.editAccountManualPages({id,accountId:session.user.id,payload:await readJson(request,manualPageLimits.layoutBytes)})),true;
+		}
+		if (pathname === '/api/account/manual-drafts' && method === 'POST') {
+			const session = requireSession(request);
+			if (!uploadsOpen) fail('投稿草稿暂时暂停保存，已有内容仍可查看。', 503);
+			const payload = await readJson(request);
+			if (Object.keys(payload).some(key => !['request_key', 'manual', 'website'].includes(key))) fail('本阶段只接收说明书文字草稿。');
+			return withCookies(response, [], 200, await requireSubmissionStore().createAccountManualDraft({ accountId: session.user.id, payload })), true;
+		}
+		const manualDraftRoute = /^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})$/.exec(pathname);
+		if (manualDraftRoute) {
+			const session = requireSession(request), instances = requireSubmissionStore();
+			if (method === 'GET') return withCookies(response, [], 200, await instances.getAccountManualDraft({ id: manualDraftRoute[1], accountId: session.user.id })), true;
+			if (method === 'POST') {
+				if (!uploadsOpen) fail('投稿草稿暂时暂停保存，已有内容仍可查看。', 503);
+				const payload = await readJson(request);
+				if (Object.keys(payload).some(key => !['revision', 'manual', 'website'].includes(key))) fail('本阶段只接收说明书文字草稿。');
+				if (!Number.isSafeInteger(payload.revision) || payload.revision < 1) fail('草稿版本无效，请重新读取后核对。', 428);
+				return withCookies(response, [], 200, await instances.saveAccountManualDraft({ id: manualDraftRoute[1], accountId: session.user.id, revision: payload.revision, payload })), true;
+			}
+			fail('不支持此操作。', 405);
+		}
 		// ---------- 账户投稿 ----------
 		// 与免注册投稿共用同一个私密收件区、同一套人工审核与发布门禁；这里只增加归属账号、草稿与申请。
 		if (pathname === '/api/account/submissions' && method === 'GET') {
@@ -480,6 +630,8 @@ if (isDirectRun) {
 	};
 	const registrationOpen = switchValue('LJM_ACCOUNT_REGISTRATION_OPEN');
 	const uploadsOpen = switchValue('LJM_ACCOUNT_UPLOADS_OPEN');
+	let pdfSettings;
+	try { pdfSettings=readManualPdfSettings(environment); } catch(error) { stop(error.message); }
 	if (!Number.isInteger(port) || port < 1024 || port > 65535) stop('LJM_ACCOUNT_PORT 无效。');
 	if (!dataRoot || !path.isAbsolute(dataRoot)) stop('必须显式配置网站目录之外的 LJM_ACCOUNT_DATA_DIR 绝对路径。');
 	const resolvedDataRoot = path.resolve(dataRoot);
@@ -524,7 +676,7 @@ if (isDirectRun) {
 			store.recordNotification({ accountId, template: 'submission-progress', status: 'failed', error: error instanceof Error ? error.message : String(error) });
 		}
 	};
-	const submissionStore = createSubmissionStore({ root: submissionRoot, siteDirectory, notifier });
+	const submissionStore = createSubmissionStore({ root: submissionRoot, siteDirectory, notifier, maxStorageBytes:pdfSettings.maxStorageBytes });
 	const handler = createAccountHandler({
 		store,
 		submissionStore,
@@ -535,12 +687,14 @@ if (isDirectRun) {
 		secureCookies: environment === 'production',
 		registrationOpen,
 		uploadsOpen,
+		pdfOpen:pdfSettings.pdfOpen,
 	});
 	const server = http.createServer(async (request, response) => {
 		try {
 			const pathname = new URL(request.url ?? '/', origin).pathname;
 			if (pathname === '/healthz' && request.method === 'GET') {
-				response.writeHead(200, securityHeaders()).end(JSON.stringify({ ok: true, capabilities: { archiveMergeProtocol: store.archiveMerge ? 1 : 0 } }));
+				const pdf=await manualPdfAvailability({local:environment!=='production',pdfOpen:pdfSettings.pdfOpen,submissionStore});
+				response.writeHead(200, securityHeaders()).end(JSON.stringify({ ok: true, capabilities: { archiveMergeProtocol: store.archiveMerge ? 1 : 0, manualPdf:pdf.uploads?1:0, manualPdfRecovery:1 } }));
 				return;
 			}
 			if (!await handler(request, response, pathname)) {
@@ -551,7 +705,8 @@ if (isDirectRun) {
 			else response.end();
 		}
 	});
-	server.requestTimeout = 30_000;
+	// 私密PDF接收器仍单独执行120秒总限与30秒停滞限；为其预留完整请求时间。
+	server.requestTimeout = pdfSettings.pdfOpen ? 180_000 : 30_000;
 	server.headersTimeout = 15_000;
 	server.maxConnections = 60;
 	let processingNotifications = false;

@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ManualsNavigation from './ManualsNavigation.astro';
+import ManualModelGroup from './ManualModelGroup.astro';
+import {manualsDemo,manualsChineseOnly} from '../data/manuals-catalog';
+import {manualQueryString} from '../../../shared/manual-catalog.mjs';
+import {manualModelAnchor} from '../../../shared/manual-browse.mjs';
+import '../styles/manuals.css';
+interface Props {kind:'brand'|'category';entry:any;}
+const {kind,entry}=Astro.props;
+const isBrand=kind==='brand',active=isBrand?'brands':'categories',scopeKey=isBrand?'brand':'category';
+const scopeValue=isBrand?entry.brand_key:entry.category_key;
+const options=isBrand?entry.categories:entry.brands;
+const otherScope=isBrand?'category':'brand';
+const parent=isBrand?'/manuals/brands/':'/manuals/categories/';
+const title=`${entry.name}说明书`;
+const description=`浏览已收录的${entry.name}说明书，核对完整型号、地区、语言和版本后阅读。`;
+const {found}=entry;
+const returnFor=(group:any,unavailable=false)=>entry.path+'#'+manualModelAnchor(group.model.model_key,unavailable);
+---
+<BaseLayout title={`${title}｜老旧默片说明书库`} description={description} translationAvailability={manualsChineseOnly} robots={manualsDemo||!entry.documentCount?'noindex, nofollow':undefined}>
+  <article class="manuals manual-browse-profile" data-manual-browse-profile>
+    {manualsDemo&&<p class="manual-demo-notice" data-manual-demo>本地演示：品牌、型号及说明书页面均为虚构，仅用于检查页面。</p>}
+    <ManualsNavigation active={active}/>
+    <nav class="manual-breadcrumb" aria-label="当前位置"><a href="/manuals/">说明书库</a><span aria-hidden="true">／</span><a href={parent}>{isBrand?'品牌目录':'品类目录'}</a><span aria-hidden="true">／</span><span aria-current="page">{entry.name}</span></nav>
+    <header class="manual-hero"><p class="manual-eyebrow">{isBrand?'品牌资料':'物件品类'}</p><h1>{title}</h1><p>{description}</p>
+      {isBrand&&entry.aliases.length>0&&<p class="manual-brand-aliases">也可用这些名称查询：{entry.aliases.join('、')}</p>}
+    </header>
+    <p class="manual-browse-count">{entry.modelCount} 个可用型号 · {entry.documentCount} 份独立文档版本{entry.unavailableDocumentCount>0&&` · 另有 ${entry.unavailableDocumentCount} 份来源暂不可用`}</p>
+    <form class="manual-search-form manual-scope-search" action="/manuals/" method="get" role="search">
+      <input type="hidden" name={scopeKey} value={scopeValue}/>
+      <label for="manual-scope-query">在{isBrand?'此品牌':'此品类'}中查找型号或物件</label>
+      <div class="manual-search-row"><input id="manual-scope-query" name="q" type="search" maxlength="200" placeholder="输入完整型号或物件名称"/><button class="ui-action ui-action--primary" type="submit">查找</button></div>
+      <div class="manual-search-hint"><a href="/manuals/help/">不知道完整型号？</a><span>查询会保留当前{isBrand?'品牌':'品类'}范围。</span></div>
+    </form>
+    {options.length>0&&<section class="manual-browse-refine" aria-label={isBrand?'按品类缩小范围':'按品牌缩小范围'}><p>{isBrand?'按品类缩小范围':'按品牌缩小范围'}</p><div class="manual-browse-chips">{options.map((option:any)=><a href={'/manuals/?'+manualQueryString({[scopeKey]:scopeValue,[otherScope]:option.key})}>{option.name}</a>)}</div></section>}
+    <section aria-label="此目录的说明书">
+      <header class="manual-results-heading"><h2>可用资料</h2><p>请核对型号后缀和资料版本。</p></header>
+      {found.groups.length?found.groups.map((group:any)=><ManualModelGroup group={group} linkBrand={!isBrand} anchorId={manualModelAnchor(group.model.model_key)} returnTo={returnFor(group)}/>):<div class="manual-empty"><h3>目前没有可用的阅读入口</h3><p>下方保留已记录的来源状态。可以返回型号查询，或提供资料线索。</p><a href="/manuals/">返回型号查询 →</a></div>}
+      {found.unavailable.length>0&&<section class="manual-unavailable"><h2>来源暂不可用</h2><p>这些资料不计入上方可用数量，请勿用相近型号代替。</p>{found.unavailable.map((group:any)=><ManualModelGroup group={group} unavailable linkBrand={!isBrand} anchorId={manualModelAnchor(group.model.model_key,true)} returnTo={returnFor(group,true)}/>)}</section>}
+    </section>
+    <div class="manual-contribute"><p>还没有找到所需资料？</p><a href="/manuals/">返回型号查询</a><a href="/manuals/contribute/">提供说明书线索</a></div>
+  </article>
+</BaseLayout>

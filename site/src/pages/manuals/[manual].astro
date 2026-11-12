@@ -1,0 +1,61 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ManualsNavigation from '../../components/ManualsNavigation.astro';
+import {manualsCatalog,manualsDemo,manualsChineseOnly} from '../../data/manuals-catalog';
+import {manualKinds,manualLanguages,manualCompleteness,manualCategories} from '../../../../shared/manual-catalog.mjs';
+import {serializeHtmlJson} from '../../../../shared/html-json.mjs';
+import {manualBrandPath,manualCategoryPath} from '../../../../shared/manual-browse.mjs';
+import '../../styles/manuals.css';
+export function getStaticPaths(){return manualsCatalog.documents.map(document=>({params:{manual:document.manual_key},props:{document}}));}
+const {document:manual}=Astro.props;
+const models=manual.model_keys.map((key:string)=>manualsCatalog.models.find(m=>m.model_key===key)!);
+const model=models[0],brand=manualsCatalog.brands.find(b=>b.brand_key===model.brand_key)!;
+const related=manualsCatalog.documents.filter(d=>d.available&&d.manual_key!==manual.manual_key&&d.model_keys.some((key:string)=>manual.model_keys.includes(key)));
+const first=manual.pages[0];
+const profileBrands=[...new Set(models.map(m=>m.brand_key))].map(key=>manualsCatalog.brands.find(b=>b.brand_key===key)!);
+const profileCategories=[...new Set(models.map(m=>m.category_key))];
+---
+<BaseLayout title={`${manual.title}｜说明书库｜老旧默片`} description={manual.summary||`${brand.name} ${model.model_text}，${manual.edition_display}，请核对适用型号、地区与语言。`} translationAvailability={manualsChineseOnly} robots={manualsDemo||!manual.available?'noindex, nofollow':undefined}>
+  <article class="manuals manual-detail" data-manual-detail>
+    {manualsDemo&&<p class="manual-demo-notice" data-manual-demo>本地演示：这是一份虚构资料，页面不用于实际设备操作。</p>}
+    <ManualsNavigation/>
+    <a class="manual-back" href="/manuals/" data-manual-back>← 返回查询结果</a>
+    <header class="manual-detail-heading"><p class="manual-eyebrow">{brand.name} · {model.model_text}</p><h1>{manual.title}</h1><p class="manual-document-meta">{manual.languages.map((l:string)=>manualLanguages[l]).join('／')} · {manualKinds[manual.document_kind]}{manual.pages.length>0&&` · 现有${manual.pages.length}张`}</p></header>
+    <p class="manual-scope"><strong>明确适用型号</strong>{models.map(m=>`${manualsCatalog.brands.find(b=>b.brand_key===m.brand_key)!.name} ${m.model_text}`).join('、')}</p>
+    <dl class="manual-facts"><div><dt>资料版本</dt><dd>{manual.edition_display}</dd></div><div><dt>适用地区</dt><dd>{manual.region_display}</dd></div><div><dt>原文语言</dt><dd>{manual.languages.map((l:string)=>manualLanguages[l]).join('／')}</dd></div><div><dt>完整程度</dt><dd>{manualCompleteness[manual.completeness]}</dd></div></dl>
+    <nav class="manual-browse-chips manual-detail-browse" aria-label="继续浏览相关目录">{profileBrands.map(b=><a href={manualBrandPath(b.brand_key)}>{b.name}资料</a>)}{profileCategories.map(key=><a href={manualCategoryPath(key)}>{manualCategories[key]}说明书</a>)}</nav>
+    {manual.completeness==='incomplete'&&<p class="manual-notice">{manual.missing_note}</p>}
+    {!manual.available&&<p class="manual-notice">官方来源暂不可用，本站尚未提供阅读副本。请勿用相近型号代替。</p>}
+    {manual.summary&&<p class="manual-summary">{manual.summary}</p>}
+    <div class="manual-actions">{first&&<a class="ui-action ui-action--primary" href="#manual-reader">开始阅读 →</a>}{!first&&manual.official_sources.filter((s:any)=>s.available).slice(0,1).map((s:any)=>manualsDemo?<button type="button" class="ui-action ui-action--primary" data-manual-demo-source>前往厂家官网查看（演示）</button>:<a class="ui-action ui-action--primary" href={s.href} target="_blank" rel="noopener noreferrer" data-manual-official>前往厂家官网查看 ↗</a>)}<a class="ui-action ui-action--secondary" href="/corrections/">纠错或补充资料</a></div>
+    {first&&<section id="manual-reader" class="manual-reader" aria-labelledby="manual-reader-title" data-manual-reader>
+      <h2 id="manual-reader-title">逐页阅读</h2>
+      <div class="manual-reader-controls" data-reader-controls hidden>
+        <div class="manual-page-controls"><button type="button" data-reader-previous disabled>← 上一页</button><label>页序<select data-reader-page aria-label="选择阅读页序">{manual.pages.map((p:any,i:number)=><option value={i+1}>{i+1} / {manual.pages.length} · {p.label}</option>)}</select></label><button type="button" data-reader-next disabled={manual.pages.length<2}>下一页 →</button></div>
+        <button class="manual-text-button" type="button" data-reader-zoom aria-pressed="false">放大页面</button>
+      </div>
+      <p class="manual-reader-status" data-reader-status role="status" aria-live="polite">第 1 / {manual.pages.length} 张 · {first.label}</p>
+      <p class="manual-reader-warning" data-reader-warning role="status" hidden></p>
+      <div class:list={['manual-reader-layout',{'manual-reader-layout--no-toc':!manual.contents.length}]}>
+        {manual.contents.length>0&&<details class="manual-reader-toc" open><summary>阅读目录</summary><ol>{manual.contents.map((entry:any)=><li><a href={`#page=${entry.page}`} data-reader-toc-page={entry.page}>{entry.label}</a></li>)}</ol></details>}
+        <div class="manual-reader-stage" data-reader-stage>
+          <img src={first.src} width={first.width} height={first.height} alt={first.alt} loading="lazy" decoding="async" data-reader-image/>
+          <div class="manual-reader-image-error" data-reader-error role="alert" hidden><p>此页暂时无法加载，页码已保留。</p><button type="button" class="ui-action ui-action--secondary" data-reader-retry>重试此页</button></div>
+        </div>
+      </div>
+      {manual.can_download&&<a class="manual-download" href={first.src} download data-reader-download>下载当前页的网页发布副本</a>}
+      <noscript><p>启用浏览器脚本后可在这里翻页、跳页和放大。也可以逐页打开发布图片：</p><ol>{manual.pages.map((p:any)=><li><a href={p.src}>{p.label}</a></li>)}</ol></noscript>
+      <script type="application/json" id="manual-reader-data" set:html={serializeHtmlJson({demo:manualsDemo,archive_id:manual.archive_id,manual_key:manual.manual_key,pages:manual.pages,can_download:manual.can_download})}/>
+    </section>}
+    {!first&&manual.available&&<p class="manual-official-note">本条提供厂家官方资料入口，本站未存放这份说明书全文。请在厂家页面继续核对完整型号和版本。</p>}
+    <section class="manual-source-section" aria-labelledby="manual-source-heading"><h2 id="manual-source-heading">来源与资料说明</h2>
+      {manual.archive_id&&<p>馆藏来源：<a href={`/archive/${manual.archive_id}/`}>查看原档案</a>。这里只提供经审核的网页发布副本。</p>}
+      {manual.official_sources.map((s:any)=><div class="manual-source"><p>{s.name} · {s.available?'来源可用':'来源暂不可用'}</p><p class="manual-muted">最近核对：{s.checked_on||'尚未记录'}</p>{s.available&&(manualsDemo?<button type="button" class="manual-text-button" data-manual-demo-source>查看官方来源入口示意</button>:<a href={s.href} target="_blank" rel="noopener noreferrer" data-manual-official>前往官方来源 ↗</a>)}</div>)}
+      <p class="manual-muted">请核对地区、版本和语言。公开展示与下载范围按具体许可执行。</p>
+      <p class="manual-notice" data-manual-demo-source-note role="status" hidden>这是虚构资料的示例地址，不会打开外站。真实资料将使用经过核定的厂家入口。</p>
+    </section>
+    {related.length>0&&<section class="manual-related"><h2>相关型号的其他文档</h2><ul>{related.map(d=><li><a href={`/manuals/${d.manual_key}/`} data-manual-related>{d.title} · {d.languages.map((l:string)=>manualLanguages[l]).join('／')} · {d.edition_display}</a></li>)}</ul></section>}
+    <script type="application/json" id="manual-detail-config" set:html={serializeHtmlJson({manual_key:manual.manual_key})}/>
+  </article>
+  <script>import '../../scripts/manuals-reader';</script>
+</BaseLayout>

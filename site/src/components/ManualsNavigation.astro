@@ -1,0 +1,8 @@
+---
+interface Props {active?:'search'|'brands'|'categories'|'help'|'contribute';}
+const {active}=Astro.props;
+const links=[{key:'search',href:'/manuals/',label:'型号查询'},{key:'brands',href:'/manuals/brands/',label:'按品牌浏览'},{key:'categories',href:'/manuals/categories/',label:'按品类浏览'},{key:'help',href:'/manuals/help/',label:'型号查找帮助'},{key:'contribute',href:'/manuals/contribute/',label:'提供说明书'}];
+---
+<nav class="manual-section-nav" aria-label="说明书栏目导航">
+  {links.map(link=><a href={link.href} aria-current={active===link.key?'page':undefined}>{link.label}</a>)}
+</nav>

@@ -7,6 +7,7 @@ import {createHash} from 'node:crypto';
 import { pointsInRanges, readCompleteFontCoverage } from './complete-font-coverage.mjs';
 import { collectVisibleHan } from '../../shared/public-build-text.mjs';
 import { checkLocalizedPageSeo } from './public-build-seo.mjs';
+import { checkManualsPublicBuild } from './manuals-public-build.mjs';
 import { galleryImageIndexFromHash } from '../src/data/gallery-image-link.mjs';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -533,7 +534,7 @@ for (const page of [...accountPages, ...englishAccountPages]) {
 	check(page.html.includes('name="robots"') && page.html.includes('noindex'), `${page.relativePath} 缺少禁止搜索引擎收录的设置。`);
 	check(page.html.includes('data-ljm-account-page'), `${page.relativePath} 缺少账户页面标记，无法与公开内容区分。`);
 }
-for (const marker of ['ljm_account_session', 'LJM_ACCOUNT_DATA_DIR', 'LJM_ACCOUNT_IP_SALT', '/api/account-admin/']) {
+for (const marker of ['ljm_account_session', 'LJM_ACCOUNT_DATA_DIR', 'LJM_ACCOUNT_IP_SALT', '/api/account-admin/', 'LJM_MANUAL_PDF_SOCKET', 'origin_attestation', 'attestation_public_key', 'signing-key.pem']) {
 	check(!publicCodeIncludes(marker), `公开构建混入账户私密信息：${marker}。`);
 }
 
@@ -596,6 +597,8 @@ for (const page of htmlEntries) {
 		check(JSON.stringify(albumPages) === JSON.stringify(chineseAlbumPages), `${page.relativePath} 的整册影像数量或顺序与中文版不一致。`);
 	}
 }
+
+await checkManualsPublicBuild({distRoot,distFiles,htmlEntries,check});
 
 if (issues.length) {
 	process.stderr.write(`公开页面回归检查失败（${issues.length} 项）：\n${issues.map((issue) => `- ${issue}`).join('\n')}\n`);
