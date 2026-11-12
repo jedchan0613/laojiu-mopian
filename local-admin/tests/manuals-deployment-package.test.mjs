@@ -46,6 +46,7 @@ test('程序包拒绝链接，不能跟随到包外私密目录',{skip},async t=
 
 test('Git归档实际排除PDF运行目录、业务数据、发布投影，包含说明书合成样例',async t=>{
   const f=await fixture(t),script=await fs.readFile(new URL('../../deployment/laojiumopian-github-deploy.sh',import.meta.url),'utf8');
+  await f.write('local-admin/server.mjs',"if(!process.argv.includes('--sync-site-data')||process.env.LJM_SITE_DIR!==process.env.LJM_TEST_EXPECTED_SITE)process.exit(2);\n");
   for(const name of ['local-admin/accounts/a.json','local-admin/submissions/s.json','local-admin/manuals/catalog.json','local-admin/pdf-runtime/local.json','local-admin/upload-staging/a.json','local-admin/batch-import/a.json','site/src/data/archive.ts','site/src/data/generated/manuals-catalog.json','site/src/data/generated/image-manifest.json'])await f.write(name);
   await execute('git',['init',f.root]);await execute('git',['-C',f.root,'add','.']);await execute('git',['-C',f.root,'-c','user.name=Synthetic','-c','user.email=package@example.invalid','commit','-m','synthetic-package-fixture']);
   const block=script.slice(script.indexOf('"$candidate_commit" -- deployment'),script.indexOf('run_as_admin tar -xf'));
@@ -53,4 +54,13 @@ test('Git归档实际排除PDF运行目录、业务数据、发布投影，包�
   const exclusions=[...block.matchAll(/'(:\(exclude(?:,glob)?\)[^']+)'/g)].map(m=>m[1]);
   const archive=path.join(f.root,'source.tar');await execute('git',['-C',f.root,'archive','--format=tar','--output='+archive,'HEAD','--','deployment','local-admin','site','shared','samples/manuals-demo',...exclusions]);
   const names=(await execute('tar',['-tf',archive])).stdout;assert.match(names,/samples\/manuals-demo\/catalog.json/);assert.match(names,/shared\/manual-pdf-upload.mjs/);assert.doesNotMatch(names,/pdf-runtime|upload-staging|batch-import|accounts\/|submissions\/|manuals-catalog|image-manifest|data\/archive.ts/);
+  if(process.platform==='linux'){
+    const staging=path.join(f.root,'staging'),previous=path.join(f.root,'previous');await fs.mkdir(staging);await execute('tar',['-xf',archive,'-C',staging]);
+    const generated=path.join(staging,'site/src/data/generated');assert.equal(await fs.lstat(generated).catch(()=>null),null,'排除所有生成文件后目录应为空缺');
+    for(const [name,bytes]of [['site/public/archive/page.jpg','SYNTHETIC PAGE'],['site/public/archive-responsive/page.webp','SYNTHETIC RESPONSIVE'],['site/src/data/archive.ts','SYNTHETIC ARCHIVE'],['site/src/data/generated/image-manifest.json','{"synthetic":true}'],['site/src/data/generated/manuals-catalog.json','{"synthetic_manuals":true}']])await f.write('previous/'+name,bytes);
+    const sync=script.slice(script.indexOf('sync_runtime_site_data() {'),script.indexOf('\nbuild_staged_application()'));
+    await execute('/bin/bash',['-c',`set -eu\nprevious_app_directory="$LJM_TEST_PREVIOUS"\nstaging_directory="$LJM_TEST_STAGING"\nADMIN_USER="$(id -un)"\nADMIN_GROUP="$(id -gn)"\nRUNUSER=run_as_self\nNODE="$LJM_TEST_NODE"\nassert_staging_path(){ test "$staging_directory" = "$LJM_TEST_STAGING"; }\nrun_as_self(){ shift 4; "$@"; }\n${sync}\nsync_runtime_site_data\n`],{env:{...process.env,LJM_TEST_PREVIOUS:previous,LJM_TEST_STAGING:staging,LJM_TEST_NODE:process.execPath,LJM_SITE_DIR:path.join(f.root,'outside-site'),LJM_TEST_EXPECTED_SITE:path.join(staging,'site')}});
+    assert.equal(await fs.readFile(path.join(generated,'image-manifest.json'),'utf8'),'{"synthetic":true}');assert.equal(await fs.readFile(path.join(generated,'manuals-catalog.json'),'utf8'),'{"synthetic_manuals":true}');
+    assert.equal(await fs.readFile(path.join(staging,'site/public/archive/page.jpg'),'utf8'),'SYNTHETIC PAGE');
+  }
 });

@@ -337,6 +337,10 @@ export LJM_REQUIRE_SITE_URL=1
 
 sync_runtime_site_data() {
 	assert_staging_path
+	# 构建只写候选版本，不能沿用运行服务配置中指向current的目录。
+	export LJM_SITE_DIR="$staging_directory/site"
+	# 公开投影全部从Git归档排除后，generated目录可能不存在。
+	install -d -o "$ADMIN_USER" -g "$ADMIN_GROUP" -m 0750 "$staging_directory/site/src/data/generated"
 	rm -rf -- "$staging_directory/site/public/archive"
 	install -d -o "$ADMIN_USER" -g "$ADMIN_GROUP" -m 0750 "$staging_directory/site/public/archive"
 	cp -a -- "$previous_app_directory/site/public/archive/." "$staging_directory/site/public/archive/"
