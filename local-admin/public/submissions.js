@@ -6,6 +6,7 @@ const date = value => new Date(value).toLocaleString('zh-CN', { hour12: false })
 let records = [], states = {}, checks = [], active = null, page = 0, dirty = false, busy = false, loading = 0;
 let standards = null;
 let pendingTransferReview = null;
+let manualReviewAvailable = false;
 const notify = message => { $('#desk-message').textContent = message; };
 const api = async (url, payload) => {
  const transferWrite = payload !== undefined && url.endsWith('/transfer');
@@ -55,7 +56,7 @@ function renderList() {
 }
 async function refresh() {
  const [result, reference] = await Promise.all([api('/api/admin/submissions'), api('/api/admin-standards')]);
- records = result.submissions; states = result.states; checks = result.privacy_checks; standards = reference; renderList();
+ records = result.submissions; states = result.states; checks = result.privacy_checks; manualReviewAvailable = result.capabilities?.manualReviewVersion === 1; standards = reference; renderList();
 }
 const draftTypeOptions = () => {
  const byCode = new Map(sortDictionaryEntries(standards?.codeDictionary?.entries ?? [])
@@ -69,7 +70,7 @@ const draftTypeOptions = () => {
 };
 function renderDetail(r) {
  if(r.submission_kind==='manual'){
-  const box=$('#review-detail');box.replaceChildren();const heading=document.createElement('h2');heading.textContent=r.fields.title;const notice=document.createElement('p');notice.className='notice';notice.textContent=`说明书投稿 · ${r.images.length}页。请在本机说明书专用审核页查看已提交版本、逐页核对并记录审核，再接入未公开整理草稿。`;const link=document.createElement('a');link.className='primary';link.href='/admin/manual-review.html?id='+encodeURIComponent(r.id);link.textContent='打开说明书专用审核 →';box.append(heading,notice,link);return;
+  const box=$('#review-detail');box.replaceChildren();const heading=document.createElement('h2');heading.textContent=r.fields.title;const notice=document.createElement('p');notice.className='notice';notice.textContent=`说明书投稿 · ${r.images.length}页。`+(manualReviewAvailable?'请在专用审核页查看已提交版本、逐页核对并记录审核，再接入未公开整理草稿。':'此投稿需在本机说明书专用审核入口处理。线上目录维护不包含投稿审核和整册转入。');box.append(heading,notice);if(manualReviewAvailable){const link=document.createElement('a');link.className='primary';link.href='/admin/manual-review.html?id='+encodeURIComponent(r.id);link.textContent='打开说明书专用审核 →';box.append(link);}return;
  }
  const f = r.fields; const frozen = Boolean(r.linked_item_id || r.status === 'withdrawn' || r.withdrawal_requested || r.status === 'draft');
  const contactLabel = { email: '电子邮箱', wechat: '微信', phone: '电话' }[f.contact_type];

@@ -56,6 +56,28 @@ require_file() {
 	[[ -f "$1" ]] || fail "$2不存在：$1"
 }
 
+# 与systemd的EnvironmentFile顺序一致：主配置、既有PDF设置、说明书目录设置。
+# 可选配置未安装时维持旧行为；已安装的配置不能使用链接或异常类型。
+load_admin_runtime_settings() {
+	local main_file="$1" pdf_file="$2" manuals_file="$3" optional_file
+	[[ -f "$main_file" && ! -L "$main_file" ]] || fail '管理主配置无法核对。'
+	set -a
+	# shellcheck disable=SC1090
+	source "$main_file"
+	for optional_file in "$pdf_file" "$manuals_file"; do
+		if [[ -e "$optional_file" || -L "$optional_file" ]]; then
+			[[ -f "$optional_file" && ! -L "$optional_file" ]] || fail '管理追加配置类型异常。'
+			# shellcheck disable=SC1090
+			source "$optional_file"
+		fi
+	done
+	set +a
+	case "${LJM_MANUALS_ONLINE_ENABLED:-false}" in
+		true|false) ;;
+		*) fail '说明书维护开关只能填写true或false。' ;;
+	esac
+}
+
 require_symlink() {
 	[[ -L "$1" ]] || fail "$2不是软链接：$1"
 }
@@ -324,10 +346,9 @@ log "安装并检查新程序版本：$short_commit"
 run_as_admin "$NODE" --test "$staging_directory"/local-admin/tests/*.test.mjs
 run_as_admin "$NODE" --test "$staging_directory"/site/server/likes/tests/*.test.mjs
 
-set -a
-# shellcheck disable=SC1091
-source "$ENVIRONMENT_FILE"
-set +a
+load_admin_runtime_settings "$ENVIRONMENT_FILE" \
+	'/etc/laojiumopian-manual-pdf-limits.conf' \
+	'/etc/laojiumopian-manuals.conf'
 export LJM_PROJECT_ROOT="$staging_directory"
 export LJM_SITE_DIR="$staging_directory/site"
 export PATH="/snap/node/current/bin:/usr/local/bin:/usr/bin:/bin"

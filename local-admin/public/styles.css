@@ -7,6 +7,10 @@
 	--panel-border: #c9c1b3;
 }
 
+/* 能力未确认时保持隐藏，不能被导航的grid/flex覆盖。 */
+#manuals-manager-link[hidden],
+#mobile-manuals-manager-link[hidden] { display: none !important; }
+
 /* 英文维护对照区沿用本地管理入口；草稿和原文不进入公开构建。 */
 body.admin-v2 .translation-panel { display: grid; gap: 1rem; }
 body.admin-v2 .translation-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; padding: 1.25rem; border: 1px solid #ddd7ca; background: #fffdf7; border-radius: .5rem; }

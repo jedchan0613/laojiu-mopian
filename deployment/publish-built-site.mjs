@@ -20,6 +20,7 @@ const result = await createReleaseDeployer({
 	releasesDirectory,
 	liveLink,
 	releaseLabel,
+	manualsRoot: process.env.LJM_ADMIN_DATA_ROOT ? path.join(process.env.LJM_ADMIN_DATA_ROOT, 'manuals') : path.resolve(releasesDirectory)==='/srv/laojiumopian/releases' ? '/srv/laojiumopian-admin/data/manuals' : null,
 }).deploy();
 
 console.log(JSON.stringify(result));

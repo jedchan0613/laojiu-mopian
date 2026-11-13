@@ -369,5 +369,34 @@ export const createWriteCoordinator = async ({ directory, maxEntries = 10000, ma
     });
     admissions=task.then(()=>{},()=>{});return task;
   };
-  return { perform, query, cancel, read, assertReady, drain, all, reconcileMerge, resolveMergeAttempt };
+  // 仅核对说明书回执或封住未到达的原请求，不重放任何发布。
+  const resolveManualAttempt=({operationId,stepId,actor},verify)=>{
+    operationId=normalizeId(operationId);stepId=normalizeId(stepId);
+    if(typeof actor!=='string'||!actor||typeof verify!=='function')throw new WriteSafetyError('维护身份无效。',403);
+    const key=operationId+'.'+stepId;
+    const task=admissions.then(()=>{
+      const running=records.get(key);if(running&&!/^manuals-(?:save|publish|withdraw|restore|not-started)$/.test(running.kind))throw new WriteSafetyError('该操作不是说明书维护请求。',409,'MANUALS_OPERATION_INVALID');
+      if(running&&(pendingStatuses.has(running.status)||active.has(key)))return {state:'running',operation:structuredClone(running)};
+      return serial(async()=>{
+        const entry=records.get(key);
+        if(entry&&!/^manuals-(?:save|publish|withdraw|restore|not-started)$/.test(entry.kind))throw new WriteSafetyError('该操作不是说明书维护请求。',409,'MANUALS_OPERATION_INVALID');
+        if(entry&&entry.status!=='needs_review')return {state:entry.status,operation:structuredClone(entry)};
+        const proof=await verify(entry?structuredClone(entry):null);
+        if(entry){
+          if(!proof||!['succeeded','failed'].includes(proof.status))return {state:'needs-review',operation:structuredClone(entry)};
+          const next={...entry,status:proof.status,finishedAt:new Date().toISOString()};delete next.errorCode;delete next.errorStatus;
+          if(proof.status==='succeeded')next.result=safeReceipt(proof.result??{});else{delete next.result;next.errorCode='MANUALS_ROLLED_BACK';next.errorStatus=409;}
+          await persist(key,next);return {state:next.status,operation:structuredClone(next)};
+        }
+        if(proof!==null)return {state:'needs-review'};
+        const reserved=[...records].reduce((total,[storedKey,row])=>total+(pendingStatuses.has(row.status)?maximumRecordBytes-storedSizes.get(storedKey):0),0);
+        if(records.size>=maxEntries||bytes+reserved+maximumRecordBytes>maxBytes)throw new WriteSafetyError('操作记录空间不足，不能安全核对原请求。',503,'JOURNAL_LIMIT');
+        try{await fs.lstat(fileFor(key));throw invalidJournal();}catch(error){if(error.code!=='ENOENT')throw error;}
+        const now=new Date().toISOString(),fence={version:1,operationId,stepId,kind:'manuals-not-started',target:'new',requestHash:digest({operationId,stepId,actor,kind:'manuals-not-started'}),status:'cancelled',startedAt:now,finishedAt:now,errorCode:'MANUALS_NOT_STARTED',errorStatus:409};
+        await persist(key,fence);return {state:'not-started',operation:structuredClone(fence)};
+      });
+    });
+    admissions=task.then(()=>{},()=>{});return task;
+  };
+  return { perform, query, cancel, read, assertReady, drain, all, reconcileMerge, resolveMergeAttempt, resolveManualAttempt };
 };

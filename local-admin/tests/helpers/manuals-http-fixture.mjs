@@ -19,6 +19,8 @@ export async function createManualHttpFixture(t=null){
   await fs.writeFile(path.join(site,'build.mjs'),`import fs from 'node:fs/promises';
 const read=async p=>{try{return await fs.readFile(p,'utf8')}catch{return ''}};
 const n=Number(await read('build-count'))+1;await fs.writeFile('build-count',String(n));await fs.mkdir('dist',{recursive:true});await fs.cp('public/archive','dist/archive',{recursive:true});await fs.writeFile('dist/index.html','ISOLATED-BUILD-'+n);
+for(const [name,value]of [['404.html','not found'],['robots.txt','robots'],['sitemap.xml','map']])await fs.writeFile('dist/'+name,value);
+if(await read('build-hold')){await fs.writeFile('build-waiting','waiting');while(!await read('build-release'))await new Promise(resolve=>setTimeout(resolve,20));await new Promise(resolve=>setTimeout(resolve,200));await fs.writeFile('build-finished','finished');}
 if(await read('build-fail'))throw new Error('SYNTHETIC-BUILD-FAIL');console.log('isolated build passed');`);
   const probe=createServer();probe.listen(0,'127.0.0.1');await once(probe,'listening');const port=probe.address().port;await new Promise(resolve=>probe.close(resolve));
   const origin=`http://127.0.0.1:${port}`,env=Object.fromEntries(Object.entries(process.env).filter(([key])=>!key.startsWith('LJM_')&&key!=='PUBLIC_SITE_URL'));

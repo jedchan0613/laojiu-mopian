@@ -5,7 +5,28 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const execute = promisify(execFile);
-const privateDirectories = ['drafts', 'history', 'recycle-bin', 'accounts', 'submissions', 'operations', 'uploads', 'translations'];
+const privateDirectories = ['drafts', 'history', 'recycle-bin', 'accounts', 'submissions', 'operations', 'uploads', 'translations', 'manuals'];
+
+// 调用者已持有部署锁。未决说明书事务或回执存在时，任何入口都不能整理其回退版本。
+export const assertManualsTransactionsResolved = async (manualsRoot) => {
+	if (!manualsRoot) return;
+	const rootInfo=await fs.lstat(manualsRoot).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+	if(rootInfo&&(!rootInfo.isDirectory()||rootInfo.isSymbolicLink()))throw new Error('说明书私密目录类型异常，版本整理已停止。');
+	for (const [directory, transactions] of [[path.join(manualsRoot, 'transactions'), true], [path.join(path.dirname(manualsRoot), 'operations'), false]]) {
+		const info = await fs.lstat(directory).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+		if (!info) continue;
+		if (!info.isDirectory() || info.isSymbolicLink()) throw new Error('说明书事务目录无法核对，版本整理已停止。');
+		for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+			if (transactions ? !/^[a-f0-9-]{36}$/i.test(entry.name) : !/^[a-f0-9-]{36}\.[a-f0-9-]{36}\.json$/i.test(entry.name)) continue;
+			if (entry.isSymbolicLink() || (transactions ? !entry.isDirectory() : !entry.isFile())) throw new Error('说明书事务记录类型异常，版本整理已停止。');
+			const file = transactions ? path.join(directory, entry.name, 'manifest.json') : path.join(directory, entry.name);
+			const stat = await fs.lstat(file).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+			if (!stat || !stat.isFile() || stat.isSymbolicLink() || stat.size > 65536) throw new Error('说明书事务记录不完整，版本整理已停止。');
+			let record; try { record = JSON.parse(await fs.readFile(file, 'utf8')); } catch { throw new Error('说明书事务记录无法解析，版本整理已停止。'); }
+			if (transactions ? !['complete', 'rolled-back'].includes(record.status) : /^manuals-/.test(record.kind ?? '') && ['queued', 'running', 'needs_review'].includes(record.status)) throw new Error('说明书发布或操作结果仍待核对，版本整理已停止。');
+		}
+	}
+};
 
 export const releaseTimestamp = (name) => {
 	const match = /^(\d{8})-?(\d{6})-[a-z0-9]+(?:-[a-z0-9]+)*$/.exec(name);
@@ -16,7 +37,8 @@ export const releaseTimestamp = (name) => {
 	return Number.isNaN(date.valueOf()) || date.toISOString().slice(0, 19) !== iso.slice(0, 19) ? null : digits;
 };
 
-export const pruneReleases = async ({ releasesDirectory, liveLink, kind, keep = 3, protectedDirectories = [], apply = false }) => {
+export const pruneReleases = async ({ releasesDirectory, liveLink, kind, keep = 3, protectedDirectories = [], apply = false, manualsRoot = null }) => {
+	await assertManualsTransactionsResolved(manualsRoot);
 	if (!['admin', 'public'].includes(kind) || !Number.isInteger(keep) || keep < 3) throw new Error('版本保留参数无效，至少保留三个版本。');
 	const root = path.resolve(releasesDirectory);
 	const rootStat = await fs.lstat(root);
@@ -57,6 +79,7 @@ export const pruneReleases = async ({ releasesDirectory, liveLink, kind, keep = 
 		if (privateData) { result.skipped.push(release.name); continue; }
 		result.removable.push(release.name);
 		if (!apply) continue;
+		await assertManualsTransactionsResolved(manualsRoot);
 		// 再次检查当前链接；并发切换后的活动版本同样受到保护。
 		if (await readActive() === release.directory) { result.kept.push(release.name); continue; }
 		if (process.platform === 'linux') await execute('/usr/bin/rm', ['-rf', '--one-file-system', '--', release.directory]);

@@ -6,4 +6,4 @@ if (!['admin', 'public'].includes(kind) || args.some(arg => arg !== '--apply' &&
 const releasesDirectory = kind === 'admin' ? '/srv/laojiumopian-admin/app/releases' : '/srv/laojiumopian/releases';
 const liveLink = kind === 'admin' ? '/srv/laojiumopian-admin/app/current' : `${releasesDirectory}/live`;
 const protectedDirectories = args.filter(arg => arg.startsWith('--protect=')).map(arg => arg.slice('--protect='.length));
-console.log(JSON.stringify(await pruneReleases({ releasesDirectory, liveLink, kind, protectedDirectories, apply: args.includes('--apply') })));
+console.log(JSON.stringify(await pruneReleases({ releasesDirectory, liveLink, kind, protectedDirectories, apply: args.includes('--apply'), manualsRoot:'/srv/laojiumopian-admin/data/manuals' })));

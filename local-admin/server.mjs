@@ -33,6 +33,7 @@ import { createMergeImageValidator, buildMergeCandidate } from './archive-merge-
 import { safeDirectory as safeMergeDirectory, safeBytes as safeMergeBytes } from './archive-merge-files.mjs';
 import { assertPublicationImageSignature, detectPublicationImageMime } from '../shared/publication-image-safety.mjs';
 import { createManualStore } from './manuals.mjs';
+import { createManualPublication } from './manuals-publication.mjs';
 import {createManualPdfPublicationBackup,assertManualPdfPublicArtifacts} from './manual-pdf-publication.mjs';
 import { manualReviewChecks,manualPdfReviewChecks } from '../shared/manual-review.mjs';
 import { manualSubmissionStates } from '../shared/manual-workflow.mjs';
@@ -41,6 +42,17 @@ import { manualDraftChoices } from '../shared/manual-submission.mjs';
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
 const onlineMode = runtimeMode === 'online';
+const manualsOnlineSetting = (process.env.LJM_MANUALS_ONLINE_ENABLED ?? 'false').trim();
+if (!['true', 'false'].includes(manualsOnlineSetting)) throw new Error('LJM_MANUALS_ONLINE_ENABLED 只能填写 true 或 false。');
+const manualsDraftsEnabled = !onlineMode || manualsOnlineSetting === 'true';
+// 线上发布使用现有Linux部署锁及原子切站；其他平台保留草稿，不冒充生产运行能力。
+const manualsPublicationEnabled = !onlineMode || manualsDraftsEnabled && process.platform === 'linux';
+const manualsCapabilities = Object.freeze({
+	manualsMaintenanceVersion: manualsPublicationEnabled ? 1 : 0,
+	manualsDraftMaintenanceVersion: manualsDraftsEnabled ? 1 : 0,
+	manualReviewVersion: onlineMode ? 0 : 1,
+	manualPdfHandoffVersion: onlineMode ? 0 : 1,
+});
 const mergeInternalEnabled = !onlineMode && process.env.LJM_MERGE_INTERNAL_ENABLED === '1';
 const mergeOnlineEnabled = onlineMode && process.env.LJM_MERGE_ENABLED === '1';
 const mergeEnabled = mergeInternalEnabled || mergeOnlineEnabled;
@@ -323,6 +335,7 @@ const releaseDeployer = onlineMode
 		sourceDirectory: siteDistDirectory,
 		releasesDirectory: publicReleasesDirectory,
 		liveLink: publicLiveLink,
+		manualsRoot: path.join(adminDataRoot, 'manuals'),
 	})
 	: null;
 
@@ -542,7 +555,7 @@ const operationReceipt = async (result) => {
 	};
 };
 const withDeploymentLock = async callback => {
-	if (!mergeOnlineEnabled) return callback();
+	if (!onlineMode || !mergeOnlineEnabled && !manualsPublicationEnabled) return callback();
 	const lock = await acquireDeploymentLock(mergeDeploymentLock);
 	try { lock.assertHeld(); return await callback(lock); } finally { await lock.release(); }
 };
@@ -552,6 +565,7 @@ const runManagedOperation = async (request, kind, payload, callback, { target, c
 		target: target ?? (kind === 'publish-batch' ? payload.itemIds : payload.itemId || payload.record?.core?.item_id || 'new'), payload }, async (context) => {
 		lock?.assertHeld();
 		context.assertDeploymentLock = () => lock?.assertHeld();
+		if (onlineMode) await manualStore.assertSettled();
 		if (checkVersion) await assertWriteVersion(kind, payload);
 		try { return await callback(context); }
 		finally { bootstrapCache = null; }
@@ -1435,6 +1449,7 @@ const loadBootstrap = async (standards) => {
 	return {
 		writeProtocol: 2,
 		publicationReviewVersion: 1,
+		capabilities: manualsCapabilities,
 		records,
 		drafts: records
 			.filter((record) => record._admin.hasDraft)
@@ -1462,7 +1477,7 @@ const loadBootstrap = async (standards) => {
 };
 
 const computeBootstrapSignature = async () => {
-	const signatures = [];
+	const signatures = ['manuals-capabilities:' + JSON.stringify(manualsCapabilities)];
 	const addFile = async (filePath, label) => {
 		const stat = await fs.stat(filePath).catch(() => null);
 		if (stat?.isFile()) signatures.push(`${label}:${stat.size}:${Math.floor(stat.mtimeMs)}`);
@@ -2346,9 +2361,12 @@ const runSiteBuild = async (options = {}) => {
 	return `${stdout}\n${stderr}`.trim();
 };
 
-// 只使用现有本地服务、写入队列和正式构建。线上仅继承／核验公开投影，不开放维护接口。
+// 线上目录发布由同一事务覆盖构建、live切换和正式状态；旧公开版本供回退。
+const manualPublication = onlineMode && manualsPublicationEnabled ? createManualPublication({siteDirectory,releasesDirectory:publicReleasesDirectory,liveLink:publicLiveLink,manualsRoot:path.join(adminDataRoot,'manuals')}) : null;
 const manualStore = createManualStore({
 	root: path.join(adminDataRoot, 'manuals'), siteDirectory, readArchives: loadOfficialRecords,
+	requireInitialization: onlineMode,
+	publication: manualPublication,
  build: async options => {const output=await runSiteBuild({ ...options, manualsStaged: true });await assertManualPdfPublicArtifacts({dist:path.join(siteDirectory,'dist'),...await submissionStore.manualPdfPrivatePublicationValues()});return output;},
 	guardCatalog: catalog => submissionStore.manualCatalogPublicationIssues(catalog),
 });
@@ -2898,30 +2916,67 @@ const adminServer = http.createServer(async (request, response) => {
 		if (!onlineMode && await publicContacts(request, response, url.pathname)) return;
 		if (!onlineMode && accountService && await accountService.handler(request, response, url.pathname)) return;
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname === '/healthz') {
-   sendJson(response, 200, { ok: true, capabilities: { publicationImageNames: true, writeProtocol: 2, publicationReviewVersion: 1, manualsMaintenanceVersion: onlineMode ? 0 : 1,manualReviewVersion:onlineMode?0:1,manualPdfHandoffVersion:onlineMode?0:1 } });
+   sendJson(response, 200, { ok: true, capabilities: { publicationImageNames: true, writeProtocol: 2, publicationReviewVersion: 1, ...manualsCapabilities } });
 			return;
 		}
 		const adminIdentity = onlineMode ? await accessAuthenticator.verifyRequest(request) : null;
-		const manualRequest = /^\/api\/manuals(?:\/|$)/.test(url.pathname);
-		if (onlineMode && (manualRequest || /^\/admin\/manuals(?:[.-]|\/|$)/i.test(decodeURIComponent(url.pathname)))) {
-			sendJson(response, 404, { error: '说明书维护仅在本机管理入口开放。' }); return;
+		const decodedManualPath = decodeURIComponent(url.pathname);
+		const manualRequest = /^\/api\/manuals(?:\/|$)/i.test(decodedManualPath);
+		if (!manualsDraftsEnabled && (manualRequest || /^\/admin\/manuals(?:[.-]|\/|$)/i.test(decodedManualPath))) {
+			if (/^\/admin\/manuals(?:-preview)?\.html$/i.test(decodedManualPath) && ['GET','HEAD'].includes(request.method)) {
+				const html = '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>说明书维护暂未开放</title><h1>说明书维护暂未在线上开放</h1><p>当前可在本机档案管理工具维护。线上功能需要完成接入与检查后再启用。</p><a href="/admin/">返回档案管理</a></html>';
+				response.writeHead(404, { ...securityHeaders(), 'Content-Type':'text/html; charset=utf-8', 'Content-Length':Buffer.byteLength(html) });
+				response.end(request.method === 'HEAD' ? undefined : html);
+			} else sendJson(response, 404, { error: '说明书维护暂未在线上开放，请使用本机管理工具。', code:'MANUALS_ONLINE_DISABLED' });
+			return;
 		}
 		if (manualRequest) {
+			const manualContext = { adminMode:runtimeMode, publicSiteUrl:onlineMode ? publicSiteUrl : localAdminOrigin, capabilities:manualsCapabilities, publicationEnabled:manualsPublicationEnabled };
 			if (request.method === 'GET' && url.pathname === '/api/manuals') {
-				sendJson(response, 200, await writes.read(() => manualStore.bootstrap()), { request }); return;
+				// JSON状态和历史采用原子写入；只读读取不排在长构建后面，刷新仍能查看操作进度。
+				const data=await manualStore.bootstrap();
+				const activeOperations=writes.all().filter(row=>/^manuals-(?:publish|withdraw|restore)$/.test(row.kind)&&['queued','running'].includes(row.status));
+				if(activeOperations.length)data.readiness={status:'busy',message:'说明书维护操作正在进行，编辑暂时停用；请核对操作结果。'};
+				sendJson(response, 200, { ...data, activeOperations, context:manualContext }, { request }); return;
 			}
 			if (request.method === 'GET' && url.pathname === '/api/manuals/preview') {
-				sendJson(response, 200, await writes.read(() => manualStore.preview(url.searchParams.get('revision'), url.searchParams.get('manual'))), { request }); return;
+				const revision=url.searchParams.get('revision'),manual=url.searchParams.get('manual');
+				const preview=await writes.read(() => manualStore.preview(revision,manual));
+				if(preview.document) preview.document.pages=preview.document.pages.map((page,index)=>({ ...page, src:'/api/manuals/preview-image?'+new URLSearchParams({manual,revision,page:String(index+1)}) }));
+				sendJson(response, 200, { ...preview, context:manualContext }, { request }); return;
+			}
+			if (request.method === 'GET' && url.pathname === '/api/manuals/preview-image') {
+				const page=url.searchParams.get('page');
+				if(!/^[1-9][0-9]{0,3}$/.test(page ?? '')) throw new RequestError('预览页序无效。');
+				const picture=await writes.read(() => manualStore.previewImage(url.searchParams.get('revision'),url.searchParams.get('manual'),Number(page)));
+				response.writeHead(200,{ ...securityHeaders(), 'Content-Type':detectPublicationImageMime(picture), 'Cache-Control':'no-store', 'Content-Length':picture.length });
+				response.end(picture);return;
+			}
+			if (request.method === 'POST' && url.pathname === '/api/manuals/resolve-operation') {
+				requireSafeMutation(request);const payload=await readSubmissionJson(request,8192);
+				if(payload.confirmed!==true)throw new RequestError('请确认仅核对原请求，不重新发布。',428);
+				const result=await withDeploymentLock(async lock=>writes.resolveManualAttempt({operationId:payload.operationId,stepId:payload.stepId,actor:onlineMode?adminIdentity.email:'本机维护者'},async()=>{
+					lock?.assertHeld();const proof=await manualStore.proveOperation(payload.operationId,payload.stepId);lock?.assertHeld();return proof;
+				}));
+				sendJson(response,200,result,{request});return;
 			}
 			const actions = { save: manualStore.save, review: manualStore.prepare, publish: manualStore.publish, withdraw: manualStore.withdraw, restore: manualStore.restore };
 			const action = url.pathname.slice('/api/manuals/'.length);
 			if (request.method === 'POST' && Object.hasOwn(actions, action)) {
 				requireSafeMutation(request);
+				if (!manualsPublicationEnabled && action !== 'save') { sendJson(response,409,{error:'当前环境仅支持草稿和预览；线上正式发布需要Linux部署锁及完整切站配置。',code:'MANUALS_PUBLICATION_UNAVAILABLE'});return; }
 				const payload = await readRequestJson(request);
 				if (Buffer.byteLength(JSON.stringify(payload)) > 4 * 1024 * 1024) throw new RequestError('本次目录过大，请分批维护。', 413);
-				const result = action === 'review' ? await writes.read(() => manualStore.prepare(payload)) : await writes.perform({
-					operationId: requestOperationId(request), stepId: request.headers['x-ljm-step-id'], kind: `manuals-${action}`, target: 'new', payload,
-				}, context => actions[action](payload, context), value => ({ revision: value.revision }));
+				const actor=onlineMode ? adminIdentity.email : '本机维护者';
+				const result = action === 'review' ? await writes.read(() => manualStore.prepare(payload,{actor})) : await withDeploymentLock(async lock=>{
+					const operationId=requestOperationId(request),stepId=request.headers['x-ljm-step-id'];
+					await manualStore.assertSettled();
+					const result=await writes.perform({operationId,stepId,kind:`manuals-${action}`,target:'new',payload},context=>actions[action](payload,{...context,actor,assertDeploymentLock:()=>lock?.assertHeld()}),value=>({revision:value.revision}));
+					if(manualPublication&&['publish','withdraw'].includes(action)&&!result.replayed){
+						try{lock.assertHeld();result.retention=await manualStore.pruneAfterOperation(operationId,stepId);}catch{result.retentionWarning='发布已完成，旧版本整理暂未完成，已保留现有版本。';}
+					}
+					return result;
+				});
 				sendJson(response, 200, result, { request }); return;
 			}
 			sendJson(response, 404, { error: '说明书维护地址不存在。' }); return;
@@ -3050,7 +3105,9 @@ const adminServer = http.createServer(async (request, response) => {
 		}
 		const operationRoute = /^\/api\/operations\/([a-f0-9-]{36})$/i.exec(url.pathname);
 		if (operationRoute && request.method === 'GET') {
-			sendJson(response, 200, { operations: writes.query(operationRoute[1]) }, { request }); return;
+			const operations=writes.query(operationRoute[1]),manuals=[];
+			for(const row of operations.filter(row=>/^manuals-/.test(row.kind))){try{const summary=await manualStore.operationSummary(row.operationId,row.stepId);if(summary)manuals.push({stepId:row.stepId,...summary});}catch{manuals.push({stepId:row.stepId,phase:'needs-review'});}}
+			sendJson(response, 200, { operations, ...(manuals.length?{manuals}:{}) }, { request }); return;
 		}
 		const versionRoute = /^\/api\/record-version\/(LJM-\d{8}-[A-Z]{3}-\d{3})$/.exec(url.pathname);
 		const saveResultRoute = /^\/api\/save-result\/(LJM-\d{8}-[A-Z]{3}-\d{3})$/.exec(url.pathname);
@@ -3096,7 +3153,7 @@ const adminServer = http.createServer(async (request, response) => {
 					? accounts.get(item.account_id) ?? { nickname: '', status: 'missing', status_label: '账号不存在' }
 					: null,
 			}));
-			sendJson(response, 200, { submissions, states: submissionStates, privacy_checks: privacyChecks }, { request }); return;
+			sendJson(response, 200, { submissions, states: submissionStates, privacy_checks: privacyChecks, capabilities:manualsCapabilities }, { request }); return;
 		}
 		const manualReviewRoute=/^\/api\/admin\/manual-submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer)|\/versions\/(\d+)\/images\/(manual-[a-f0-9]{64}\.jpg))?$/.exec(url.pathname);
 		if(onlineMode&&(manualReviewRoute||/^\/admin\/manual-review(?:[.-]|\/|$)/i.test(decodeURIComponent(url.pathname)))){sendJson(response,404,{error:'说明书专用审核只在本机工作台开放。'});return;}
@@ -3335,6 +3392,7 @@ if (process.argv.includes('--check-config')) {
 } else if (process.argv.includes('--sync-site-data')) {
 	try {
 		writes.assertReady();
+		await manualStore.assertSettled();
 		await atomicWrite(siteArchiveDataFile, await generateSiteArchiveSource());
 		await generateSiteTranslationLayer();
 		await manualStore.sync();

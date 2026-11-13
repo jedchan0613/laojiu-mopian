@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import { constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { pruneReleases } from '../shared/release-retention.mjs';
+import { pruneReleases, assertManualsTransactionsResolved } from '../shared/release-retention.mjs';
 
 const safeReleaseLabelPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const safeReleaseNamePattern = /^\d{8}-\d{6}-[a-z0-9]+(?:-[a-z0-9]+)*-[a-f0-9]{8}$/;
@@ -75,9 +75,12 @@ export const createReleaseDeployer = ({
 	releaseLabel = 'admin',
 	now = () => new Date(),
 	randomId = () => randomUUID().slice(0, 8),
+	manualsRoot = null,
 }) => ({
 	deploy: async (options = {}) => {
 		const { signal = null } = options;
+		// retain事务由持锁调用者验证自己的未决记录；普通部署不能越过说明书停写状态。
+		if (!options.retain) await assertManualsTransactionsResolved(manualsRoot);
 		throwIfAborted(signal);
 		if (!safeReleaseLabelPattern.test(releaseLabel) || releaseLabel.length > 48) {
 			throw new Error('公开版本来源标签无效。');
@@ -113,6 +116,7 @@ export const createReleaseDeployer = ({
 		}
 
 		try {
+			if (!options.retain) await assertManualsTransactionsResolved(manualsRoot);
 			await fs.rename(temporaryLink, liveLink);
 		} catch (error) {
 			await fs.rm(temporaryLink, { force: true }).catch(() => {});
@@ -123,7 +127,7 @@ export const createReleaseDeployer = ({
 		// 已成功切换后才整理旧构建；整理失败不撤销已经完成的发布。
 		let retention;
 		try {
-			retention = options.retain ? { retainedForTransaction: true } : await pruneReleases({ releasesDirectory, liveLink, kind: 'public', protectedDirectories: [previous.resolvedTarget], apply: true });
+			retention = options.retain ? { retainedForTransaction: true } : await pruneReleases({ releasesDirectory, liveLink, kind: 'public', protectedDirectories: [previous.resolvedTarget], apply: true, manualsRoot });
 		} catch (error) {
 			retention = { warning: error.message };
 			console.warn(`旧公开版本整理未完成：${error.message}`);

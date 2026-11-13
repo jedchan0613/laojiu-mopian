@@ -39,3 +39,17 @@ test('HTTP构建失败恢复旧产物与草稿，原档案及附件不被说明�
   const saved=await f.post('/api/manuals/save',{expectedRevision:state.revision,catalog:f.readerCatalog()});assert.equal(saved.status,200);const review=await f.post('/api/manuals/review',{expectedRevision:saved.body.revision});await fs.writeFile(path.join(f.site,'build-fail'),'fail');
   const r=await f.post('/api/manuals/publish',{expectedRevision:saved.body.revision,review_id:review.body.review_id,confirmations:Array(5).fill(true)});assert.equal(r.status,400);assert.equal(r.body.code,'MANUALS_BUILD_FAILED');assert.equal(r.body.operation.status,'failed');assert.deepEqual(await fs.readFile(path.join(f.dist,'index.html')),oldPage);assert.deepEqual(await fs.readFile(path.join(f.archiveDirectory,f.id+'.json')),archive);assert.deepEqual(await fs.readFile(f.image),image);await assert.rejects(fs.access(f.source));assert((await f.get('/api/manuals')).body.state.draft);
 });
+
+test('构建中停止的HTTP回执准确标为取消，恢复原页面并保留草稿',{timeout:30000},async t=>{
+  const f=await createManualHttpFixture(t),before=await fs.readFile(path.join(f.dist,'index.html'));
+  await fs.appendFile(path.join(f.site,'build.mjs'),'\nawait new Promise(resolve=>setTimeout(resolve,2000));\n');
+  const saved=await f.post('/api/manuals/save',{expectedRevision:(await f.get('/api/manuals')).body.revision,catalog:f.readerCatalog()});
+  const review=await f.post('/api/manuals/review',{expectedRevision:saved.body.revision}),ids={operationId:randomUUID(),stepId:randomUUID()};
+  const publishing=f.post('/api/manuals/publish',{expectedRevision:saved.body.revision,review_id:review.body.review_id,confirmations:Array(5).fill(true)},ids);
+  for(let i=0;i<300;i++){if(await fs.stat(path.join(f.site,'build-count')).catch(()=>null))break;await new Promise(resolve=>setTimeout(resolve,10));}
+  await fs.access(path.join(f.site,'build-count'));
+  const stopped=await f.post('/api/cancel-operation',{operationId:ids.operationId});assert.equal(stopped.status,200);
+  const result=await publishing;assert.equal(result.status,409);assert.equal(result.body.code,'OPERATION_CANCELLED');assert.equal(result.body.operation.status,'cancelled');
+  const state=(await f.get('/api/manuals')).body;assert.equal(state.revision,saved.body.revision);assert(state.state.draft);assert.deepEqual(await fs.readFile(path.join(f.dist,'index.html')),before);await assert.rejects(fs.access(f.source));
+  const receipt=(await f.get('/api/operations/'+ids.operationId)).body.operations[0];assert.equal(receipt.status,'cancelled');assert.equal(receipt.errorCode,'OPERATION_CANCELLED');
+});
