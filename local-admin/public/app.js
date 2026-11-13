@@ -228,6 +228,7 @@ const publicPreviewUrl = (pathname = '/') => {
 };
 
 const elements = {
+	adminAccessNotice: document.getElementById('admin-access-notice'),
   mergePlannerLink: document.getElementById('merge-planner-link'),
   mobileMergePlannerLink: document.getElementById('mobile-merge-planner-link'),
   manualsManagerLink: document.getElementById('manuals-manager-link'),
@@ -4773,6 +4774,12 @@ const loadBootstrap = async (selectedId = state.activeId, options = {}) => {
 	state.recycleBin = data.recycle_bin ?? [];
 	state.integrityReport = data.maintenance?.integrity ?? null;
 	state.adminMode = data.paths?.adminMode ?? 'local';
+	if (elements.adminAccessNotice) {
+		const accessMode = data.paths?.adminMode;
+		elements.adminAccessNotice.textContent = accessMode === 'online'
+			? '管理员专用 · 受保护访问'
+			: accessMode === 'local' ? '仅本机可访问 · 未公开' : '管理工作区 · 访问受限';
+	}
 	for (const link of [elements.manualsManagerLink, elements.mobileManualsManagerLink]) {
 		if (link) link.hidden = data.capabilities?.manualsDraftMaintenanceVersion !== 1 && data.capabilities?.manualsMaintenanceVersion !== 1;
 	}
