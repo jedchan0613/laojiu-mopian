@@ -5,6 +5,7 @@ import path from 'node:path';
 import {fixture,actor,operation} from './helpers/merge-fixture.mjs';
 import {executionFixture} from './helpers/merge-execution-fixture.mjs';
 import {acquireDeploymentLock,createMergePublication,openAccountMergeConnection,assertAccountMergeService,assertLikeMergeService} from '../archive-merge-production.mjs';
+import {readLiveRelease} from '../release-deployer.mjs';
 import {createArchiveMergeExecution} from '../archive-merge-execution.mjs';
 import {writeVersionedFile,treeDigest} from '../archive-merge-files.mjs';
 import {createMergeUndo} from '../archive-merge-undo.mjs';
@@ -25,6 +26,19 @@ test('复用现有账号库连接及持久门禁，不创建另一份库',async 
 });
 test('既有文件原子替换保留权限及属主',linux,async t=>{const f=await fixture(t),file=path.join(f.privateRoot,'permission.json');await fs.writeFile(file,'old',{mode:0o640});const before=await fs.stat(file);await writeVersionedFile(f.privateRoot,'permission.json',Buffer.from('new'));const after=await fs.stat(file);assert.equal(after.mode&0o777,0o640);assert.equal(after.uid,before.uid);assert.equal(after.gid,before.gid);});
 test('实际flock非阻塞互斥，释放后可再次取得',linux,async t=>{const f=await fixture(t),file=path.join(f.privateRoot,'deploy.lock');await fs.writeFile(file,'');const first=await acquireDeploymentLock(file);try{await assert.rejects(acquireDeploymentLock(file),{code:'MERGE_DEPLOYMENT_BUSY'});}finally{await first.release();}const second=await acquireDeploymentLock(file);await second.release();});
+
+for(const stopAt of ['validate','commit'])test(`合并候选安装后的说明书停止守卫在${stopAt}拒绝时不切站`,async t=>{
+ const f=await executionFixture(t),releases=path.join(f.root,'manual-stop-releases'),previous=path.join(releases,'previous'),live=path.join(releases,'live');
+ await fs.mkdir(previous,{recursive:true});await fs.cp(path.join(f.site,'dist'),previous,{recursive:true});await fs.symlink(process.platform==='win32'?previous:'previous',live,process.platform==='win32'?'junction':'dir');
+ for(const file of ['index.html','404.html','robots.txt','sitemap.xml'])await fs.writeFile(path.join(f.site,'dist',file),'SYNTHETIC-CANDIDATE');
+ let prepared=false,stopped=false,validated=false,guarded=false;
+ const publication=createMergePublication({siteDirectory:f.site,releasesDirectory:releases,liveLink:live,applicationLink:f.root,preparePublication:async()=>{
+  prepared=true;return {validate:async()=>{validated=true;if(stopped)throw Error('SYNTHETIC-MANUAL-STOP');},withCommit:async commit=>{guarded=true;throw Error('SYNTHETIC-MANUAL-STOP');}};
+ }});
+ const log={publicationBefore:await publication.capture(),distAfter:await treeDigest(path.join(f.site,'dist'))};
+ await assert.rejects(publication.publish(log,async phase=>{if(phase==='public-switch-intent'&&stopAt==='validate')stopped=true;}),/SYNTHETIC-MANUAL-STOP/);
+ assert(prepared);assert(validated);assert.equal(guarded,stopAt==='commit');assert.equal((await readLiveRelease(releases,live)).resolvedTarget,previous);assert.notEqual(log.publication?.switched,true);
+});
 
 for(const phase of [null,'public-switch-intent','public-switched','verified'])test('生产发布事务 '+(phase??'完整提交')+'：当前应用、live及失败恢复一致',linux,async t=>{
  const f=await executionFixture(t),releases=path.join(f.root,'releases'),previous=path.join(releases,'previous'),live=path.join(releases,'live');await fs.mkdir(previous,{recursive:true});await fs.cp(path.join(f.site,'dist'),previous,{recursive:true});await fs.symlink('previous',live);

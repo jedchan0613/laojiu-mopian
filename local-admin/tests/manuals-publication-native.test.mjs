@@ -23,6 +23,12 @@ test('真实发布器准备阶段会再次检查公开指针，变化时不覆�
   assert.equal((await readLiveRelease(f.releases,f.live)).resolvedTarget,foreign);assert.equal(await fs.readFile(path.join(foreign,'index.html'),'utf8'),'FOREIGN');
 });
 
+test('目录发布透传最终提交守卫，停止申请在准备完成后仍能阻止实际切站',async t=>{
+  const f=await nativeFixture(t),log={publicationBefore:await f.publication.capture()};let validated=false,guarded=false;
+  await assert.rejects(f.publication.publish(log,async status=>{log.status=status;},{assertHeld(){},validate:async()=>{validated=true;},withCommit:async()=>{assert(validated);guarded=true;throw new Error('SYNTHETIC-STOP-ACCEPTED');}}),/SYNTHETIC-STOP-ACCEPTED/);
+  assert(guarded);assert.equal((await readLiveRelease(f.releases,f.live)).resolvedTarget,f.before);assert.equal(log.status,'public-switch-intent');
+});
+
 test('未决说明书事务和待核对回执阻止版本整理，明确完成后才按原规则清理',async t=>{
   const f=await nativeFixture(t);for(const day of ['02','03','04','05']){const dir=path.join(f.releases,`202611${day}-010101-admin-11111111`);await fs.mkdir(dir);await fs.writeFile(path.join(dir,'index.html'),'PUBLIC');}
   const job=path.join(f.root,'transactions',randomUUID());await fs.mkdir(job,{recursive:true});const manifest=path.join(job,'manifest.json');await fs.writeFile(manifest,JSON.stringify({version:2,status:'public-switch-intent'}));

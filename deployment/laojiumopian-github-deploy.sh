@@ -76,6 +76,14 @@ load_admin_runtime_settings() {
 		true|false) ;;
 		*) fail '说明书维护开关只能填写true或false。' ;;
 	esac
+	case "${LJM_MANUAL_REVIEW_ONLINE_ENABLED:-false}" in
+		true|false) ;;
+		*) fail '说明书审核开关只能填写true或false。' ;;
+	esac
+	case "${LJM_MANUAL_TRANSFER_ONLINE_ENABLED:-false}" in
+		true|false) ;;
+		*) fail '说明书转入开关只能填写true或false。' ;;
+	esac
 }
 
 require_symlink() {
@@ -125,6 +133,7 @@ previous_public_target=''
 service_stopped=false
 app_switched=false
 public_switched=false
+deployment_committed=false
 like_service_installed=false
 submission_service_installed=false
 account_service_installed=false
@@ -132,6 +141,12 @@ account_service_installed=false
 cleanup() {
 	local status=$?
 	trap - EXIT
+	# 正式标记已经提交后，只能报告后处理异常；不能单独回切程序/网页而留下新标记。
+	if [[ "$status" -ne 0 && "$deployment_committed" == true ]]; then
+		set +e
+		log '发布已提交，后处理发生异常；保持新程序、公开版本及部署标记一致，请核对日志。'
+		exit "$status"
+	fi
 	if [[ "$status" -ne 0 ]]; then
 		set +e
 		if [[ "${candidate_commit:-}" =~ ^[0-9a-f]{40}$ ]]; then
@@ -475,6 +490,7 @@ printf '%s\n' "$candidate_commit" > "$DEPLOYED_COMMIT_FILE.tmp"
 chown root:root "$DEPLOYED_COMMIT_FILE.tmp"
 chmod 0640 "$DEPLOYED_COMMIT_FILE.tmp"
 mv -f -- "$DEPLOYED_COMMIT_FILE.tmp" "$DEPLOYED_COMMIT_FILE"
+deployment_committed=true
 rm -f -- "$FAILED_ATTEMPT_FILE"
 
 # 公开切换和所有健康检查完成后，才清理旧应用；额外保护部署前版本。

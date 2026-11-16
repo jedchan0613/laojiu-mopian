@@ -102,7 +102,7 @@ export function validateManualPublication(catalog,archives){
   return {issues,projection};
 }
 
-export function createManualStore({root,siteDirectory,readArchives,build,guardCatalog=async()=>[],requireInitialization=false,publication=null}){
+export function createManualStore({root,siteDirectory,readArchives,build,guardCatalog=async()=>[],preparePublication=async()=>null,requireInitialization=false,publication=null}){
   root=path.resolve(root);siteDirectory=path.resolve(siteDirectory);
   const stateFile=path.join(root,'state.json'),sourceFile=path.join(siteDirectory,'src/data/generated/manuals-catalog.json'),dist=path.join(siteDirectory,'dist');
   if(inside(siteDirectory,root)||inside(root,siteDirectory))fail('说明书私密维护目录必须与网站项目分开。');
@@ -181,11 +181,11 @@ export function createManualStore({root,siteDirectory,readArchives,build,guardCa
     await reserveSpace(next,current);
     if(current.state.draft)await snapshot(current.state.draft,'draft-before-save','',actor);
     context.markChanged?.();await persist(next);return {revision:(await read()).revision};};
-  const planReviewedImport=async input=>{await assertReady();const current=await read();assertVersion(current,input.transfer.catalog_revision);const result=importManualCatalog(current.state.draft??current.state.published,{...input,archive:input.version.manual_metadata.sharing_scope==='reading-copy'?{item_id:'',page_map:[]}:null});normalizeManualDraft(result.catalog);return {revision:current.revision};};
+  const planReviewedImport=async input=>{const readiness=await assertReady();if(readiness.status!=='ready')fail('请先确认建立说明书私密维护记录，再接收审核结果。',428,'MANUALS_INITIALIZATION_REQUIRED');const current=await read();assertVersion(current,input.transfer.catalog_revision);const result=importManualCatalog(current.state.draft??current.state.published,{...input,archive:input.version.manual_metadata.sharing_scope==='reading-copy'?{item_id:'',page_map:[]}:null});const draft=normalizeManualDraft(result.catalog);await reserveSpace({...current.state,draft},current);return {revision:current.revision};};
   const importReviewed=async(input,context={})=>{
-    await assertReady();const current=await read();assertVersion(current,input.transfer.catalog_revision);const result=importManualCatalog(current.state.draft??current.state.published,input);
-    if(result.repeated)return {manual_key:result.manual_key,revision:current.revision,repeated:true};
-    const catalog=normalizeManualDraft(result.catalog);if(current.state.draft)await snapshot(current.state.draft,'draft-before-save','接收已审核说明书前保留原目录草稿');context.markChanged?.();await persist({...current.state,draft:catalog,updated_at:when()});return {manual_key:result.manual_key,revision:(await read()).revision};
+    const readiness=await assertReady();if(readiness.status!=='ready')fail('请先确认建立说明书私密维护记录，再接收审核结果。',428,'MANUALS_INITIALIZATION_REQUIRED');const current=await read();assertVersion(current,input.transfer.catalog_revision);const result=importManualCatalog(current.state.draft??current.state.published,input);
+    if(result.repeated)return {manual_key:result.manual_key,revision:current.revision,document_digest:hash(result.catalog.documents.find(doc=>doc.manual_key===result.manual_key)),repeated:true};
+    const catalog=normalizeManualDraft(result.catalog),next={...current.state,draft:catalog,updated_at:when()};await reserveSpace(next,current);if(current.state.draft)await snapshot(current.state.draft,'draft-before-save','接收已审核说明书前保留原目录草稿',context.actor??'');context.markChanged?.();await persist(next);return {manual_key:result.manual_key,revision:(await read()).revision,document_digest:hash(catalog.documents.find(doc=>doc.manual_key===result.manual_key))};
   };
   const prepare=async(payload,context={})=>{await assertReady();const current=await read();assertVersion(current,payload.expectedRevision);if(!current.state.draft)fail('请先保存目录草稿，再进行发布检查。');const result=await check(current,current.state.draft);if(result.issues.length)return {issues:result.issues};const review_id=randomUUID();tickets.set(review_id,{revision:current.revision,fingerprint:result.fingerprint,actor:context.actor??'',expires:Date.now()+30*60*1000});for(const [k,t]of tickets)if(t.expires<Date.now())tickets.delete(k);const old=new Set(current.state.published.documents.filter(d=>d.publication_status!=='withdrawn').map(d=>d.manual_key)),next=new Set(result.projection.documents.map(d=>d.manual_key));return {review_id,issues:[],documents:next.size,models:result.projection.models.length,removed:[...old].filter(k=>!next.has(k)),summary:result.projection.documents.map(d=>({manual_key:d.manual_key,title:d.title,pages:d.pages.length,sources:d.official_sources.length}))};};
   const transactLocal=async(current,next,kind,reason,context={})=>{
@@ -247,7 +247,7 @@ export function createManualStore({root,siteDirectory,readArchives,build,guardCa
       const archives=await readArchives(),source=manualPublicationInput(next.published),projection=projectManualCatalog(source,archives);
       context.markChanged?.();await fs.mkdir(path.dirname(sourceFile),{recursive:true});await atomicWrite(sourceFile,JSON.stringify(pruneInput(source,projection),null,2)+'\n');
       await writeManifest('building');const buildOutput=await build({signal:context.signal});await validate();
-      await writeManifest('built');await publication.publish(manifest,writeManifest,{signal:context.signal,validate,assertHeld});
+      await writeManifest('built');const publicationGuard=await preparePublication(next.published);await publication.publish(manifest,writeManifest,{signal:context.signal,validate,assertHeld,withCommit:publicationGuard?.withCommit});
       // 切换成功后即使收到晚到的停止请求，也先完成状态和回执，不把已经公开误报为取消。
       assertHeld();await publication.verify(manifest);
       next.last_publication={transaction_id,operation_id:context.operationId,step_id:context.stepId,release_name:manifest.publicationAfter.releaseName,completed_at:when()};

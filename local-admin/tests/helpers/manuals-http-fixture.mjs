@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import {createServer} from 'node:net';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
@@ -7,11 +8,29 @@ import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import {createManualFixture} from './manuals-fixture.mjs';
 
+// fs.cp会继承只读程序包的0555/0444；只恢复本夹具新副本的私密写入权限。
+// 目标由新建临时根固定派生，不接收source目录作为可修改目标。
+export async function makeCopiedFixtureStandardsWritable(fixtureDirectory){
+  const root=path.resolve(fixtureDirectory);
+  if(path.dirname(root)!==path.resolve(os.tmpdir())||!path.basename(root).startsWith('ljm-manuals-phase3-'))throw Error('只允许处理本次新建的说明书临时夹具');
+  const rootStat=await fs.lstat(root);if(!rootStat.isDirectory()||rootStat.isSymbolicLink())throw Error('临时夹具根不能是链接');
+  const target=path.join(root,'site/src/data/standards');let cursor=root;
+  for(const name of ['site','src','data','standards']){cursor=path.join(cursor,name);const stat=await fs.lstat(cursor);if(!stat.isDirectory()||stat.isSymbolicLink())throw Error('临时标准副本的目录路径不能含链接');}
+  async function restore(file){
+    const stat=await fs.lstat(file);if(stat.isSymbolicLink())throw Error('临时标准副本不能含链接');
+    if(stat.isDirectory()){await fs.chmod(file,0o700);for(const name of await fs.readdir(file))await restore(path.join(file,name));}
+    else if(stat.isFile())await fs.chmod(file,0o600);
+    else throw Error('临时标准副本只能是普通目录和文件');
+  }
+  await restore(target);
+}
+
 export async function createManualHttpFixture(t=null){
   const hooks=[],fixture=await createManualFixture({after:hook=>hooks.push(hook)}),project=new URL('../../../',import.meta.url);
   const archiveDirectory=path.join(fixture.dir,'archive-data'),privateRoot=path.dirname(fixture.root),site=fixture.site;
   await fs.mkdir(archiveDirectory,{recursive:true});await fs.mkdir(path.join(site,'src/data'),{recursive:true});
   await fs.cp(new URL('site/src/data/standards/',project),path.join(site,'src/data/standards'),{recursive:true});await fs.copyFile(new URL('site/src/data/archive-categories.json',project),path.join(site,'src/data/archive-categories.json'));
+  await makeCopiedFixtureStandardsWritable(fixture.dir);
   Object.assign(fixture.archive.core,{accession_date:'2000-01-01',date_display:'年代未知',batch_id:'SYNTHETIC-MANUALS-TEST',research_status:'R0',evidence_level:'D',digitization_status:'DG1',transcription_status:'TX0',physical_location:'隔离测试目录',created_date:'2000-01-01',updated_date:'2000-01-01'});
   await fs.writeFile(path.join(archiveDirectory,fixture.id+'.json'),JSON.stringify(fixture.archive));await fs.writeFile(path.join(site,'src/data/archive.ts'),'export const archiveItems=[];\n');
   await fs.cp(path.join(site,'public/archive'),path.join(site,'dist/archive'),{recursive:true});

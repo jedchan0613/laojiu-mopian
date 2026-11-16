@@ -133,6 +133,24 @@ const safeReceipt = (value = {}) => {
     if (!Number.isSafeInteger(value.translationRevision) || value.translationRevision < 0) throw receiptError();
     result.translationRevision = value.translationRevision;
   }
+  if (value.manualReview !== undefined) {
+    const manual=value.manualReview,keys=['submissionId','revision','submittedRevision','snapshotDigest','status'];
+    if(!manual||typeof manual!=='object'||Array.isArray(manual)||Object.keys(manual).some(key=>!keys.includes(key))
+      ||!/^TG-[A-F0-9]{24}$/.test(manual.submissionId??'')||!Number.isSafeInteger(manual.revision)||manual.revision<1
+      ||!Number.isSafeInteger(manual.submittedRevision)||manual.submittedRevision<1||!hashPattern.test(manual.snapshotDigest??'')
+      ||!['approved','needs_info','declined'].includes(manual.status))throw receiptError();
+    result.manualReview={submissionId:manual.submissionId,revision:manual.revision,submittedRevision:manual.submittedRevision,snapshotDigest:manual.snapshotDigest,status:manual.status};
+  }
+  if (value.manualTransfer !== undefined) {
+    const m=value.manualTransfer,keys=['submissionId','revision','submittedRevision','snapshotDigest','manualKey','itemId','pages','sharingScope'];
+    if(!m||typeof m!=='object'||Array.isArray(m)||Object.keys(m).some(k=>!keys.includes(k))
+      ||!/^TG-[A-F0-9]{24}$/.test(m.submissionId??'')||!Number.isSafeInteger(m.revision)||m.revision<1
+      ||!Number.isSafeInteger(m.submittedRevision)||m.submittedRevision<1||!hashPattern.test(m.snapshotDigest??'')
+      ||!/^manual-[a-f0-9]{24}$/.test(m.manualKey??'')||!Number.isSafeInteger(m.pages)||m.pages<0||m.pages>200
+      ||!['reading-copy','official-link'].includes(m.sharingScope)
+      ||(m.sharingScope==='reading-copy'?(!/^LJM-\d{8}-(RPR|OTH)-\d{3}$/.test(m.itemId??'')||m.pages<1):(m.itemId!==null||m.pages!==0)))throw receiptError();
+    result.manualTransfer=Object.fromEntries(keys.map(k=>[k,m[k]]));
+  }
   return result;
 };
 const invalidJournal = () => new WriteSafetyError('操作记录损坏或格式无法核实，必须核对后才能写入。', 503, 'JOURNAL_INVALID');
@@ -398,5 +416,28 @@ export const createWriteCoordinator = async ({ directory, maxEntries = 10000, ma
     });
     admissions=task.then(()=>{},()=>{});return task;
   };
-  return { perform, query, cancel, read, assertReady, drain, all, reconcileMerge, resolveMergeAttempt, resolveManualAttempt };
+  // 只核对原交接，不重复执行；缺少日志也不猜测成功或解除冻结。
+  const resolveManualTransferAttempt=({operationId,stepId,target,actor},verify)=>{
+    operationId=normalizeId(operationId);stepId=normalizeId(stepId);
+    if(!/^TG-[A-F0-9]{24}$/.test(target??'')||typeof actor!=='string'||!actor||typeof verify!=='function')throw new WriteSafetyError('交接核对身份或投稿无效。',403);
+    const key=operationId+'.'+stepId;
+    const check=entry=>{if(entry&&(entry.kind!=='manual-transfer'||entry.target!==target))throw new WriteSafetyError('原操作不属于这份说明书交接。',409,'MANUAL_TRANSFER_OPERATION_INVALID');};
+    const task=admissions.then(()=>{
+      const running=records.get(key);check(running);
+      if(running&&(pendingStatuses.has(running.status)||active.has(key)))return {state:'running',operation:structuredClone(running)};
+      return serial(async()=>{
+        const entry=records.get(key);check(entry);
+        if(!entry)return {state:'needs-review'};
+        if(entry.status!=='needs_review')return {state:entry.status,operation:structuredClone(entry)};
+        const proof=await verify(structuredClone(entry));
+        if(proof?.status!=='succeeded')return {state:'needs-review',operation:structuredClone(entry)};
+        const result=safeReceipt(proof.result);
+        if(result.manualTransfer?.submissionId!==target)throw receiptError();
+        const next={...entry,status:'succeeded',finishedAt:new Date().toISOString(),result};delete next.errorCode;delete next.errorStatus;
+        await persist(key,next);return {state:'succeeded',operation:structuredClone(next)};
+      });
+    });
+    admissions=task.then(()=>{},()=>{});return task;
+  };
+  return { perform, query, cancel, read, assertReady, drain, all, reconcileMerge, resolveMergeAttempt, resolveManualAttempt, resolveManualTransferAttempt };
 };

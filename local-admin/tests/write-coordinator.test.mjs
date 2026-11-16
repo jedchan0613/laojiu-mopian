@@ -387,3 +387,17 @@ test('合并恢复成失败不伪造成功；其他类型待核对操作不可�
  const other=request();await assert.rejects(writes.perform(other,context=>{context.markChanged();throw new Error('different operation');}));
  const entry=writes.query(other.operationId)[0];await assert.rejects(writes.reconcileMerge({...other,requestHash:entry.requestHash},async()=>({status:'succeeded'})),{code:'MERGE_RECOVERY_INVALID'});
 });
+
+test('说明书专用回执保存后可重启读取，与既有回执共存，身份变化的指纹不可重放',async t=>{
+  const {directory}=await fixture(t),writes=await createWriteCoordinator({directory});
+  const legacy=request();await writes.perform(legacy,async()=>({}),()=>({translationRevision:3}));
+  const id='TG-'+('A'.repeat(24)),params=request({kind:'manual-review',target:id,payload:{body:{status:'approved'},actor:'admin@example.test'}});
+  const receipt={submissionId:id,revision:5,submittedRevision:4,snapshotDigest:'b'.repeat(64),status:'approved'};
+  const saved=await writes.perform(params,async()=>({}),()=>({manualReview:receipt}));assert.deepEqual(saved.operation.result,{manualReview:receipt});
+  const restarted=await createWriteCoordinator({directory});assert.deepEqual(restarted.query(params.operationId)[0].result,{manualReview:receipt});assert.equal(restarted.query(legacy.operationId)[0].result.translationRevision,3);
+  let ran=false;assert.equal((await restarted.perform(params,async()=>{ran=true;})).replayed,true);assert.equal(ran,false);
+  await assert.rejects(restarted.perform({...params,payload:{body:params.payload.body,actor:'second@example.test'}},async()=>{}),{code:'OPERATION_MISMATCH'});
+  for(const altered of [{status:'published'},{submissionId:'../record.json'},{revision:0},{submittedRevision:1.5},{snapshotDigest:'not-a-hash'},{private_note:'PRIVATE-MUST-NOT-ENTER'}]){
+    await assert.rejects(restarted.perform(request({kind:'manual-review',target:id}),async()=>({}),()=>({manualReview:{...receipt,...altered}})),{code:'RECEIPT_INVALID'});
+  }
+});

@@ -17,6 +17,7 @@ import { createManualPageStore } from './manual-pages.mjs';
 import { createManualWorkflowStore } from './manual-workflow.mjs';
 import { createManualReviewStore } from './manual-review.mjs';
 import { manualSubmissionLabel } from '../shared/manual-workflow.mjs';
+import { safeBytes } from './archive-merge-files.mjs';
 
 export const submissionLimits = Object.freeze({ images: 8, imageBytes: 5 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, requestBytes: 22 * 1024 * 1024 });
 export const consentVersion = '2026-09-05-v1';
@@ -177,8 +178,9 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  };
  // 进度通知：只在审核状态真正发生变化时触发，发送失败不影响审核结果，也不回退任何状态。
  const deliverNotification = async (notification) => {
-  if (!notification || typeof notifier !== 'function') return;
-  try { await notifier(notification); } catch { /* 邮件通道失败不影响审核与发布结果。 */ }
+  if (!notification) return true;
+  if (typeof notifier !== 'function') return false;
+  try { await notifier(notification); return true; } catch { return false; /* 通知保留待处理，主结果不回退。 */ }
  };
  const review = async (id, payload) => {
   let notification = null;
@@ -230,22 +232,96 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   await atomicJson(recordPath(id), r);
   return { item_id: transferred, repeated: false };
  });
+ // 昂贵的整册核验在锁外完成；最终切换只按固定顺序短暂锁定来源，接住已受理的停止申请。
+ const createPublicationGuard = (verifiedRecords, { additionalGuards = [] } = {}) => {
+  if (!Array.isArray(verifiedRecords)) fail('说明书发布来源快照无效。', 409);
+  if (!Array.isArray(additionalGuards) || additionalGuards.some(guard => typeof guard?.validate !== 'function')) fail('说明书发布附加来源证明无效。', 409);
+  const records = new Map();
+  for (const record of verifiedRecords) {
+   if (record?.submission_kind !== 'manual') fail('说明书发布来源快照无效。', 409);
+   const id = safeId(record.id), bytes = JSON.stringify(record);
+   if (records.has(id) && records.get(id).digest !== hash(bytes)) fail('同册说明书的发布来源版本不同，请重新核对。', 409);
+   records.set(id, { record: JSON.parse(bytes), digest: hash(bytes) });
+  }
+  const ids = [...records.keys()].sort();
+  const validateRecords = async () => {
+   for (const id of ids) {
+    const current = await read(id);
+    if (current.submission_kind !== 'manual' || current.status !== 'approved' || current.withdrawal_requested || hash(JSON.stringify(current)) !== records.get(id).digest) fail('说明书投稿已变化或已申请停止处理，不能继续发布，请重新读取核对。', 409);
+   }
+  };
+  const validate = async () => {
+   await validateRecords();
+   for (const guard of additionalGuards) await guard.validate();
+   if (additionalGuards.length) await validateRecords();
+  };
+  const withCommit = async (commit) => {
+   if (typeof commit !== 'function') fail('缺少实际公开切换操作。', 409);
+   const visit = index => index < ids.length ? locked(ids[index], () => visit(index + 1)) : (async () => { await validate(); return commit(); })();
+   return visit(0);
+  };
+  return { validate, withCommit, records: ids.map(id => structuredClone(records.get(id).record)) };
+ };
+ const guardManualCommit = (verifiedRecords, commit) => createPublicationGuard(verifiedRecords).withCommit(commit);
+ const prepareManualPublication = async (archives) => {
+  if (!Array.isArray(archives)) fail('公开档案清单无效，不能核对说明书来源。', 409);
+  const byId = new Map(archives.map(record => [record?.core?.item_id, record]));
+  const records = [], linked = new Set(), publicImages = [];
+  const readPublicImage = async (itemId, reference) => {
+   const match = typeof reference === 'string' && reference.match(new RegExp('^/archive/' + itemId + '/([a-zA-Z0-9_-]+\\.jpg)$'));
+   if (!match) fail('说明书公开图片路径或格式无效。', 409);
+   const bytes = await safeBytes(path.join(siteDirectory, 'public'), reference.slice(1));
+   if ((await fs.lstat(path.join(siteDirectory, 'public', reference.slice(1)))).nlink !== 1) fail('说明书公开图片不能使用文件链接。', 409);
+   return { filename: match[1], sha256: hash(bytes), bytes: bytes.length };
+  };
+  for (const record of await all()) {
+   if (record.submission_kind !== 'manual') continue;
+   const itemId = [record.linked_item_id, record.manual_handoff?.archive_item_id].find(id => id && byId.has(id));
+   if (!itemId) continue;
+   if (linked.has(itemId)) fail('同一公开档案关联了多份说明书投稿，请先核对来源。', 409);
+   linked.add(itemId);
+   const archive = byId.get(itemId), images = [];
+   if (!/^LJM-\d{8}-[A-Z]{3}-\d{3}$/.test(itemId) || !Array.isArray(archive?.core?.publication_file_path)) fail('说明书公开图片清单无效。', 409);
+   for (const reference of archive.core.publication_file_path) {
+    const image = await readPublicImage(itemId, reference);images.push(image);publicImages.push({ itemId, reference, ...image });
+   }
+   await manualReview.assertArchivePublication(record, { draft: { record: archive }, images });
+   records.push(record);
+  }
+  const imageGuard = { validate: async () => {
+   for (const expected of publicImages) {
+    let current;try { current = await readPublicImage(expected.itemId, expected.reference); } catch { fail('说明书公开候选图片已变化、缺失或出现文件链接，不能继续发布。', 409); }
+    if (current.sha256 !== expected.sha256 || current.bytes !== expected.bytes) fail('说明书公开候选图片已变化，不能沿用已核验的整册公开。', 409);
+   }
+  } };
+  const guard = createPublicationGuard(records, { additionalGuards: [imageGuard] });
+  await guard.validate();
+  return guard;
+ };
  const guardPublication = async (itemId, operation) => {
-  const linked = (await all()).find(r => r.linked_item_id === itemId);
+  const sources = (await all()).filter(r => r.linked_item_id === itemId || r.submission_kind === 'manual' && r.manual_handoff?.archive_item_id === itemId);
+  if (sources.length > 1) fail('同一档案关联了多份投稿来源，请先核对，不能选择其中一份继续发布。', 409);
+  const linked = sources[0];
   if (!linked) return operation();
-  if(linked.submission_kind==='manual'&&linked.source_format==='pdf'){
+  if(linked.submission_kind==='manual'){
+   let verifiedRecord;
    const verify=async options=>{
+    verifiedRecord = null;
     const before=await read(linked.id);await manualReview.assertArchivePublication(before,options);
-    if(JSON.stringify(await read(linked.id))!==JSON.stringify(before))fail('PDF校验期间投稿已变化，请重新读取并核对当前状态，不能继续发布。',409);
+    const guard = createPublicationGuard([before]);await guard.validate();verifiedRecord = before;
+   };
+   verify.records = () => verifiedRecord ? [structuredClone(verifiedRecord)] : [];
+   verify.withCommit = commit => {
+    if (!verifiedRecord) fail('说明书发布来源尚未完成核验，不能切换公开版本。', 409);
+    return guardManualCommit([verifiedRecord], commit);
    };
    await verify();
-   // PDF构建期间允许同册的停止申请立即落盘，再在切换结果前复核。
+   // 整册构建期间允许同册的停止申请立即落盘，切换时再通过 withCommit 短锁复核。
    return operation(verify);
   }
   return locked(linked.id, async () => {
    const current = await read(linked.id);
    if (current.withdrawal_requested || current.status !== 'approved') fail('投稿人已申请停止处理或审核状态不允许发布，请先核查。', 409);
-   if(current.submission_kind==='manual')await manualReview.assertArchivePublication(current);
    return operation();
   });
  };
@@ -518,7 +594,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   .filter((entry) => entry)
   .map((entry) => ({ at: entry.at, action: entry.action, status: entry.status ?? '', public_message: entry.public_message ?? '' }));
  const accountDetail = (r) => {
-  const { key_hash, fingerprint, private_note, manual_last_save, manual_page_receipts, manual_page_archive, manual_workflow_receipts, manual_review_binding, manual_handoff, manual_material_receipts, manual_pdf_sources, manual_pdf_current_source_id, manual_pdf_saved_operations, manual_pdf_preview, manual_pdf_render_saved, manual_pdf_label_receipts, versions, history, ...rest } = r;
+  const { key_hash, fingerprint, private_note, manual_last_save, manual_page_receipts, manual_page_archive, manual_workflow_receipts, manual_review_binding, manual_review_audit, manual_review_notice, manual_handoff, manual_material_receipts, manual_pdf_sources, manual_pdf_current_source_id, manual_pdf_saved_operations, manual_pdf_preview, manual_pdf_render_saved, manual_pdf_label_receipts, versions, history, ...rest } = r;
   const safeVersions=(versions??[]).map(v=>v.source_format==='pdf'?{revision:v.revision,at:v.at,action:v.action,fields:v.fields,manual_metadata:v.manual_metadata,images:v.images,consent:{version:v.consent.version,confirmed_at:v.consent.confirmed_at,copies:v.consent.copies,rights:v.consent.rights,privacy:v.consent.privacy,processing:v.consent.processing,sharing_scope:v.consent.sharing_scope,...(v.consent.pdf_confirmation?{pdf_confirmation:{version:v.consent.pdf_confirmation.version,checks:v.consent.pdf_confirmation.checks}}:{})},digest:v.digest,source_format:'pdf',pdf_summary:manualPdfSnapshotSummary(v)}:v);
   return { ...rest,...(versions?{versions:safeVersions}:{}), history: publicHistory(history),...(r.submission_kind==='manual'?{manual_in_preparation:Boolean(manual_handoff||r.manual_catalog_key),manual_handoff_status:manual_handoff?.status??''}:{}) };
  };
@@ -648,6 +724,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
  };
  return {
   create, lookup, withdraw, review, list, detail: async (id) => detail(await read(id)), getImage, transfer, guardPublication,
+  createPublicationGuard, guardManualCommit, prepareManualPublication,
   createAccountSubmission, saveAccountSubmission, submitAccountSubmission, getAccountSubmission, listAccountSubmissions,
   createAccountManualDraft: options=>createAccountSubmission({...options,mode:'draft',manualDraft:true}),
   saveAccountManualDraft: options=>saveAccountSubmission({...options,manualDraft:true}),getAccountManualDraft,
@@ -657,7 +734,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
   beginAccountManualPdfGeneration:manualPdfJobs.begin,getAccountManualPdfGeneration:manualPdfJobs.status,cancelAccountManualPdfGeneration:manualPdfJobs.cancel,manualPdfRuntimeStatus:manualPdfJobs.runtimeStatus,waitForPdfGenerationIdle:manualPdfJobs.waitForIdle,
   getAccountManualSubmission:manualWorkflow.get,operateAccountManualSubmission:manualWorkflow.operate,getAccountManualWorkflowOperation:manualWorkflow.operationStatus,getAccountManualVersionImage:manualWorkflow.versionImage,
   saveAccountManualPdfLabel:manualPdfReview.label,getAccountManualPdfLabelOperation:manualPdfReview.labelStatus,
-  getManualReview:manualReview.get,getManualReviewImage:manualReview.image,reviewManualSubmission:manualReview.review,transferManualSubmission:manualReview.transfer,manualCatalogPublicationIssues:manualReview.publicationIssues,manualPdfPrivatePublicationValues:manualReview.privatePublicationValues,
+  getManualReview:manualReview.get,getManualReviewImage:manualReview.image,reviewManualSubmission:manualReview.review,transferManualSubmission:manualReview.transfer,inspectManualTransfer:manualReview.inspectTransfer,manualCatalogPublicationIssues:manualReview.publicationIssues,manualPdfPrivatePublicationValues:manualReview.privatePublicationValues,
   getAccountImage, withdrawAccountSubmission, discardAccountSubmission, requestAccountChange, reviewAccountChange, claimSubmission, notifyPublished,
   accountUsage,
  };

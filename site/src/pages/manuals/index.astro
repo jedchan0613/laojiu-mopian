@@ -7,7 +7,7 @@ import {manualCategories,manualLanguages,manualKinds,manualCompleteness,searchMa
 import {serializeHtmlJson} from '../../../../shared/html-json.mjs';
 import '../../styles/manuals.css';
 const initial=searchManualCatalog(manualsCatalog,{});
-const categories=Object.entries(manualCategories).filter(([key])=>manualsCatalog.models.some(m=>m.category_key===key));
+const categories=Object.entries(manualCategories);
 const languages=Object.entries(manualLanguages).filter(([key])=>manualsCatalog.documents.some(d=>d.languages.includes(key)));
 const regions=[...new Set(manualsCatalog.documents.map(d=>d.region_display))].sort();
 const eras=[...new Set(manualsCatalog.models.map(m=>m.product_era_display).filter(Boolean))].sort();

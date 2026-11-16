@@ -3,7 +3,7 @@
 /** @type {Readonly<Record<string,string>>} */
 export const manualCategories = Object.freeze({
   'home-appliances':'家用电器', 'audio-photo':'影音与摄影', 'office-digital':'数码与办公',
-  tools:'工具与设备', 'daily-assembly':'生活用品与装配',
+  tools:'工具与设备', 'daily-assembly':'生活用品与装配', medicines:'药品',
 });
 /** @type {Readonly<Record<string,string>>} */
 export const manualKinds = Object.freeze({'user-guide':'使用说明', 'quick-start':'快速入门', installation:'安装指南', care:'保养说明', service:'维修手册', unknown:'用途未明'});

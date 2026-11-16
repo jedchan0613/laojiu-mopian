@@ -5,4 +5,11 @@ async function fixture(t){const dir=await fs.mkdtemp(path.join(os.tmpdir(),'ljm-
 test('部署检查依次读取主配置、PDF设置和目录开关，最后值与服务一致',settings,async t=>{const f=await fixture(t);await f.write('pdf.conf','LJM_ACCOUNT_PDF_OPEN=false\n');await f.write('manuals.conf','LJM_MANUALS_ONLINE_ENABLED=true\n');assert.equal((await f.run()).stdout,'true|false|https://main.example.test');});
 test('未安装可选配置时保持原有主配置及默认关闭行为',settings,async t=>{const f=await fixture(t);assert.equal((await f.run()).stdout,'false|true|https://main.example.test');});
 test('无效目录开关在同步或切换前拒绝，不当作开启',settings,async t=>{const f=await fixture(t);await f.write('manuals.conf','LJM_MANUALS_ONLINE_ENABLED=yes\n');await assert.rejects(f.run(),e=>e.code===71&&/只能填写true或false/.test(e.stderr));});
+test('审核和转入开关同样严格校验且不修改原PDF开关',settings,async t=>{
+  const f=await fixture(t);
+  for(const name of ['LJM_MANUAL_REVIEW_ONLINE_ENABLED','LJM_MANUAL_TRANSFER_ONLINE_ENABLED']){
+    await f.write('manuals.conf',name+'=yes\n');await assert.rejects(f.run(),e=>e.code===71&&/只能填写true或false/.test(e.stderr));
+    await f.write('manuals.conf',name+'=true\n');assert.equal((await f.run()).stdout,'false|true|https://main.example.test');
+  }
+});
 test('追加配置为链接时拒绝，不跟随到其他文件',{...settings,skip:!present||process.platform!=='linux'&&'Linux文件链接检查'},async t=>{const f=await fixture(t);await f.write('other.conf','LJM_MANUALS_ONLINE_ENABLED=true\n');await fs.symlink('other.conf',path.join(f.dir,'manuals.conf'));await assert.rejects(f.run(),e=>e.code===71&&/类型异常/.test(e.stderr));});

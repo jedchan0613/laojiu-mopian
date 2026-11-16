@@ -43,16 +43,18 @@ export async function openAccountMergeConnection(directory){
  }catch(error){database.close();throw error;}
 }
 
-export function createMergePublication({siteDirectory,releasesDirectory,liveLink,applicationLink}){
+export function createMergePublication({siteDirectory,releasesDirectory,liveLink,applicationLink,preparePublication=async()=>null}){
  const capture=async()=>{const live=await readLiveRelease(releasesDirectory,liveLink);return{...live,application:await fs.realpath(applicationLink),sha256:await treeDigest(live.resolvedTarget)};};
  const same=(a,b)=>digest(a)===digest(b);
  const publish=async(log,persist,signal)=>{
    if(!same(await capture(),log.publicationBefore))mergeFail('公开版本或当前应用已变化，不能切站。','MERGE_PUBLICATION_CHANGED');
+   const guard=await preparePublication();
    const deployer=createReleaseDeployer({sourceDirectory:path.join(siteDirectory,'dist'),releasesDirectory,liveLink,releaseLabel:'merge'});
-   await deployer.deploy({signal,retain:true,onPrepared:async({releaseName,releaseDirectory})=>{
+   await deployer.deploy({signal,retain:true,withCommit:guard?.withCommit,onPrepared:async({releaseName,releaseDirectory})=>{
      const after={rawTarget:releaseName,resolvedTarget:releaseDirectory,releaseName,application:log.publicationBefore.application,sha256:await treeDigest(releaseDirectory)};
      if(after.sha256!==log.distAfter||!same(await capture(),log.publicationBefore))mergeFail('候选公开副本或当前版本不一致，未切换。','MERGE_PUBLICATION_CHANGED');
      log.publication={before:log.publicationBefore,after};await persist('public-switch-intent');
+     await guard?.validate?.();
    }});
    log.publication.switched=true;await persist('public-switched');
  };

@@ -115,11 +115,22 @@ export const createReleaseDeployer = ({
 			throw new Error(`新公开版本准备失败，当前网站没有切换：${error.message}`);
 		}
 
+		let switched = false;
 		try {
 			if (!options.retain) await assertManualsTransactionsResolved(manualsRoot);
-			await fs.rename(temporaryLink, liveLink);
+			// 来源锁必须覆盖实际指针切换，不能仅在准备完成回调中校验后立即释放。
+			const commit = async () => {
+				if (switched) throw new Error('本次公开指针已经切换，不能重复提交。');
+				throwIfAborted(signal);
+				await fs.rename(temporaryLink, liveLink);
+				switched = true;
+			};
+			if (options.withCommit) await options.withCommit(commit);
+			else await commit();
+			if (!switched) throw new Error('最终提交守卫没有执行公开指针切换。');
 		} catch (error) {
 			await fs.rm(temporaryLink, { force: true }).catch(() => {});
+			if (switched) throw new Error(`公开指针已切换，但最终提交确认未完成；新旧版本均已保留，请核对实际状态：${error.message}`);
 			if (!options.retain) await fs.rm(releaseDirectory, { recursive: true, force: true }).catch(() => {});
 			throw new Error(`新公开版本切换失败，当前网站仍保留原版本：${error.message}`);
 		}

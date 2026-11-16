@@ -15,11 +15,11 @@ export function createManualPublication({siteDirectory,releasesDirectory,liveLin
   };
   const same=(a,b)=>digest(a)===digest(b);
   const verifyBefore=async log=>{if(!same(await capture(),log.publicationBefore))fail('公开版本或当前程序已变化，不能采用或覆盖本次目录。');};
-  const publish=async(log,persist,{signal,validate,assertHeld})=>{
+  const publish=async(log,persist,{signal,validate,assertHeld,withCommit})=>{
     assertHeld();await verifyBefore(log);
     const expected=await treeDigest(path.join(siteDirectory,'dist'));
     const deployer=createReleaseDeployer({sourceDirectory:path.join(siteDirectory,'dist'),releasesDirectory,liveLink,releaseLabel:'manuals',manualsRoot});
-    await deployer.deploy({signal,retain:true,onPrepared:async({releaseName,releaseDirectory})=>{
+    await deployer.deploy({signal,retain:true,withCommit,onPrepared:async({releaseName,releaseDirectory})=>{
       const sha256=await treeDigest(releaseDirectory);
       if(sha256!==expected)fail('候选公开副本与构建结果不一致，未切换。');
       log.publicationAfter={rawTarget:process.platform==='win32'?releaseDirectory:releaseName,resolvedTarget:releaseDirectory,releaseName,site:log.publicationBefore.site,sha256};

@@ -38,10 +38,12 @@ import {createManualPdfPublicationBackup,assertManualPdfPublicArtifacts} from '.
 import { manualReviewChecks,manualPdfReviewChecks } from '../shared/manual-review.mjs';
 import { manualSubmissionStates } from '../shared/manual-workflow.mjs';
 import { manualDraftChoices } from '../shared/manual-submission.mjs';
+import {readManualReviewSettings,manualReviewSummary} from './manual-review-access.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
 const onlineMode = runtimeMode === 'online';
+const manualReviewSettings = readManualReviewSettings(process.env, onlineMode);
 const manualsOnlineSetting = (process.env.LJM_MANUALS_ONLINE_ENABLED ?? 'false').trim();
 if (!['true', 'false'].includes(manualsOnlineSetting)) throw new Error('LJM_MANUALS_ONLINE_ENABLED 只能填写 true 或 false。');
 const manualsDraftsEnabled = !onlineMode || manualsOnlineSetting === 'true';
@@ -50,8 +52,7 @@ const manualsPublicationEnabled = !onlineMode || manualsDraftsEnabled && process
 const manualsCapabilities = Object.freeze({
 	manualsMaintenanceVersion: manualsPublicationEnabled ? 1 : 0,
 	manualsDraftMaintenanceVersion: manualsDraftsEnabled ? 1 : 0,
-	manualReviewVersion: onlineMode ? 0 : 1,
-	manualPdfHandoffVersion: onlineMode ? 0 : 1,
+	...manualReviewSettings.capabilities,
 });
 const mergeInternalEnabled = !onlineMode && process.env.LJM_MERGE_INTERNAL_ENABLED === '1';
 const mergeOnlineEnabled = onlineMode && process.env.LJM_MERGE_ENABLED === '1';
@@ -551,21 +552,22 @@ const operationReceipt = async (result) => {
 		...(itemIdPattern.test(itemId ?? '') ? { itemId, revision: (await readRecordState(itemId)).revision } : {}),
 		...(result.upload ? { upload: { token: result.upload.token, sha256: result.upload.sha256, size: result.upload.size } } : {}),
 		...(result.results ? { results: result.results.map(row => ({ itemId: row.itemId, ok: row.ok })) } : {}),
-		...(Number.isInteger(result.revision) ? { translationRevision: result.revision } : {}),
+		...(result.manualReviewResult ? { manualReview: result.manualReviewResult } : Number.isInteger(result.revision) ? { translationRevision: result.revision } : {}),
+		...(result.manualTransferResult ? { manualTransfer: result.manualTransferResult } : {}),
 	};
 };
 const withDeploymentLock = async callback => {
-	if (!onlineMode || !mergeOnlineEnabled && !manualsPublicationEnabled) return callback();
+	if (!onlineMode || !mergeOnlineEnabled && !manualsPublicationEnabled && !manualReviewSettings.onlineEnabled) return callback();
 	const lock = await acquireDeploymentLock(mergeDeploymentLock);
 	try { lock.assertHeld(); return await callback(lock); } finally { await lock.release(); }
 };
-const runManagedOperation = async (request, kind, payload, callback, { target, checkVersion = true } = {}) => withDeploymentLock(async lock => {
+const runManagedOperation = async (request, kind, payload, callback, { target, checkVersion = true, actor = null } = {}) => withDeploymentLock(async lock => {
 	if (kind === 'merge-records' || kind === 'merge-undo') { if (mergeOnlineEnabled) { await assertAccountMergeService(mergeAccountHealth); await assertLikeMergeService(mergeLikeHealth); } }
 	return writes.perform({ operationId: requestOperationId(request), stepId: request.headers['x-ljm-step-id'], kind,
-		target: target ?? (kind === 'publish-batch' ? payload.itemIds : payload.itemId || payload.record?.core?.item_id || 'new'), payload }, async (context) => {
+		target: target ?? (kind === 'publish-batch' ? payload.itemIds : payload.itemId || payload.record?.core?.item_id || 'new'), payload: actor ? {body:payload,actor} : payload }, async (context) => {
 		lock?.assertHeld();
 		context.assertDeploymentLock = () => lock?.assertHeld();
-		if (onlineMode) await manualStore.assertSettled();
+		if (onlineMode && kind !== 'manual-review') await manualStore.assertSettled();
 		if (checkVersion) await assertWriteVersion(kind, payload);
 		try { return await callback(context); }
 		finally { bootstrapCache = null; }
@@ -1720,8 +1722,12 @@ const allocateItemId = async (accessionDate, objectType) => {
 	if (!objectSchema[objectType]) throw new Error('请先选择正式的藏品类型。');
 	const prefix = `LJM-${accessionDate.replaceAll('-', '')}-${objectType}-`;
 	const [records, drafts] = await Promise.all([loadOfficialRecords(), loadDrafts()]);
+	const reserved=[];
+	for(const row of await submissionStore.list())if(row.submission_kind==='manual'&&row.manual_handoff_status){const r=await submissionStore.detail(row.id);if(r.manual_handoff?.archive_item_id)reserved.push(r.manual_handoff.archive_item_id);}
+	for(const entry of await fs.readdir(inboxDirectory,{withFileTypes:true}).catch(error=>{if(error.code==='ENOENT')return [];throw error;}))if(entry.name.startsWith(prefix))reserved.push(entry.name);
 	const usedSequences = [...records, ...drafts.map((draft) => draft.record)]
 		.map((record) => record.core.item_id)
+		.concat(reserved)
 		.filter((itemId) => itemId?.startsWith(prefix))
 		.map((itemId) => Number(itemId.slice(-3)))
 		.filter(Number.isInteger);
@@ -1910,6 +1916,12 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 	throwIfOperationCancelled(signal);
 
 	const inboxItemDirectory = path.join(inboxDirectory, itemId);
+	if(typeof options.onManualReserved==='function'){
+		let spaceDirectory=inboxDirectory;while(!await fs.lstat(spaceDirectory).catch(error=>{if(error.code==='ENOENT')return null;throw error;}))spaceDirectory=path.dirname(spaceDirectory);
+		const disk=await fs.statfs(spaceDirectory),needed=(payload.manualSubmission?.pages??[]).reduce((n,p)=>n+(p.bytes??0),0);
+		if(!Number.isSafeInteger(needed)||needed<=0||needed>100*1024*1024||disk.bavail*disk.bsize<needed+32*1024*1024)throw new RequestError('整册图片容量或可用空间不足，尚未复制。',507);
+		await options.onManualReserved(itemId);
+	}
 	await fs.mkdir(inboxItemDirectory, { recursive: true });
 	const removedImages = [...new Set(payload.removedImages ?? [])].map((filename) => path.basename(filename));
 	for (const filename of removedImages) {
@@ -1934,7 +1946,8 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 				const buffer=await options.manualImageReader(image.page_id);validateImageSignature(buffer,'image/jpeg',image.originalName);
 				if(!buffer.length||buffer.length>maximumImageBytes)throw new RequestError('说明书图片大小无法核对。');
 				const filename=await nextImageName(itemId,reservedNames,position,'.jpg',undefined,198),targetPath=path.join(inboxItemDirectory,filename);
-				await fs.writeFile(targetPath,buffer,{flag:'wx',signal});newlyWrittenFiles.push(targetPath);reservedNames.add(filename);publicationPaths.push(`/archive/${itemId}/${filename}`);continue;
+				await fs.writeFile(targetPath,buffer,{flag:'wx',signal});newlyWrittenFiles.push(targetPath);reservedNames.add(filename);publicationPaths.push(`/archive/${itemId}/${filename}`);
+				await options.onManualPageWritten?.({index:position,filename,attachment_ref:`/archive/${itemId}/${filename}`,sha256:createHash('sha256').update(buffer).digest('hex'),bytes:buffer.length});continue;
 			}
 			if (image.kind === 'existing') {
 				const filename = path.basename(image.filename ?? '');
@@ -2022,14 +2035,14 @@ const saveDraftUnlocked = async (payload, options = {}) => {
 		saved = true;
 		return draft;
 	} catch (error) {
-		for (const filePath of newlyWrittenFiles) await fs.rm(filePath, { force: true });
+		if(!options.preserveManualPartial)for (const filePath of newlyWrittenFiles) await fs.rm(filePath, { force: true });
 		// 保存未完成：已暂存图片保留有效令牌，重试只带同一份暂存结果，不重复上传。
 		for (const token of stagedTokens) {
 			const staged = stagedUploads.get(token);
 			if (staged) { staged.consumed = false; staged.assignedName = ''; staged.assignedItemId = ''; }
 		}
 		// 业务校验／正常取消已回收本次新图；底层文件错误可能留下未完成写入，需要核对。
-		error.safeToRetry = !error.code;
+		error.safeToRetry = !options.preserveManualPartial&&!error.code;
 		throw error;
 	} finally {
 		// 保存成功才结算暂存图片：令牌标记为已消费并移除暂存文件；失败时保留供重试。
@@ -2048,8 +2061,8 @@ const saveDraft = saveDraftUnlocked;
 
 const submissionToDraft = async (input, options = {}) => {
 	const previous = (await loadDrafts()).find((draft) => draft.source_submission_id === input.id);
-	const manualResult=draft=>({item_id:draft.record.core.item_id,page_map:draft.manual_submission.pages.map(p=>({attachment_ref:p.attachment_ref,printed_label:p.printed_label}))});
-	if(previous){if(!input.manual_submission)return previous.record.core.item_id;if(previous.manual_submission?.digest!==input.manual_submission.digest||previous.manual_submission?.submitted_revision!==input.manual_submission.submitted_revision)throw new RequestError('已有该投稿的档案草稿，来源版本不同，已停止覆盖。',409);return manualResult(previous);}
+	const manualResult=draft=>({item_id:draft.record.core.item_id,write_revision:draft.write_revision,page_map:draft.manual_submission.pages.map(p=>({attachment_ref:p.attachment_ref,printed_label:p.printed_label}))});
+	if(previous){if(!input.manual_submission)return previous.record.core.item_id;if(previous.manual_submission?.digest!==input.manual_submission.digest||previous.manual_submission?.submitted_revision!==input.manual_submission.submitted_revision||input.onReserved&&(previous.manual_submission.operation_id!==input.manual_submission.operation_id||previous.manual_submission.step_id!==input.manual_submission.step_id))throw new RequestError('已有该投稿的档案草稿，来源版本或操作不同，已停止覆盖。',409);return manualResult(previous);}
 	if (!objectSchema[input.object_type]) throw new RequestError('请选择正式的藏品类型。');
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(input.accession_date ?? '') || new Date(input.accession_date).toISOString().slice(0, 10) !== input.accession_date) throw new RequestError('请填写有效的实际接收或获得日期。');
 	const draft = await saveDraft({
@@ -2059,8 +2072,21 @@ const submissionToDraft = async (input, options = {}) => {
 			metadata: { schema: objectSchema[input.object_type], dimensions: {} },
 			public_view: { description: input.description, transcription: '', tags: [] },
 		},
-	}, input.manual_submission?{...options,manualImageReader:input.readImage}:options);
+	}, input.manual_submission?{...options,manualImageReader:input.readImage,...(input.onReserved?{onManualReserved:input.onReserved,onManualPageWritten:input.onPageWritten,preserveManualPartial:true}:{})}:options);
 	return input.manual_submission?manualResult(draft):draft.record.core.item_id;
+};
+
+const inspectManualArchive=async itemId=>{
+	if(!/^LJM-\d{8}-(RPR|OTH)-\d{3}$/.test(itemId??''))throw new RequestError('交接档案编号无效。',409);
+	const draft=JSON.parse(await safeMergeBytes(draftDirectory,`${itemId}.json`));
+	const images=[];
+	for(const ref of draft.record.core.publication_file_path??[]){
+		const filename=path.basename(ref);
+		if(ref!==`/archive/${itemId}/${filename}`||!/^[-A-Za-z0-9_]+\.jpg$/.test(filename))throw new RequestError('交接图片路径无效。',409);
+		const bytes=await safeMergeBytes(inboxDirectory,`${itemId}/${filename}`);
+		images.push({filename,sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length});
+	}
+	return {draft,images};
 };
 
 const validateForPublication = async (record, confirmations) => {
@@ -2100,6 +2126,7 @@ const loadPublicTranslationRecords = async () => {
 			return applyCollectionCode(normalizedRecord, collectionCodeRules, codeDictionary);
 		})
 		.sort((left, right) => (left.core.item_id ?? '').localeCompare(right.core.item_id ?? ''));
+	await submissionStore.prepareManualPublication(records);
 	return records;
 };
 
@@ -2363,12 +2390,22 @@ const runSiteBuild = async (options = {}) => {
 
 // 线上目录发布由同一事务覆盖构建、live切换和正式状态；旧公开版本供回退。
 const manualPublication = onlineMode && manualsPublicationEnabled ? createManualPublication({siteDirectory,releasesDirectory:publicReleasesDirectory,liveLink:publicLiveLink,manualsRoot:path.join(adminDataRoot,'manuals')}) : null;
+const preparePublicReleaseGuard=async catalog=>{
+	const archives=await loadPublicTranslationRecords();
+	const archiveGuard=await submissionStore.prepareManualPublication(archives),verifiedRecords=[...archiveGuard.records];
+	const selected=catalog??(await manualStore.bootstrap()).state.published;
+	const issues=await submissionStore.manualCatalogPublicationIssues(selected,{verifiedRecords});
+	if(issues.length)throw new RequestError('说明书来源审核或停止处理状态已变化，不能切换网站版本。',409);
+	const guard=submissionStore.createPublicationGuard(verifiedRecords,{additionalGuards:[archiveGuard]});await guard.validate();return guard;
+};
+const deployPublicRelease=async(options={})=>{const guard=await preparePublicReleaseGuard();return releaseDeployer.deploy({...options,withCommit:guard.withCommit});};
 const manualStore = createManualStore({
 	root: path.join(adminDataRoot, 'manuals'), siteDirectory, readArchives: loadOfficialRecords,
 	requireInitialization: onlineMode,
 	publication: manualPublication,
+	preparePublication:preparePublicReleaseGuard,
  build: async options => {const output=await runSiteBuild({ ...options, manualsStaged: true });await assertManualPdfPublicArtifacts({dist:path.join(siteDirectory,'dist'),...await submissionStore.manualPdfPrivatePublicationValues()});return output;},
-	guardCatalog: catalog => submissionStore.manualCatalogPublicationIssues(catalog),
+	guardCatalog: (catalog,options) => submissionStore.manualCatalogPublicationIssues(catalog,options),
 });
 
 const publishEnglishTranslation = async (itemId, payload, options = {}) => {
@@ -2388,7 +2425,7 @@ const publishEnglishTranslation = async (itemId, payload, options = {}) => {
 		changed = true;
 		const buildOutput = await runSiteBuild({ signal });
 		throwIfOperationCancelled(signal);
-		const deployment = onlineMode ? await releaseDeployer.deploy({ signal }) : null;
+		const deployment = onlineMode ? await deployPublicRelease({ signal }) : null;
 		return { ...(await translationStore.detail(item)), buildOutput, deployment };
 	} catch (error) {
 		if (changed) {
@@ -2455,7 +2492,7 @@ const withdrawOfficialRecord = async (payload, options = {}) => {
 				}
 			}
 			buildOutput = await runSiteBuild();
-			if (onlineMode) deployment = await releaseDeployer.deploy();
+			if (onlineMode) deployment = await deployPublicRelease();
 		} catch (error) {
 			await atomicWrite(officialPath, previousOfficial);
 			await atomicWrite(siteArchiveDataFile, previousArchiveSource);
@@ -2640,7 +2677,7 @@ const publishDraftUnlocked = async (payload, options = {}) => {
 				buildOutput = await runSiteBuild({ signal });
 				throwIfOperationCancelled(signal);
     if(options.assertSubmissionPublication){await scanPdfPublication();await assertStaged();}
-				if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
+				if (onlineMode) deployment = await deployPublicRelease({ signal });
     if(pdfBuildBackup)await pdfBuildBackup.complete();
 			}
 		} catch (error) {
@@ -2777,7 +2814,7 @@ const publishDraftsBatch = async (payload, options = {}) => {
 				for (const entry of staged) await entry.assertStaged();
     if(pdfBuildBackup){await scanPdfPublication();for(const entry of staged)await entry.assertStaged();}
 				if (!(await fs.readFile(siteArchiveDataFile)).equals(nextArchiveSource)) throw new WriteSafetyError('构建期间网站数据源被外部修改，已停止切换。', 409, 'REVISION_CONFLICT');
-				if (onlineMode) deployment = await releaseDeployer.deploy({ signal });
+				if (onlineMode) deployment = await deployPublicRelease({ signal });
     if(pdfBuildBackup)await pdfBuildBackup.complete();
 				committed = true;
 				for (const entry of staged) {
@@ -2851,7 +2888,7 @@ const mergeExecution = mergeEnabled && !process.argv.includes('--check-config') 
 	siteDirectory, sharedDirectory: sharedAlbumModuleDirectory, historyDirectory, translationDirectory, submissionDirectory,
 	likesFile: mergeLikesFile, planner: mergePlanner, readRecords: loadOfficialRecords,
 	accounts: mergeAccounts,
-	publication: mergeOnlineEnabled ? createMergePublication({ siteDirectory, releasesDirectory: publicReleasesDirectory, liveLink: publicLiveLink, applicationLink: projectRoot }) : null,
+	publication: mergeOnlineEnabled ? createMergePublication({ siteDirectory, releasesDirectory: publicReleasesDirectory, liveLink: publicLiveLink, applicationLink: projectRoot,preparePublication:preparePublicReleaseGuard }) : null,
 	validateImage: createMergeImageValidator(siteDirectory), buildCandidate: buildMergeCandidate,
 	normalizeRecord: async record => {
 		const { standards } = await getAdminStandards();
@@ -2921,6 +2958,14 @@ const adminServer = http.createServer(async (request, response) => {
 		}
 		const adminIdentity = onlineMode ? await accessAuthenticator.verifyRequest(request) : null;
 		const decodedManualPath = decodeURIComponent(url.pathname);
+		const reviewPath = /^\/api\/admin\/manual-submissions(?:\/|$)/i.test(decodedManualPath) || /^\/admin\/manual-review(?:[.-]|\/|$)/i.test(decodedManualPath);
+		if (onlineMode && !manualReviewSettings.onlineEnabled && reviewPath) {
+			if (decodedManualPath === '/admin/manual-review.html' && ['GET','HEAD'].includes(request.method)) {
+				const html='<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>说明书审核暂未开放</title><h1>说明书专用审核暂未在线上开放</h1><p>现有目录维护仍可使用；专用审核需完成对应开发、验收和上线后启用。</p><a href="/admin/submissions.html">返回投稿收件箱</a></html>';
+				response.writeHead(404,{...securityHeaders(),'Content-Type':'text/html; charset=utf-8','Content-Length':Buffer.byteLength(html)});response.end(request.method==='HEAD'?undefined:html);
+			} else sendJson(response,404,{error:'说明书专用审核暂未在线上开放。',code:'MANUAL_REVIEW_ONLINE_DISABLED'});
+			return;
+		}
 		const manualRequest = /^\/api\/manuals(?:\/|$)/i.test(decodedManualPath);
 		if (!manualsDraftsEnabled && (manualRequest || /^\/admin\/manuals(?:[.-]|\/|$)/i.test(decodedManualPath))) {
 			if (/^\/admin\/manuals(?:-preview)?\.html$/i.test(decodedManualPath) && ['GET','HEAD'].includes(request.method)) {
@@ -3155,27 +3200,44 @@ const adminServer = http.createServer(async (request, response) => {
 			}));
 			sendJson(response, 200, { submissions, states: submissionStates, privacy_checks: privacyChecks, capabilities:manualsCapabilities }, { request }); return;
 		}
-		const manualReviewRoute=/^\/api\/admin\/manual-submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer)|\/versions\/(\d+)\/images\/(manual-[a-f0-9]{64}\.jpg))?$/.exec(url.pathname);
-		if(onlineMode&&(manualReviewRoute||/^\/admin\/manual-review(?:[.-]|\/|$)/i.test(decodeURIComponent(url.pathname)))){sendJson(response,404,{error:'说明书专用审核只在本机工作台开放。'});return;}
+		const manualReviewRoute=/^\/api\/admin\/manual-submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer|resolve-operation)|\/versions\/(\d+)\/images\/(manual-[a-f0-9]{64}\.jpg))?$/.exec(url.pathname);
 		if(manualReviewRoute){
 			const [,id,action,version,imageName]=manualReviewRoute;
-			if(request.method==='GET'&&imageName){const image=await submissionStore.getManualReviewImage(id,Number(version),imageName);response.writeHead(200,{...securityHeaders(),'Content-Type':'image/jpeg','Cache-Control':'no-store','Cross-Origin-Resource-Policy':'same-origin','X-Robots-Tag':'noindex, nofollow'});response.end(image);return;}
-			if(request.method==='GET'&&!action){const [record,catalog]=await writes.read(()=>Promise.all([submissionStore.getManualReview(id),manualStore.bootstrap()]));sendJson(response,200,{record,catalog_revision:catalog.revision,checks:manualReviewChecks,pdf_checks:manualPdfReviewChecks,pdf_review_version:1,privacy_checks:privacyChecks,states:manualSubmissionStates,choices:manualDraftChoices},{request});return;}
+			if(onlineMode&&['transfer','resolve-operation'].includes(action)&&!manualReviewSettings.transferWritable){sendJson(response,404,{error:'说明书整册转入尚未开放。',code:'MANUAL_TRANSFER_ONLINE_DISABLED'});return;}
+			if(request.method==='GET'&&imageName){const image=await submissionStore.getManualReviewImage(id,Number(version),imageName,{online:onlineMode});response.writeHead(200,{...securityHeaders(),'Content-Type':'image/jpeg','Cache-Control':'no-store','Cross-Origin-Resource-Policy':'same-origin','X-Robots-Tag':'noindex, nofollow'});response.end(image);return;}
+			if(request.method==='GET'&&!action){
+				const record=await submissionStore.getManualReview(id,{online:onlineMode});
+				let catalog=null;try{catalog=await writes.read(()=>manualStore.bootstrap());}catch{/* 目录不可用不能阻断人工审核。 */}
+				const catalogReady=Boolean(catalog&&catalog.readiness?.status==='ready'&&typeof catalog.revision==='string');
+				const related=writes.all().filter(row=>['manual-review','manual-transfer'].includes(row.kind)&&row.target===id);
+				const unsettled=related.filter(row=>['queued','running','needs_review'].includes(row.status));
+				const recent_operations=[...new Map([...unsettled,...related.slice(-10)].map(row=>[row.operationId+'.'+row.stepId,row])).values()];
+				sendJson(response,200,{record,...(catalogReady?{catalog_revision:catalog.revision}:{}),catalog_readiness:{ready:catalogReady},checks:manualReviewChecks,pdf_checks:onlineMode?[]:manualPdfReviewChecks,pdf_review_version:onlineMode?0:1,privacy_checks:privacyChecks,states:manualSubmissionStates,choices:manualDraftChoices,context:{adminMode:runtimeMode,reviewWritable:manualReviewSettings.reviewWritable,reviewWriteReason:manualReviewSettings.reviewWriteReason,transferWritable:manualReviewSettings.transferWritable&&catalogReady,transferWriteReason:catalogReady?manualReviewSettings.transferWriteReason:'catalog_unavailable'},capabilities:manualsCapabilities,recent_operations},{request});return;
+			}
 			if(request.method==='POST'&&action){requireSafeMutation(request);const payload=await readSubmissionJson(request,48*1024);
-				const result=await runManagedOperation(request,'manual-'+action,payload,context=>action==='review'?submissionStore.reviewManualSubmission(id,payload,context):submissionStore.transferManualSubmission(id,payload,{planCatalog:manualStore.planReviewedImport,createArchive:input=>submissionToDraft(input,context),importCatalog:input=>manualStore.importReviewed(input,context)},context),{target:id,checkVersion:false});
+				if(onlineMode)await submissionStore.getManualReview(id,{online:true});
+				const actor=onlineMode?adminIdentity.email:'本机维护者';
+				if(action==='resolve-operation'){
+					if(Object.keys(payload).some(k=>!['operationId','stepId'].includes(k)))throw new RequestError('交接核对只接收原操作凭证。');
+					const result=await withDeploymentLock(async lock=>writes.resolveManualTransferAttempt({...payload,target:id,actor},async()=>{lock?.assertHeld();const proof=await submissionStore.inspectManualTransfer(id,{...payload,actor},{inspectArchive:inspectManualArchive,inspectCatalog:()=>manualStore.bootstrap()});lock?.assertHeld();return proof;}));
+					sendJson(response,200,result,{request});return;
+				}
+				const result=await runManagedOperation(request,'manual-'+action,payload,context=>action==='review'?submissionStore.reviewManualSubmission(id,payload,{...context,actor,online:onlineMode}):submissionStore.transferManualSubmission(id,payload,{planCatalog:manualStore.planReviewedImport,createArchive:input=>submissionToDraft(input,context),importCatalog:input=>manualStore.importReviewed(input,{...context,actor})},{...context,actor,online:onlineMode}),{target:id,checkVersion:false,actor});
 				sendJson(response,200,result,{request});return;}
 			sendJson(response,405,{error:'不支持此说明书审核操作。'});return;
 		}
 		const submissionRoute = /^\/api\/admin\/submissions\/(TG-[A-F0-9]{24})(?:\/(review|transfer|request-review|copy-\d{2}\.jpg))?$/.exec(url.pathname);
 		if (submissionRoute) {
 			const [, id, action] = submissionRoute;
-			if (!action && request.method === 'GET') { sendJson(response, 200, await submissionStore.detail(id), { request }); return; }
+			if (!action && request.method === 'GET') { const record=await submissionStore.detail(id);sendJson(response, 200, onlineMode&&record.submission_kind==='manual'?manualReviewSummary(record):record, { request }); return; }
 			if (action?.startsWith('copy-') && request.method === 'GET') {
+				if(onlineMode&&(await submissionStore.detail(id)).submission_kind==='manual'){sendJson(response,404,{error:'请使用说明书专用审核页查看本次提交的图片。'});return;}
 				const image = await submissionStore.getImage(id, action);
 				response.writeHead(200, { ...securityHeaders(), 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store', 'Cross-Origin-Resource-Policy': 'same-origin', 'X-Robots-Tag': 'noindex, nofollow' }); response.end(image); return;
 			}
 			if (request.method === 'POST' && ['review', 'transfer', 'request-review'].includes(action)) {
 				requireSafeMutation(request);
+				if(onlineMode&&(await submissionStore.detail(id)).submission_kind==='manual'){sendJson(response,409,{error:'说明书须使用专用审核入口，普通投稿操作不能替代专用核对。',code:'MANUAL_REVIEW_REQUIRED'});return;}
 				const payload = await readSubmissionJson(request, 32 * 1024);
 				const result = action === 'review'
 					? await submissionStore.review(id, payload)

@@ -105,3 +105,30 @@ test('构建完整时复制独立版本并原子切换 live', { skip: process.pl
 		assert.equal(await fs.readFile(path.join(previous, 'index.html'), 'utf8'), 'previous');
 	});
 });
+
+test('最终提交守卫可以拒绝切站，拒绝后清理候选且保留当前 live', async () => {
+	await withFixture(async ({ source, releases, previous, live }) => {
+		for (const name of ['index.html', '404.html', 'robots.txt', 'sitemap.xml']) await fs.writeFile(path.join(source, name), 'new');
+		const deployer = createReleaseDeployer({ sourceDirectory: source, releasesDirectory: releases, liveLink: live });
+		let prepared = false, guarded = false;
+		await assert.rejects(deployer.deploy({
+			onPrepared: async () => { prepared = true; },
+			withCommit: async () => { assert(prepared); guarded = true; throw new Error('SYNTHETIC-STOP-ACCEPTED'); },
+		}), /SYNTHETIC-STOP-ACCEPTED/);
+		assert(guarded);
+		assert.equal((await readLiveRelease(releases, live)).resolvedTarget, previous);
+		assert.deepEqual(await fs.readdir(releases), ['live', 'previous-production']);
+	});
+});
+
+test('最终守卫在切换后报错时保留实际新版本，不能误删 live 目标', { skip: process.platform === 'win32' }, async () => {
+	await withFixture(async ({ source, releases, previous, live }) => {
+		for (const name of ['index.html', '404.html', 'robots.txt', 'sitemap.xml']) await fs.writeFile(path.join(source, name), 'new');
+		const deployer = createReleaseDeployer({ sourceDirectory: source, releasesDirectory: releases, liveLink: live });
+		await assert.rejects(deployer.deploy({ withCommit: async commit => { await commit(); throw new Error('SYNTHETIC-UNLOCK-FAIL'); } }), /公开指针已切换.*SYNTHETIC-UNLOCK-FAIL/);
+		const current = await readLiveRelease(releases, live);
+		assert.notEqual(current.resolvedTarget, previous);
+		assert.equal(await fs.readFile(path.join(current.resolvedTarget, 'index.html'), 'utf8'), 'new');
+		assert.equal(await fs.readFile(path.join(previous, 'index.html'), 'utf8'), 'previous');
+	});
+});
