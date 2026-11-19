@@ -14,6 +14,7 @@ const status=byId('manual-draft-status'),content=byId('manual-draft-content'),un
 const saveButton=byId<HTMLButtonElement>('manual-draft-save'),preview=byId('manual-draft-preview');
 const queryId=new URLSearchParams(location.search).get('id');
 let id=queryId?.trim().toUpperCase()||'',ownerId='',record:any=null,dirty=false,busy=false,paused=false;
+let medicinesAvailable=false;
 let pageBusy=false,pagesAvailable=false,pagesEditor:ReturnType<typeof createManualPagesEditor>|undefined;
 let workflowBusy=false,workflowAvailable=false,readOnly=false,workflow:ReturnType<typeof createManualWorkflow>|undefined;
 let pdfBusy=false,pdfAvailable=false,pdfEditor:ReturnType<typeof createManualPdfEditor>|undefined;
@@ -24,6 +25,21 @@ const requestKey=Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toSt
 const field=(name:string)=>form.elements.namedItem(name) as HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement;
 const text=(name:string)=>field(name)?.value??'';
 const safeId=(value:unknown)=>typeof value==='string'&&/^TG-[A-F0-9]{24}$/.test(value);
+const family=byId<HTMLSelectElement>('manual-family');
+const medicineFields=['generic_name','original_title','trade_name','dosage_form','strength','approval_label','approval_number','package_spec'];
+const companies=byId('manual-companies');
+function addCompany(role='manufacturer',name=''){
+  const fragment=byId<HTMLTemplateElement>('manual-company-template').content.cloneNode(true) as DocumentFragment;
+  fragment.querySelector<HTMLSelectElement>('[data-role]')!.value=role;
+  fragment.querySelector<HTMLInputElement>('[data-company]')!.value=name;
+  companies.append(fragment);
+}
+byId('manual-add-company').addEventListener('click',()=>{
+  if(companies.children.length>=20)return;
+  addCompany('unverified');
+  updateControls();
+  companies.lastElementChild?.querySelector<HTMLInputElement>('input')?.focus();
+});
 
 function showStatus(message:string,tone:'info'|'ok'|'error'='info'){
   setStatus(status,message,tone);setStatus(byId('manual-draft-save-status'),message,tone);
@@ -34,14 +50,31 @@ async function api(path:string,options:{method?:string;body?:unknown}={}){
   try{return await accountFetch(path,{...options,signal:controller.signal});}finally{clearTimeout(timer);}
 }
 function readForm(){
-  return normalizeManualSubmission({schema_version:1,
-    brand_name:text('brand_name'),model_texts:[...new Set(text('model_texts').split(/\r?\n/).map(v=>v.trim()).filter(Boolean))],product_name:text('product_name'),category_key:text('category_key'),document_kind:text('document_kind'),
+  const medicine=family.value==='medicines';
+  const identity=medicine ? {
+    schema_version:2,category_key:'medicines',document_kind:'user-guide',
+    medicine:{...Object.fromEntries(medicineFields.map(name=>[name,text(name)])),companies:Array.from(companies.children,row=>({
+      role:row.querySelector<HTMLSelectElement>('[data-role]')!.value,name:row.querySelector<HTMLInputElement>('[data-company]')!.value
+    }))},approval_date_text:text('approval_date_text'),revision_date_text:text('revision_date_text')
+  } : {schema_version:1,brand_name:text('brand_name'),model_texts:[...new Set(text('model_texts').split(/\r?\n/).map(v=>v.trim()).filter(Boolean))],product_name:text('product_name'),category_key:text('category_key'),document_kind:text('document_kind')};
+  return normalizeManualSubmission({...identity,
     languages:Array.from(form.querySelectorAll<HTMLInputElement>('input[name="languages"]:checked')).map(input=>input.value),region_display:text('region_display'),edition_display:text('edition_display'),edition_date:text('edition_date'),completeness:text('completeness'),missing_note:text('missing_note'),official_url:text('official_url'),
     source_note:text('source_note'),rights_basis:text('rights_basis'),rights_note:text('rights_note'),sharing_scope:text('sharing_scope'),description:text('description'),people:text('people'),attribution:text('attribution'),credit:text('credit'),
   });
 }
 function updateControls(){
   for(const input of form.querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>('input,select,textarea'))input.disabled=busy||Boolean(pending)||pageBusy||workflowBusy||pdfBusy||generationBusy||labelBusy||readOnly;
+  const locked=busy||Boolean(pending)||pageBusy||workflowBusy||pdfBusy||generationBusy||labelBusy||readOnly;
+  family.disabled=Boolean(record)||locked;
+  const medicine=family.value==='medicines';
+  byId('manual-medicine-fields').hidden=!medicine;
+  byId('manual-object-fields').hidden=medicine;
+  const medicineOption=family.querySelector<HTMLOptionElement>('option[value="medicines"]')!;
+  medicineOption.disabled=!medicinesAvailable;
+  medicineOption.hidden=!medicinesAvailable&&!medicine;
+  byId<HTMLButtonElement>('manual-add-company').disabled=locked||companies.children.length>=20;
+  const oldMedicine=field('category_key').querySelector<HTMLOptionElement>('option[value="medicines"]');
+  if(oldMedicine){const legacy=!medicinesAvailable||record?.manual_metadata?.schema_version===1&&record.manual_metadata.category_key==='medicines';oldMedicine.hidden=!legacy;oldMedicine.disabled=!legacy;}
   saveButton.hidden=readOnly;saveButton.disabled=busy||paused||pageBusy||workflowBusy||pdfBusy||generationBusy||labelBusy||readOnly;saveButton.textContent=pending?'重试上次保存':'保存私密草稿';
   byId<HTMLButtonElement>('manual-draft-preview-button').disabled=busy;
   byId<HTMLButtonElement>('manual-draft-reload').disabled=busy||pagesEditor?.canReload()===false||workflow?.canReload()===false||pdfEditor?.canReload()===false||generation?.canReload()===false||pdfLabels?.canReload()===false;
@@ -58,6 +91,12 @@ function updateIdentity(){
 }
 function fill(manual:any){
   const data=normalizeManualSubmission(manual);
+  family.value=data.schema_version===2||(!record&&medicinesAvailable&&new URLSearchParams(location.search).get('category')==='medicines')?'medicines':'objects';
+  for(const key of medicineFields)field(key).value=data.medicine?.[key]??'';
+  companies.replaceChildren();
+  for(const company of data.medicine?.companies??[])addCompany(company.role,company.name);
+  if(!companies.children.length)addCompany();
+  for(const key of ['approval_date_text','revision_date_text'])field(key).value=data[key]??'';
   for(const [name,value]of Object.entries(data)){
     if(name==='schema_version')continue;
     if(name==='languages'){for(const input of form.querySelectorAll<HTMLInputElement>('input[name="languages"]'))input.checked=(value as string[]).includes(input.value);continue;}
@@ -73,11 +112,14 @@ function validateRecord(data:any){
 }
 const recordPath=(value=id)=>`/api/account/${workflowAvailable?'manual-submissions':'manual-drafts'}/${value}`;
 function applyRecord(data:any){
-  record=validateRecord(data);readOnly=record.status!=='draft';dirty=false;fill(record.manual_metadata);
+  record=validateRecord(data);
+  const medicinePaused=record.manual_metadata.schema_version===2&&!medicinesAvailable;
+  if(medicinePaused)paused=true;
+  readOnly=record.status!=='draft'||medicinePaused;dirty=false;fill(record.manual_metadata);
   byId('manual-pages-editor').hidden=record.source_format==='pdf'&&!record.images.length;
   byId('manual-pages-editor').dataset.pdfPreview=String(record.source_format==='pdf');
   pagesEditor?.loadRecord(record,pagesAvailable,paused,workflowAvailable);workflow?.load(record,workflowAvailable,paused,pdfWorkflowAvailable);pdfEditor?.load(record,pdfAvailable,paused);generation?.load(record,generationAvailable,paused,generationAvailability);pdfLabels?.load(record,pdfWorkflowAvailable,paused);updateIdentity();updateControls();
-  showStatus(readOnly?'当前投稿内容只读，提交记录和后续反馈可在上方查看。':record.manual_draft_reason==='supplement'?'正在补充同一册资料；保存后请重新逐项确认并提交。':'私密草稿已保存，尚未提交审核或公开。');
+  showStatus(medicinePaused?'药品投稿暂时暂停，已保存的资料仍可查看。':readOnly?'当前投稿内容只读，提交记录和后续反馈可在上方查看。':record.manual_draft_reason==='supplement'?'正在补充同一册资料；保存后请重新逐项确认并提交。':'私密草稿已保存，尚未提交审核或公开。');
   byId('manual-draft-login-again').hidden=true;if(!preview.hidden)renderPreview();
 }
 async function load(){
@@ -87,9 +129,10 @@ async function load(){
     const [config,me]=await Promise.all([api('/api/account/config'),api('/api/account/me')]);
     if(config.manual_drafts_version!==1)throw new Error('说明书草稿保存暂未开放，请稍后重试。');
     ownerId=me.user.id;paused=config.uploads_open===false;pagesAvailable=config.manual_page_uploads_version===1;workflowAvailable=config.manual_workflow_version===1;pdfAvailable=config.manual_pdf_uploads_version===1;generationAvailable=config.manual_pdf_generation_version===1;generationAvailability=config.manual_pdf_generation_message??'';pdfWorkflowAvailable=config.manual_pdf_workflow_version===1;
+    medicinesAvailable=config.manual_medicines_version===1;
     if(id)applyRecord(await api(recordPath()));else{record=null;readOnly=false;fill({schema_version:1,attribution:'anonymous'});pagesEditor?.loadRecord(null,pagesAvailable,paused,workflowAvailable);workflow?.load(null,workflowAvailable,paused,pdfWorkflowAvailable);pdfEditor?.load(null,pdfAvailable,paused);generation?.load(null,generationAvailable,paused,generationAvailability);pdfLabels?.load(null,pdfWorkflowAvailable,paused);}
     dirty=false;content.hidden=false;updateIdentity();updateControls();
-    showStatus(readOnly?'当前投稿内容只读，提交记录和后续反馈可在上方查看。':paused?'草稿暂时暂停保存，已保存内容仍可查看。':'草稿不会公开，可以先保存不完整的内容。');
+    if(!id)showStatus(!medicinesAvailable&&new URLSearchParams(location.search).get('category')==='medicines'?'独立药品投稿暂未开放。':paused?'草稿暂时暂停保存，已保存内容仍可查看。':'草稿不会公开，可以先保存不完整的内容。');
   }catch(error){
     const issue=error as Error&{status?:number};
     if(issue.status===401){unauth.hidden=false;showStatus('请先登录，再保存自己的说明书草稿。');}
@@ -97,7 +140,9 @@ async function load(){
   }
 }
 function updateLoginTarget(draftId=id){
-  const target='/login/?next='+encodeURIComponent('/manuals/contribute/'+(safeId(draftId)?'?id='+draftId:''));
+  const medicines=family.value==='medicines'||new URLSearchParams(location.search).get('category')==='medicines';
+  const query=safeId(draftId)?'?id='+draftId:medicines?'?category=medicines':'';
+  const target='/login/?next='+encodeURIComponent('/manuals/contribute/'+query);
   (byId('manual-draft-login') as HTMLAnchorElement).href=target;
   (byId('manual-draft-login-again') as HTMLAnchorElement).href=target;
 }

@@ -8,7 +8,7 @@ import {createManualHttpFixture} from './manuals-http-fixture.mjs';
 
 // 只在合成临时目录启动真实online服务。替换的是测试子进程的证书获取，
 // JWT仍由正式Access核验代码逐项验证；生产服务没有测试身份或鉴权旁路。
-export async function createManualOnlineFixture(t=null,{enabled=true,reviewEnabled=false,transferEnabled=false}={}) {
+export async function createManualOnlineFixture(t=null,{enabled=true,reviewEnabled=false,transferEnabled=false,medicineEnabled=false}={}) {
   const base=await createManualHttpFixture(null);await base.stop();
   let child=null,output='';
   const privateRoot=path.dirname(base.root),releases=path.join(base.dir,'public-releases');
@@ -29,6 +29,7 @@ export async function createManualOnlineFixture(t=null,{enabled=true,reviewEnabl
     return input+'.'+sign('RSA-SHA256',Buffer.from(input),privateKey).toString('base64url');
   };
   const env={...base.env,LJM_ADMIN_MODE:'online',LJM_ADMIN_ORIGIN:adminOrigin,PUBLIC_SITE_URL:publicOrigin,LJM_CF_ACCESS_TEAM_DOMAIN:teamDomain,LJM_CF_ACCESS_AUD:audience,LJM_ADMIN_ALLOWED_EMAILS:email,LJM_MANUALS_ONLINE_ENABLED:String(enabled),LJM_MANUAL_REVIEW_ONLINE_ENABLED:String(reviewEnabled),LJM_MANUAL_TRANSFER_ONLINE_ENABLED:String(transferEnabled),LJM_PUBLIC_RELEASES_DIR:releases,LJM_PUBLIC_LIVE_LINK:live,LJM_MERGE_DEPLOY_LOCK:deployLock,LJM_NPM_COMMAND:'npm'};
+  env.LJM_MANUAL_MEDICINES_ONLINE_ENABLED=String(medicineEnabled);
   const stop=async()=>{if(child&&child.exitCode===null&&child.signalCode===null){const ended=once(child,'exit');child.kill('SIGTERM');await ended;}};
   const crash=async()=>{if(child&&child.exitCode===null&&child.signalCode===null){const ended=once(child,'exit');child.kill('SIGKILL');await ended;}};
   const dispose=async()=>{await fs.writeFile(path.join(env.LJM_SITE_DIR,'build-release'),'release').catch(()=>{});await stop();await base.dispose();};if(t)t.after(dispose);

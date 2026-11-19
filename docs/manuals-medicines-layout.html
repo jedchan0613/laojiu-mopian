@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>药品说明书维护 · 布局示意</title>
+<style>
+  *{box-sizing:border-box} [hidden]{display:none!important}
+  :root{color-scheme:light;--ink:#20283c;--muted:#56627a;--line:#dce1eb;--purple:#4b46a3;--soft:#efeffa}
+  body{margin:0;background:#f6f7fa;color:var(--ink);font:16px/1.55 system-ui,"Microsoft YaHei",sans-serif}
+  header,main{max-width:1180px;margin:auto;padding:20px clamp(14px,3.4vw,46px)}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header span,.muted,small{color:var(--muted)} header span{font-size:.86rem;margin-left:auto}
+  h1,h2,h3,p{margin:0} h1{font-size:clamp(1.65rem,3vw,2.25rem);letter-spacing:-.04em}
+  h2{font-size:1.32rem} h3{font-size:1.05rem} main{padding-top:2px}
+  button,input,select{font:inherit;color:inherit} button{cursor:pointer}
+  button,a,input,select,summary{outline-offset:3px}
+  :focus-visible{outline:3px solid #756bdf}
+  button{border:1px solid var(--line);border-radius:8px;padding:7px 13px;background:white}
+  button:hover{background:#f2f2fb}.primary{background:var(--purple);border-color:var(--purple);color:white}.primary:hover{background:#373184}
+  nav{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:8px 0 20px}
+  nav button{padding:10px 2px;border:none;border-bottom:3px solid transparent;border-radius:0;background:none;font-weight:600;color:var(--muted)}
+  nav button[aria-pressed=true]{color:var(--purple);border-bottom-color:var(--purple)}
+  .workspace{display:grid;grid-template-columns:minmax(255px, .82fr) minmax(0,1.85fr);gap:18px;align-items:start}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:clamp(16px,2.1vw,28px)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .search{display:block;margin:18px 0 10px}
+  input,select{background:white;border:1px solid #bac3d1;border-radius:6px;padding:8px 10px;min-width:0;width:100%}
+  .record,.version{display:block;text-align:left;width:100%;border-radius:6px;overflow-wrap:anywhere}
+  .record{margin-top:7px;padding:10px;background:#fff;border:1px solid transparent}
+  .record[aria-current=true]{background:var(--soft);border-color:#c7c5e6}
+  .record small,.version small{display:block;margin-top:3px}
+  .editor-title{margin-bottom:15px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;margin:10px 0}
+  label{display:block;font-size:.92rem;font-weight:600} label input,label select{margin-top:3px;font-weight:400}.wide{grid-column:1/-1}
+  details{margin:12px 0}summary{cursor:pointer;color:var(--purple);font-size:.94rem}
+  .section{border-top:1px solid var(--line);padding-top:16px;margin-top:22px}
+  .version{background:#fafbfe;margin-top:8px}
+  .editor-footer{margin-top:20px;border-top:1px solid var(--line);padding-top:14px}
+  #editor-status{font-size:.88rem;color:var(--muted)}
+  .return{display:none;margin-bottom:12px}.hint{font-size:.85rem;color:var(--muted)}
+  @media(max-width:740px){
+    header{padding-bottom:10px}header span{margin-left:0}main{padding-bottom:16px}
+    .workspace{display:block}body[data-view=list] .editor,body[data-view=detail] .library{display:none}
+    .return{display:inline-block}.fields{grid-template-columns:minmax(0,1fr)}.wide{grid-column:auto}
+    button,input,select{min-height:44px}nav{gap:18px;margin-bottom:12px}
+  }
+</style>
+<body data-view="list">
+<header><strong>老旧默片 · 档案工作台</strong><span>布局示意 · 虚构资料 · 刷新后重置</span></header>
+<main>
+  <h1>说明书维护</h1>
+  <nav aria-label="维护大类"><button id="objects" aria-pressed="false">物件说明书</button><button id="drugs" aria-pressed="true">药品说明书</button></nav>
+  <section id="ordinary" class="panel" hidden><h2>物件说明书</h2><p class="muted">物件区沿用现有的说明书、型号和品牌维护页。选择上方「药品说明书」体验本次设计。</p></section>
+  <div id="workspace" class="workspace">
+    <aside class="library panel">
+      <div class="row"><h2>药品目录</h2><button id="new-drug" class="primary">新增药品</button></div>
+      <label class="search">查找药品<input type="search" id="query" placeholder="药名、企业或批准编号"></label>
+      <div id="records"></div>
+    </aside>
+    <section class="editor panel" aria-label="药品编辑">
+      <button class="return" id="back">‹ 返回药品列表</button>
+      <div class="editor-title"><h2 id="title">药品资料</h2></div>
+      <form id="form">
+        <div class="fields">
+          <label class="wide">通用名<input name="generic" autocomplete="off"></label>
+          <label>剂型<input name="form"></label><label>规格<input name="strength"></label>
+          <label>企业角色<select name="role"><option>生产企业</option><option>上市许可持有人</option><option>原件署名，角色待核</option></select></label><label>企业名称<input name="company"></label>
+        </div>
+        <details id="extra"><summary>更多药品信息</summary><div class="fields">
+          <label>商品名<input name="trade"></label><label>原件题名或旧称<input name="original"></label>
+          <label>批准或注册编号<input name="approval"></label><label>包装规格<input name="pack"></label>
+        </div></details>
+        <div class="section"><div class="row"><h3>说明书版本</h3><button type="button" id="add-version">新增版本</button></div>
+          <div id="versions"></div>
+          <div id="version-edit" hidden><div class="fields">
+            <label>版本标识<input id="version-label" placeholder="按原件填写"></label>
+            <label>修订日期（按原文）<input id="version-date"></label>
+            <label>原文来源<select id="source"><option>待补来源</option><option>官方来源</option><option>已审核页图</option><option>官方来源和已审核页图</option></select></label>
+          </div><p class="hint">此处演示版本列表。正式录入时可继续填写来源和核对页序。</p></div>
+        </div>
+        <div class="row editor-footer"><span role="status" id="editor-status">草稿</span><button type="submit" class="primary">保存草稿</button></div>
+      </form>
+    </section>
+  </div>
+</main>
+<script>
+  const byId = id => document.getElementById(id);
+  const form = byId('form');
+  const fields = ['generic','form','strength','role','company','trade','original','approval','pack'];
+  const records = [
+    {generic:'示例药品甲',form:'片剂',strength:'规格甲',role:'生产企业',company:'示例甲厂',versions:[{label:'馆藏早期版',date:'',source:'已审核页图'},{label:'修订本',date:'原件仅载年份',source:'官方来源'}]},
+    {generic:'示例药品甲',form:'片剂',strength:'规格乙',role:'生产企业',company:'示例乙厂',versions:[]}
+  ];
+  let selected = 0, activeVersion = -1, draft, dirty = false;
+  const displayName = item => item.generic || item.original || '新药品';
+  function textNode(tag, value) {
+    const node = document.createElement(tag);
+    node.textContent = value;
+    return node;
+  }
+  function setStatus(message) { byId('editor-status').textContent = message; }
+  function canLeave() { return !dirty || confirm('放弃这次尚未保存的示意修改？'); }
+  function renderList() {
+    const list = byId('records'), query = byId('query').value.trim().toLowerCase();
+    list.replaceChildren();
+    records.forEach((item, index) => {
+      if (!fields.some(key => String(item[key] || '').toLowerCase().includes(query))) return;
+      const button = textNode('button','');
+      button.className = 'record';
+      button.setAttribute('aria-current', String(selected === index));
+      button.append(textNode('strong',displayName(item)), textNode('small',[item.form,item.strength,item.company].filter(Boolean).join(' · ') || '资料待补'));
+      button.onclick = () => { if (canLeave()) selectRecord(index,true); };
+      list.append(button);
+    });
+    if (!list.children.length) {
+      list.append(textNode('p','没有匹配的药品。'));
+      const reset = textNode('button','清除搜索');
+      reset.onclick = () => { byId('query').value = ''; renderList(); };
+      list.append(reset);
+    }
+  }
+  function openVersion(index) {
+    activeVersion = index;
+    byId('version-edit').hidden = index < 0;
+    if (index < 0) return;
+    const version = draft.versions[index];
+    byId('version-label').value = version.label;
+    byId('version-date').value = version.date;
+    byId('source').value = version.source;
+    byId('version-label').focus();
+  }
+  function renderVersions() {
+    const list = byId('versions');
+    list.replaceChildren();
+    if (!draft.versions.length) list.append(textNode('small','还没有说明书版本'));
+    for (const [index,version] of draft.versions.entries()) {
+      const button = textNode('button',version.label || '版本未注明');
+      button.type = 'button'; button.className = 'version';
+      button.append(textNode('small',[version.date,version.source,'草稿'].filter(Boolean).join(' · ')));
+      button.onclick = () => openVersion(index);
+      list.append(button);
+    }
+  }
+  function selectRecord(index, showDetail) {
+    selected = index; dirty = false;
+    draft = index < 0 ? {role:'生产企业',versions:[]} : structuredClone(records[index]);
+    for (const key of fields) form.elements.namedItem(key).value = draft[key] || '';
+    byId('title').textContent = index < 0 ? '新增药品' : displayName(draft);
+    byId('extra').open = false;
+    openVersion(-1); renderVersions(); renderList(); setStatus('草稿');
+    if (showDetail) document.body.dataset.view = 'detail';
+  }
+  form.addEventListener('input', event => {
+    dirty = true; setStatus('有未保存的修改');
+    if (fields.includes(event.target.name)) draft[event.target.name] = event.target.value;
+    if (activeVersion >= 0 && byId('version-edit').contains(event.target)) {
+      draft.versions[activeVersion] = {label:byId('version-label').value,date:byId('version-date').value,source:byId('source').value};
+      renderVersions();
+    }
+  });
+  form.onsubmit = event => {
+    event.preventDefault();
+    if (!draft.generic?.trim() && !draft.original?.trim()) {
+      setStatus('请填写通用名，或在更多信息中填写原件题名。');
+      form.elements.namedItem('generic').focus(); return;
+    }
+    if (selected < 0) { selected = records.length; byId('query').value = ''; }
+    records[selected] = structuredClone(draft);
+    dirty = false; byId('title').textContent = displayName(draft);
+    renderList(); setStatus('示意草稿已保存到本页');
+  };
+  byId('query').oninput = renderList;
+  byId('new-drug').onclick = () => { if (canLeave()) { selectRecord(-1,true); form.elements.namedItem('generic').focus(); } };
+  byId('add-version').onclick = () => {
+    draft.versions.push({label:'',date:'',source:'待补来源'}); dirty = true;
+    renderVersions(); openVersion(draft.versions.length-1); setStatus('有未保存的修改');
+  };
+  byId('back').onclick = () => {
+    if (!canLeave()) return;
+    selectRecord(selected < 0 ? 0 : selected,false);
+    document.body.dataset.view = 'list';
+    byId('query').focus({preventScroll:true});
+  };
+  function switchArea(medicine) {
+    byId('objects').setAttribute('aria-pressed', String(!medicine)); byId('drugs').setAttribute('aria-pressed',String(medicine));
+    byId('ordinary').hidden = medicine; byId('workspace').hidden = !medicine;
+  }
+  byId('objects').onclick = () => switchArea(false);
+  byId('drugs').onclick = () => switchArea(true);
+  selectRecord(0,false);
+</script>
+</body></html>

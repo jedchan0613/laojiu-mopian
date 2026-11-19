@@ -7,14 +7,14 @@ import ManualPdfGeneration from '../../components/ManualPdfGeneration.astro';
 import ManualPdfPageLabels from '../../components/ManualPdfPageLabels.astro';
 import ManualSubmissionWorkflow from '../../components/ManualSubmissionWorkflow.astro';
 import {manualsChineseOnly} from '../../data/manuals-catalog';
-import {manualDraftChoices} from '../../../../shared/manual-submission.mjs';
+import {manualDraftChoices,medicineCompanyRoles} from '../../../../shared/manual-submission.mjs';
 import '../../styles/manuals.css';
 import '../../styles/manual-submission.css';
 ---
-<BaseLayout title="提供说明书｜老旧默片" description="登记品牌、完整型号、版本与来源，保存自己的私密说明书草稿，稍后继续完善。" translationAvailability={manualsChineseOnly} robots="noindex, nofollow">
+<BaseLayout title="提供说明书｜老旧默片" description="提供物件或药品说明书，登记版本与来源，保存自己的私密草稿。" translationAvailability={manualsChineseOnly} robots="noindex, nofollow">
   <article class="manuals manual-submission" data-manual-submission>
     <ManualsNavigation active="contribute"/>
-    <header class="manual-hero"><p class="manual-eyebrow">老旧默片 · 一起保存物件资料</p><h1>提供一份说明书</h1><p>先记下品牌、完整型号和资料来源。不确定的内容可以留空，保存后再继续补充。</p></header>
+    <header class="manual-hero"><h1>提供一份说明书</h1><p>选择物件或药品，照录说明书上的信息。不确定的内容可以留空，保存后再继续补充。</p></header>
     <p class="manual-notice">先保存资料，再继续添加文件。图片可以逐页整理并提交；PDF可在已配置的本地环境生成整册，核对后提交阅读图片审核。原PDF私密留存，资料不会因此自动公开。</p>
     <p id="manual-draft-status" class="manual-draft-status" role="status" aria-live="polite">正在读取草稿服务…</p>
     <section id="manual-draft-unauth" class="manual-draft-panel" hidden><h2>登录后保存到自己的草稿</h2><p>登录后可以跨设备继续填写。请勿填写设备序列号、私人地址、账号密码或其他人的联系方式。</p><div class="manual-actions"><a id="manual-draft-login" class="ui-action ui-action--primary" href="/login/?next=%2Fmanuals%2Fcontribute%2F">登录并继续 →</a><a href="/manuals/">返回说明书库</a></div></section>
@@ -24,13 +24,38 @@ import '../../styles/manual-submission.css';
       <p class="manual-muted">请勿填写设备序列号、私人地址、账号密码或其他人的联系方式。</p>
       <ManualSubmissionWorkflow part="progress"/>
       <form id="manual-draft-form" autocomplete="off" novalidate>
-        <fieldset><legend><span>01</span> 品牌与完整型号</legend><div class="manual-draft-fields">
+        <fieldset><legend><span>01</span> 说明书资料</legend>
+          <div class="manual-draft-fields"><label>说明书类别<select id="manual-family"><option value="objects">物件说明书</option><option value="medicines">药品说明书</option></select></label></div>
+          <div id="manual-object-fields" class="manual-draft-fields">
           <label>品牌名称<input name="brand_name" maxlength="100" placeholder="按机身或手册上的品牌填写"/></label>
           <label>物件名称<input name="product_name" maxlength="120" placeholder="例如：电饭煲、胶片相机"/></label>
           <label>物件品类<select name="category_key"><option value="">尚未确定</option>{Object.entries(manualDraftChoices.categories).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
           <label>文档用途<select name="document_kind"><option value="">尚未确定</option>{Object.entries(manualDraftChoices.kinds).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
           <label class="manual-draft-wide">明确适用型号<textarea name="model_texts" rows="3" maxlength="2400" placeholder="每行一个完整型号，保留字母、数字和后缀。"></textarea><small>一册适用多个型号时分别填写；相近型号不要自行合并。</small></label>
-        </div></fieldset>
+        </div>
+          <div id="manual-medicine-fields" hidden>
+            <div class="manual-draft-fields">
+              <label>通用名<input name="generic_name" maxlength="200"/></label>
+              <label>原件题名或旧称<input name="original_title" maxlength="300"/></label>
+              <label>剂型<input name="dosage_form" maxlength="100"/></label>
+              <label>规格<input name="strength" maxlength="200"/></label>
+            </div>
+            <div id="manual-companies"></div>
+            <button type="button" id="manual-add-company" class="manual-text-button">增加企业或署名</button>
+            <template id="manual-company-template"><div class="manual-draft-fields">
+              <label>企业角色<select data-role>{Object.entries(medicineCompanyRoles).map(([key,label])=><option value={key}>{label}</option>)}</select></label>
+              <label>原件署名企业<input data-company maxlength="200"/></label>
+            </div></template>
+            <details><summary>更多药品信息</summary><div class="manual-draft-fields">
+              <label>商品名<input name="trade_name" maxlength="200"/></label>
+              <label>编号名称<input name="approval_label" maxlength="100"/></label>
+              <label>批准或注册编号<input name="approval_number" maxlength="150"/></label>
+              <label>包装规格<input name="package_spec" maxlength="200"/></label>
+              <label>核准日期（原文）<input name="approval_date_text" maxlength="100"/></label>
+              <label>修订日期（原文）<input name="revision_date_text" maxlength="100"/></label>
+            </div></details>
+          </div>
+        </fieldset>
         <fieldset><legend><span>02</span> 语言、版本与完整程度</legend><div class="manual-draft-fields">
           <div class="manual-draft-wide"><p class="manual-draft-label">原文语言</p><div class="manual-draft-language">{Object.entries(manualDraftChoices.languages).map(([key,label])=><label><input type="checkbox" name="languages" value={key}/>{label}</label>)}</div></div>
           <label>适用地区<input name="region_display" maxlength="120" placeholder="未注明时可留空"/></label>

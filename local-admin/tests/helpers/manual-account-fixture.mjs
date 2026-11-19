@@ -47,6 +47,7 @@ export async function createManualAccountFixture({serveSite=false,uploadsOpen=tr
   const refresh=()=>{handler=createAccountHandler({store:accounts,submissionStore:submissions,origin,adminOrigin:origin,local:true,secureCookies:false,uploadsOpen:uploadsEnabled,ipRateLimit:{maximum:2000,windowSeconds:600},...pdfOptions});};
   const setUploadsOpen=value=>{uploadsEnabled=value;refresh();};
   const setPdfOpen=value=>{pdfOptions.pdfOpen=value;refresh();};
+  const setMedicinesOpen=value=>{pdfOptions.medicinesOpen=value;refresh();};
   refresh();
   const cookie=user=>`${sessionCookieName}=${(user??users[0]).token}`;
   const request=async(route,{user=users[0],method='GET',body,headers={}}={})=>{
@@ -54,7 +55,7 @@ export async function createManualAccountFixture({serveSite=false,uploadsOpen=tr
     const response=await fetch(origin+route,{method,headers:{...(user?{Cookie:cookie(user)}:{}),Origin:origin,'X-LJM-Account-Request':'1',...(body!==undefined&&!multipart?{'Content-Type':'application/json'}:{}),...headers},body:body===undefined?undefined:multipart?body:JSON.stringify(body)});
     return {status:response.status,headers:response.headers,body:await response.json()};
   };
-  return {root,origin,users,accounts,submissions,cookie,request,setUploadsOpen,setPdfOpen,setInterceptor:value=>{interceptor=value;},async close(){
+  return {root,origin,users,accounts,submissions,cookie,request,setUploadsOpen,setPdfOpen,setMedicinesOpen,setInterceptor:value=>{interceptor=value;},async close(){
     server.closeAllConnections();await new Promise(resolve=>server.close(resolve));accounts.close();
     const resolved=path.resolve(root);assert.equal(path.dirname(resolved),path.resolve(os.tmpdir()));assert(path.basename(resolved).startsWith('ljm-manual-accounts-'));
     await fs.rm(resolved,{recursive:true,force:true});

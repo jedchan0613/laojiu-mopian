@@ -18,9 +18,9 @@ function base(input,keys){
 export function normalizeManualReview(input,privacyCount){
   const out=base(input,['revision','submitted_revision','snapshot_digest','status','public_message','private_note','model_basis','source_basis','rights_basis','checks','privacy_checks','pdf_checks']);
   if(!['approved','needs_info','declined'].includes(input.status))fail('请选择通过人工审核、要求补充或暂不采用。');
-  Object.assign(out,{status:input.status,public_message:str(input.public_message??'','给投稿人的说明',1000,input.status==='approved'?0:2),private_note:str(input.private_note??'','内部备注',4000),model_basis:str(input.model_basis??'','型号适用依据',2000),source_basis:str(input.source_basis??'','来源核对依据',2000),rights_basis:str(input.rights_basis??'','权利及提供范围依据',2000)});
+  Object.assign(out,{status:input.status,public_message:str(input.public_message??'','给投稿人的说明',1000,input.status==='approved'?0:2),private_note:str(input.private_note??'','内部备注',4000),model_basis:str(input.model_basis??'','适用范围依据',2000),source_basis:str(input.source_basis??'','来源核对依据',2000),rights_basis:str(input.rights_basis??'','权利及提供范围依据',2000)});
   if(input.status==='approved'){
-    if([out.model_basis,out.source_basis,out.rights_basis].some(value=>value.length<2))fail('请记录型号、来源及权利核对依据；不能用空白勾选代替核实。');
+    if([out.model_basis,out.source_basis,out.rights_basis].some(value=>value.length<2))fail('请记录适用范围、来源及权利核对依据；不能用空白勾选代替核实。');
     for(const [field,count]of [['checks',manualReviewChecks.length],['privacy_checks',privacyCount]]){
       if(!Array.isArray(input[field])||input[field].length!==count||input[field].some(v=>v!==true))fail('请逐项完成说明书及隐私人工检查。',428);
       out[field]=[...input[field]];
@@ -30,10 +30,20 @@ export function normalizeManualReview(input,privacyCount){
   return out;
 }
 export function normalizeManualTransfer(input,metadata){
-  const out=base(input,['revision','submitted_revision','snapshot_digest','catalog_revision','confirmed','title','public_description','object_type','accession_date','product_name','region_display','edition_display','official_source_name','checked_on','source_available']);
+  const medicine=metadata.schema_version===2 && metadata.category_key==='medicines';
+  const out=base(input,['revision','submitted_revision','snapshot_digest','catalog_revision','confirmed','title','public_description','object_type','accession_date',...(medicine?['medicine_match']:['product_name']),'region_display','edition_display','official_source_name','checked_on','source_available']);
   if(!/^[a-f0-9]{64}$/.test(input.catalog_revision??''))fail('请重新读取说明书目录版本。',428);
   if(input.confirmed!==true)fail('请确认只生成未公开的整理草稿，不直接发布。',428);
-  Object.assign(out,{catalog_revision:input.catalog_revision,title:str(input.title??'','整理后的题名',80,2),public_description:str(input.public_description??'','整理后的公开简介',3000),product_name:str(input.product_name??'','物件名称',120,1),region_display:str(input.region_display||'地区未注明','地区',120,1),edition_display:str(input.edition_display||'版本未注明','版本',150,1)});
+  Object.assign(out,{catalog_revision:input.catalog_revision,title:str(input.title??'','整理后的题名',80,2),public_description:str(input.public_description??'','整理后的公开简介',3000),...(medicine?{}:{product_name:str(input.product_name??'','物件名称',120,1)}),region_display:str(input.region_display||'地区未注明','地区',120,1),edition_display:str(input.edition_display||'版本未注明','版本',150,1)});
+  if (medicine) {
+    const match=input.medicine_match;
+    if (!match || !['existing','new'].includes(match.mode) || Object.keys(match).some(key=>!['mode','medicine_keys'].includes(key))) fail('请人工选择适用的已有药品，或确认建立新药品。');
+    const keys=match.medicine_keys;
+    if (!Array.isArray(keys) || keys.length>500 || (match.mode==='existing') !== (keys.length>0) ||
+        keys.some(key=>typeof key!=='string'||key.length>80||!/^medicine-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(key)) ||
+        new Set(keys).size!==keys.length) fail('请核对勾选的药品和规格。');
+    out.medicine_match={mode:match.mode,medicine_keys:[...keys].sort()};
+  }
   const date=(value,label)=>{const s=str(value??'',label,10,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(s)||Number.isNaN(Date.parse(s+'T00:00:00Z'))||new Date(s+'T00:00:00Z').toISOString().slice(0,10)!==s||s>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Shanghai'}))fail(`请填写有效且不晚于今天的${label}。`);return s;};
   if(metadata.sharing_scope==='reading-copy'){
     if(!['RPR','OTH'].includes(input.object_type))fail('请人工选择复制件或其他类，说明书只使用既有通用结构。');

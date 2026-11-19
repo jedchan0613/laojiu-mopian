@@ -11,12 +11,12 @@ import {manualConsentVersion} from '../../../shared/manual-workflow.mjs';
 const site=fileURLToPath(new URL('../../../site/',import.meta.url));
 const sharp=createRequire(path.join(site,'package.json'))('sharp');
 const key=()=>randomBytes(32).toString('hex');
-export async function createOnlineReviewFixture(t,{pages=2,official=false,reviewEnabled=true,...options}={}){
+export async function createOnlineReviewFixture(t,{pages=2,official=false,reviewEnabled=true,metadata={},...options}={}){
   const f=await createManualOnlineFixture(t,{enabled:false,reviewEnabled,...options});
   const accountId='usr_'+('a'.repeat(24)),root=f.env.LJM_SUBMISSION_DATA_DIR;
   const store=createSubmissionStore({root,siteDirectory:site});
   const manual={schema_version:1,brand_name:'线上审核合成品牌',model_texts:['ONLINE-82'],product_name:'合成测试物件',category_key:'tools',document_kind:'user-guide',languages:['zh-CN'],completeness:'complete',region_display:'地区未注明',edition_display:'合成一版',source_note:'自制合成样页，仅供隔离验收',rights_basis:official?'official-link':'own-work',sharing_scope:official?'official-link':'reading-copy',people:'none',attribution:'anonymous',...(official?{official_url:'https://support.example.com/manual'}:{})};
-  const draft=await store.createAccountManualDraft({accountId,payload:{request_key:key(),manual}});
+  const draft=await store.createAccountManualDraft({accountId,payload:{request_key:key(),manual:{...manual,...metadata}}});
   const jpeg=await sharp({create:{width:240,height:320,channels:3,background:'#e9ddc3'}}).jpeg().toBuffer();
   for(let i=0;i<pages;i++)await store.uploadAccountManualPage({id:draft.id,accountId,payload:{operation_id:key(),revision:i+1,copies_confirmed:true,image:{name:'screened-online-'+i+'.jpg',type:'image/jpeg',buffer:jpeg}}});
   await store.operateAccountManualSubmission({id:draft.id,accountId,payload:{action:'submit',operation_id:key(),revision:pages+1,consent_version:manualConsentVersion,consents:{copies:true,rights:true,privacy:true,processing:true}}});

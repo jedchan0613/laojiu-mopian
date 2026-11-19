@@ -2,32 +2,40 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ManualsNavigation from '../../components/ManualsNavigation.astro';
 import {manualsCatalog,manualsDemo,manualsChineseOnly} from '../../data/manuals-catalog';
-import {manualKinds,manualLanguages,manualCompleteness,manualCategories} from '../../../../shared/manual-catalog.mjs';
+import {manualMedicineKeys,medicineName,medicineDescription,manualKinds,manualLanguages,manualCompleteness,manualCategories} from '../../../../shared/manual-catalog.mjs';
 import {serializeHtmlJson} from '../../../../shared/html-json.mjs';
 import {manualBrandPath,manualCategoryPath} from '../../../../shared/manual-browse.mjs';
 import '../../styles/manuals.css';
 export function getStaticPaths(){return manualsCatalog.documents.map(document=>({params:{manual:document.manual_key},props:{document}}));}
 const {document:manual}=Astro.props;
 const models=manual.model_keys.map((key:string)=>manualsCatalog.models.find(m=>m.model_key===key)!);
-const model=models[0],brand=manualsCatalog.brands.find(b=>b.brand_key===model.brand_key)!;
-const related=manualsCatalog.documents.filter(d=>d.available&&d.manual_key!==manual.manual_key&&d.model_keys.some((key:string)=>manual.model_keys.includes(key)));
+const model=models[0],brand=model && manualsCatalog.brands.find(b=>b.brand_key===model.brand_key);
+const modelsByKey=new Map(manualsCatalog.models.map(model=>[model.model_key,model]));
+const medicineKeys=manualMedicineKeys(manual,modelsByKey);
+const medicines=medicineKeys.map((key:string)=>manualsCatalog.medicines?.find(m=>m.medicine_key===key)!);
+const isMedicine=medicines.length>0;
+const subject=isMedicine?'药品说明书':brand?.name+' · '+model?.model_text;
+const related=manualsCatalog.documents.filter(d=>d.available&&d.manual_key!==manual.manual_key&&(
+  isMedicine && manualMedicineKeys(d,modelsByKey).some(key=>medicineKeys.includes(key)) ||
+  d.model_keys.some((key:string)=>manual.model_keys.includes(key))));
 const first=manual.pages[0];
 const profileBrands=[...new Set(models.map(m=>m.brand_key))].map(key=>manualsCatalog.brands.find(b=>b.brand_key===key)!);
-const profileCategories=[...new Set(models.map(m=>m.category_key))];
+const profileCategories=[...new Set([...models.map(m=>m.category_key),...(isMedicine?['medicines']:[])])];
 ---
-<BaseLayout title={`${manual.title}｜说明书库｜老旧默片`} description={manual.summary||`${brand.name} ${model.model_text}，${manual.edition_display}，请核对适用型号、地区与语言。`} translationAvailability={manualsChineseOnly} robots={manualsDemo||!manual.available?'noindex, nofollow':undefined}>
+<BaseLayout title={`${manual.title}｜说明书库｜老旧默片`} description={manual.summary||[subject,manual.edition_display,manual.region_display].join(' · ')} translationAvailability={manualsChineseOnly} robots={manualsDemo||!manual.available?'noindex, nofollow':undefined}>
   <article class="manuals manual-detail" data-manual-detail>
     {manualsDemo&&<p class="manual-demo-notice" data-manual-demo>本地演示：这是一份虚构资料，页面不用于实际设备操作。</p>}
     <ManualsNavigation/>
     <a class="manual-back" href="/manuals/" data-manual-back>← 返回查询结果</a>
-    <header class="manual-detail-heading"><p class="manual-eyebrow">{brand.name} · {model.model_text}</p><h1>{manual.title}</h1><p class="manual-document-meta">{manual.languages.map((l:string)=>manualLanguages[l]).join('／')} · {manualKinds[manual.document_kind]}{manual.pages.length>0&&` · 现有${manual.pages.length}张`}</p></header>
-    <p class="manual-scope"><strong>明确适用型号</strong>{models.map(m=>`${manualsCatalog.brands.find(b=>b.brand_key===m.brand_key)!.name} ${m.model_text}`).join('、')}</p>
-    <dl class="manual-facts"><div><dt>资料版本</dt><dd>{manual.edition_display}</dd></div><div><dt>适用地区</dt><dd>{manual.region_display}</dd></div><div><dt>原文语言</dt><dd>{manual.languages.map((l:string)=>manualLanguages[l]).join('／')}</dd></div><div><dt>完整程度</dt><dd>{manualCompleteness[manual.completeness]}</dd></div></dl>
+    <header class="manual-detail-heading"><p class="manual-eyebrow">{subject}</p><h1>{manual.title}</h1><p class="manual-document-meta">{manual.languages.map((l:string)=>manualLanguages[l]).join('／')} · {manualKinds[manual.document_kind]}{manual.pages.length>0&&` · 现有${manual.pages.length}张`}</p></header>
+    {isMedicine&&<section class="manual-scope"><h2>适用药品与规格</h2><ul>{medicines.map(m=><li><strong>{medicineName(m)}</strong> {medicineDescription(m)}{m.trade_name&&<span> · 商品名 {m.trade_name}</span>}{m.original_title&&m.original_title!==medicineName(m)&&<span> · 原件题名 {m.original_title}</span>}{m.package_spec&&<span> · 包装 {m.package_spec}</span>}{m.approval_number&&<span> · {m.approval_label||'批准或注册编号'} {m.approval_number}</span>}</li>)}</ul></section>}
+    {models.length>0&&<p class="manual-scope"><strong>明确适用型号</strong>{models.map(m=>`${manualsCatalog.brands.find(b=>b.brand_key===m.brand_key)!.name} ${m.model_text}`).join('、')}</p>}
+    <dl class="manual-facts">{manual.approval_date_text&&<div><dt>原文核准日期</dt><dd>{manual.approval_date_text}</dd></div>}{manual.revision_date_text&&<div><dt>原文修订日期</dt><dd>{manual.revision_date_text}</dd></div>}<div><dt>资料版本</dt><dd>{manual.edition_display}</dd></div><div><dt>适用地区</dt><dd>{manual.region_display}</dd></div><div><dt>原文语言</dt><dd>{manual.languages.map((l:string)=>manualLanguages[l]).join('／')}</dd></div><div><dt>完整程度</dt><dd>{manualCompleteness[manual.completeness]}</dd></div></dl>
     <nav class="manual-browse-chips manual-detail-browse" aria-label="继续浏览相关目录">{profileBrands.map(b=><a href={manualBrandPath(b.brand_key)}>{b.name}资料</a>)}{profileCategories.map(key=><a href={manualCategoryPath(key)}>{manualCategories[key]}说明书</a>)}</nav>
     {manual.completeness==='incomplete'&&<p class="manual-notice">{manual.missing_note}</p>}
-    {!manual.available&&<p class="manual-notice">官方来源暂不可用，本站尚未提供阅读副本。请勿用相近型号代替。</p>}
+    {!manual.available&&<p class="manual-notice">官方来源暂不可用，本站尚未提供阅读副本。</p>}
     {manual.summary&&<p class="manual-summary">{manual.summary}</p>}
-    <div class="manual-actions">{first&&<a class="ui-action ui-action--primary" href="#manual-reader">开始阅读 →</a>}{!first&&manual.official_sources.filter((s:any)=>s.available).slice(0,1).map((s:any)=>manualsDemo?<button type="button" class="ui-action ui-action--primary" data-manual-demo-source>前往厂家官网查看（演示）</button>:<a class="ui-action ui-action--primary" href={s.href} target="_blank" rel="noopener noreferrer" data-manual-official>前往厂家官网查看 ↗</a>)}<a class="ui-action ui-action--secondary" href="/corrections/">纠错或补充资料</a></div>
+    <div class="manual-actions">{first&&<a class="ui-action ui-action--primary" href="#manual-reader">开始阅读 →</a>}{!first&&manual.official_sources.filter((s:any)=>s.available).slice(0,1).map((s:any)=>manualsDemo?<button type="button" class="ui-action ui-action--primary" data-manual-demo-source>前往厂家官网查看（演示）</button>:<a class="ui-action ui-action--primary" href={s.href} target="_blank" rel="noopener noreferrer" data-manual-official>前往官方来源查看 ↗</a>)}<a class="ui-action ui-action--secondary" href="/corrections/">纠错或补充资料</a></div>
     {first&&<section id="manual-reader" class="manual-reader" aria-labelledby="manual-reader-title" data-manual-reader>
       <h2 id="manual-reader-title">逐页阅读</h2>
       <div class="manual-reader-controls" data-reader-controls hidden>
@@ -47,14 +55,14 @@ const profileCategories=[...new Set(models.map(m=>m.category_key))];
       <noscript><p>启用浏览器脚本后可在这里翻页、跳页和放大。也可以逐页打开发布图片：</p><ol>{manual.pages.map((p:any)=><li><a href={p.src}>{p.label}</a></li>)}</ol></noscript>
       <script type="application/json" id="manual-reader-data" set:html={serializeHtmlJson({demo:manualsDemo,archive_id:manual.archive_id,manual_key:manual.manual_key,pages:manual.pages,can_download:manual.can_download})}/>
     </section>}
-    {!first&&manual.available&&<p class="manual-official-note">本条提供厂家官方资料入口，本站未存放这份说明书全文。请在厂家页面继续核对完整型号和版本。</p>}
+    {!first&&manual.available&&<p class="manual-official-note">本条提供官方来源入口。{isMedicine?'请核对药品规格和说明书版本。':'请在厂家页面继续核对完整型号和版本。'}</p>}
     <section class="manual-source-section" aria-labelledby="manual-source-heading"><h2 id="manual-source-heading">来源与资料说明</h2>
       {manual.archive_id&&<p>馆藏来源：<a href={`/archive/${manual.archive_id}/`}>查看原档案</a>。这里只提供经审核的网页发布副本。</p>}
       {manual.official_sources.map((s:any)=><div class="manual-source"><p>{s.name} · {s.available?'来源可用':'来源暂不可用'}</p><p class="manual-muted">最近核对：{s.checked_on||'尚未记录'}</p>{s.available&&(manualsDemo?<button type="button" class="manual-text-button" data-manual-demo-source>查看官方来源入口示意</button>:<a href={s.href} target="_blank" rel="noopener noreferrer" data-manual-official>前往官方来源 ↗</a>)}</div>)}
       <p class="manual-muted">请核对地区、版本和语言。公开展示与下载范围按具体许可执行。</p>
       <p class="manual-notice" data-manual-demo-source-note role="status" hidden>这是虚构资料的示例地址，不会打开外站。真实资料将使用经过核定的厂家入口。</p>
     </section>
-    {related.length>0&&<section class="manual-related"><h2>相关型号的其他文档</h2><ul>{related.map(d=><li><a href={`/manuals/${d.manual_key}/`} data-manual-related>{d.title} · {d.languages.map((l:string)=>manualLanguages[l]).join('／')} · {d.edition_display}</a></li>)}</ul></section>}
+    {related.length>0&&<section class="manual-related"><h2>{isMedicine?'该药品的其他说明书版本':'相关型号的其他文档'}</h2><ul>{related.map(d=><li><a href={`/manuals/${d.manual_key}/`} data-manual-related>{d.title} · {d.languages.map((l:string)=>manualLanguages[l]).join('／')} · {d.edition_display}</a></li>)}</ul></section>}
     <script type="application/json" id="manual-detail-config" set:html={serializeHtmlJson({manual_key:manual.manual_key})}/>
   </article>
   <script>import '../../scripts/manuals-reader';</script>

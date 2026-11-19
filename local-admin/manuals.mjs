@@ -6,6 +6,7 @@ import {atomicWrite} from './write-coordinator.mjs';
 import {manualCategories,manualKinds,manualLanguages,manualCompleteness,normalizeManualText,projectManualCatalog,safeManualSourceUrl} from '../shared/manual-catalog.mjs';
 import {assertPublicationImageSignature} from '../shared/publication-image-safety.mjs';
 import {importManualCatalog} from './manual-review-catalog.mjs';
+import {medicineDraftPreview} from './manual-medicine-preview.mjs';
 
 export class ManualsError extends Error {
   constructor(message,statusCode=400,code='MANUALS_INVALID'){super(message);this.name='ManualsError';this.statusCode=statusCode;this.code=code;}
@@ -34,30 +35,174 @@ async function safeTree(root){
   for(const row of await fs.readdir(root,{withFileTypes:true})){if(row.isSymbolicLink())fail('网站产物中出现文件链接，不能建立可靠备份。');if(row.isDirectory())await safeTree(path.join(root,row.name));}
 }
 
+const medicineRoles = new Set(['manufacturer','holder','unverified']);
+const medicineVersionFields = ['medicine_keys','approval_date_text','revision_date_text','collected_on'];
+
+function normalizeMedicine(row) {
+  const genericName = str(row.generic_name,200);
+  const originalTitle = str(row.original_title,300);
+  if (!genericName && !originalTitle) fail('请填写药品通用名或原件题名后保存草稿。');
+
+  const companies = rows(row.companies ?? [],20).map(company => {
+    if (!medicineRoles.has(company.role)) fail('请从列表选择药品企业角色。');
+    return {role:company.role, name:str(company.name,200)};
+  }).filter(company => company.name);
+  return {
+    medicine_key:id(row.medicine_key,'medicine'),
+    ...(row.legacy_model_key != null && row.legacy_model_key !== '' ? {legacy_model_key:id(row.legacy_model_key,'model')} : {}),
+    generic_name:genericName, original_title:originalTitle,
+    dosage_form:str(row.dosage_form,100), strength:str(row.strength,200),
+    companies, trade_name:str(row.trade_name,200), approval_label:str(row.approval_label,100),
+    approval_number:str(row.approval_number,150), package_spec:str(row.package_spec,200)
+  };
+}
+
+function checkLegacyMedicineLinks(medicines,models,previousMedicines=[]) {
+  const sourceKeys = new Set(models.filter(model => model.category_key === 'medicines').map(model => model.model_key));
+  const byMedicine = new Map();
+  const bySource = new Map();
+  for (const medicine of medicines) {
+    byMedicine.set(medicine.medicine_key,medicine);
+    const key = medicine.legacy_model_key;
+    if (!key) continue;
+    if (!sourceKeys.has(key)) fail('这条药品对应的旧型号必须保留在原药品分类中。');
+    if (bySource.has(key)) fail('这条旧药品已有对应记录，请继续编辑已整理的药品。');
+    bySource.set(key,medicine.medicine_key);
+  }
+  for (const previous of previousMedicines) {
+    const key = previous.legacy_model_key;
+    if (!key) continue;
+    const medicine = byMedicine.get(previous.medicine_key);
+    const owner = bySource.get(key);
+    if (!sourceKeys.has(key) || (medicine && medicine.legacy_model_key !== key) || (owner && owner !== previous.medicine_key)) {
+      fail('已整理药品的对应关系发生变化，请保留原型号、分类和对应药品后再保存。',409,'MANUALS_LEGACY_MEDICINE_CHANGED');
+    }
+  }
+}
+
+function normalizeMedicineVersion(source, document, allowedKeys) {
+  const linked = list(source.medicine_keys,80).map(key => id(key,'medicine'));
+  if (!linked.length || linked.some(key => !allowedKeys.has(key)) || new Set(linked).size !== linked.length) {
+    fail('药品说明书版本须关联现有药品，每条药品只能选择一次。');
+  }
+  if (document.model_keys.length) fail('请分别核对药品说明书和物件说明书的适用对象。');
+  const collected = str(source.collected_on,10);
+  if (collected && !isoDate(collected)) fail('收录日期请填写有效的年月日。');
+  Object.assign(document, {
+    medicine_keys:linked,
+    approval_date_text:str(source.approval_date_text,100),
+    revision_date_text:str(source.revision_date_text,100),
+    collected_on:collected
+  });
+}
+
 // 草稿允许缺项；只接受已知字段，不能提交审批标记、主档路径或任意文件位置。
-export function normalizeManualDraft(input){
-  if(!input||input.schema_version!==1||input.demo_only)fail('请使用正式目录格式，演示目录不能保存为真实资料。');
+export function normalizeManualDraft(input,{previousMedicines=[]}={}){
+  if(!input||![1,2].includes(input.schema_version)||input.demo_only)fail('请使用正式目录格式，演示目录不能保存为真实资料。');
+  const extended = input.schema_version === 2;
+  if (!extended && Object.hasOwn(input,'medicines')) fail('目录含药品资料，请使用新版维护页保存。');
+  const medicines = extended ? rows(input.medicines,5000).map(normalizeMedicine) : [];
+  const allowedKeys = new Set(medicines.map(row => row.medicine_key));
+  if (allowedKeys.size !== medicines.length) fail('药品编号重复，请重新核对。');
   const brands=rows(input.brands,1000).map(b=>({brand_key:id(b.brand_key,'brand'),name:str(b.name,100),aliases:list(b.aliases,100),evidence:str(b.evidence,2000)}));
   const models=rows(input.models,5000).map(m=>({model_key:id(m.model_key,'model'),brand_key:m.brand_key?id(m.brand_key,'brand'):'',model_text:str(m.model_text,100),model_aliases:list(m.model_aliases,100),product_name:str(m.product_name,120),category_key:str(m.category_key,40),product_era_display:str(m.product_era_display,80),evidence:str(m.evidence,2000)}));
+  if (extended) checkLegacyMedicineLinks(medicines,models,previousMedicines);
   const documents=rows(input.documents,5000).map(d=>({manual_key:id(d.manual_key,'manual'),model_keys:list(d.model_keys,80).map(k=>id(k,'model')),document_kind:str(d.document_kind,40),languages:list(d.languages,20,20),region_display:str(d.region_display,120),edition_display:str(d.edition_display,150),edition_date:str(d.edition_date,10),completeness:str(d.completeness,40),missing_note:str(d.missing_note,500),linked_archive_id:str(d.linked_archive_id,40),page_map:rows(d.page_map??[],2000).map(p=>({attachment_ref:str(p.attachment_ref,250),printed_label:str(p.printed_label,80)})),contents:rows(d.contents??[],300).map(c=>({label:str(c.label,100),page:Number.isInteger(c.page)?c.page:0})),keywords:list(d.keywords,120),catalogue_summary:str(d.catalogue_summary,3000),official_sources:rows(d.official_sources??[],10).map(s=>({name:str(s.name,100),url:str(s.url,2048),checked_on:str(s.checked_on,10),available:s.available===true,evidence:str(s.evidence,2000)})),publication_status:d.publication_status==='withdrawn'?'withdrawn':'draft',applicability_basis:str(d.applicability_basis,2000),display_basis:str(d.display_basis,2000),review_note:str(d.review_note,3000)}));
   for(const [index,doc]of documents.entries()){
-    const source=input.documents[index];if(!source.source_submission_id)continue;
+    const source=input.documents[index];
+    if (medicineVersionFields.some(field => Object.hasOwn(source,field))) {
+      if (!extended) fail('目录含药品说明书版本，请使用新版维护页保存。');
+      normalizeMedicineVersion(source, doc, allowedKeys);
+    }
+    if(!source.source_submission_id)continue;
     if(!/^TG-[A-F0-9]{24}$/.test(source.source_submission_id)||!Number.isSafeInteger(source.source_submission_revision)||source.source_submission_revision<1||!/^[a-f0-9]{64}$/.test(source.source_submission_digest??'')||!['official-link','reading-copy'].includes(source.source_sharing_scope))fail('投稿来源绑定无法核对，不能保存。');
     Object.assign(doc,{source_submission_id:source.source_submission_id,source_submission_revision:source.source_submission_revision,source_submission_digest:source.source_submission_digest,source_sharing_scope:source.source_sharing_scope});
     if(source.source_pdf_digest){if(!/^[a-f0-9]{64}$/.test(source.source_pdf_digest)||source.source_sharing_scope!=='reading-copy')fail('PDF来源绑定无法核对，不能保存。');doc.source_pdf_digest=source.source_pdf_digest;}
   }
   for(const [values,key] of [[brands,'brand_key'],[models,'model_key'],[documents,'manual_key']])if(new Set(values.map(v=>v[key])).size!==values.length)fail('目录中有重复标识，已停止保存。');
-  return {schema_version:1,brands,models,documents};
+  return {schema_version:input.schema_version,brands,models,documents,...(extended ? {medicines} : {})};
 }
 
-// 发布源白名单：不向构建程序传递依据、审核备注和历史。
-export function manualPublicationInput(catalog){
-  const active=catalog.documents.filter(d=>d.publication_status!=='withdrawn'),usedModels=new Set(active.flatMap(d=>d.model_keys)),models=catalog.models.filter(m=>usedModels.has(m.model_key)),usedBrands=new Set(models.map(m=>m.brand_key));
-  return {schema_version:1,brands:catalog.brands.filter(b=>usedBrands.has(b.brand_key)).map(({brand_key,name,aliases})=>({brand_key,name,aliases})),models:models.map(({model_key,brand_key,model_text,model_aliases,product_name,category_key,product_era_display})=>({model_key,brand_key,model_text,model_aliases,product_name,category_key,product_era_display})),documents:active.map(d=>({manual_key:d.manual_key,model_keys:d.model_keys,document_kind:d.document_kind,languages:d.languages,region_display:d.region_display,edition_display:d.edition_display,edition_date:d.edition_date,completeness:d.completeness,missing_note:d.missing_note,linked_archive_id:d.linked_archive_id,page_map:d.page_map,contents:d.contents,keywords:d.keywords,catalogue_summary:d.linked_archive_id?'':d.catalogue_summary,official_sources:d.official_sources.map(({name,url,checked_on,available})=>({name,url,checked_on,available})),publication_status:'published',publication_approved:true,display_approved:Boolean(d.linked_archive_id)}))};
+// 公开输入只包含正式阅读所需字段。未关联已采用版本的药品继续留在私密目录。
+function publicMedicine(row) {
+  const {medicine_key,generic_name,original_title,dosage_form,strength,trade_name,approval_label,approval_number,package_spec} = row;
+  return {medicine_key,generic_name,original_title,dosage_form,strength,
+    companies:row.companies.map(({role,name})=>({role,name})),trade_name,approval_label,approval_number,package_spec};
+}
+
+export function manualPublicationInput(catalog) {
+  const active = catalog.documents.filter(doc=>doc.publication_status!=='withdrawn');
+  const modelsUsed = new Set(active.flatMap(doc=>doc.model_keys));
+  const models = catalog.models.filter(model=>modelsUsed.has(model.model_key));
+  const brandsUsed = new Set(models.map(model=>model.brand_key));
+  const medicinesUsed = new Set(active.flatMap(doc=>doc.medicine_keys??[]));
+  const confirmed = new Map((catalog.medicines??[])
+    .filter(item=>item.legacy_model_key && medicinesUsed.has(item.medicine_key))
+    .map(item=>[item.legacy_model_key,item.medicine_key]));
+  const documents = active.map(doc=>({
+    manual_key:doc.manual_key,model_keys:doc.model_keys,
+    ...(doc.medicine_keys?.length ? {medicine_keys:doc.medicine_keys,approval_date_text:doc.approval_date_text,revision_date_text:doc.revision_date_text} : {}),
+    document_kind:doc.document_kind,languages:doc.languages,region_display:doc.region_display,edition_display:doc.edition_display,
+    edition_date:doc.edition_date,completeness:doc.completeness,missing_note:doc.missing_note,
+    linked_archive_id:doc.linked_archive_id,page_map:doc.page_map,contents:doc.contents,keywords:doc.keywords,
+    catalogue_summary:doc.linked_archive_id?'':doc.catalogue_summary,
+    official_sources:doc.official_sources.map(({name,url,checked_on,available})=>({name,url,checked_on,available})),
+    publication_status:'published',publication_approved:true,display_approved:Boolean(doc.linked_archive_id)
+  }));
+  return {schema_version:medicinesUsed.size ? 2 : 1,
+    brands:catalog.brands.filter(b=>brandsUsed.has(b.brand_key)).map(({brand_key,name,aliases})=>({brand_key,name,aliases})),
+    models:models.map(({model_key,brand_key,model_text,model_aliases,product_name,category_key,product_era_display})=>({
+      model_key,brand_key,model_text,model_aliases,product_name,category_key,product_era_display,
+      ...(category_key==='medicines' && confirmed.has(model_key)?{medicine_key:confirmed.get(model_key)}:{})
+    })),
+    documents,...(medicinesUsed.size ? {medicines:(catalog.medicines??[]).filter(m=>medicinesUsed.has(m.medicine_key)).map(publicMedicine)} : {})};
 }
 function pruneInput(source,projection){
   const docs=new Set(projection.documents.map(d=>d.manual_key)),models=new Set(projection.models.map(m=>m.model_key)),brands=new Set(projection.brands.map(b=>b.brand_key));
-  return {...source,brands:source.brands.filter(b=>brands.has(b.brand_key)),models:source.models.filter(m=>models.has(m.model_key)),documents:source.documents.filter(d=>docs.has(d.manual_key))};
+  const medicines = new Set((projection.medicines??[]).map(m=>m.medicine_key));
+  return {...source,brands:source.brands.filter(b=>brands.has(b.brand_key)),models:source.models.filter(m=>models.has(m.model_key)).map(({medicine_key,...model})=>
+      medicine_key && medicines.has(medicine_key)?{...model,medicine_key}:model),documents:source.documents.filter(d=>docs.has(d.manual_key)),
+    ...(source.medicines ? {medicines:source.medicines.filter(m=>medicines.has(m.medicine_key))} : {})};
+}
+
+// 对比访客能看到的版本与关联资料；仅修改内部备注不算公开变更。
+function publicationVersions(source) {
+  const brands = new Map(source.brands.map(item=>[item.brand_key,item]));
+  const models = new Map(source.models.map(item=>[item.model_key,item]));
+  const medicines = new Map((source.medicines??[]).map(item=>[item.medicine_key,item]));
+  const areas = {objects:new Map(),medicines:new Map()};
+  for (const doc of source.documents) {
+    const products = doc.model_keys.map(key=>models.get(key));
+    const drugKeys = new Set(doc.medicine_keys??[]);
+    for (const model of products) if (model.medicine_key) drugKeys.add(model.medicine_key);
+    const drugs = [...drugKeys].map(key=>medicines.get(key));
+    const companies = products.map(model=>brands.get(model.brand_key));
+    const subject = drugs.map(m=>[m.generic_name||m.original_title,m.dosage_form,m.strength,...m.companies.map(c=>c.name)].filter(Boolean).join(' '));
+    for (const [index,model] of products.entries()) subject.push([companies[index].name,model.model_text].join(' '));
+    const title = [subject.join('、'),doc.edition_display,doc.revision_date_text||doc.edition_date,doc.languages.map(key=>manualLanguages[key]).join('／')].filter(Boolean).join(' · ');
+    const entry = {title,digest:hash([doc,drugs,products,companies])};
+    if (drugs.length || products.some(model=>model.category_key==='medicines')) areas.medicines.set(doc.manual_key,entry);
+    if (products.some(model=>model.category_key!=='medicines')) areas.objects.set(doc.manual_key,entry);
+  }
+  return areas;
+}
+
+function publicationChanges(previous, next) {
+  const before = publicationVersions(previous), after = publicationVersions(next);
+  const changes = {};
+  for (const area of ['objects','medicines']) {
+    const added=[],modified=[],removed=[];
+    for (const [manual_key,entry] of after[area]) {
+      const prior = before[area].get(manual_key);
+      if (!prior) added.push({manual_key,title:entry.title});
+      else if (prior.digest!==entry.digest) modified.push({manual_key,title:entry.title,previousTitle:prior.title});
+    }
+    for (const [manual_key,entry] of before[area]) {
+      if (!after[area].has(manual_key)) removed.push({manual_key,title:entry.title});
+    }
+    changes[area] = {added,modified,removed};
+  }
+  return changes;
 }
 
 export function validateManualPublication(catalog,archives){
@@ -74,11 +219,17 @@ export function validateManualPublication(catalog,archives){
     for(const name of new Set([m.model_text,...m.model_aliases].map(normalizeManualText))){const alias=m.brand_key+'\n'+name;if(spellings.has(alias)&&spellings.get(alias)!==m.model_key)add(m.model_key,'型号或别名与同品牌其他型号冲突，请核对实际写法。');spellings.set(alias,m.model_key);}
     if(m.model_aliases.some(a=>!a))add(m.model_key,'型号别名不能留空。');
   }
+  const medicines = new Set((catalog.medicines??[]).map(row=>row.medicine_key));
   const versions=new Map();
   for(const d of active){
     const at=d.manual_key;
-    if(!d.model_keys.length||d.model_keys.some(k=>!models.has(k))||new Set(d.model_keys).size!==d.model_keys.length)add(at,'请选择不重复的明确适用型号。');
-    if(!d.applicability_basis)add(at,'请记录这份资料适用于所选型号的依据。');
+    const medicine = Boolean(d.medicine_keys?.length);
+    const linked = medicine ? d.medicine_keys : d.model_keys;
+    const valid = medicine ? medicines : models;
+    if (!linked.length || linked.some(key=>!valid.has(key)) || new Set(linked).size!==linked.length || medicine && d.model_keys.length) {
+      add(at,medicine?'请核对适用药品及规格。':'请选择不重复的明确适用型号。');
+    }
+    if(!d.applicability_basis)add(at,medicine?'请记录这份资料适用于所选药品的依据。':'请记录这份资料适用于所选型号的依据。');
     if(!Object.hasOwn(manualKinds,d.document_kind)||!d.languages.length||d.languages.some(l=>!Object.hasOwn(manualLanguages,l))||new Set(d.languages).size!==d.languages.length)add(at,'请选择有效的用途和原文语言。');
     if(!d.region_display||!d.edition_display)add(at,'地区与版本不能为空；无法核实请如实填写未注明。');
     if(d.edition_date&&!isoDate(d.edition_date))add(at,'文档日期必须是真实有效的年月日。');
@@ -94,20 +245,35 @@ export function validateManualPublication(catalog,archives){
     }else if(d.page_map.length||d.contents.length)add(at,'只有关联馆藏才能填写阅读页序与目录。');
     for(const s of d.official_sources){if(!s.name||!safeManualSourceUrl(s.url)||!isoDate(s.checked_on)||s.checked_on>today()||!s.evidence)add(at,'官方来源须有名称、安全的HTTPS网址、不晚于今天的核对日期及核对依据。');}
     for(const c of d.contents)if(!c.label||c.page<1||c.page>d.page_map.length)add(at,'阅读目录的标题或跳转页序无效。');
-    const version=JSON.stringify([d.document_kind,d.languages.slice().sort(),normalizeManualText(d.region_display),normalizeManualText(d.edition_display),d.edition_date]);
-    const prior=versions.get(version)??new Set();if(d.model_keys.some(k=>prior.has(k)))add(at,'适用型号、用途、语言、地区和版本重复，请合并来源或写明版本区别。');for(const k of d.model_keys)prior.add(k);versions.set(version,prior);
+    const version=JSON.stringify([d.document_kind,d.languages.slice().sort(),normalizeManualText(d.region_display),normalizeManualText(d.edition_display),d.edition_date,...(medicine ? [normalizeManualText(d.approval_date_text),normalizeManualText(d.revision_date_text)] : [])]);
+    const prior=versions.get(version)??new Set();if(linked.some(k=>prior.has(k)))add(at,medicine?'同一药品的用途、语言、地区和版本重复，请核对修订日期或版本区别。':'适用型号、用途、语言、地区和版本重复，请合并来源或写明版本区别。');for(const k of linked)prior.add(k);versions.set(version,prior);
   }
   let projection=null;
   if(!issues.length){try{projection=projectManualCatalog(manualPublicationInput(catalog),archives);}catch{add('目录','阅读图片、型号关系或其他公开字段未通过检查。');}}
   return {issues,projection};
 }
 
-export function createManualStore({root,siteDirectory,readArchives,build,guardCatalog=async()=>[],preparePublication=async()=>null,requireInitialization=false,publication=null}){
+export function createManualStore({root,siteDirectory,readArchives,build,guardCatalog=async()=>[],preparePublication=async()=>null,requireInitialization=false,publication=null,medicineDraftsEnabled=true}){
   root=path.resolve(root);siteDirectory=path.resolve(siteDirectory);
   const stateFile=path.join(root,'state.json'),sourceFile=path.join(siteDirectory,'src/data/generated/manuals-catalog.json'),dist=path.join(siteDirectory,'dist');
   if(inside(siteDirectory,root)||inside(root,siteDirectory))fail('说明书私密维护目录必须与网站项目分开。');
   const tickets=new Map();
   const operationFiles=new Map();
+  const choices = {categories:manualCategories,kinds:manualKinds,languages:manualLanguages,completeness:manualCompleteness,medicineDraftVersion:medicineDraftsEnabled ? 1 : 0};
+  function assertMedicineCatalogWritable(state) {
+    if (!medicineDraftsEnabled && (state.draft?.schema_version === 2 || state.published.schema_version === 2)) {
+      fail('本目录含独立药品资料，药品维护暂停期间只能查看，原有草稿和公开版本均已保留。',409,'MANUALS_MEDICINE_DISABLED');
+    }
+  }
+  function assertMedicineWriter(payload,currentCatalog,nextCatalog) {
+    const extended = currentCatalog?.schema_version === 2 || nextCatalog?.schema_version === 2;
+    if (!medicineDraftsEnabled && (extended || Object.hasOwn(payload,'medicineDraftVersion'))) {
+      fail('当前服务未开放独立药品草稿维护。',409,'MANUALS_MEDICINE_DISABLED');
+    }
+    if (extended && payload.medicineDraftVersion !== 1) {
+      fail('目录包含新版药品维护字段。请重新打开支持药品的维护页，现有草稿已保留。',409,'MANUALS_MEDICINE_CLIENT_REQUIRED');
+    }
+  }
   const read=async()=>{
     await noLinks(root,stateFile);const raw=await optional(stateFile);let state;
     try{
@@ -135,7 +301,7 @@ export function createManualStore({root,siteDirectory,readArchives,build,guardCa
     const baseline=await publicBaseline();
     if(!current.exists){
       const count=baseline.source.documents.length;
-      if(count||baseline.source.brands.length||baseline.source.models.length)return {status:'blocked',code:'MANUALS_BASELINE_REQUIRED',message:`已有公开说明书资料（${count}份文档），但缺少完整私密维护记录。请先恢复并核对记录，不能建立空目录覆盖。`};
+      if(count||baseline.source.brands.length||baseline.source.models.length||baseline.source.medicines?.length)return {status:'blocked',code:'MANUALS_BASELINE_REQUIRED',message:`已有公开说明书资料（${count}份文档），但缺少完整私密维护记录。请先恢复并核对记录，不能建立空目录覆盖。`};
       return {status:requireInitialization?'needs-initialization':'ready',publicRevision:baseline.revision,message:requireInitialization?'当前没有正式说明书条目。首次保存前，请确认建立空目录；不会导入演示资料。':''};
     }
     const expected=projectManualCatalog(manualPublicationInput(current.state.published),await readArchives());
@@ -166,13 +332,20 @@ export function createManualStore({root,siteDirectory,readArchives,build,guardCa
     let current;
     try{
       current=await read();const readiness=await maintenanceStatus(current);
-      return {state:current.state,revision:current.revision,history:await history(),pending:await pending(),archives:await archiveOptions(),readiness,choices:{categories:manualCategories,kinds:manualKinds,languages:manualLanguages,completeness:manualCompleteness}};
+      return {state:current.state,revision:current.revision,history:await history(),pending:await pending(),archives:await archiveOptions(),readiness,choices};
     }catch(error){
       if(!requireInitialization)throw error;
-      return {state:current?.state??blank(),revision:current?.revision??null,history:[],pending:[],archives:[],readiness:{status:'blocked',code:error instanceof ManualsError?error.code:'MANUALS_STATE_INVALID',message:error instanceof ManualsError?error.message:'维护记录暂时无法核对，已暂停写入；请由维护者核对私密资料。'},choices:{categories:manualCategories,kinds:manualKinds,languages:manualLanguages,completeness:manualCompleteness}};
+      return {state:current?.state??blank(),revision:current?.revision??null,history:[],pending:[],archives:[],readiness:{status:'blocked',code:error instanceof ManualsError?error.code:'MANUALS_STATE_INVALID',message:error instanceof ManualsError?error.message:'维护记录暂时无法核对，已暂停写入；请由维护者核对私密资料。'},choices};
     }
   };
-  const save=async(payload,context={})=>{const status=await assertReady();const current=await read();assertVersion(current,payload.expectedRevision);const catalog=normalizeManualDraft(payload.catalog);
+  const save=async(payload,context={})=>{const status=await assertReady();const current=await read();assertVersion(current,payload.expectedRevision);
+    assertMedicineCatalogWritable(current.state);
+    const previous = current.state.draft ?? current.state.published;
+    assertMedicineWriter(payload, previous, payload.catalog);
+    if (previous.schema_version === 2 && payload.catalog?.schema_version !== 2) {
+      fail('当前目录使用药品维护格式，请重新读取后保存，避免遗漏药品资料。',409,'MANUALS_MEDICINE_FORMAT_REQUIRED');
+    }
+    const catalog=normalizeManualDraft(payload.catalog,{previousMedicines:previous.medicines});
     const actor=typeof context.actor==='string'?context.actor.trim().slice(0,254):'';
     if(status.status==='needs-initialization'&&(payload.initializeEmpty!==true||payload.expectedPublicRevision!==status.publicRevision||!actor))fail('首次保存须重新核对当前空目录，并确认建立私密维护记录。',428,'MANUALS_INITIALIZATION_REQUIRED');
     for(const doc of catalog.documents){const prior=[...(current.state.draft?.documents??[]),...current.state.published.documents].find(row=>row.manual_key===doc.manual_key&&row.source_submission_id);if(prior){for(const field of ['source_submission_id','source_submission_revision','source_submission_digest','source_sharing_scope','source_pdf_digest']){if(Object.hasOwn(prior,field))doc[field]=prior[field];else delete doc[field];}}else if(doc.source_submission_id)fail('不能手工新增投稿审核绑定，请从说明书专用审核入口生成草稿。');}
@@ -181,13 +354,44 @@ export function createManualStore({root,siteDirectory,readArchives,build,guardCa
     await reserveSpace(next,current);
     if(current.state.draft)await snapshot(current.state.draft,'draft-before-save','',actor);
     context.markChanged?.();await persist(next);return {revision:(await read()).revision};};
-  const planReviewedImport=async input=>{const readiness=await assertReady();if(readiness.status!=='ready')fail('请先确认建立说明书私密维护记录，再接收审核结果。',428,'MANUALS_INITIALIZATION_REQUIRED');const current=await read();assertVersion(current,input.transfer.catalog_revision);const result=importManualCatalog(current.state.draft??current.state.published,{...input,archive:input.version.manual_metadata.sharing_scope==='reading-copy'?{item_id:'',page_map:[]}:null});const draft=normalizeManualDraft(result.catalog);await reserveSpace({...current.state,draft},current);return {revision:current.revision};};
+  function assertImportEnabled(input) {
+    if (!medicineDraftsEnabled && input.version?.manual_metadata?.schema_version === 2 && input.version.manual_metadata.category_key === 'medicines') {
+      fail('当前服务尚未开放独立药品投稿转入。',409,'MANUALS_MEDICINE_DISABLED');
+    }
+  }
+  const planReviewedImport=async input=>{assertImportEnabled(input);const readiness=await assertReady();if(readiness.status!=='ready')fail('请先确认建立说明书私密维护记录，再接收审核结果。',428,'MANUALS_INITIALIZATION_REQUIRED');const current=await read();assertVersion(current,input.transfer.catalog_revision);assertMedicineCatalogWritable(current.state);const result=importManualCatalog(current.state.draft??current.state.published,{...input,archive:input.version.manual_metadata.sharing_scope==='reading-copy'?{item_id:'',page_map:[]}:null});const draft=normalizeManualDraft(result.catalog);await reserveSpace({...current.state,draft},current);return {revision:current.revision};};
   const importReviewed=async(input,context={})=>{
-    const readiness=await assertReady();if(readiness.status!=='ready')fail('请先确认建立说明书私密维护记录，再接收审核结果。',428,'MANUALS_INITIALIZATION_REQUIRED');const current=await read();assertVersion(current,input.transfer.catalog_revision);const result=importManualCatalog(current.state.draft??current.state.published,input);
+    assertImportEnabled(input);
+    const readiness=await assertReady();if(readiness.status!=='ready')fail('请先确认建立说明书私密维护记录，再接收审核结果。',428,'MANUALS_INITIALIZATION_REQUIRED');const current=await read();assertVersion(current,input.transfer.catalog_revision);
+    assertMedicineCatalogWritable(current.state);
+    const result=importManualCatalog(current.state.draft??current.state.published,input);
     if(result.repeated)return {manual_key:result.manual_key,revision:current.revision,document_digest:hash(result.catalog.documents.find(doc=>doc.manual_key===result.manual_key)),repeated:true};
     const catalog=normalizeManualDraft(result.catalog),next={...current.state,draft:catalog,updated_at:when()};await reserveSpace(next,current);if(current.state.draft)await snapshot(current.state.draft,'draft-before-save','接收已审核说明书前保留原目录草稿',context.actor??'');context.markChanged?.();await persist(next);return {manual_key:result.manual_key,revision:(await read()).revision,document_digest:hash(catalog.documents.find(doc=>doc.manual_key===result.manual_key))};
   };
-  const prepare=async(payload,context={})=>{await assertReady();const current=await read();assertVersion(current,payload.expectedRevision);if(!current.state.draft)fail('请先保存目录草稿，再进行发布检查。');const result=await check(current,current.state.draft);if(result.issues.length)return {issues:result.issues};const review_id=randomUUID();tickets.set(review_id,{revision:current.revision,fingerprint:result.fingerprint,actor:context.actor??'',expires:Date.now()+30*60*1000});for(const [k,t]of tickets)if(t.expires<Date.now())tickets.delete(k);const old=new Set(current.state.published.documents.filter(d=>d.publication_status!=='withdrawn').map(d=>d.manual_key)),next=new Set(result.projection.documents.map(d=>d.manual_key));return {review_id,issues:[],documents:next.size,models:result.projection.models.length,removed:[...old].filter(k=>!next.has(k)),summary:result.projection.documents.map(d=>({manual_key:d.manual_key,title:d.title,pages:d.pages.length,sources:d.official_sources.length}))};};
+  const prepare=async(payload,context={})=>{
+    await assertReady();
+    const current=await read();
+    assertVersion(current,payload.expectedRevision);
+    const draft = current.state.draft;
+    if (!draft) fail('请先保存目录草稿，再进行发布检查。');
+    assertMedicineCatalogWritable(current.state);
+    const result=await check(current,draft);
+    if (result.issues.length) return {issues:result.issues};
+    const installed = (await publicBaseline()).source;
+    const installedKeys = new Set(installed.documents.filter(doc=>doc.publication_status==='published' && doc.publication_approved===true).map(doc=>doc.manual_key));
+    const previous = manualPublicationInput(current.state.published);
+    previous.documents = previous.documents.filter(doc=>installedKeys.has(doc.manual_key));
+    const {projection} = result;
+    const next = pruneInput(manualPublicationInput(draft),projection);
+    const changes = publicationChanges(previous,next);
+    const review_id=randomUUID();
+    tickets.set(review_id,{revision:current.revision,fingerprint:result.fingerprint,actor:context.actor??'',expires:Date.now()+30*60*1000});
+    for(const [key,ticket] of tickets) if(ticket.expires<Date.now()) tickets.delete(key);
+    const keys=new Set(projection.documents.map(doc=>doc.manual_key));
+    return {review_id,issues:[],documents:keys.size,models:projection.models.length,medicines:projection.medicines?.length??0,
+      removed:previous.documents.filter(doc=>!keys.has(doc.manual_key)).map(doc=>doc.manual_key),changes,
+      summary:projection.documents.map(doc=>({manual_key:doc.manual_key,title:doc.title,pages:doc.pages.length,sources:doc.official_sources.length}))};
+  };
   const transactLocal=async(current,next,kind,reason,context={})=>{
     await ensure();await assertReady();await noLinks(siteDirectory,sourceFile);await noLinks(siteDirectory,dist);
     const archives=await readArchives(),source=manualPublicationInput(next.published),projection=projectManualCatalog(source,archives),publicInput=pruneInput(source,projection);
@@ -280,6 +484,7 @@ export function createManualStore({root,siteDirectory,readArchives,build,guardCa
   };
   const withdraw=async(payload,context={})=>{
     await assertReady();const current=await read();assertVersion(current,payload.expectedRevision);id(payload.manual_key,'manual');
+    assertMedicineCatalogWritable(current.state);
     const reason=str(payload.reason,500);if(payload.confirmed!==true||reason.length<2)fail('请说明撤下原因并确认本次影响。');
     const doc=current.state.published.documents.find(d=>d.manual_key===payload.manual_key&&d.publication_status!=='withdrawn');if(!doc)fail('该说明书未公开或已经撤下。',404);
     const next=structuredClone(current.state);if(next.draft)await snapshot(next.draft,'draft-before-withdrawal',reason,context.actor??'');
@@ -289,6 +494,8 @@ export function createManualStore({root,siteDirectory,readArchives,build,guardCa
   const restore=async(payload,context={})=>{
     await assertReady();const current=await read();assertVersion(current,payload.expectedRevision);if(!/^[a-f0-9-]{36}$/.test(payload.history_id??''))fail('历史版本标识无效。');
     const file=path.join(root,'history',payload.history_id+'.json');await noLinks(root,file);const raw=await optional(file);if(!raw)fail('找不到该历史版本。',404);const saved=JSON.parse(raw);if(saved.version!==1||saved.history_id!==payload.history_id)fail('历史版本内容无法核实。');
+    assertMedicineCatalogWritable(current.state);
+    assertMedicineWriter(payload, current.state.draft ?? current.state.published, saved.catalog);
     const draft=normalizeManualDraft(saved.catalog);if(current.state.draft)await snapshot(current.state.draft,'draft-before-restore','恢复其他历史前保留当前草稿',context.actor??'');context.markChanged?.();await persist({...current.state,draft,updated_at:when()});return {revision:(await read()).revision};
   };
   const previewSelection=async(expectedRevision,manualKey)=>{
@@ -296,15 +503,38 @@ export function createManualStore({root,siteDirectory,readArchives,build,guardCa
     const readiness=await maintenanceStatus(current);if(readiness.status==='blocked')fail(readiness.message,409,readiness.code);
     id(manualKey,'manual');const catalog=current.state.draft??current.state.published;
     const d=catalog.documents.find(d=>d.manual_key===manualKey&&d.publication_status!=='withdrawn');if(!d)fail('请先保存并选择一份未撤下的说明书。',404);
-    return {current,selected:{...catalog,documents:[d]}};
+    const selected = { ...catalog, documents:[d] };
+    if (!d.medicine_keys) {
+      // 预览某份物件说明书时，目录里其他药品草稿与这份文档无关。
+      delete selected.medicines;
+      selected.schema_version = 1;
+    }
+    return {current,selected};
   };
-  const preview=async(expectedRevision,manualKey)=>{const {current,selected}=await previewSelection(expectedRevision,manualKey);const result=await check(current,selected);return {issues:result.issues,document:result.projection?.documents[0]??null,models:result.projection?.models??[],brands:result.projection?.brands??[],labels:{languages:manualLanguages,completeness:manualCompleteness}};};
+  const preview=async(expectedRevision,manualKey)=>{
+    const {current,selected}=await previewSelection(expectedRevision,manualKey);
+    if (selected.documents[0].medicine_keys) {
+      const archives = await readArchives();
+      const result = await medicineDraftPreview(selected,archives);
+      const issues = [...result.issues, ...await guardCatalog(selected)];
+      if (!issues.length && result.document?.pages.length) {
+        try { await imageFingerprint(selected,archives); }
+        catch { issues.push({where:'阅读附件',message:'药品说明书的阅读附件无法核实，请核对后重新预览。'}); }
+      }
+      return issues.length ? {...result,issues,document:null} : result;
+    }
+    const result=await check(current,selected);
+    return {issues:result.issues,document:result.projection?.documents[0]??null,models:result.projection?.models??[],brands:result.projection?.brands??[],labels:{languages:manualLanguages,completeness:manualCompleteness}};
+  };
   const previewImage=async(expectedRevision,manualKey,page)=>{
     if(!Number.isSafeInteger(page)||page<1)fail('预览页序无效。');
     const {selected}=await previewSelection(expectedRevision,manualKey),archives=await readArchives();
-    const result=validateManualPublication(selected,archives),sourceIssues=await guardCatalog(selected);
+    const isMedicine = Boolean(selected.documents[0].medicine_keys);
+    const result = isMedicine ? await medicineDraftPreview(selected,archives) : validateManualPublication(selected,archives);
+    const sourceIssues=await guardCatalog(selected);
     if(result.issues.length||sourceIssues.length)fail('预览资料或关联档案已变化，请回到维护页核对。',409,'MANUALS_PREVIEW_INVALID');
-    const entry=result.projection.documents[0]?.pages[page-1];if(!entry)fail('预览页序超出本册范围。',404);
+    const document = isMedicine ? result.document : result.projection?.documents[0];
+    const entry=document?.pages[page-1];if(!entry)fail('预览页序超出本册范围。',404);
     const target=path.resolve(siteDirectory,'public','.'+entry.src);
     await noLinks(path.join(siteDirectory,'public/archive'),target,{missing:false});
     let bytes;try{bytes=await fs.readFile(target);assertPublicationImageSignature(bytes,{filename:path.basename(target)});}catch{fail('当前发布图片暂时无法读取，请保留页码并稍后重试。',404,'MANUALS_PREVIEW_IMAGE_UNAVAILABLE');}

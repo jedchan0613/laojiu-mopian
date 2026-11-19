@@ -38,7 +38,7 @@ import {createManualPdfPublicationBackup,assertManualPdfPublicArtifacts} from '.
 import { manualReviewChecks,manualPdfReviewChecks } from '../shared/manual-review.mjs';
 import { manualSubmissionStates } from '../shared/manual-workflow.mjs';
 import { manualDraftChoices } from '../shared/manual-submission.mjs';
-import {readManualReviewSettings,manualReviewSummary} from './manual-review-access.mjs';
+import {readManualReviewSettings,manualReviewSummary,medicineSubmissionsEnabled} from './manual-review-access.mjs';
 
 const adminDirectory = path.dirname(fileURLToPath(import.meta.url));
 const runtimeMode = (process.env.LJM_ADMIN_MODE ?? 'local').trim().toLowerCase();
@@ -47,11 +47,14 @@ const manualReviewSettings = readManualReviewSettings(process.env, onlineMode);
 const manualsOnlineSetting = (process.env.LJM_MANUALS_ONLINE_ENABLED ?? 'false').trim();
 if (!['true', 'false'].includes(manualsOnlineSetting)) throw new Error('LJM_MANUALS_ONLINE_ENABLED 只能填写 true 或 false。');
 const manualsDraftsEnabled = !onlineMode || manualsOnlineSetting === 'true';
+const medicinesRequested = medicineSubmissionsEnabled(process.env,onlineMode);
+const medicineWorkspaceEnabled = manualsDraftsEnabled && medicinesRequested;
 // 线上发布使用现有Linux部署锁及原子切站；其他平台保留草稿，不冒充生产运行能力。
 const manualsPublicationEnabled = !onlineMode || manualsDraftsEnabled && process.platform === 'linux';
 const manualsCapabilities = Object.freeze({
 	manualsMaintenanceVersion: manualsPublicationEnabled ? 1 : 0,
 	manualsDraftMaintenanceVersion: manualsDraftsEnabled ? 1 : 0,
+	manualMedicineVersion: Number(medicineWorkspaceEnabled),
 	...manualReviewSettings.capabilities,
 });
 const mergeInternalEnabled = !onlineMode && process.env.LJM_MERGE_INTERNAL_ENABLED === '1';
@@ -2402,6 +2405,7 @@ const deployPublicRelease=async(options={})=>{const guard=await preparePublicRel
 const manualStore = createManualStore({
 	root: path.join(adminDataRoot, 'manuals'), siteDirectory, readArchives: loadOfficialRecords,
 	requireInitialization: onlineMode,
+	medicineDraftsEnabled: medicineWorkspaceEnabled,
 	publication: manualPublication,
 	preparePublication:preparePublicReleaseGuard,
  build: async options => {const output=await runSiteBuild({ ...options, manualsStaged: true });await assertManualPdfPublicArtifacts({dist:path.join(siteDirectory,'dist'),...await submissionStore.manualPdfPrivatePublicationValues()});return output;},
@@ -3209,13 +3213,43 @@ const adminServer = http.createServer(async (request, response) => {
 				const record=await submissionStore.getManualReview(id,{online:onlineMode});
 				let catalog=null;try{catalog=await writes.read(()=>manualStore.bootstrap());}catch{/* 目录不可用不能阻断人工审核。 */}
 				const catalogReady=Boolean(catalog&&catalog.readiness?.status==='ready'&&typeof catalog.revision==='string');
+				const snapshot=record.versions?.find(v=>v.revision===record.manual_submitted_revision);
+				const medicineReview=snapshot?.manual_metadata?.schema_version===2 && snapshot.manual_metadata.category_key==='medicines';
+				const medicineWorkspace=Boolean(catalog?.choices?.medicineDraftVersion);
+				const catalogFrozen=!medicineWorkspace&&(catalog?.state?.draft?.schema_version===2||catalog?.state?.published?.schema_version===2);
+				const selectedCatalog=catalog?.state?.draft??catalog?.state?.published;
+				const medicineChoices=medicineReview && medicineWorkspace && catalogReady
+					? {medicine_candidates:(selectedCatalog?.medicines??[]).map(m=>({
+						medicine_key:m.medicine_key,generic_name:m.generic_name,original_title:m.original_title,
+						trade_name:m.trade_name,dosage_form:m.dosage_form,strength:m.strength,
+						companies:m.companies.map(({role,name})=>({role,name})),approval_number:m.approval_number
+					}))} : {};
 				const related=writes.all().filter(row=>['manual-review','manual-transfer'].includes(row.kind)&&row.target===id);
 				const unsettled=related.filter(row=>['queued','running','needs_review'].includes(row.status));
 				const recent_operations=[...new Map([...unsettled,...related.slice(-10)].map(row=>[row.operationId+'.'+row.stepId,row])).values()];
-				sendJson(response,200,{record,...(catalogReady?{catalog_revision:catalog.revision}:{}),catalog_readiness:{ready:catalogReady},checks:manualReviewChecks,pdf_checks:onlineMode?[]:manualPdfReviewChecks,pdf_review_version:onlineMode?0:1,privacy_checks:privacyChecks,states:manualSubmissionStates,choices:manualDraftChoices,context:{adminMode:runtimeMode,reviewWritable:manualReviewSettings.reviewWritable,reviewWriteReason:manualReviewSettings.reviewWriteReason,transferWritable:manualReviewSettings.transferWritable&&catalogReady,transferWriteReason:catalogReady?manualReviewSettings.transferWriteReason:'catalog_unavailable'},capabilities:manualsCapabilities,recent_operations},{request});return;
+				let transferWriteReason=manualReviewSettings.transferWriteReason;
+				if(!catalogReady) transferWriteReason='catalog_unavailable';
+				else if(catalogFrozen) transferWriteReason='medicine_catalog_paused';
+				else if(medicineReview&&!medicineWorkspace) transferWriteReason='medicine_workspace_unavailable';
+				sendJson(response,200,{
+					record,...medicineChoices,...(catalogReady?{catalog_revision:catalog.revision}:{}),
+					catalog_readiness:{ready:catalogReady},checks:manualReviewChecks,
+					pdf_checks:onlineMode?[]:manualPdfReviewChecks,pdf_review_version:onlineMode?0:1,
+					privacy_checks:privacyChecks,states:manualSubmissionStates,choices:manualDraftChoices,
+					context:{adminMode:runtimeMode,reviewWritable:manualReviewSettings.reviewWritable&&(!medicineReview||medicinesRequested),
+						reviewWriteReason:medicineReview&&!medicinesRequested?'medicine_workspace_unavailable':manualReviewSettings.reviewWriteReason,transferWriteReason,
+						transferWritable:manualReviewSettings.transferWritable&&catalogReady&&!catalogFrozen&&(!medicineReview||medicineWorkspace)},
+					capabilities:manualsCapabilities,recent_operations
+				},{request});return;
 			}
 			if(request.method==='POST'&&action){requireSafeMutation(request);const payload=await readSubmissionJson(request,48*1024);
-				if(onlineMode)await submissionStore.getManualReview(id,{online:true});
+				if(onlineMode){
+					const record=await submissionStore.getManualReview(id,{online:true});
+					const latest=record.versions?.find(version=>version.revision===record.manual_submitted_revision);
+					if(action!=='resolve-operation'&&!medicinesRequested&&latest?.manual_metadata?.schema_version===2){
+						sendJson(response,409,{error:'药品说明书审核和转入暂未开放，已有记录可查看。',code:'MANUALS_MEDICINE_DISABLED'});return;
+					}
+				}
 				const actor=onlineMode?adminIdentity.email:'本机维护者';
 				if(action==='resolve-operation'){
 					if(Object.keys(payload).some(k=>!['operationId','stepId'].includes(k)))throw new RequestError('交接核对只接收原操作凭证。');

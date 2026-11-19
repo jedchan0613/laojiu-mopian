@@ -26,7 +26,7 @@ export async function prepareManualReleaseGuard({adminDataRoot,submissionRoot,ar
   if(adminDataRoot===undefined||adminDataRoot===null){
     if(submissionRoot!==undefined||archiveDataDirectory!==undefined)fail('说明书私密目录配置不完整，不能继续发布。');
     const raw=await read(site,sourceRelative,{optional:true}),source=raw?parsed(raw,'公开说明书目录'):empty();
-    if(!isDeepStrictEqual(projectManualCatalog(source,[]),projectManualCatalog(empty(),[]))||source.documents.length||source.models.length||source.brands.length)fail('候选版本含说明书资料，但没有配置可核对的私密来源目录。');
+    if(!isDeepStrictEqual(projectManualCatalog(source,[]),projectManualCatalog(empty(),[]))||source.documents.length||source.models.length||source.brands.length||source.medicines?.length)fail('候选版本含说明书资料，但没有配置可核对的私密来源目录。');
     const validate=async()=>{if(!isDeepStrictEqual(await read(site,sourceRelative,{optional:true}),raw))fail('候选说明书目录在发布期间已变化。');};
     return {records:[],validate,withCommit:async commit=>{await validate();return commit();}};
   }

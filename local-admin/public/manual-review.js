@@ -305,6 +305,8 @@
       '线上说明书目录维护尚未开启。': '说明书目录维护尚未开放，整册转草稿暂不可用。',
       '线上说明书转入仅支持 Linux。': '当前服务器环境不支持整册转草稿。',
       catalog_unavailable: '说明书目录暂不可用，仍可继续人工审核；请稍后核对转草稿。',
+      medicine_workspace_unavailable: '药品说明书转入暂未开放，现有资料可查看。',
+      medicine_catalog_paused: '当前目录含药品，药品维护暂停期间整份目录只读，审核记录仍可查看。',
       catalog_disabled: '说明书目录维护尚未开放，仍可继续人工审核。',
       disabled: '线上整册转草稿尚未开放，审核通过仍未公开。'
     };
@@ -419,6 +421,38 @@
     }
   }
 
+  const selectedMedicines=new Set();
+  const medicineRoles={manufacturer:'生产企业',holder:'上市许可持有人',unverified:'原件署名'};
+  function medicineLabel(medicine) {
+    const companies=(medicine.companies || []).map(row=>[medicineRoles[row.role],row.name].filter(Boolean).join(' '));
+    const names=[...new Set([medicine.generic_name,medicine.original_title,medicine.trade_name].filter(Boolean))];
+    return [...names,medicine.dosage_form,medicine.strength,...companies,medicine.approval_number].filter(Boolean).join(' · ');
+  }
+  function updateMedicineOptions(){
+    const existing=$('medicine-match-mode').value==='existing';
+    $('medicine-existing').hidden=!existing;
+    const box=$('medicine-match-options');
+    box.replaceChildren();
+    if(!existing)return;
+    const words=$('medicine-match-search').value.normalize('NFKC').toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const candidates=(data.medicine_candidates || []).filter(row=>isObject(row) && typeof row.medicine_key==='string');
+    const matches=candidates.filter(row=>words.every(word=>medicineLabel(row).normalize('NFKC').toLowerCase().includes(word)));
+    const visible=matches.slice(0,50);
+    for(const row of candidates)if(selectedMedicines.has(row.medicine_key) && !visible.includes(row))visible.push(row);
+    for(const row of visible){
+      const label=node('label'),input=node('input');
+      label.className='choice';
+      input.type='checkbox';input.checked=selectedMedicines.has(row.medicine_key);input.value=row.medicine_key;
+      input.addEventListener('change',()=>{
+        if(input.checked)selectedMedicines.add(row.medicine_key);else selectedMedicines.delete(row.medicine_key);
+        $('medicine-match-count').textContent='已选择 '+selectedMedicines.size+' 项。';
+      });
+      label.append(input,node('span',medicineLabel(row)));box.append(label);
+    }
+    if(!matches.length)box.append(node('p','没有匹配的药品。'));
+    if(matches.length>50)box.append(node('p','已显示前 50 项，请补充名称、规格或企业缩小范围。'));
+    $('medicine-match-count').textContent='已选择 '+selectedMedicines.size+' 项。';
+  }
   function fillForms(savedText) {
     const r = data.record;
     const m = latest()?.manual_metadata || {};
@@ -432,7 +466,17 @@
     $('transfer-region').value = typeof m.region_display === 'string' ? m.region_display : '';
     $('transfer-edition').value = typeof m.edition_display === 'string' ? m.edition_display : '';
     for (const id of ['transfer-description', 'transfer-type', 'transfer-date', 'transfer-source-name', 'transfer-source-date', 'transfer-source-available']) $(id).value = '';
-    checkboxes('manual-checks', data.checks);
+    const medicine=m.schema_version===2;
+    $('transfer-product-field').hidden=medicine;
+    $('transfer-product').required=!medicine;
+    $('transfer-medicine').hidden=!medicine;
+    $('basis-object-label').textContent=medicine?'药名、剂型、规格、企业和适用范围依据':'品牌、完整型号及适用范围依据';
+    $('medicine-match-mode').value='';
+    $('medicine-match-search').value=medicine ? m.medicine?.generic_name || m.medicine?.original_title || '' : '';
+    selectedMedicines.clear();
+    updateMedicineOptions();
+    checkboxes('manual-checks', medicine && Array.isArray(data.checks) ?
+      ['已逐项核对原件标注的药名、剂型、规格、企业角色和本版适用范围。',...data.checks.slice(1)] : data.checks);
     checkboxes('privacy-checks', data.privacy_checks);
     checkboxes('pdf-checks', data.pdf_checks);
     resetConfirmations();
@@ -509,8 +553,14 @@
     }
     const choice = (group, key) => typeof data.choices?.[group]?.[key] === 'string' ? data.choices[group][key] : key;
     const rows = [
-      ['品牌', m.brand_name], ['物件名称', m.product_name],
-      ['明确适用型号', Array.isArray(m.model_texts) ? m.model_texts.join('\n') : ''],
+      ...(m.schema_version===2 && m.medicine ? [
+        ['通用名',m.medicine.generic_name],['原件题名或旧称',m.medicine.original_title],['商品名',m.medicine.trade_name],
+        ['剂型',m.medicine.dosage_form],['规格',m.medicine.strength],['包装规格',m.medicine.package_spec],
+        ...(m.medicine.companies||[]).map(company=>[medicineRoles[company.role]||'企业',company.name]),
+        [m.medicine.approval_label||'批准或注册编号',m.medicine.approval_number],
+        ['原件核准日期',m.approval_date_text],['原件修订日期',m.revision_date_text]
+      ] : [['品牌', m.brand_name], ['物件名称', m.product_name],
+        ['明确适用型号', Array.isArray(m.model_texts) ? m.model_texts.join('\n') : '']]),
       ['品类', choice('categories', m.category_key)], ['文档用途', choice('kinds', m.document_kind)],
       ['原文语言', Array.isArray(m.languages) ? m.languages.map(key => choice('languages', key)).join('／') : ''],
       ['地区', m.region_display], ['版本', m.edition_display], ['明确标注日期', m.edition_date],
@@ -641,6 +691,7 @@
     else if (data?.context?.reviewWritable !== true) {
       const reasons = {
         read_only: '当前审核入口为只读。', readonly: '当前审核入口为只读。',
+        medicine_workspace_unavailable: '药品说明书审核暂未开放，现有资料可查看。',
         forbidden: '当前权限不允许保存审核。', disabled: '当前服务暂停审核写入。',
         stopped: '当前记录已停止处理。', frozen: '当前记录已冻结。',
         '线上说明书审核写入仅支持 Linux，当前仅可只读核对。': '线上审核保存需要服务器环境；当前可先查看资料，本地开发请使用本机工作台。',
@@ -784,9 +835,11 @@
     rememberResult(op, 'success');
     // 成功回执后也必须成功读取最新记录，才能释放标记。读取失败不触碰表单。
     const bundle = await fetchDetail();
-    acceptDetail(bundle, dirty);
+    const transferred = op.action === 'transfer' && bundle.detail.record.manual_handoff?.status === 'complete';
+    acceptDetail(bundle, !transferred && dirty);
     clearActive(op);
-    say((op.action === 'transfer' ? '未公开整理草稿已生成，可从本页入口继续维护。' : '审核结果已保存。') + '已凭成功回执读取最新记录，没有重复执行；本页文字保留，新一轮审核须重新逐项核对。' + (pending ? '本册还有其他未决操作，请继续核对。' : ''));
+    const result = op.action === 'transfer' ? '未公开整理草稿已生成，可从本页入口继续维护。' : '审核结果已保存。';
+    say(result + '已凭成功回执读取最新记录，没有重复执行。' + (!transferred ? '本页文字保留，新一轮审核须重新逐项核对。' : '') + (pending ? '本册还有其他未决操作，请继续核对。' : ''));
   }
 
   function finishFailure(op, status) {
@@ -969,7 +1022,7 @@
         return;
       }
       if (['basis-model', 'basis-source', 'basis-rights'].some(id => $(id).value.trim().length < 2)) {
-        say('请记录型号适用、来源及权利核对依据。', true);
+        say('请记录适用范围、来源及权利核对依据。', true);
         return;
       }
     }
@@ -998,9 +1051,16 @@
       const body = Object.assign(binding(), {
         catalog_revision: data.catalog_revision, confirmed: $('transfer-confirm').checked,
         title: $('transfer-title').value, public_description: $('transfer-description').value,
-        product_name: $('transfer-product').value, region_display: $('transfer-region').value,
+        region_display: $('transfer-region').value,
         edition_display: $('transfer-edition').value
       });
+      if(latest().manual_metadata.schema_version===2){
+        const mode=$('medicine-match-mode').value;
+        if(!['existing','new'].includes(mode) || mode==='existing'&&!selectedMedicines.size){
+          say('请选择已有药品并核对规格，或确认按本次原件新建药品。',true);return;
+        }
+        body.medicine_match={mode,medicine_keys:mode==='new'?[]:[...selectedMedicines]};
+      }else body.product_name=$('transfer-product').value;
       if (latest().manual_metadata.sharing_scope === 'reading-copy') {
         Object.assign(body, {object_type: $('transfer-type').value, accession_date: $('transfer-date').value});
       } else {
@@ -1013,6 +1073,11 @@
     }
   });
 
+  $('medicine-match-mode').addEventListener('change',()=>{
+    selectedMedicines.clear();
+    updateMedicineOptions();
+  });
+  $('medicine-match-search').addEventListener('input',updateMedicineOptions);
   $('review-decision').addEventListener('change', () => {
     $('approval-checks').hidden = $('review-decision').value !== 'approved';
   });

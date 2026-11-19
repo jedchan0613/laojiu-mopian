@@ -13,3 +13,15 @@ test('审核和转入开关同样严格校验且不修改原PDF开关',settings,
   }
 });
 test('追加配置为链接时拒绝，不跟随到其他文件',{...settings,skip:!present||process.platform!=='linux'&&'Linux文件链接检查'},async t=>{const f=await fixture(t);await f.write('other.conf','LJM_MANUALS_ONLINE_ENABLED=true\n');await fs.symlink('other.conf',path.join(f.dir,'manuals.conf'));await assert.rejects(f.run(),e=>e.code===71&&/类型异常/.test(e.stderr));});
+
+test('药品开关部署接受明确的布尔值，错误值在运行同步和切换前停止',settings,async t=>{
+  const f=await fixture(t);
+  for(const value of ['true','false']){
+    await f.write('manuals.conf','LJM_MANUAL_MEDICINES_ONLINE_ENABLED='+value+'\n');
+    assert.equal((await f.run()).stdout,'false|true|https://main.example.test');
+  }
+  for(const value of ['','yes','TRUE']){
+    await f.write('manuals.conf','LJM_MANUAL_MEDICINES_ONLINE_ENABLED='+value+'\n');
+    await assert.rejects(f.run(),e=>e.code===71&&e.stderr.includes('药品说明书开关'));
+  }
+});

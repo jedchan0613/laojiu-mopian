@@ -7,6 +7,7 @@ import {manualSubmissionProblems} from '../shared/manual-workflow.mjs';
 import {isManualPdfReading,manualSnapshotContent,manualPdfReviewChecks} from '../shared/manual-pdf-review.mjs';
 import {readManualReviewFile,assertManualReviewImages,projectManualReviewRecord,manualReviewBindingProblems,manualReviewRulesVersion} from './manual-review-access.mjs';
 import {createVerifiedManualTransfer,verifiedTransferContext} from './manual-transfer.mjs';
+import {medicineKeysForTransfer} from './manual-review-catalog.mjs';
 const hash=value=>createHash('sha256').update(Buffer.isBuffer(value)?value:JSON.stringify(value)).digest('hex');
 const fail=(message,statusCode=409)=>{throw Object.assign(new Error(message),{name:'SubmissionError',statusCode});};
 export function createManualReviewStore({root,siteDirectory,read,all,locked,writeRecord,detail,privacyChecks,deliverNotification,pdfReview}){
@@ -57,7 +58,7 @@ export function createManualReviewStore({root,siteDirectory,read,all,locked,writ
     return result;
   };
   function approved(r,v){if(r.manual_handoff&&Object.hasOwn(r.manual_handoff,'version')&&r.manual_handoff.version!==2)fail('整理记录版本暂不支持，请保留资料并先核对程序兼容性。');const binding=r.manual_review_binding;if(r.status!=='approved'||r.withdrawal_requested||!binding||binding.digest!==v.digest||binding.submitted_revision!==v.revision||binding.sharing_scope!==v.manual_metadata.sharing_scope)fail('本次提交尚未通过专用审核，或审核已失效，请重新核对。');
-    if(v.source_format!=='pdf'&&manualReviewBindingProblems(r,privacyChecks.length).length)fail('说明书17项检查或型号、来源与权利依据已失效，请重新核对。');
+    if(v.source_format!=='pdf'&&manualReviewBindingProblems(r,privacyChecks.length).length)fail('说明书17项检查或适用范围、来源与权利依据已失效，请重新核对。');
     if(isManualPdfReading(v)&&(binding.pdf_digest!==hash(v.pdf)||[['checks',manualReviewChecks.length],['privacy_checks',privacyChecks.length],['pdf_checks',manualPdfReviewChecks.length]].some(([key,count])=>!Array.isArray(binding[key])||binding[key].length!==count||binding[key].some(x=>x!==true))||['model_basis','source_basis','rights_basis'].some(key=>typeof binding[key]!=='string'||binding[key].trim().length<2)))fail('PDF的21项检查、来源或审核依据已失效，请重新核对。');
     return binding;}
   const verifiedTransfer=createVerifiedManualTransfer({root,manual,lockedManual,submitted,approved,verifiedImages,imageBytes,writeRecord,privacyCount:privacyChecks.length});
@@ -79,6 +80,7 @@ export function createManualReviewStore({root,siteDirectory,read,all,locked,writ
       const imported=await importCatalog({record:r,version:v,review:binding,transfer:p,archive});
       if(context.signal?.aborted)fail('整理已请求停止，已写入的目录和档案草稿保留待核对。');
       if(!/^manual-[a-f0-9]{24}$/.test(imported.manual_key??''))fail('目录草稿结果无法核对，请停止并检查交接记录。');
+      if(v.manual_metadata.schema_version===2)r.manual_handoff.medicine_keys=medicineKeysForTransfer(r.id,p.medicine_match);
       r.linked_item_id=archive?.item_id??null;r.manual_catalog_key=imported.manual_key;r.manual_handoff={...r.manual_handoff,status:'complete',completed_at:new Date().toISOString()};r.revision++;r.updated_at=new Date().toISOString();r.history.push({at:r.updated_at,action:'manual_draft_created',item_id:r.linked_item_id,public_message:'已进入未公开整理草稿，尚未发布。'});await writeRecord(id,r);
       return {item_id:r.linked_item_id,manual_key:r.manual_catalog_key};
     }catch(error){r.manual_handoff.status='needs_review';r.revision++;r.updated_at=new Date().toISOString();await writeRecord(id,r).catch(()=>{});throw error;}
@@ -100,6 +102,14 @@ export function createManualReviewStore({root,siteDirectory,read,all,locked,writ
       if(valid&&doc.source_sharing_scope==='official-link')valid=!doc.linked_archive_id&&!doc.page_map.length;
       if(valid&&doc.source_sharing_scope==='reading-copy')valid=doc.linked_archive_id===r.linked_item_id;
       let problem='投稿已申请停止、审核绑定失效或提供范围不符，请回到说明书审核页核对。';
+      if(valid && r.manual_metadata?.schema_version===2){
+        const reviewed=r.manual_handoff.medicine_keys;
+        const current=doc.medicine_keys;
+        if(!Array.isArray(reviewed)||!reviewed.length||!Array.isArray(current)||hash([...reviewed].sort())!==hash([...current].sort())){
+          valid=false;
+          problem='说明书的适用药品或规格与本次人工核对的交接记录不同，请回到审核记录核对。';
+        }
+      }
       if(valid){try{const v=submitted(r,{submitted_revision:r.manual_submitted_revision,snapshot_digest:r.manual_review_binding.digest});approved(r,v);if(r.manual_handoff.version===2)verifiedTransfer.verifyHandoff(r,v);if(v.manual_metadata.sharing_scope==='reading-copy'){await assertArchivePublication(r);if(isManualPdfReading(v)&&doc.source_pdf_digest!==hash(v.pdf)||hash(doc.page_map)!==hash(r.manual_handoff.page_map))fail('目录与已审核整册的页序或页码不同。');for(const [index,page]of doc.page_map.entries()){const file=path.join(siteDirectory,'public','.'+page.attachment_ref);await noPublicLinks(file);if(hash(await fs.readFile(file))!==v.images[index].sha256)fail('公开候选图片已改变，请重新核对。');}}}catch(error){valid=false;problem=error.code==='ENOENT'?'关联档案的阅读图片尚未公开或缺失，请先完成档案发布。':error.name==='SubmissionError'?error.message:problem;}}
       if(!valid)issues.push({where:doc.manual_key,message:problem});else verified.push({manual_key:doc.manual_key,record:r});
     }

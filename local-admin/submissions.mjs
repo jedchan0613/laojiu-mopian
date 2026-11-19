@@ -519,6 +519,7 @@ export function createSubmissionStore({ root, siteDirectory, maxEntries = 2000, 
    if(manualDraft!==(r.submission_kind==='manual'))fail('请使用这份资料对应的专用编辑页面，当前草稿没有改变。',409);
    if(manualDraft&&(payload?.images?.length??0)>0)fail('图片请通过专用逐页上传入口保存。');
    const manual=manualDraft?normalizeManualSubmission(payload?.manual):null;
+   if(manual && manual.schema_version!==r.manual_metadata?.schema_version)fail('这份草稿的资料类型已经确定。如需登记另一类说明书，请新建草稿。',409);
    if(manual){await manualPdfs.assertNotBusy(r);if(r.source_format==='pdf'&&manual.sharing_scope!=='reading-copy')fail('PDF草稿请保留站内阅读副本方式；如需仅提供官方来源，请另建草稿。',409);}
    const manualHash=manual?hash(JSON.stringify(manual)):null;
    if(manual&&revision!==r.revision&&r.manual_last_save?.revision===revision&&r.revision===revision+1&&r.manual_last_save.fingerprint===manualHash&&hash(JSON.stringify(r.manual_metadata))===manualHash)return {...accountSummary(r),repeated:true};

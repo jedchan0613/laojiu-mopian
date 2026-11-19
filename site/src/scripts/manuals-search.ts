@@ -1,4 +1,4 @@
-import {readManualQuery,manualQueryString,searchManualCatalog,validateManualSearchIndex,manualKinds,manualLanguages} from '../../../shared/manual-catalog.mjs';
+import {readManualQuery,manualQueryString,searchManualCatalog,validateManualSearchIndex,manualKinds,manualLanguages,manualCountLabel,medicineDescription,medicineName} from '../../../shared/manual-catalog.mjs';
 import {manualBrandPath} from '../../../shared/manual-browse.mjs';
 
 const root=document.querySelector<HTMLElement>('[data-manual-search]');
@@ -27,13 +27,25 @@ if(root){
   }
   function readControls(){for(const name of fields)query[name]=(form.elements.namedItem(name) as HTMLInputElement|HTMLSelectElement).value.slice(0,name==='q'?200:150);}
   function groupElement(group:any,unavailable=false){
-    const article=node('article','','manual-model'+(unavailable?' manual-model--unavailable':''));article.dataset.manualModel=group.model.model_key;
-    const mark=node('div','','manual-model-mark');mark.setAttribute('aria-hidden','true');mark.append(node('span','说明'),node('small',group.model.model_text));
+    const article=node('article','','manual-model'+(unavailable?' manual-model--unavailable':''));const medicine=group.medicine;
+    const mark=node('div','','manual-model-mark');mark.setAttribute('aria-hidden','true');
     const body=node('div','','manual-model-body'),heading=node('h3');
-    const brandLink=node('a',group.brand.name,'manual-brand-link') as HTMLAnchorElement;brandLink.href=manualBrandPath(group.brand.brand_key);
-    heading.append(brandLink,document.createTextNode(' '),node('span',group.model.model_text,'manual-model-code'));
+    let description;
+    if(medicine){
+      article.dataset.manualMedicine=medicine.medicine_key;
+      mark.append(node('span','药品'),node('small',medicine.dosage_form));
+      heading.textContent=medicineName(medicine);
+      description=medicineDescription(medicine);
+    }else{
+      article.dataset.manualModel=group.model.model_key;
+      mark.append(node('span','说明'),node('small',group.model.model_text));
+      const brandLink=node('a',group.brand.name,'manual-brand-link') as HTMLAnchorElement;
+      brandLink.href=manualBrandPath(group.brand.brand_key);
+      heading.append(brandLink,document.createTextNode(' '),node('span',group.model.model_text,'manual-model-code'));
+      description=[group.model.product_name,group.model.product_era_display].filter(Boolean).join(' · ');
+    }
     if(matchLabels[group.matchKind])heading.append(document.createTextNode(' '),node('span',matchLabels[group.matchKind],'manual-match'));
-    body.append(heading,node('p',`${group.model.product_name}${group.model.product_era_display?' · '+group.model.product_era_display:''} · ${group.documents.length} 份${unavailable?'暂不可用':'可用'}文档`,'manual-model-meta'));
+    body.append(heading,node('p',[description,group.documents.length+' 份'+(unavailable?'暂不可用':'可用')+'文档'].filter(Boolean).join(' · '),'manual-model-meta'));
     const list=node('ul','','manual-documents');
     for(const d of group.documents){
       const row=node('li'),link=document.createElement('a');link.className='manual-document-link';link.dataset.manualLink='';link.dataset.manualKey=d.manual_key;
@@ -50,14 +62,14 @@ if(root){
   function render(){
     if(!catalog)return;
     const found=searchManualCatalog(catalog,query),fragment=document.createDocumentFragment();
-    const header=node('header','','manual-results-heading'),count=node('p',`${found.modelCount} 个型号 · ${found.documentCount} 份独立文档版本`);count.setAttribute('role','status');count.setAttribute('aria-live','polite');header.append(node('h2',query.q?'查询结果':'可用资料'),count);fragment.append(header);
-    if(found.hasModelQuery&&!found.hasExact&&found.groups.length)fragment.append(node('p','暂未找到准确型号，以下是相关资料，请核对完整型号。','manual-notice'));
+    const header=node('header','','manual-results-heading'),count=node('p',manualCountLabel(found));count.setAttribute('role','status');count.setAttribute('aria-live','polite');header.append(node('h2',query.q?'查询结果':'可用资料'),count);fragment.append(header);
+    if(found.hasModelQuery&&!found.hasExact&&found.modelCount&&!found.medicineCount)fragment.append(node('p','暂未找到准确型号，以下是相关资料，请核对完整型号。','manual-notice'));
     if(found.groups.length)for(const group of found.groups)fragment.append(groupElement(group));
     else {
       const empty=node('div','','manual-empty');
       const anyConditions=fields.some(k=>query[k]);
-      empty.append(node('h3',found.unavailable.length?'该型号的来源暂不可用':anyConditions?'暂未收录准确型号':'说明书资料正在整理'),node('p',found.unavailable.length?'下面的资料暂时没有可用阅读入口，可提交线索或稍后再查。':anyConditions?'没有找到符合当前条件的可用资料。请核对型号后缀，或减少筛选条件。':'您可以先查看型号查找方法，或提供希望寻找的品牌与完整型号。'));
-      const help=document.createElement('a');help.href='/manuals/help/';help.textContent='查看型号查找方法 →';empty.append(help);
+      empty.append(node('h3',found.unavailable.length?'资料来源暂不可用':anyConditions?'没有符合条件的资料':'说明书资料正在整理'),node('p',found.unavailable.length?'下面的资料暂时没有可用阅读入口，可提交线索或稍后再查。':anyConditions?'没有找到符合当前条件的可用资料。请核对药名或型号，或减少筛选条件。':'您可以查看查找方法，或提供药名、规格或完整型号等线索。'));
+      const help=document.createElement('a');help.href=query.category==='medicines'?'/manuals/help/#medicines':'/manuals/help/';help.textContent='查看查找方法 →';empty.append(help);
       if(anyConditions){const clear=node('button','清空条件','manual-text-button') as HTMLButtonElement;clear.type='button';clear.dataset.manualClear='';empty.append(document.createTextNode('　'),clear);}
       fragment.append(empty);
     }

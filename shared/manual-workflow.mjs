@@ -13,7 +13,9 @@ const fail=(message,statusCode=400)=>{throw Object.assign(new Error(message),{na
 export function manualSubmissionLabel(record){return record.withdrawal_requested?'停止处理申请已收到':record.status==='draft'&&record.manual_draft_reason==='supplement'?'补充中（未重新提交）':manualSubmissionStates[record.status]??'状态待核对';}
 export function manualSubmissionProblems(input,pageCount){
   const m=normalizeManualSubmission(input),issues=[];
-  if(!m.brand_name||!m.model_texts.length)issues.push('请填写品牌和完整适用型号。');
+  if(m.schema_version===2) {
+    if(!m.medicine.generic_name && !m.medicine.original_title) issues.push('请填写药品通用名或原件题名。');
+  } else if(!m.brand_name||!m.model_texts.length)issues.push('请填写品牌和完整适用型号。');
   if(!m.category_key||!m.document_kind||!m.languages.length)issues.push('请选择品类、文档用途及原文语言；无法确认时选择已有的未知选项。');
   if(!m.completeness)issues.push('请选择完整程度；无法核实时可选择“完整度未核实”。');
   if(m.completeness==='incomplete'&&!m.missing_note)issues.push('请说明已经知道的缺页情况。');

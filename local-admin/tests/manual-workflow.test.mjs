@@ -22,6 +22,34 @@ async function fixture(t,{pages=2,manual=complete,...options}={}){
 const load=async f=>(await f.request(f.base)).body;
 const operate=(f,body,options={})=>f.request(f.base+'/operate',{method:'POST',body,...options});
 
+test('药品投稿用原题直接保存，补充后的规格和企业留在新快照，旧版正文与日期可回查',async t=>{
+  const manual={schema_version:2,category_key:'medicines',medicine:{original_title:'隔离测试旧题',dosage_form:'示例剂型',strength:'规格甲',
+    companies:[{role:'holder',name:'合成持有人'}]},approval_date_text:'早期资料',revision_date_text:'年份未载',
+    languages:['zh-CN'],document_kind:'user-guide',source_note:'合成来源',completeness:'complete',
+    sharing_scope:'official-link',rights_basis:'official-link',official_url:'https://support.example.com/source',people:'none'};
+  const f=await fixture(t,{pages:0,manual});
+  let record=await load(f);
+  assert.match(record.fields.title,/隔离测试旧题/);
+  assert.equal(record.manual_metadata.medicine.companies[0].role,'holder');
+  assert.equal((await f.request(f.draft,{method:'POST',body:{revision:record.revision,manual:complete}})).status,409);
+  assert.deepEqual(manualSubmissionProblems(manual,0),[]);
+  assert.match(manualSubmissionProblems({...manual,medicine:{}},0).join(' '),/药品通用名或原件题名/);
+  assert.equal((await operate(f,submit(record.revision))).status,200);
+  record=await load(f);
+  const first=structuredClone(record.versions[0]);
+  await f.submissions.review(f.id,{revision:record.revision,status:'needs_info',public_message:'请补充核对后的规格',private_note:'内部核对'});
+  record=await load(f);
+  assert.equal((await operate(f,{action:'edit',revision:record.revision,operation_id:key()})).status,200);
+  record=await load(f);
+  const corrected=structuredClone(record.manual_metadata);
+  corrected.medicine.strength='规格乙';corrected.medicine.companies.push({role:'manufacturer',name:'另一合成企业'});
+  const saved=await f.request(f.draft,{method:'POST',body:{revision:record.revision,manual:corrected}});
+  assert.equal(saved.status,200,JSON.stringify(saved.body));
+  assert.equal((await operate(f,submit(saved.body.revision))).status,200);
+  record=await load(f);assert.deepEqual(record.versions[0],first);assert.deepEqual(record.versions[1].manual_metadata,corrected);
+  assert.equal(record.status,'pending');assert.equal(record.id,f.id);
+});
+
 test('12页同一编号提交：生成完整只读快照，提交后禁止直接写入，私密图片仍可读取',async t=>{
   const f=await fixture(t,{pages:12}),response=await operate(f,submit(f.revision));assert.equal(response.status,200);assert.equal(response.body.status,'pending');assert.equal(response.body.status_label,'已提交，待核对');
   const record=await load(f);assert.equal(record.id,f.id);assert.equal(record.images.length,12);assert.equal(record.versions.length,1);assert.equal(record.versions[0].revision,14);assert.equal(record.versions[0].images.length,12);assert.equal(record.versions[0].manual_metadata.brand_name,complete.brand_name);assert.equal(record.consent.version,manualConsentVersion);assert.equal(record.linked_item_id,null);

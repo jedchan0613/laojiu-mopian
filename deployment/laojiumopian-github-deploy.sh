@@ -84,6 +84,10 @@ load_admin_runtime_settings() {
 		true|false) ;;
 		*) fail '说明书转入开关只能填写true或false。' ;;
 	esac
+	case "${LJM_MANUAL_MEDICINES_ONLINE_ENABLED-false}" in
+		true|false) ;;
+		*) fail '药品说明书开关只能填写true或false。' ;;
+	esac
 }
 
 require_symlink() {

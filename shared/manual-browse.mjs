@@ -11,15 +11,16 @@ export function manualCategoryPath(key){
   return `/manuals/categories/${key}/`;
 }
 export function manualModelAnchor(key,unavailable=false){
-  if(!publicKey(key,'model'))throw new Error('型号目录标识无效。');
+  if(!publicKey(key,'model')&&!publicKey(key,'medicine'))throw new Error('型号目录标识无效。');
   return `${unavailable?'unavailable-':''}${key}`;
 }
 
 function summary(found){
   return {
     modelCount:found.modelCount,
+    ...(found.medicineCount?{medicineCount:found.medicineCount}:{}),
     documentCount:found.documentCount,
-    unavailableModelCount:new Set(found.unavailable.map(group=>group.model.model_key)).size,
+    unavailableModelCount:found.unavailable.filter(group=>group.model).length,
     unavailableDocumentCount:new Set(found.unavailable.flatMap(group=>group.documents.map(doc=>doc.manual_key))).size,
   };
 }
@@ -39,7 +40,7 @@ export function buildManualBrowse(catalog){
   for(const [category_key,name] of Object.entries(manualCategories)){
     const found=searchManualCatalog(catalog,{category:category_key});
     if(!found.groups.length&&!found.unavailable.length)continue;
-    const usedBrands=new Set([...found.groups,...found.unavailable].map(group=>group.brand.brand_key));
+    const usedBrands=new Set([...found.groups,...found.unavailable].flatMap(group=>group.brand?[group.brand.brand_key]:(group.legacyModels??[]).map(m=>m.brand_key)));
     categories.push({category_key,name,path:manualCategoryPath(category_key),...summary(found),found,
       brands:brands.filter(brand=>usedBrands.has(brand.brand_key)).map(({brand_key,name})=>({key:brand_key,name})),
     });

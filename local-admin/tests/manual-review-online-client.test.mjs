@@ -187,7 +187,8 @@ function surface(imageRequests) {
     'manual-transfer-form', 'transfer-fields', 'transfer-title', 'transfer-product', 'transfer-region',
     'transfer-edition', 'transfer-description', 'transfer-reading', 'transfer-official', 'transfer-type',
     'transfer-date', 'transfer-source-name', 'transfer-source-date', 'transfer-source-available',
-    'transfer-confirm', 'review-history'
+    'transfer-confirm', 'review-history','transfer-product-field','transfer-medicine','basis-object-label',
+    'medicine-match-mode','medicine-match-search','medicine-match-options','medicine-match-count','medicine-existing'
   ];
   const selects = ['review-version', 'review-decision', 'reader-jump', 'transfer-type', 'transfer-source-available'];
   const buttons = ['review-refresh', 'review-recover', 'reader-prev', 'reader-next', 'reader-zoom'];
@@ -415,6 +416,37 @@ function onlineTransfer(options = {}) {
   return detail;
 }
 
+test('药品审核按实际规格区分同名候选，必须手选已有药品或新建', async () => {
+  const detail=onlineTransfer();
+  const medicine={generic_name:'合成甲',dosage_form:'合成剂型',strength:'规格乙',companies:[{role:'manufacturer',name:'测试乙厂'}]};
+  Object.assign(detail.record.versions.find(version=>version.revision===7).manual_metadata,{schema_version:2,category_key:'medicines',medicine});
+  detail.medicine_candidates=[
+    {...medicine,medicine_key:'medicine-a',strength:'规格甲',companies:[{role:'manufacturer',name:'测试甲厂'}]},
+    {...medicine,medicine_key:'medicine-b',original_title:'合成乙旧称'}
+  ];
+  for(const mode of ['existing','new']){
+    const c=browser({detail});await c.ready();
+    assert.equal(c.el('transfer-product-field').hidden,true);
+    assert.equal(c.el('transfer-medicine').hidden,false);
+    assert.match(c.el('review-metadata').textContent,/规格乙/);
+    prepareTransfer(c);assert.equal(c.posts.length,0);
+    input(c,'medicine-match-mode',mode,'change');
+    if(mode==='existing'){
+      prepareTransfer(c);assert.equal(c.posts.length,0);
+      input(c,'medicine-match-search','合成甲','input');
+      assert.equal(c.el('medicine-match-options').querySelectorAll('input').length,2);
+      input(c,'medicine-match-search','合成乙旧称 规格乙 测试乙厂','input');
+      const options=c.el('medicine-match-options').querySelectorAll('input');assert.equal(options.length,1);
+      assert.equal(options[0].value,'medicine-b');options[0].checked=true;options[0].emit('change');
+    }
+    prepareTransfer(c);
+    await settle(()=>c.posts.length===1);
+    const body=JSON.parse(c.posts[0].init.body);
+    assert.deepEqual(body.medicine_match,{mode,medicine_keys:mode==='existing'?['medicine-b']:[]});
+    assert(!Object.hasOwn(body,'product_name'));
+  }
+});
+
 function transferResult(init, {official = false, status = 'succeeded', proof = {}} = {}) {
   return {
     operationId: init.headers['X-LJM-Operation-Id'], stepId: init.headers['X-LJM-Step-Id'],
@@ -514,6 +546,7 @@ test('线上阅读副本成功需完整绑定回执，完成后提供准确的�
   assert.equal(body.confirmed, true);
   assert.equal(body.public_description, '经核实可公开的合成简介');
   assert.equal(c.el('transfer-fields').disabled, true);
+  assert.equal(c.beforeUnload().prevented,false,'成功回执和已转入记录均已核实，可以直接继续维护目录草稿');
   assert.deepEqual(c.el('review-links').querySelectorAll('a').map(link => link.href), [
     '/admin/?item=LJM-20261116-RPR-001', '/admin/manuals.html?manual=manual-0123456789abcdef01234567'
   ]);
@@ -589,6 +622,7 @@ test('线上待核对交接只核对既有证据，部分结果保持冻结，�
   prepareTransfer(c);
   await idlePending(c);
   assert.equal(c.el('transfer-fields').disabled, true, '缺一页不能仅凭succeeded解冻');
+  assert.equal(c.beforeUnload().prevented,true,'待核实结果仍需保护');
   assert.ok(resolveButton(c));
   resolveButton(c).emit('click');
   await idlePending(c);

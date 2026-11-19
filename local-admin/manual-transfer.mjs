@@ -4,7 +4,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {manualReviewBindingProblems,manualReviewRulesVersion,assertManualReviewImages} from './manual-review-access.mjs';
 import {normalizeManualTransfer} from '../shared/manual-review.mjs';
-import {submissionManualKey} from './manual-review-catalog.mjs';
+import {medicineKeysForTransfer,submissionManualKey} from './manual-review-catalog.mjs';
 const hash=value=>createHash('sha256').update(Buffer.isBuffer(value)?value:JSON.stringify(value)).digest('hex');
 const uuid=value=>typeof value==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value);
 const fail=message=>{throw Object.assign(new Error(message),{name:'SubmissionError',statusCode:409});};
@@ -20,6 +20,9 @@ export function createVerifiedManualTransfer({root,manual,lockedManual,submitted
     const h=r.manual_handoff;
     if(!h||h.version!==2||h.status!=='complete'||h.rules_version!==manualReviewRulesVersion||!uuid(h.operation_id)||!uuid(h.step_id)||h.digest!==v.digest||h.submitted_revision!==v.revision||h.sharing_scope!==v.manual_metadata.sharing_scope||hash(h.source_pages)!==hash(sourcePages(v))||!manualKey(r.manual_catalog_key)||h.manual_key!==r.manual_catalog_key)fail('整册交接凭证不完整，不能沿用旧结果。');
     if(h.online&&manualReviewBindingProblems(r,privacyCount,{requireAudit:true}).length)fail('管理员审核凭证已失效，请重新核对。');
+    if(v.manual_metadata.schema_version===2 && v.manual_metadata.category_key==='medicines') {
+      medicineKeysForTransfer(r.id,{mode:'existing',medicine_keys:h.medicine_keys});
+    }
     if(h.sharing_scope==='official-link'){if(r.linked_item_id||h.archive_item_id||h.page_map?.length)fail('官方线索不能包含档案或阅读页。');}
     else if(!itemId(r.linked_item_id)||h.archive_item_id!==r.linked_item_id||!Array.isArray(h.page_map)||h.page_map.length!==v.images.length||h.page_map.some((p,i)=>p.printed_label!==v.images[i].label||!new RegExp('^/archive/'+r.linked_item_id+'/[a-zA-Z0-9_-]+\\.jpg$').test(p.attachment_ref))||new Set(h.page_map.map(p=>p.attachment_ref)).size!==v.images.length)fail('整册交接的档案编号、页序或页码不符。');
     return h;
@@ -43,6 +46,9 @@ export function createVerifiedManualTransfer({root,manual,lockedManual,submitted
     const space=await fs.statfs(root,{bigint:true});if(space.bavail*space.bsize<BigInt(bytes+16*1024*1024))fail('磁盘空间不足，尚未创建整理草稿。');
     checkCancelled(context,false);
     const h={version:2,status:'in-progress',rules_version:manualReviewRulesVersion,online:context.online===true,actor:context.actor,operation_id:context.operationId,step_id:context.stepId,submitted_revision:v.revision,digest:v.digest,sharing_scope:v.manual_metadata.sharing_scope,manual_key:submissionManualKey(id),expected_catalog_revision:p.catalog_revision,fingerprint,source_pages:sourcePages(v),page_map:[],copied_pages:[],at:new Date().toISOString()};
+    if(v.manual_metadata.schema_version===2 && v.manual_metadata.category_key==='medicines'){
+      h.medicine_keys=medicineKeysForTransfer(id,p.medicine_match);
+    }
     r.manual_handoff=h;r.revision++;r.updated_at=h.at;context.markChanged?.();await writeRecord(id,r);
     try{
       let archive=null;

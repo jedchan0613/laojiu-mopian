@@ -19,6 +19,7 @@ import { manualPdfUploadLimits } from '../shared/manual-pdf-upload.mjs';
 import {manualPdfGenerationLimits,manualPdfProfiles} from '../shared/manual-pdf-generation.mjs';
 import { manualConsentVersion,manualConsentStatements } from '../shared/manual-workflow.mjs';
 import {manualPdfAvailability,readManualPdfSettings} from './manual-pdf-availability.mjs';
+import {medicineSubmissionsEnabled} from './manual-review-access.mjs';
 
 export const sessionCookieName = 'ljm_account_session';
 const maximumBodyBytes = 16 * 1024;
@@ -61,12 +62,21 @@ export function createAccountHandler({
 	registrationOpen = true,
 	uploadsOpen = true,
 	pdfOpen = local,
+	medicinesOpen = local,
 	ipRateLimit = { maximum: 120, windowSeconds: 600 },
 	manualRateLimit = { maximum: 800, windowSeconds: 600 },
 }) {
 	if (!store) throw new Error('账户服务必须提供数据层。');
 	if (!origin) throw new Error('账户服务必须显式配置公开站来源地址。');
 	if (typeof pdfOpen !== 'boolean') throw new Error('PDF能力开关必须为明确的布尔值。');
+	if (typeof medicinesOpen !== 'boolean') throw new Error('药品投稿开关必须为明确的布尔值。');
+	const requireMedicineWrites = (manual) => {
+		if (!medicinesOpen && manual?.schema_version === 2) throw new AccountError('药品说明书投稿暂时暂停，已保存的资料仍可查看。',503);
+	};
+	const requireEditableManual = async (instances,id,accountId) => {
+		const record=await instances.getAccountManualDraft({id,accountId});
+		requireMedicineWrites(record.manual_metadata);
+	};
 	const pdfAvailability = () => manualPdfAvailability({local,pdfOpen,submissionStore});
 	const requirePdfWrites = async () => {const capability=await pdfAvailability();if(!capability.uploads)throw new AccountError(capability.message,503);};
 	const publicOrigins = new Set([stripTrailingSlash(origin)]);
@@ -250,7 +260,7 @@ export function createAccountHandler({
 			if (method !== 'GET') fail('不支持此操作。', 405);
 			const pdf=await pdfAvailability();
 			// 这里不读取会话：可用性检查不应产生会话副作用，登录态由 /api/account/me 判断。
-			return withCookies(response, [], 200, { ...store.status(), registration_open: registrationOpen, uploads_open: uploadsOpen, manual_drafts_version: submissionStore ? 1 : 0, manual_page_uploads_version: submissionStore ? 1 : 0, manual_page_limits: manualPageLimits,manual_workflow_version:submissionStore?1:0,manual_consent_version:manualConsentVersion,manual_consent_statements:manualConsentStatements,manual_pdf_uploads_version:pdf.uploads?1:0,manual_pdf_upload_limits:manualPdfUploadLimits,manual_pdf_generation_version:pdf.generation?1:0,manual_pdf_generation_message:pdf.message,manual_pdf_generation_limits:manualPdfGenerationLimits,manual_pdf_profiles:manualPdfProfiles,manual_pdf_workflow_version:pdf.workflow?1:0 }), true;
+			return withCookies(response, [], 200, { ...store.status(), registration_open: registrationOpen, uploads_open: uploadsOpen, manual_drafts_version: submissionStore ? 1 : 0, manual_medicines_version: Number(Boolean(submissionStore)&&medicinesOpen), manual_page_uploads_version: submissionStore ? 1 : 0, manual_page_limits: manualPageLimits,manual_workflow_version:submissionStore?1:0,manual_consent_version:manualConsentVersion,manual_consent_statements:manualConsentStatements,manual_pdf_uploads_version:pdf.uploads?1:0,manual_pdf_upload_limits:manualPdfUploadLimits,manual_pdf_generation_version:pdf.generation?1:0,manual_pdf_generation_message:pdf.message,manual_pdf_generation_limits:manualPdfGenerationLimits,manual_pdf_profiles:manualPdfProfiles,manual_pdf_workflow_version:pdf.workflow?1:0 }), true;
 		}
 		requireAccountOrigin(request, mutation);
 		const address = clientAddress(request);
@@ -363,7 +373,9 @@ export function createAccountHandler({
 			if(method==='GET'&&!manualSubmissionRoute[2])return withCookies(response,[],200,await instances.getAccountManualSubmission({id,accountId:session.user.id})),true;
 			if(method==='POST'&&manualSubmissionRoute[2]){
 				const record=await instances.getAccountManualSubmission({id,accountId:session.user.id});
-				const payload=await readJson(request);if(record.source_format==='pdf'&&payload.action==='submit')await requirePdfWrites();if(!uploadsOpen&&!['withdraw','discard'].includes(payload.action))fail('说明书提交与补充暂时暂停，已有记录仍可查看、撤回或停止草稿。',503);
+				const payload=await readJson(request);
+				if(!['withdraw','discard'].includes(payload.action))requireMedicineWrites(record.manual_metadata);
+				if(record.source_format==='pdf'&&payload.action==='submit')await requirePdfWrites();if(!uploadsOpen&&!['withdraw','discard'].includes(payload.action))fail('说明书提交与补充暂时暂停，已有记录仍可查看、撤回或停止草稿。',503);
 				return withCookies(response,[],200,await instances.operateAccountManualSubmission({id,accountId:session.user.id,payload})),true;
 			}
 			fail('不支持此操作。',405);
@@ -375,7 +387,7 @@ export function createAccountHandler({
 			const session=requireSession(request),instances=requireSubmissionStore();
 			if(pdfLabelReceipt&&method==='GET')return withCookies(response,[],200,await instances.getAccountManualPdfLabelOperation({id:pdfLabelReceipt[1],accountId:session.user.id,operationId:pdfLabelReceipt[2]})),true;
 			if(!pdfLabel||method!=='POST')fail('不支持此操作。',405);await requirePdfWrites();if(!uploadsOpen)fail('PDF暂时暂停保存，已有记录仍可查看。',503);
-			await instances.getAccountManualDraft({id:pdfLabel[1],accountId:session.user.id});const payload=await readJson(request);
+			await requireEditableManual(instances,pdfLabel[1],session.user.id);const payload=await readJson(request);
 			return withCookies(response,[],200,await instances.saveAccountManualPdfLabel({id:pdfLabel[1],accountId:session.user.id,payload})),true;
 		}
 		// 受限生成；查询与停止不依赖上传开关或PDF独立开关。
@@ -385,7 +397,7 @@ export function createAccountHandler({
 			const session=requireSession(request),instances=requireSubmissionStore();
 			if(pdfGenerationReceipt){const options={id:pdfGenerationReceipt[1],accountId:session.user.id,operationId:pdfGenerationReceipt[2]};if(method==='GET'&&!pdfGenerationReceipt[3])return withCookies(response,[],200,await instances.getAccountManualPdfGeneration(options)),true;if(method==='POST'&&pdfGenerationReceipt[3])return withCookies(response,[],200,await instances.cancelAccountManualPdfGeneration(options)),true;fail('不支持此操作。',405);}
 			if(method!=='POST')fail('不支持此操作。',405);await requirePdfWrites();if(!uploadsOpen)fail('PDF暂时暂停新生成，已有预览和回执仍可查看，也可停止未完成任务。',503);
-			await instances.getAccountManualDraft({id:pdfGenerate[1],accountId:session.user.id});const payload=await readJson(request);
+			await requireEditableManual(instances,pdfGenerate[1],session.user.id);const payload=await readJson(request);
 			return withCookies(response,[],200,await instances.beginAccountManualPdfGeneration({id:pdfGenerate[1],accountId:session.user.id,payload})),true;
 		}
 		// 6.2本机私密PDF暂存；没有源文件下载或送审入口。
@@ -405,7 +417,7 @@ export function createAccountHandler({
 			await requirePdfWrites();
 			if(!uploadsOpen)fail('PDF暂时暂停保存，已有私密文件仍保留，可查询回执或取消未完成上传。',503);
 			const id=(pdfMaterial||pdfInit||pdfContent)[1];
-			await instances.getAccountManualDraft({id,accountId:session.user.id});
+			await requireEditableManual(instances,id,session.user.id);
 			if(pdfMaterial||pdfInit){
 				const payload=await readJson(request);
 				const result=pdfMaterial?await instances.setAccountManualMaterial({id,accountId:session.user.id,payload}):await instances.prepareAccountManualPdf({id,accountId:session.user.id,payload});
@@ -434,7 +446,7 @@ export function createAccountHandler({
 			if(method!=='POST')fail('不支持此操作。',405);
 			if(!uploadsOpen)fail('说明书暂时暂停保存，已上传页面仍可查看。',503);
 			// 先核对归属，再读取、解码图片；每账号同时一张，整个服务最多同时两张。
-			await instances.getAccountManualDraft({id,accountId:session.user.id});
+			await requireEditableManual(instances,id,session.user.id);
 			if(manualPagesRoute[2]){
 				if(activeManualUploads.has(session.user.id))fail('本账号已有文件正在保存，请等待当前上传完成。',409);
 				if(activeManualUploads.size>=2)fail('当前文件上传较多，请稍后继续。',429);
@@ -454,6 +466,7 @@ export function createAccountHandler({
 			if (!uploadsOpen) fail('投稿草稿暂时暂停保存，已有内容仍可查看。', 503);
 			const payload = await readJson(request);
 			if (Object.keys(payload).some(key => !['request_key', 'manual', 'website'].includes(key))) fail('本阶段只接收说明书文字草稿。');
+			requireMedicineWrites(payload.manual);
 			return withCookies(response, [], 200, await requireSubmissionStore().createAccountManualDraft({ accountId: session.user.id, payload })), true;
 		}
 		const manualDraftRoute = /^\/api\/account\/manual-drafts\/(TG-[A-F0-9]{24})$/.exec(pathname);
@@ -464,6 +477,7 @@ export function createAccountHandler({
 				if (!uploadsOpen) fail('投稿草稿暂时暂停保存，已有内容仍可查看。', 503);
 				const payload = await readJson(request);
 				if (Object.keys(payload).some(key => !['revision', 'manual', 'website'].includes(key))) fail('本阶段只接收说明书文字草稿。');
+				requireMedicineWrites(payload.manual);
 				if (!Number.isSafeInteger(payload.revision) || payload.revision < 1) fail('草稿版本无效，请重新读取后核对。', 428);
 				return withCookies(response, [], 200, await instances.saveAccountManualDraft({ id: manualDraftRoute[1], accountId: session.user.id, revision: payload.revision, payload })), true;
 			}
@@ -630,6 +644,7 @@ if (isDirectRun) {
 	};
 	const registrationOpen = switchValue('LJM_ACCOUNT_REGISTRATION_OPEN');
 	const uploadsOpen = switchValue('LJM_ACCOUNT_UPLOADS_OPEN');
+	const medicinesOpen = medicineSubmissionsEnabled(process.env,environment === 'production');
 	let pdfSettings;
 	try { pdfSettings=readManualPdfSettings(environment); } catch(error) { stop(error.message); }
 	if (!Number.isInteger(port) || port < 1024 || port > 65535) stop('LJM_ACCOUNT_PORT 无效。');
@@ -688,13 +703,14 @@ if (isDirectRun) {
 		registrationOpen,
 		uploadsOpen,
 		pdfOpen:pdfSettings.pdfOpen,
+		medicinesOpen,
 	});
 	const server = http.createServer(async (request, response) => {
 		try {
 			const pathname = new URL(request.url ?? '/', origin).pathname;
 			if (pathname === '/healthz' && request.method === 'GET') {
 				const pdf=await manualPdfAvailability({local:environment!=='production',pdfOpen:pdfSettings.pdfOpen,submissionStore});
-				response.writeHead(200, securityHeaders()).end(JSON.stringify({ ok: true, capabilities: { archiveMergeProtocol: store.archiveMerge ? 1 : 0, manualPdf:pdf.uploads?1:0, manualPdfRecovery:1 } }));
+				response.writeHead(200, securityHeaders()).end(JSON.stringify({ ok: true, capabilities: { archiveMergeProtocol: store.archiveMerge ? 1 : 0, manualMedicines:Number(medicinesOpen), manualPdf:pdf.uploads?1:0, manualPdfRecovery:1 } }));
 				return;
 			}
 			if (!await handler(request, response, pathname)) {

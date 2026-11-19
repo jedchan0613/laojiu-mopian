@@ -50,6 +50,12 @@ function assertIdentity(record) {
   }
 }
 
+export function medicineSubmissionsEnabled(env, online) {
+  const flag = env?.LJM_MANUAL_MEDICINES_ONLINE_ENABLED;
+  if (flag !== undefined && flag !== 'true' && flag !== 'false') throw new Error('LJM_MANUAL_MEDICINES_ONLINE_ENABLED 只能配置为 true 或 false。');
+  return !online || flag === 'true';
+}
+
 export function readManualReviewSettings(env, online, platform = process.platform) {
   const source = env === undefined ? {} : env;
   if (!plain(source)) fail('说明书审核配置无法读取。');
@@ -153,7 +159,8 @@ export function assertManualReviewImages(record, version = null) {
 function normalizeMetadata(value) {
   if (!plain(value)) return null;
   const input = {};
-  for (const key of metadataKeys) {
+  const keys = value.schema_version === 2 ? [...metadataKeys,'medicine','approval_date_text','revision_date_text'] : metadataKeys;
+  for (const key of keys) {
     if (Object.hasOwn(value, key)) input[key] = value[key];
   }
   try {
@@ -257,7 +264,7 @@ export function manualReviewBindingProblems(record, privacyCount, {requireAudit 
     }
     if (!trueChecks(binding.checks, manualReviewChecks.length)) problems.push('说明书四项人工检查尚未全部完成。');
     if (!trueChecks(binding.privacy_checks, privacyCount)) problems.push('隐私人工检查尚未按当前规则全部完成。');
-    for (const [key, label] of [['model_basis', '型号适用'], ['source_basis', '来源核对'], ['rights_basis', '权利及提供范围']]) {
+    for (const [key, label] of [['model_basis', '适用范围'], ['source_basis', '来源核对'], ['rights_basis', '权利及提供范围']]) {
       if (typeof binding[key] !== 'string' || binding[key].trim().length < 2) problems.push('缺少至少两字的' + label + '依据。');
     }
   }

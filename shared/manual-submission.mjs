@@ -8,15 +8,36 @@ export const manualDraftChoices=Object.freeze({
   people:{none:'不涉及可识别的真实人物',yes:'涉及，需人工判断',unsure:'不确定，需人工判断'},
 });
 const fields=['schema_version','brand_name','model_texts','product_name','category_key','document_kind','languages','region_display','edition_display','edition_date','completeness','missing_note','official_url','source_note','rights_basis','rights_note','sharing_scope','description','people','attribution','credit'];
+export const medicineCompanyRoles = Object.freeze({manufacturer:'生产企业',holder:'上市许可持有人',unverified:'角色待核'});
+const medicineFields = {
+  generic_name:['通用名',200], original_title:['原件题名',300], trade_name:['商品名',200],
+  dosage_form:['剂型',100], strength:['规格',200], approval_label:['编号名称',100],
+  approval_number:['批准或注册编号',150], package_spec:['包装规格',200]
+};
+function normalizeMedicine(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input) ||
+      Object.keys(input).some(key => key !== 'companies' && !Object.hasOwn(medicineFields,key))) fail('药品资料字段无法读取。');
+  const result = Object.fromEntries(Object.entries(medicineFields).map(([key,[label,max]])=>[key,text(input[key],label,max)]));
+  const companies = input.companies ?? [];
+  if (!Array.isArray(companies) || companies.length > 20) fail('请核对药品企业数量。');
+  result.companies = companies.map(company => {
+    if (!company || typeof company !== 'object' || Array.isArray(company) ||
+        Object.keys(company).some(key=>!['role','name'].includes(key)) || !Object.hasOwn(medicineCompanyRoles,company.role)) fail('请核对药品企业和角色。');
+    return {role:company.role,name:text(company.name,'企业名称',200)};
+  }).filter(company=>company.name);
+  return result;
+}
 const fail=message=>{throw Object.assign(new Error(message),{name:'SubmissionError',statusCode:400});};
 const text=(value,label,max)=>{if(value==null)return '';if(typeof value!=='string'||value.length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value))fail(`${label}格式不正确或内容过长。`);return value.trim();};
 const choice=(value,options,label)=>{const result=text(value,label,40);if(result&&!Object.hasOwn(options,result))fail(`请重新选择${label}。`);return result;};
 const array=(value,label,max,count)=>{if(value==null)return [];if(!Array.isArray(value)||value.length>count)fail(`${label}格式或数量不正确。`);const result=value.map(v=>text(v,label,max));if(result.some(v=>!v)||new Set(result).size!==result.length)fail(`${label}不能含空项或重复项。`);return result;};
 
 export function normalizeManualSubmission(input){
-  if(!input||typeof input!=='object'||Array.isArray(input)||input.schema_version!==1)fail('说明书草稿版本无法读取，请刷新页面后重试。');
-  if(Object.keys(input).some(key=>!fields.includes(key)))fail('表单含尚未支持的说明书字段，请刷新页面后重试。');
-  const result={schema_version:1,
+  if(!input||typeof input!=='object'||Array.isArray(input)||![1,2].includes(input.schema_version))fail('说明书草稿版本无法读取，请刷新页面后重试。');
+  const medicine = input.schema_version === 2;
+  const allowed = medicine ? [...fields,'medicine','approval_date_text','revision_date_text'] : fields;
+  if(Object.keys(input).some(key=>!allowed.includes(key)))fail('表单含尚未支持的说明书字段，请刷新页面后重试。');
+  const result={schema_version:input.schema_version,
     brand_name:text(input.brand_name,'品牌',100),model_texts:array(input.model_texts,'适用型号',100,20),product_name:text(input.product_name,'物件名称',120),
     category_key:choice(input.category_key,manualCategories,'品类'),document_kind:choice(input.document_kind,manualKinds,'文档用途'),languages:array(input.languages,'原文语言',20,10),
     region_display:text(input.region_display,'适用地区',120),edition_display:text(input.edition_display,'版本',150),edition_date:text(input.edition_date,'文档日期',10),
@@ -24,6 +45,12 @@ export function normalizeManualSubmission(input){
     source_note:text(input.source_note,'资料来源',500),rights_basis:choice(input.rights_basis,manualDraftChoices.rights,'权利情况'),rights_note:text(input.rights_note,'授权依据',1000),sharing_scope:choice(input.sharing_scope,manualDraftChoices.sharing,'提供方式'),
     description:text(input.description,'补充说明',3000),people:choice(input.people,manualDraftChoices.people,'人物情况'),attribution:input.attribution??'anonymous',credit:text(input.credit,'公开署名',40),
   };
+  if (medicine) {
+    if (result.category_key !== 'medicines' || result.brand_name || result.model_texts.length || result.product_name) fail('请使用独立药品字段填写此份药品说明书。');
+    result.medicine = normalizeMedicine(input.medicine);
+    result.approval_date_text = text(input.approval_date_text,'核准日期原文',100);
+    result.revision_date_text = text(input.revision_date_text,'修订日期原文',100);
+  }
   if(!['anonymous','named'].includes(result.attribution))fail('请选择匿名或署名方式。');
   if(result.languages.some(language=>!Object.hasOwn(manualLanguages,language)))fail('请重新选择原文语言。');
   if(result.edition_date&&(!/^\d{4}-\d{2}-\d{2}$/.test(result.edition_date)||Number.isNaN(Date.parse(result.edition_date+'T00:00:00Z'))||new Date(result.edition_date+'T00:00:00Z').toISOString().slice(0,10)!==result.edition_date))fail('文档日期无效；没有标注时请留空。');
@@ -31,13 +58,18 @@ export function normalizeManualSubmission(input){
 }
 
 export function manualSubmissionFields(manual){
-  return {title:`${manual.brand_name||'品牌待补充'} ${manual.model_texts[0]||'型号待补充'} ${manualKinds[manual.document_kind]||'说明书'}`.slice(0,80),description:manual.description,category:'其他',era:'',place:'',source_note:manual.source_note,people:manual.people,attribution:manual.attribution,credit:manual.credit};
+  const title = manual.schema_version===2
+    ? [manual.medicine.generic_name || manual.medicine.original_title || '药名待补充', manual.medicine.strength, '说明书'].filter(Boolean).join(' ')
+    : `${manual.brand_name||'品牌待补充'} ${manual.model_texts[0]||'型号待补充'} ${manualKinds[manual.document_kind]||'说明书'}`;
+  return {title:title.slice(0,80),description:manual.description,category:'其他',era:'',place:'',source_note:manual.source_note,people:manual.people,attribution:manual.attribution,credit:manual.credit};
 }
 
 // 只提示资料仍需核对，不把保存草稿视为授权、审核或公开批准。
 export function manualSubmissionNotes(manual){
   const notes=[];
-  if(!manual.brand_name||!manual.model_texts.length)notes.push('品牌或完整型号尚未填写。');
+  if(manual.schema_version===2) {
+    if(!manual.medicine.generic_name && !manual.medicine.original_title)notes.push('药品通用名或原件题名尚未填写。');
+  } else if(!manual.brand_name||!manual.model_texts.length)notes.push('品牌或完整型号尚未填写。');
   if(!manual.languages.length)notes.push('原文语言尚未选择。');
   if(manual.completeness==='incomplete'&&!manual.missing_note)notes.push('已标记有缺页，请补充已知缺页情况。');
   if(manual.official_url&&!safeManualSourceUrl(manual.official_url))notes.push('来源网址尚未通过格式检查，将只按文字显示。');
