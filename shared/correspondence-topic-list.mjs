@@ -51,17 +51,6 @@ export const correspondenceTopics = [
     ],
   },
   {
-    id: 'LJM-CUR-CAMPUS-MAILBOX',
-    title: '寄往校园的问候',
-    description: '四份节日问候，都在收件栏写下相同的称呼，寄往同一所学校。卡片上有摩托车、有瓶花，也有人还惦记着上次的照片。',
-    memberIds: [
-      'LJM-20261011-PST-018',
-      'LJM-20261011-PST-036',
-      'LJM-20261011-PST-043',
-      'LJM-20261011-PST-050',
-    ],
-  },
-  {
     id: 'LJM-CUR-LETTERS-TO-UNCLE',
     title: '叔叔，上封信我收到了',
     description: '一封信里，考试将近，写信的人还想再努一把力。另一封把叔叔的鼓励接过来，说自己会慢慢学好。两次提笔，都郑重地写给同一位长辈。',
