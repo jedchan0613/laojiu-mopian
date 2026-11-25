@@ -3,6 +3,9 @@ export const mingAdditionalMemberIds = [
   'LJM-20260829-LET-009',
   'LJM-20260829-LET-015',
   'LJM-20260829-LET-016',
+  'LJM-20261125-LET-003',
+  'LJM-20261125-LET-004',
+  'LJM-20261125-LET-005',
 ];
 
 export const correspondenceTopics = [
