@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto';
 import { archiveItems, type ArchiveItem } from './archive';
 import { isPublishedArchiveItem } from './archive-view';
+import { correspondenceIndex, curatedLetterAlbum } from '../../../shared/correspondence-topics.mjs';
+export { curatedLetterAlbum };
 
 export interface AlbumGroup {
   albumId: string;
+  isCorrespondence: boolean;
   slug: string;
   href: string;
   members: ArchiveItem[];
@@ -11,14 +14,6 @@ export interface AlbumGroup {
   photos: ArchiveItem[];
   letters: ArchiveItem[];
 }
-
-// 这是按已公开标签形成的线上选览，不代表另有一件实物相册。
-export const curatedLetterAlbum = {
-  id: 'LJM-CUR-MING-LETTERS',
-  tag: '明的家书',
-  title: '明的家书',
-  description: '本辑按“明的家书”标签归集已公开的家庭书信，写作年代见各件档案。信中记下远行时与家人的通信，也谈到孩子的学习、住处、日常开支和身体照料。相隔各地的想念，常藏在这些具体的家常话里。这里是网站的主题选览，并非另有一件实物相册。',
-} as const;
 
 // 照片主题选览与信件选览同理：按已公开标签归集，不代表另有一件实物相册。
 export const curatedPhotoAlbums = [
@@ -33,17 +28,16 @@ export const curatedPhotoAlbums = [
 /** 按相册编号找到对应的线上主题选览配置；实物相册返回 undefined。 */
 export const curatedAlbumForId = (albumId: string | undefined) => {
   if (!albumId) return undefined;
-  if (albumId === curatedLetterAlbum.id) return curatedLetterAlbum;
-  return curatedPhotoAlbums.find((album) => album.id === albumId);
+  return correspondenceIndex.forId(albumId) ?? curatedPhotoAlbums.find((album) => album.id === albumId);
 };
 
 export const albumIdForItem = (item: ArchiveItem): string | undefined => {
-  if (item.core.object_type === 'LET')
-    return item.public_view.tags?.includes(curatedLetterAlbum.tag) ? curatedLetterAlbum.id : undefined;
-  if (!['ALB', 'PHO'].includes(item.core.object_type)) return undefined;
-  // 实物相册归属优先；没有实物相册的照片，才按主题标签进入线上选览。
-  const physicalAlbumId = normalizeAlbumId(item.core.album_id);
+  const physical = ['ALB', 'PHO'].includes(item.core.object_type);
+  const physicalAlbumId = physical && normalizeAlbumId(item.core.album_id);
   if (physicalAlbumId) return physicalAlbumId;
+  const topic = correspondenceIndex.forRecord(item);
+  if (topic) return topic.id;
+  if (!physical) return undefined;
   const tags = item.public_view.tags ?? [];
   return curatedPhotoAlbums.find((album) => tags.includes(album.tag))?.id;
 };
@@ -72,7 +66,7 @@ export const buildAlbumGroups = (items: ArchiveItem[]): AlbumGroup[] => {
     // 以永久编号稳定排序，多个总册时保持可见并让维护检查提示，避免输入次序决定标题。
     const members = [...entries].sort((left, right) => left.core.item_id.localeCompare(right.core.item_id, 'en'));
     return {
-      albumId, slug: albumSlug(albumId), href: albumHref(albumId), members,
+      albumId, isCorrespondence: Boolean(correspondenceIndex.forId(albumId)), slug: albumSlug(albumId), href: albumHref(albumId), members,
       albums: members.filter((item) => item.core.object_type === 'ALB'),
       photos: members.filter((item) => item.core.object_type === 'PHO'),
       letters: members.filter((item) => item.core.object_type === 'LET'),

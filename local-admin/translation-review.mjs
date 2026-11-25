@@ -1,3 +1,4 @@
+import {correspondenceTopics} from '../shared/correspondence-topic-list.mjs';
 // 私密复核材料生成器：不写译文维护目录，不设置审核人或发布状态。
 import {getTranslationValueHash} from '../shared/archive-translations.mjs';
 import {translationLocales} from '../shared/locale-config.mjs';
@@ -40,7 +41,7 @@ export function createTranslationReview(snapshot,overrides={}){
   validateReviewPatch(packet,record);packets.push(packet);
  }
  packets.sort((a,b)=>a.priority-b.priority||Number(a.locale!=='en')-Number(b.locale!=='en')||a.item_id.localeCompare(b.item_id)||a.locale.localeCompare(b.locale));
- const albums=snapshot.groups.flatMap(group=>translationLocales.map(locale=>({album_id:group.album_id,slug:group.slug,locale,member_count:group.members.length,pending_members:group.members.filter(id=>byId.get(id)?.translations[locale]?.published_state!=='published'),editorial_review_required:group.album_id.startsWith('LJM-CUR-')&&['en','th'].includes(locale)})));
+ const albums=snapshot.groups.flatMap(group=>translationLocales.map(locale=>({album_id:group.album_id,slug:group.slug,locale,member_count:group.members.length,pending_members:group.members.filter(id=>byId.get(id)?.translations[locale]?.published_state!=='published'),editorial_review_required:correspondenceTopics.some(topic=>topic.id===group.album_id)||(group.album_id.startsWith('LJM-CUR-')&&['en','th'].includes(locale))})));
  return {schema_version:1,created_at:snapshot.created_at,input_manifest_hash:snapshot.input_manifest_hash,public_count:snapshot.public_count,packets,albums,summary:{records:packets.length,fields:packets.reduce((sum,packet)=>sum+packet.targets.length,0),candidates:packets.reduce((sum,packet)=>sum+packet.targets.filter(target=>target.candidate).length,0),existing_drafts:packets.filter(packet=>packet.has_existing_draft).length,by_locale:Object.fromEntries(translationLocales.map(locale=>[locale,packets.filter(packet=>packet.locale===locale).length]))}};
 }
 

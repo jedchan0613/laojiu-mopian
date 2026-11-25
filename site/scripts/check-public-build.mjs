@@ -565,13 +565,16 @@ for (const page of htmlEntries) {
 	if (!/^(?:(?:en|th|ja|ko|zh-hant)\/)?albums\//.test(page.relativePath)) continue;
 	const photos = [...page.html.matchAll(/data-album-photo-id="([^"]+)"/g)].map((match) => match[1]);
 	const letters = [...page.html.matchAll(/data-album-letter-id="([^"]+)"/g)].map((match) => match[1]);
+	const correspondence = [...page.html.matchAll(/data-album-correspondence-id="([^"]+)"/g)].map(match => match[1]);
+	const declaredCorrespondenceCount = Number(page.html.match(/data-album-correspondence-count="(\d+)"/)?.[1] ?? 0);
+	check(correspondence.length === declaredCorrespondenceCount && new Set(correspondence).size === correspondence.length, `${page.relativePath} 的专题成员数量或唯一性不符。`);
 	const declaredCount = Number(page.html.match(/data-album-photo-count="(\d+)"/)?.[1]);
 	const declaredLetterCount = Number(page.html.match(/data-album-letter-count="(\d+)"/)?.[1]);
 	const albumPages = [...page.html.matchAll(/data-album-page-owner="([^"]+)"\s+data-album-page-index="(\d+)"/g)].map(match => ({ owner: match[1], index: Number(match[2]) }));
 	const declaredPageCount = Number(page.html.match(/data-album-page-count="(\d+)"/)?.[1] ?? 0);
 	check(albumPages.length === declaredPageCount, `${page.relativePath} 的整册影像数量与附件目录不一致。`);
 	check(new Set(albumPages.map(entry => `${entry.owner}:${entry.index}`)).size === albumPages.length, `${page.relativePath} 重复列出整册附件。`);
-	check(!albumPages.length || (!photos.length && !letters.length), `${page.relativePath} 把整册附件与独立档案混计。`);
+	check(!albumPages.length || (!photos.length && !letters.length && !correspondence.length), `${page.relativePath} 把整册附件与独立档案混计。`);
 	check(photos.length === declaredCount, `${page.relativePath} 的照片数量与目录不一致。`);
 	check(letters.length === declaredLetterCount, `${page.relativePath} 的信件数量与目录不一致。`);
 	check(new Set(photos).size === photos.length, `${page.relativePath} 重复列出同一张照片。`);
@@ -579,7 +582,7 @@ for (const page of htmlEntries) {
 	check(!(photos.length && letters.length), `${page.relativePath} 混合了照片与信件选览。`);
 	check(page.html.includes('"@type":"CollectionPage"'), `${page.relativePath} 缺少相册结构化信息。`);
 	const localePrefix = /^(en|th|ja|ko|zh-hant)\//.exec(page.relativePath)?.[0] ?? '';
-	for (const id of [...photos, ...letters]) check(builtPagePaths.has(`${localePrefix}archive/${id}/index.html`), `${page.relativePath} 列出不存在的档案：${id}。`);
+	for (const id of new Set([...photos, ...letters, ...correspondence])) check(builtPagePaths.has(`${localePrefix}archive/${id}/index.html`), `${page.relativePath} 列出不存在的档案：${id}。`);
 	for (const entry of albumPages) {
 		const detailPath = `${localePrefix}archive/${entry.owner}/index.html`;
 		const detail = htmlEntries.find(candidate => candidate.relativePath === detailPath);
@@ -589,6 +592,8 @@ for (const page of htmlEntries) {
 	}
 	if (localePrefix) {
 		const chinesePage = htmlEntries.find((entry) => entry.relativePath === page.relativePath.slice(localePrefix.length));
+		const chineseCorrespondence = [...(chinesePage?.html ?? '').matchAll(/data-album-correspondence-id="([^"]+)"/g)].map(match => match[1]);
+		check(JSON.stringify(correspondence) === JSON.stringify(chineseCorrespondence), `${page.relativePath} 的专题成员或顺序与中文版不一致。`);
 		const chinesePhotos = [...(chinesePage?.html ?? '').matchAll(/data-album-photo-id="([^"]+)"/g)].map((match) => match[1]);
 		check(JSON.stringify(photos) === JSON.stringify(chinesePhotos), `${page.relativePath} 的照片数量或顺序与中文版不一致。`);
 		const chineseLetters = [...(chinesePage?.html ?? '').matchAll(/data-album-letter-id="([^"]+)"/g)].map((match) => match[1]);

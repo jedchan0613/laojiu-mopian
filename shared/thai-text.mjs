@@ -1,5 +1,16 @@
 // Fixed interface and catalogue labels. Archive prose and visitor input are separate.
 export const thaiMessages = {
+  "Albums and collections group records for browsing. Each record is counted individually.": "อัลบั้มและชุดเรื่องรวบรวมเอกสารให้เปิดดูด้วยกัน โดยนับเอกสารแต่ละชิ้นแยกกัน",
+  "No matching albums or collections.": "ไม่พบอัลบั้มหรือชุดเรื่องที่ตรงกับเงื่อนไข",
+  "{0} {1} records · {2} albums or collections, {3} individual records{4}": "{0} เอกสาร {1} ชิ้น · {2} อัลบั้มหรือชุดเรื่อง และเอกสารแยก {3} ชิ้น{4}",
+  "From the ship come questions about home; from home comes the question of when the ship will reach port. Schoolwork, a place to live, household expenses and health each earn a few lines. This collection brings together the ordinary things people wrote across that distance. The dates are recorded with the individual letters.": "คนบนเรือถามข่าวทางบ้าน คนที่บ้านก็อยากรู้ว่าเรือจะเข้าเทียบท่าเมื่อไร การเรียนของลูก ที่พัก ค่าใช้จ่ายประจำวัน และสุขภาพต่างมีที่ให้เขียนถึง ชุดจดหมายนี้รวบรวมเรื่องเล่าธรรมดาที่ส่งถึงกันข้ามระยะทาง ดูช่วงเวลาที่เขียนได้ในจดหมายแต่ละฉบับ",
+  "Correspondence collection": "ชุดจดหมายและไปรษณียบัตร",
+  "Albums and collections": "อัลบั้มและชุดเรื่อง",
+  "View all albums and collections →": "ดูอัลบั้มและชุดเรื่องทั้งหมด →",
+  "Open collection →": "เปิดชุดเรื่อง →",
+  "Browse this collection ↓": "ดูเอกสารในชุดนี้ ↓",
+  "Records in this collection": "เอกสารในชุดนี้",
+  "Ordered by the dates recorded in the archive.": "เรียงตามวันที่ที่ระบุในจดหมายเหตุ",
   "Please sign in again.": "โปรดเข้าสู่ระบบอีกครั้ง",
   "This action is not permitted. Check your account and try again.": "ไม่อนุญาตให้ดำเนินการนี้ โปรดตรวจสอบบัญชีแล้วลองอีกครั้ง",
   "Too many requests. Please try again later.": "มีคำขอมากเกินไป โปรดลองอีกครั้งในภายหลัง",

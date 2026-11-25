@@ -12,3 +12,8 @@ test('主题选览既有英泰编辑审核门禁保留，不因分件全过而�
  for(const locale of ['en','th'])assert.equal(albumTranslationAvailable(locale,{curated:true,memberStates:['published']}),false);
  for(const locale of ['ja','ko','zh-Hant'])assert(albumTranslationAvailable(locale,{curated:true,memberStates:['published']}));
 });
+
+test('新专题的题名与说明只有中文时，分件已译也不声称专题已译',()=>{
+ for(const locale of ['en','th','ja','ko','zh-Hant'])assert.equal(albumTranslationAvailable(locale,{curated:true,sourceOnly:true,memberStates:['published']}),false);
+ assert(albumTranslationAvailable('zh-CN',{curated:true,sourceOnly:true,memberStates:['published']}));
+});

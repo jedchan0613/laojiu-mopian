@@ -1,5 +1,5 @@
 import type { ArchiveItem } from './archive';
-import { buildAlbumGroups, albumDateSummary, curatedAlbumForId, curatedLetterAlbum } from './album-groups';
+import { buildAlbumGroups, albumDateSummary, curatedAlbumForId } from './album-groups';
 import { createArchiveRecordView } from './archive-view';
 import { t, type Locale } from '../i18n/ui';
 
@@ -11,7 +11,7 @@ export const createAlbumBrowseViews = (items: ArchiveItem[], locale: Locale) =>
     const photoViews = memberViews.filter((view) => view.objectType === 'PHO');
     const albumViews = memberViews.filter((view) => view.objectType === 'ALB');
     const curated = curatedAlbumForId(group.albumId);
-    const isLetterCollection = group.albumId === curatedLetterAlbum.id;
+    const isLetterCollection = group.isCorrespondence && group.letters.length === group.members.length;
     const coverView = albumView?.images[0] ? albumView : memberViews.find((view) => view.images[0]);
     return {
       slug: group.slug,
@@ -19,13 +19,15 @@ export const createAlbumBrowseViews = (items: ArchiveItem[], locale: Locale) =>
       title: curated ? t(curated.title, locale) : albumView?.title || t('相册 {0}', locale, { 0: group.albumId }),
       description: curated ? t(curated.description, locale) : albumView?.description || '',
       isLetterCollection,
+      isCorrespondence: group.isCorrespondence,
+      isCurated: Boolean(curated),
       coverPath: coverView?.images[0],
       coverDescription: coverView?.imageDescriptions[0],
       memberIds: group.members.map((item) => item.core.item_id),
       recordCount: group.members.length,
       photoCount: photoViews.length,
       letterCount: group.letters.length,
-      imageCount: photoViews.reduce((count, view) => count + view.images.length, 0),
+      imageCount: (group.isCorrespondence ? memberViews : photoViews).reduce((count, view) => count + view.images.length, 0),
       albumCount: albumViews.length,
       albumImageCount: albumViews.reduce((count, view) => count + view.images.length, 0),
       dateSummary: albumDateSummary(group.members),

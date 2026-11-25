@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { correspondenceIndex, createCorrespondenceIndex } from '../../shared/correspondence-topics.mjs';
 import { compareAlbumPositions } from '../../shared/album-position.mjs';
 import { getDecade, getManagementStatus, sortDictionaryEntries } from '../../shared/archive-reference.mjs';
 
@@ -17,7 +18,7 @@ const record = (id, type = 'PHO', albumId = '相册甲', extra = {}) => ({
     date_display: '年代未知', use_status: 'U3', privacy_level: 'G', publication_file_path: [], ...extra },
   metadata: {}, public_view: {},
 });
-const setup = (records, overrides = {}) => {
+const setup = (records, overrides = {}, index = correspondenceIndex) => {
   const state = { records, recordStatusFilter: 'normal', search: '', recordTypeFilter: '', recordDecadeFilter: '',
     recordQuickStatus: '', recordAlbumFilter: '', recordOpenAlbum: '', recordAlbumReturnState: null,
     recordBrowseNotice: '', recordBrowseMode: 'albums', recordSort: 'id-asc', recordPage: 1, recordPageSize: 15,
@@ -31,7 +32,7 @@ const setup = (records, overrides = {}) => {
   const calls = [];
   const scope = {
     state, elements, compareAlbumPositions, getDecade, getManagementStatus, sortDictionaryEntries, albumAwareObjectTypes: new Set(['PHO', 'ALB']),
-    curatedLetterAlbum: { id: 'LJM-CUR-MING-LETTERS', tag: '明的家书', title: '明的家书' },
+    correspondenceIndex: index,
     chineseCollator: new Intl.Collator('zh-CN'), hasUnsavedChanges: () => state.dirty || state.translation.dirty,
     sortedRecords: (items) => [...items], syncRecordToolOptions: () => {}, maintenanceTasksForRecord: () => [],
     queryCodeLabel: (_dictionary, value) => value, deepClone: structuredClone,
@@ -210,4 +211,18 @@ test('保存取消相册归属时保留活动档案并说明未归册，普通�
   assert.match(c.state.recordBrowseNotice, /已保存为未归册档案/);
   await c.loadBootstrap('P');
   assert.equal(c.state.activeId, null);
+});
+
+test('信与卡共用一个专题，真实件数、选览文字和逐件下钻保持一致', () => {
+  const ids = ['LJM-20990101-LET-001','LJM-20990101-PST-001'];
+  const topic = { id:'LJM-CUR-TEST', title:'一组通信', description:'合成测试', memberIds:ids };
+  const c = setup([record(ids[0],'LET',''),record(ids[1],'PST',''),record('single','PST','')], {}, createCorrespondenceIndex([topic], []));
+  c.renderRecordList();
+  assert.match(c.elements.recordCount.textContent,/正常档案 3 件/);
+  assert.match(c.elements.recordList.innerHTML,/2 件通信档案/);
+  c.openRecordAlbum(topic.id);
+  c.renderRecordList();
+  assert.deepEqual(c.filteredRecords().map(entry=>entry.core.item_id),ids);
+  assert.match(c.elements.recordAlbumContext.innerHTML,/合成测试/);
+  assert.doesNotMatch(c.elements.recordAlbumContext.innerHTML,/new-photo|暂无总档案/);
 });

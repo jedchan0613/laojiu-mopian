@@ -195,12 +195,15 @@ const relatedRecordEntries = publishedViews
 const recordUrl = Astro.site ? new URL(localizePath(`/archive/${view.id}/`, locale), Astro.site) : undefined;
 // 入口与生成页面使用同一套公开分组，避免历史编号产生断链或误计其他物件。
 const albumGroup = publishedAlbumGroups().find((group) => group.members.some((member) => member.core.item_id === view.id));
-const isLetterCollection = Boolean(albumGroup?.letters.length);
-const albumMateCount = isLetterCollection ? albumGroup!.letters.length : albumGroup?.photos.length ?? 0;
-const isWholeAlbumGroup = Boolean(albumGroup && !isLetterCollection && !albumGroup.photos.length && albumGroup.albums.length);
+const isCorrespondence = Boolean(albumGroup?.isCorrespondence);
+const albumMateCount = isCorrespondence ? albumGroup!.members.length : albumGroup?.photos.length ?? 0;
+const albumContextLabel = isCorrespondence ? t("本辑档案", locale) : t("同册照片", locale);
+const albumPreviousLabel = isCorrespondence ? t("← 上一件", locale) : `← ${t("同册上一件", locale)}`;
+const albumNextLabel = isCorrespondence ? t("下一件 →", locale) : `${t("同册下一件", locale)} →`;
+const isWholeAlbumGroup = Boolean(albumGroup && !isCorrespondence && !albumGroup.photos.length && albumGroup.albums.length);
 const wholeAlbumImageCount = albumGroup?.albums.reduce((count, album) => count + album.core.publication_file_path.length, 0) ?? 0;
-const albumPhotos = [...(isLetterCollection ? albumGroup!.letters : albumGroup?.photos ?? [])].sort((left,right) =>
-  isLetterCollection ?
+const albumPhotos = [...(isCorrespondence ? albumGroup!.members : albumGroup?.photos ?? [])].sort((left,right) =>
+  isCorrespondence ?
     (left.core.date_start || left.core.date_display || '').localeCompare(right.core.date_start || right.core.date_display || '') || left.core.item_id.localeCompare(right.core.item_id) :
   compareAlbumPositions(left.core.original_position,right.core.original_position) ||
   left.core.title.localeCompare(right.core.title,'zh-CN') || left.core.item_id.localeCompare(right.core.item_id));
@@ -214,8 +217,8 @@ const nextBrowseView = albumPhotoIndex >= 0
   ? (nextAlbumPhoto ? createArchiveRecordView(nextAlbumPhoto, locale) : undefined) : nextView;
 const albumLinkLabel = albumGroup
   ? (isWholeAlbumGroup ? `${t('{0} 件相册档案 · {1} 幅整册影像', locale, { 0: albumGroup.albums.length, 1: wholeAlbumImageCount })} →`
-    : isLetterCollection ? t("查看《明的家书》信件选览（共 {0} 件） →", locale, { 0: albumMateCount }) : curatedAlbumForId(albumGroup!.albumId)
-    ? t(`查看《${curatedAlbumForId(albumGroup!.albumId)!.title}》主题选览（共 {0} 件） →`, locale, { 0: albumMateCount })
+    : curatedAlbumForId(albumGroup.albumId)
+    ? `${t(curatedAlbumForId(albumGroup.albumId)!.title, locale)} · ${t("{0} 件公开档案", locale, { 0: albumMateCount })} →`
     : item.core.object_type === 'ALB'
     ? t("翻阅本册档案（共 {0} 件） →", locale, { 0: albumMateCount })
     : t("查看整本相册（共 {0} 件照片档案） →", locale, { 0: albumMateCount }))
@@ -305,14 +308,14 @@ const breadcrumbStructuredData = {
       </div>
       {hasText(view.description) && <p class="record-lead">{view.description}</p>}
       {albumGroup && (
-        <nav class="record-album-context" aria-label={isWholeAlbumGroup ? t('整册影像', locale) : isLetterCollection ? t("同辑信件", locale) : t("同册照片", locale)}>
+        <nav class="record-album-context" aria-label={isWholeAlbumGroup ? t('整册影像', locale) : albumContextLabel}>
           <div>
             <a class="ui-text-link" href={localizePath(albumGroup.href, locale)} data-album-entry>{albumLinkLabel}</a>
             {item.core.object_type === 'PHO' && item.core.original_position && <small>{t("相册中的位置", locale)}：{item.core.original_position}</small>}
           </div>
           {(previousAlbumPhoto || nextAlbumPhoto) && <div class="record-album-navigation">
-            {previousAlbumPhoto && <a href={localizePath(`/archive/${previousAlbumPhoto.core.item_id}/`, locale)} rel="prev">← {t("同册上一件", locale)}</a>}
-            {nextAlbumPhoto && <a href={localizePath(`/archive/${nextAlbumPhoto.core.item_id}/`, locale)} rel="next">{t("同册下一件", locale)} →</a>}
+            {previousAlbumPhoto && <a href={localizePath(`/archive/${previousAlbumPhoto.core.item_id}/`, locale)} rel="prev">{albumPreviousLabel}</a>}
+            {nextAlbumPhoto && <a href={localizePath(`/archive/${nextAlbumPhoto.core.item_id}/`, locale)} rel="next">{albumNextLabel}</a>}
           </div>}
         </nav>
       )}
@@ -701,19 +704,19 @@ const breadcrumbStructuredData = {
     </section>
 
     {(previousBrowseView || nextBrowseView) && (
-      <nav class="record-neighbors" aria-label={albumPhotoIndex >= 0 ? t("同册照片", locale) : t("{0}档案导航", locale, {0: (currentCategory?.label ?? '同类')})}>
-        <p>{t("继续浏览 ·", locale)} {albumPhotoIndex >= 0 ? t("同册照片", locale) : currentCategory?.label ?? '同类档案'}</p>
+      <nav class="record-neighbors" aria-label={albumPhotoIndex >= 0 ? albumContextLabel : t("{0}档案导航", locale, {0: (currentCategory?.label ?? '同类')})}>
+        <p>{t("继续浏览 ·", locale)} {albumPhotoIndex >= 0 ? albumContextLabel : currentCategory?.label ?? '同类档案'}</p>
         <div>
           {previousBrowseView && (
             <a href={localizePath(`/archive/${previousBrowseView.id}/`, locale)} data-record-nav data-record-target={previousBrowseView.id}>
-              <small>{albumPhotoIndex >= 0 ? `← ${t("同册上一件", locale)}` : t("← 上一件", locale)}</small>
+              <small>{albumPhotoIndex >= 0 ? albumPreviousLabel : t("← 上一件", locale)}</small>
               <strong>{previousBrowseView.title}</strong>
               <span>{previousBrowseView.dateDisplay}</span>
             </a>
           )}
           {nextBrowseView && (
             <a class="is-next" href={localizePath(`/archive/${nextBrowseView.id}/`, locale)} data-record-nav data-record-target={nextBrowseView.id}>
-              <small>{albumPhotoIndex >= 0 ? `${t("同册下一件", locale)} →` : t("下一件 →", locale)}</small>
+              <small>{albumPhotoIndex >= 0 ? albumNextLabel : t("下一件 →", locale)}</small>
               <strong>{nextBrowseView.title}</strong>
               <span>{nextBrowseView.dateDisplay}</span>
             </a>

@@ -159,10 +159,10 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
       </header>
       <nav class="archive-view-modes" aria-label={t('浏览方式', locale)}>
         <a href={localizePath('/archive/', locale)} data-archive-view="grouped" aria-current="page">{t('相册与单件', locale)}</a>
-        <a href={localizePath('/archive/?view=albums', locale)} data-archive-view="albums">{t('仅看相册', locale)}</a>
+        <a href={localizePath('/archive/?view=albums', locale)} data-archive-view="albums">{t('相册与专题', locale)}</a>
         <a href={localizePath('/archive/?view=items', locale)} data-archive-view="items">{t('逐件查看全部档案', locale)}</a>
       </nav>
-      <p class="archive-view-note">{t('同册档案默认收拢，进入相册后逐件查看。数量始终按真实档案件数统计，含相册总档案。', locale)}</p>
+      <p class="archive-view-note">{t('相册与专题集中展示，数量按单件档案统计。', locale)}</p>
       <div class="archive-controls" aria-label={t("档案搜索与筛选", locale)}>
         <div class="archive-control">
           <label for="archive-search">{t("关键词搜索", locale)}</label>
@@ -831,8 +831,8 @@ import '../../scripts/archive-likes';
       const hasKeywordFilter = terms.length > 0;
       resultsSummary.textContent = hasOnlyCategoryFilter ? ct("当前暂无此类档案。") : ct("没有找到符合条件的档案。");
       if (viewMode === 'albums') {
-        resultsSummary.textContent = ct('没有找到符合条件的相册。');
-        if (emptyTitle) emptyTitle.textContent = ct('没有找到符合条件的相册。');
+        resultsSummary.textContent = ct('没有找到符合条件的相册或专题。');
+        if (emptyTitle) emptyTitle.textContent = ct('没有找到符合条件的相册或专题。');
         if (emptyDescription) emptyDescription.textContent = ct('可以清除筛选，或切换到“相册与单件”浏览其他档案。');
         return;
       }
@@ -849,7 +849,7 @@ import '../../scripts/archive-likes';
     const itemCount = displayGroups.filter((group) => group.kind === 'item').length;
     resultsSummary.textContent = viewMode === 'items'
       ? ct('{0} {1} 件档案 · 逐件展示{2}', {0: hasActiveFilters ? ct('找到') : ct('共'), 1: matchingEntries.length, 2: rangeText})
-      : ct('{0} {1} 件档案 · {2} 本相册、{3} 件未归册档案{4}', {
+      : ct('{0} {1} 件档案 · {2} 个相册或专题、{3} 件散件{4}', {
       0: hasActiveFilters ? ct('找到') : ct('共'), 1: matchingEntries.length,
       2: albumCount, 3: itemCount, 4: rangeText,
     });

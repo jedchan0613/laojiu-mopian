@@ -11,6 +11,7 @@ const archiveViewSource = await readFile(sourceUrl('archive-view.ts'), 'utf8');
 const publishedPredicate = archiveViewSource.match(/^export const isPublishedArchiveItem[^\r\n]+/m)?.[0];
 assert.ok(publishedPredicate, '应能读取项目实际使用的公开门禁');
 const groupSource = (await readFile(sourceUrl('album-groups.ts'), 'utf8'))
+  .replace("../../../shared/correspondence-topics.mjs", new URL('../../shared/correspondence-topics.mjs', import.meta.url).href)
   .replace(/import \{ archiveItems, type ArchiveItem \} from '\.\/archive';/, 'const archiveItems = [];')
   .replace(/import \{ isPublishedArchiveItem \} from '\.\/archive-view';/, publishedPredicate);
 const groupModuleUrl = moduleUrl(groupSource);
@@ -31,7 +32,7 @@ const createArchiveRecordViewStub = (item) => {
 const translateStub = (text, _locale, values = {}) => text.replace(/\{(\d+)\}/g, (_, key) => String(values[key]));
 const browseSource = (await readFile(sourceUrl('album-browse.ts'), 'utf8'))
   .replace(/import type \{ ArchiveItem \} from '\.\/archive';/, '')
-  .replace(/import \{ buildAlbumGroups, albumDateSummary, curatedAlbumForId, curatedLetterAlbum \} from '\.\/album-groups';/, `import { buildAlbumGroups, albumDateSummary, curatedAlbumForId, curatedLetterAlbum } from '${groupModuleUrl}';`)
+  .replace(/import \{ buildAlbumGroups, albumDateSummary, curatedAlbumForId \} from '\.\/album-groups';/, `import { buildAlbumGroups, albumDateSummary, curatedAlbumForId } from '${groupModuleUrl}';`)
   .replace(/import \{ createArchiveRecordView \} from '\.\/archive-view';/, `const createArchiveRecordView = ${createArchiveRecordViewStub.toString()};`)
   .replace(/import \{ t, type Locale \} from '\.\.\/i18n\/ui';/, `const t = ${translateStub.toString()};`);
 const { createAlbumBrowseViews } = await import(moduleUrl(browseSource));

@@ -1,3 +1,4 @@
+import { correspondenceIndex } from './correspondence-topics.mjs';
 import { compareAlbumPositions, parseAlbumPosition, albumPositionIdentity } from './album-position.mjs';
 import { filterApprovedMetadataIssues } from './publication-metadata-approvals.mjs';
 import { getDecade, getDecadeOptions, getArchiveCategoryOptions, getArchiveTypeOrder,
@@ -33,7 +34,6 @@ const commonFieldSectionLabels = new Map([
 const albumRelationFieldCodes = new Set(['album_id', 'original_position']);
 
 const albumAwareObjectTypes = new Set(['PHO', 'ALB']);
-const curatedLetterAlbum = { id: 'LJM-CUR-MING-LETTERS', tag: '明的家书', title: '明的家书' };
 
 const commonFieldSectionFor = (definition, { required = false, value, objectType } = {}) => {
 	if (hiddenCommonFieldCodes.has(definition.field_code) && !definition.required && !required &&
@@ -1073,13 +1073,11 @@ const filteredRecords = () => {
 
 const chineseCollator = new Intl.Collator('zh-CN');
 
-// 信件选览只依赖已维护标签，不虚构实物相册记录，也不改变信件编号。
 const recordAlbumId = (record) => {
-	if (record?.core?.object_type === 'LET')
-		return record.public_view?.tags?.includes(curatedLetterAlbum.tag) ? curatedLetterAlbum.id : '';
 	const value = record?.core?.album_id;
-	return albumAwareObjectTypes.has(record?.core?.object_type) && typeof value === 'string' &&
-		!/[\u0000-\u001f\u007f-\u009f]/.test(value) ? value.trim() : '';
+	if (albumAwareObjectTypes.has(record?.core?.object_type) && typeof value === 'string' &&
+		!/[\u0000-\u001f\u007f-\u009f]/.test(value) && value.trim()) return value.trim();
+	return correspondenceIndex.forRecord(record)?.id || '';
 };
 
 const compareAlbumRecords = (left, right) =>
@@ -1108,7 +1106,11 @@ const buildAdminAlbumGroups = (records) => {
 		group.albums.sort(compareAlbumRecords);
 		group.photos.sort(compareAlbumRecords);
 		group.letters.sort(compareAlbumRecords);
-		group.title = group.albumId === curatedLetterAlbum.id ? curatedLetterAlbum.title : group.albums[0]?.core.title || `相册 ${group.albumId}`;
+		group.topic = correspondenceIndex.forId(group.albumId);
+		group.recordCountLabel = group.topic
+			? (group.letters.length === group.members.length ? `${group.members.length} 件信件档案` : `${group.members.length} 件通信档案`)
+			: `${group.photos.length} 件照片档案`;
+		group.title = group.topic?.title || group.albums[0]?.core.title || `相册 ${group.albumId}`;
 	}
 	return groups;
 };
@@ -1132,6 +1134,7 @@ const recordBrowserEntries = (records, tabRecords) => {
 const albumUsageMap = () => {
 	const usage = new Map();
 	for (const [albumId, group] of buildAdminAlbumGroups(state.records.filter((record) => !recordIsWithdrawn(record)))) {
+		if (group.topic) continue;
 		usage.set(albumId, { count: group.members.length, photoCount: group.photos.length,
 			hasAlbumRecord: Boolean(group.albums.length), title: group.albums[0]?.core.title || '' });
 	}
@@ -1514,7 +1517,7 @@ const syncRecordToolOptions = (tabRecords) => {
 		.join('')}`;
 	const albumGroups = buildAdminAlbumGroups(tabRecords);
 	elements.recordAlbumOptions.innerHTML = [...albumGroups.entries()].sort((left, right) => left[0].localeCompare(right[0]))
-		.map(([albumId, group]) => `<option value="${escapeHtml(albumId)}">${escapeHtml(`${group.title} · ${group.letters.length ? `${group.letters.length} 件信件档案` : `${group.photos.length} 件照片档案`}`)}</option>`)
+		.map(([albumId, group]) => `<option value="${escapeHtml(albumId)}">${escapeHtml(`${group.title} · ${group.recordCountLabel}`)}</option>`)
 		.join('');
 	if (elements.recordAlbumFilter.value !== state.recordAlbumFilter) elements.recordAlbumFilter.value = state.recordAlbumFilter;
 	for (const [filter, field, dictionary, emptyLabel] of [
@@ -1550,16 +1553,16 @@ const renderAlbumBrowserContext = (tabRecords) => {
 		return;
 	}
 	const group = buildAdminAlbumGroups(tabRecords).get(state.recordOpenAlbum);
-	const isLetterCollection = group?.albumId === curatedLetterAlbum.id;
+	const topic = group?.topic;
 	const parent = group?.albums.length === 1 ? group.albums[0] : null;
 	elements.recordAlbumContext.innerHTML = `
 		<button class="text-button" data-album-browser-action="back" type="button">← 返回总览</button>
 		<strong>${escapeHtml(group?.title || `相册 ${state.recordOpenAlbum}`)}</strong>
 		<small>${escapeHtml(state.recordOpenAlbum)} · 本册 ${group?.members.length ?? 0} 件档案</small>
-		${isLetterCollection ? '<p>依据“明的家书”标签归集的线上信件选览，并非实物相册。</p>' : group?.albums.length > 1 ? '<p>同编号有多个总档案，请逐件核对。</p>' : !parent ? '<p>此分区尚无相册总档案。</p>' : ''}
+		${topic ? `<p>${escapeHtml(topic.description)}</p>` : group?.albums.length > 1 ? '<p>同编号有多个总档案，请逐件核对。</p>' : !parent ? '<p>此分区尚无相册总档案。</p>' : ''}
 		<div class="record-album-actions">
 			${parent ? `<button class="text-button" data-album-browser-action="parent" data-id="${escapeHtml(parent.core.item_id)}" type="button">查看总档案</button>` : ''}
-			${!isLetterCollection && group?.members.length && state.recordStatusFilter !== 'withdrawn' ? '<button class="text-button" data-album-browser-action="new-photo" title="先保存当前修改，再新增同册照片" type="button">新增同册照片</button>' : ''}
+			${!topic && group?.members.length && state.recordStatusFilter !== 'withdrawn' ? '<button class="text-button" data-album-browser-action="new-photo" title="先保存当前修改，再新增同册照片" type="button">新增同册照片</button>' : ''}
 		</div>`;
 	refreshAlbumBrowserActions();
 };
@@ -1571,9 +1574,9 @@ const renderRecordAlbumCard = (entry) => {
 	const draftCount = group.members.filter((record) => record._admin?.hasDraft).length;
 	return `<button class="record-card record-album-card" data-open-album="${escapeHtml(group.albumId)}" type="button">
 		<span class="record-card-thumb">${image ? `<img src="${escapeHtml(image.thumbnailUrl || image.previewUrl)}" alt="" loading="lazy" decoding="async" />` : '<span aria-hidden="true">▤</span>'}</span>
-		<span class="record-card-copy"><span class="record-card-title"><strong>${escapeHtml(group.title)}</strong><em class="record-status-chip">${group.letters.length ? '信件选览' : '相册'}</em></span>
+		<span class="record-card-copy"><span class="record-card-title"><strong>${escapeHtml(group.title)}</strong><em class="record-status-chip">${group.topic ? '通信专题' : '相册'}</em></span>
 		<span class="record-card-meta">本册 ${group.members.length} 件 · 当前命中 ${matchedCount} 件</span>
-		<span class="record-card-meta">${group.letters.length ? `${group.letters.length} 件信件档案` : `${group.photos.length} 件照片档案`}${draftCount ? ` · ${draftCount} 件有草稿` : ''}${group.letters.length ? '' : group.albums.length > 1 ? ' · 总档案重复' : !group.albums.length ? ' · 暂无总档案' : ''}</span>
+		<span class="record-card-meta">${group.recordCountLabel}${draftCount ? ` · ${draftCount} 件有草稿` : ''}${group.topic ? '' : group.albums.length > 1 ? ' · 总档案重复' : !group.albums.length ? ' · 暂无总档案' : ''}</span>
 		<small>${escapeHtml(group.albumId)}</small></span>
 	</button>`;
 };

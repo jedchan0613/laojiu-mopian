@@ -3439,7 +3439,7 @@ const adminServer = http.createServer(async (request, response) => {
 		}
 		if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname.startsWith('/admin/')) {
 			// 仅提供管理页需要的一个共享模块；此分支之前已完成线上 Access 鉴权。
-			if (['/admin/album-position.mjs', '/admin/publication-metadata-approvals.mjs', '/admin/archive-reference.mjs'].includes(url.pathname)) {
+			if (['/admin/album-position.mjs', '/admin/publication-metadata-approvals.mjs', '/admin/archive-reference.mjs', '/admin/correspondence-topics.mjs', '/admin/correspondence-topic-list.mjs'].includes(url.pathname)) {
 				await sendFile(response, sharedAlbumModuleDirectory, `/${path.basename(url.pathname)}`, {
 					cacheControl: 'no-store', request,
 				});

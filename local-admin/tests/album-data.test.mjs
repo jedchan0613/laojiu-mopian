@@ -8,9 +8,12 @@ import {
 
 // Node原生去除类型，注入小型测试档案；执行真实分组源码，不加载生产档案或改写它们。
 const groupSource = (await readFile(new URL('../../site/src/data/album-groups.ts', import.meta.url), 'utf8'))
+  .replace("../../../shared/correspondence-topics.mjs", new URL('../../shared/correspondence-topics.mjs', import.meta.url).href)
   .replace(/import \{ archiveItems, type ArchiveItem \} from '\.\/archive';/, 'const archiveItems = [];')
   .replace(/import \{ isPublishedArchiveItem \} from '\.\/archive-view';/, `const isPublishedArchiveItem = (item) => item.core.record_status === 'ACT' && item.core.use_status === 'U3' && item.core.privacy_level === 'G';`);
 const groups = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(groupSource)).toString('base64')}`);
+const registryUrl = new URL('../../shared/correspondence-topics.mjs', import.meta.url).href;
+
 const record = (id, objectType = 'PHO', overrides = {}) => ({
   core: { item_id: id, object_type: objectType, album_id: '家庭 相册_01', record_status: 'ACT', use_status: 'U3', privacy_level: 'G', date_display: '年代未知', ...overrides },
   metadata: {}, public_view: { tags: [] },
@@ -105,4 +108,26 @@ test('年代汇总读取照片所有起终点/显示年份，年代区间标不�
   assert.deepEqual(summary.knownYears, [1980, 1989, 1993, 1994]);
   assert.equal(items[3].core.date_display, '年代未知');
   assert.equal(groups.albumDateSummary([items[0], items[3]]).range, '');
+});
+
+test('通信专题按核定编号收信、卡或附件，保留实际册籍并排除撤下与未公开档案', async () => {
+  const id = type => `LJM-20990101-${type}-001`;
+  const topic = { id: 'LJM-CUR-TEST', title: '专题样本', description: '合成资料',
+    memberIds: ['LET','PST','PCD','OTH','PHO','CRD'].map(id) };
+  const source = groupSource.replace(
+    `import { correspondenceIndex, curatedLetterAlbum } from '${registryUrl}';`,
+    `import { createCorrespondenceIndex, curatedLetterAlbum } from '${registryUrl}';
+     const correspondenceIndex = createCorrespondenceIndex(${JSON.stringify([topic])}, ['LJM-20990102-LET-001']);`);
+  const { buildAlbumGroups } = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`);
+  const inputs = ['LET','PST','PCD','OTH'].map(type => record(id(type), type, {album_id:''}));
+  inputs.push(record(id('PHO'), 'PHO'), record(id('CRD'), 'CRD', {record_status:'WDR'}));
+  inputs.push(record('LJM-20990102-LET-001', 'LET'), record('LJM-20990102-PST-001','PST'));
+  const found = new Map(buildAlbumGroups(inputs).map(group => [group.albumId,group]));
+  assert.deepEqual(found.get(topic.id).members.map(r=>r.core.item_id).sort(), ['LET','OTH','PCD','PST'].map(id));
+  assert.equal(found.get(topic.id).isCorrespondence,true);
+  assert.equal(found.get(topic.id).letters.length,1);
+  assert.equal(found.get('家庭 相册_01').members.length,1);
+  assert.equal(found.get(groups.curatedLetterAlbum.id).members.length,1);
+  const {createCorrespondenceIndex} = await import(registryUrl);
+  assert.throws(() => createCorrespondenceIndex([topic, {...topic,id:'LJM-CUR-SECOND'}], []), /重复/);
 });

@@ -273,9 +273,9 @@ const pendingCategories = categoryEntries.filter((entry) => entry.count === 0);
 
 		<section class="home-albums" aria-labelledby="home-albums-heading">
 			<header class="home-albums-heading">
-				<div><h2 id="home-albums-heading">{t('按相册浏览', locale)}</h2>
-				<p>{t('同册档案集中查看，进入相册后逐件翻阅。', locale)}</p></div>
-				<a class="ui-text-link" href={localizePath('/archive/?view=albums', locale)}>{t('查看全部相册 →', locale)}</a>
+				<div><h2 id="home-albums-heading">{t('相册与专题', locale)}</h2>
+				<p>{t('相册与专题集中展示，数量按单件档案统计。', locale)}</p></div>
+				<a class="ui-text-link" href={localizePath('/archive/?view=albums', locale)}>{t('查看全部相册与专题 →', locale)}</a>
 			</header>
 			{albumBrowseViews.length > 0
 				? <ul class="home-album-list">{albumBrowseViews.slice(0, 4).map((album) => <li><AlbumBrowseCard album={album} locale={locale} compact /></li>)}</ul>
