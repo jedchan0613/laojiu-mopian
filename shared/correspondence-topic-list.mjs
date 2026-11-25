@@ -1,4 +1,9 @@
-export const mingAdditionalMemberIds = [];
+export const mingAdditionalMemberIds = [
+  'LJM-20260829-LET-006',
+  'LJM-20260829-LET-009',
+  'LJM-20260829-LET-015',
+  'LJM-20260829-LET-016',
+];
 
 export const correspondenceTopics = [
   {
@@ -48,10 +53,12 @@ export const correspondenceTopics = [
   {
     id: 'LJM-CUR-CAMPUS-MAILBOX',
     title: '那只信箱，总有人记得',
-    description: '一张卡上停着摩托车，另一张摆着花和蓝色的瓶子。翻到背面，两份问候都寄往校园，收件栏里写着同一个人。',
+    description: '有人选了摩托车，有人选了蓝瓶里的花，还有人记得问上次的照片。四张明信片寄自不同的笔下，翻到背面，都在同一位收件人的名字旁停了笔。',
     memberIds: [
       'LJM-20261011-PST-018',
       'LJM-20261011-PST-036',
+      'LJM-20261011-PST-043',
+      'LJM-20261011-PST-050',
     ],
   },
   {
@@ -61,6 +68,15 @@ export const correspondenceTopics = [
     memberIds: [
       'LJM-20260808-PCD-001',
       'LJM-20260808-PST-001',
+    ],
+  },
+  {
+    id: 'LJM-CUR-LETTERS-TO-UNCLE',
+    title: '叔叔，上封信我收到了',
+    description: '一封信里，考试将近，写信的人还想再努一把力。另一封把叔叔的鼓励接过来，说自己会慢慢学好。两次提笔，都郑重地写给同一位长辈。',
+    memberIds: [
+      'LJM-20260829-LET-002',
+      'LJM-20260909-LET-001',
     ],
   },
 ];
