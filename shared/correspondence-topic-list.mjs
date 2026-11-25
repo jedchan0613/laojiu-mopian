@@ -9,7 +9,7 @@ export const correspondenceTopics = [
   {
     id: 'LJM-CUR-LETTERS-BEFORE-REUNION',
     title: '留半页，等你回来',
-    description: '五本电影书的书名，一句听英语广播的叮嘱，都写给了同一个称呼。写到重逢，有一封偏偏留了半页空白。翻过另一张信纸，背面又添了几行英文。',
+    description: '五本电影书的书名，一句听英语广播的叮嘱，都写给了同一个称呼。写到重逢，有一封偏偏留了半页空白。翻过另一张信纸，背面又添了几行英文。本辑也收有残页，现存页数与缺失情况见各件档案。',
     memberIds: [
       'LJM-20261110-LET-003',
       'LJM-20261110-LET-006',
@@ -52,22 +52,13 @@ export const correspondenceTopics = [
   },
   {
     id: 'LJM-CUR-CAMPUS-MAILBOX',
-    title: '那只信箱，总有人记得',
-    description: '有人选了摩托车，有人选了蓝瓶里的花，还有人记得问上次的照片。四张明信片寄自不同的笔下，翻到背面，都在同一位收件人的名字旁停了笔。',
+    title: '寄往校园的问候',
+    description: '四份节日问候，都在收件栏写下相同的称呼，寄往同一所学校。卡片上有摩托车、有瓶花，也有人还惦记着上次的照片。',
     memberIds: [
       'LJM-20261011-PST-018',
       'LJM-20261011-PST-036',
       'LJM-20261011-PST-043',
       'LJM-20261011-PST-050',
-    ],
-  },
-  {
-    id: 'LJM-CUR-NEW-YEAR-DEDICATIONS',
-    title: '一座山，一声新年好',
-    description: '一张留下富士山的风景，另一张留下合影和新年的问候。翻到背面，两处题赠都写给同一位先生。山和人就这样在纸上做了邻居。',
-    memberIds: [
-      'LJM-20260808-PCD-001',
-      'LJM-20260808-PST-001',
     ],
   },
   {
