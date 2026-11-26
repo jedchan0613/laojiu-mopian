@@ -31,7 +31,7 @@ export const homepageEditorialCopy = {
     heroTitle: 'Seven Small Photographs, a Walk Through Old Dalian',
     heroPlace: 'Old views of Dalian',
     heroDescription: 'From Friendship Tower to streets, ponds and the bay, explore Dalian through seven black-and-white photographs.',
-    heroRead: 'Browse these photographs',
+    heroRead: 'Browse photos',
     heroCaption: 'Friendship Tower, Lüshun',
     heroCaptionNote: 'A photograph from the collection',
     findRecords: 'Find records',
