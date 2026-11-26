@@ -1,0 +1,525 @@
+---
+import type { Locale } from '../i18n/ui';
+import { t, localizePath } from '../i18n/ui';
+import type { AlbumBrowseView } from '../data/album-browse';
+import type { createArchiveRecordView } from '../data/archive-view';
+import { getResponsiveImage } from '../data/responsive-images';
+import { homepageEditorialCopy } from '../data/homepage-editorial-copy';
+
+type RecordView = ReturnType<typeof createArchiveRecordView>;
+interface Props {
+  locale: Locale;
+  albums: AlbumBrowseView[];
+  records: RecordView[];
+  categories: { slug: string; label: string; count: number }[];
+}
+const { locale, albums, records, categories } = Astro.props;
+const copy = homepageEditorialCopy[locale];
+// 只在已公开的分组中定位专题；旧资料还未拆成相册时，仍可打开原来的七图档案。
+const dalianPhotoId = 'LJM-20261018-PHO-001';
+const dalianAlbum = albums.find(album => album.memberIds.includes(dalianPhotoId));
+const dalianRecord = records.find(record => record.id === dalianPhotoId && record.images[0]);
+const primaryAlbum = dalianAlbum ?? (!dalianRecord ? albums.find(album => album.coverPath) : undefined);
+const primaryRecord = dalianRecord
+  ?? records.find(record => record.images[0]);
+const isDalian = Boolean(dalianAlbum || (!primaryAlbum && primaryRecord?.id === dalianPhotoId));
+const primarySource = primaryAlbum?.coverPath ?? primaryRecord?.images[0];
+const primaryImage = primarySource ? getResponsiveImage(primarySource) : undefined;
+const primaryHref = primaryAlbum?.href ?? (primaryRecord ? `/archive/${primaryRecord.id}/` : '/archive/');
+const primaryTitle = isDalian ? copy.heroTitle : primaryAlbum?.title ?? primaryRecord?.title ?? copy.fallbackTitle;
+const primaryDescription = isDalian ? copy.heroDescription
+  : primaryAlbum?.description.split(/\n/)[0] || primaryRecord?.description.split(/\n/)[0] || copy.fallbackDescription;
+const imageDescription = primaryAlbum?.coverDescription ?? primaryRecord?.imageDescriptions[0] ?? primaryTitle;
+const photoCount = primaryAlbum?.photoCount || primaryAlbum?.albumImageCount || primaryRecord?.images.length || 0;
+
+// 固定主推之外兼顾相册和通信；已下线或没有图片的专题不参与选读。
+const remainingAlbums = albums.filter(album => album.href !== primaryAlbum?.href && album.coverPath);
+const familyAlbum = remainingAlbums.find(album => album.memberIds.includes('LJM-20260909-ALB-001'))
+  ?? remainingAlbums.find(album => !album.isCorrespondence);
+const phoneTopic = remainingAlbums.find(album => album.memberIds.includes('LJM-20260910-LET-033'))
+  ?? remainingAlbums.find(album => album.isCorrespondence);
+const selections = [...new Map([familyAlbum, phoneTopic, ...remainingAlbums]
+  .filter((album): album is AlbumBrowseView => Boolean(album))
+  .map(album => [album.href, album])).values()].slice(0, 3);
+const activeCategories = categories.filter(category => category.count > 0);
+const pendingCategories = categories.filter(category => category.count === 0);
+---
+
+<div class="editorial-home" data-home-editorial="warm">
+  <section class="feature" data-home-featured-album={primaryAlbum?.href} data-home-featured-record={primaryAlbum ? undefined : primaryRecord?.id} aria-labelledby="home-feature-title">
+    {primaryImage && <figure class="feature-artifact">
+      <a class="feature-image-link" href={localizePath(primaryHref, locale)} aria-label={primaryTitle}>
+        <img src={primaryImage.src} srcset={primaryImage.srcset} sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1100px) 50vw, 552px" alt={imageDescription} width={primaryImage.width} height={primaryImage.height} loading="eager" fetchpriority="high" decoding="async" />
+      </a>
+      <figcaption><span>{isDalian ? copy.heroCaption : primaryTitle}</span><span>{primaryAlbum ? copy.heroCaptionNote : primaryRecord?.typeLabel}</span></figcaption>
+    </figure>}
+    <div class="feature-label">
+      <p class="feature-kicker"><span>{primaryAlbum ? copy.heroKind : primaryRecord?.typeLabel}</span>{isDalian && <span>{copy.heroPlace}</span>}</p>
+      <h1 id="home-feature-title"><a href={localizePath(primaryHref, locale)}>{primaryTitle}</a></h1>
+      <p class="feature-description">{primaryDescription}</p>
+      <a class="editorial-link feature-read" href={localizePath(primaryHref, locale)} data-home-primary-link>{primaryAlbum || isDalian ? copy.heroRead : copy.fallbackRead}</a>
+      <div class="feature-bottom"><span>{isDalian ? copy.photoCount.replace('{0}', String(photoCount)) : primaryRecord?.dateDisplay}</span><a href={localizePath('/archive/', locale)}>{copy.allArchives}</a></div>
+    </div>
+  </section>
+
+  <section class="selected-albums" aria-labelledby="home-albums-heading">
+    <header class="section-heading">
+      <div><h2 id="home-albums-heading">{copy.selections}</h2><p>{copy.selectionsIntro}</p></div>
+      <a class="editorial-link" href={localizePath('/archive/?view=albums', locale)}>{copy.allSelections}</a>
+    </header>
+    {selections.length > 0 ? <ul class="selection-grid">
+      {selections.map(album => {
+        const image = getResponsiveImage(album.coverPath!);
+        const dates = [...new Set(records.filter(record => album.memberIds.includes(record.id))
+          .map(record => record.dateDisplay.trim()).filter(Boolean))];
+        const dateLabel = album.dateSummary.unknownPhotoCount > 0 || dates.length === 0
+          ? t('年代待考', locale)
+          : dates.length === 1 ? dates[0] : copy.datesVary;
+        return <li>
+          <a class="selection-card" href={localizePath(album.href, locale)} data-home-album-card={album.href}>
+            <figure><img src={image.src} srcset={image.srcset} sizes="(max-width: 640px) calc(100vw - 40px), (max-width: 900px) 45vw, 370px" alt={album.coverDescription || album.title} width={image.width} height={image.height} loading="lazy" decoding="async" /></figure>
+            <div class="selection-copy">
+              <small class="selection-meta"><span>{album.isCorrespondence ? t('通信专题', locale) : t('相册', locale)}</span><span>{dateLabel}</span></small>
+              <h3>{album.title}</h3>
+              <p class="selection-description">{album.description.split(/\n/)[0]}</p>
+              <div class="selection-bottom"><span>{copy.count.replace('{0}', String(album.recordCount))}</span><span class="selection-action">{album.isCorrespondence ? copy.enterTopic : copy.enterAlbum}</span></div>
+            </div>
+          </a>
+        </li>;
+      })}
+    </ul> : <p class="empty-albums">{t('暂时没有可公开的相册，其他档案仍可逐件浏览。', locale)}</p>}
+  </section>
+
+  <nav class="collection" data-home-category-nav aria-labelledby="home-collection-heading">
+    <header class="section-heading"><div><h2 id="home-collection-heading">{copy.collection}</h2><p>{copy.collectionIntro}</p></div><button class="random-record-link editorial-link" type="button" data-random-record-button>{copy.random}</button></header>
+    <ul class="category-grid">
+      {activeCategories.map(category => <li><a href={localizePath(`/archive/?category=${category.slug}`, locale)} data-home-category={category.slug}><strong>{t(category.label, locale)}</strong><span>{copy.count.replace('{0}', String(category.count))}</span></a></li>)}
+    </ul>
+    {pendingCategories.length > 0 && <p class="pending-categories">{copy.pending} · {pendingCategories.map(category => t(category.label, locale)).join(' · ')}</p>}
+  </nav>
+</div>
+
+<style>
+  .editorial-home {
+    --editorial-line: #dcd5c9;
+    --editorial-muted: #70685e;
+    color: var(--site-ink);
+  }
+  .feature {
+    display: grid;
+    grid-template-columns: minmax(0,3fr) minmax(0,2fr);
+    margin-top: 36px;
+    min-height: 610px;
+  }
+  .feature-artifact {
+    margin: 0;
+    min-width: 0;
+    padding: 0 36px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .feature-image-link {
+    display: block;
+    width: 100%;
+    max-width: 552px;
+    line-height: 0;
+  }
+  .feature-artifact img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 566px;
+    object-fit: contain;
+  }
+  .feature-artifact figcaption {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    max-width: 552px;
+    margin-top: 16px;
+    color: var(--editorial-muted);
+    font: 0.8125rem/1.6 var(--site-ui-font);
+  }
+  .feature-artifact figcaption span:last-child {
+    flex: none;
+    font-size: 0.75rem;
+  }
+  .feature-label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 0;
+    padding: 60px 40px;
+    border-left: 1px solid var(--editorial-line);
+    background: var(--site-paper);
+  }
+  .feature-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: 0 0 30px;
+    color: var(--editorial-muted);
+    font: 0.8125rem/1.6 var(--site-ui-font);
+    letter-spacing: .06em;
+  }
+  .feature-kicker span+span {
+    padding-left: 14px;
+    border-left: 1px solid var(--editorial-line);
+  }
+  h1 {
+    font-family: var(--site-text-font);
+    font-size: clamp(2rem,3.2vw,2.875rem);
+    font-weight: 500;
+    line-height: 1.55;
+    letter-spacing: 0;
+    margin: 0 0 25px;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+  h1 a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .feature-description {
+    margin: 0 0 30px;
+    max-width: 22em;
+    color: var(--editorial-muted);
+    font-size: 1.0625rem;
+    line-height: 2;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+  .editorial-link {
+    display: inline-block;
+    color: var(--site-accent);
+    text-decoration: none;
+    font: 0.9375rem/1.8 var(--site-ui-font);
+    border: 0;
+    border-bottom: 1px solid transparent;
+    padding: 0 0 5px;
+    background: none;
+    cursor: pointer;
+  }
+  .feature-read {
+    border-bottom-color: currentColor;
+  }
+  .editorial-link:hover,.editorial-link:focus-visible {
+    border-bottom-color: currentColor;
+  }
+  .feature-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--editorial-line);
+    width: 100%;
+    color: var(--editorial-muted);
+    font: 0.8125rem/1.8 var(--site-ui-font);
+  }
+  .feature-bottom a {
+    color: inherit;
+    text-underline-offset: 5px;
+  }
+  .selected-albums,.collection {
+    margin-top: 54px;
+    padding-top: 34px;
+    border-top: 1px solid var(--editorial-line);
+  }
+  .section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+  h2 {
+    font-family: var(--site-text-font);
+    font-size: clamp(1.6rem,2.5vw,2rem);
+    font-weight: 500;
+    line-height: 1.5;
+    margin: 0 0 9px;
+    letter-spacing: .025em;
+  }
+  .section-heading p {
+    margin: 0;
+    color: var(--editorial-muted);
+    font: 0.9375rem/1.8 var(--site-ui-font);
+  }
+  .section-heading>.editorial-link {
+    flex: none;
+  }
+  .selection-grid {
+    display: grid;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    list-style: none;
+    gap: 32px;
+    margin: 0;
+    padding: 0;
+  }
+  .selection-grid li {
+    min-width: 0;
+  }
+  .selection-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    color: inherit;
+    text-decoration: none;
+  }
+  .selection-card figure {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 260px;
+    margin: 0 0 23px;
+    padding: 18px;
+    background: #f0ece3;
+  }
+  .selection-card img {
+    display: block;
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .selection-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1;
+    min-width: 0;
+  }
+  .selection-copy small {
+    color: var(--editorial-muted);
+    font: 0.8125rem/1.7 var(--site-ui-font);
+  }
+  .selection-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 15px;
+  }
+  h3 {
+    font-family: var(--site-text-font);
+    font-size: 1.375rem;
+    line-height: 1.6;
+    font-weight: 500;
+    margin: 7px 0 12px;
+    overflow-wrap: anywhere;
+  }
+  .selection-description {
+    margin: 0 0 23px;
+    color: var(--editorial-muted);
+    font-size: 1rem;
+    line-height: 1.9;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .selection-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding-top: 16px;
+    margin-top: auto;
+    border-top: 1px solid var(--editorial-line);
+    font: 0.8125rem/1.8 var(--site-ui-font);
+    color: var(--editorial-muted);
+  }
+  .selection-action {
+    color: var(--site-accent);
+  }
+  .selection-card:hover h3,.selection-card:focus-visible h3 {
+    text-decoration: underline;
+    text-underline-offset: 5px;
+    text-decoration-thickness: 1px;
+  }
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    gap: 0 32px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .category-grid li {
+    min-width: 0;
+    border-bottom: 1px solid var(--editorial-line);
+  }
+  .category-grid a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    min-height: 72px;
+    color: inherit;
+    text-decoration: none;
+    font: 1rem/1.7 var(--site-ui-font);
+    padding: 12px 0;
+  }
+  .category-grid strong {
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+  .category-grid span {
+    flex: none;
+    color: var(--editorial-muted);
+    font-size: .8125rem;
+  }
+  .category-grid a:hover strong,.category-grid a:focus-visible strong {
+    text-decoration: underline;
+    text-underline-offset: 5px;
+  }
+  .pending-categories,.empty-albums {
+    color: var(--editorial-muted);
+    font: 0.875rem/1.9 var(--site-ui-font);
+  }
+  .random-record-link {
+    visibility: hidden;
+  }
+  .random-record-link[data-random-record-ready] {
+    visibility: visible;
+  }
+  a: focus-visible,button:focus-visible {
+    outline: 2px solid var(--site-focus-outline);
+    outline-offset: 5px;
+  }
+  @media (max-width:1100px) and (min-width:761px) {
+    .feature {
+      grid-template-columns: minmax(0,55fr) minmax(0,45fr);
+      min-height: 540px;
+    }
+    .feature-artifact {
+      padding-right: 26px;
+    }
+    .feature-label {
+      padding: 36px 26px;
+    }
+    h1 {
+      font-size: 2.125rem;
+    }
+    .selection-grid,.category-grid {
+      gap: 24px;
+    }
+    .selection-card figure {
+      height: 210px;
+    }
+  }
+  @media (max-width:760px) {
+    .feature {
+      display: flex;
+      flex-direction: column;
+      margin-top: 20px;
+      min-height: 0;
+    }
+    .feature-artifact {
+      padding: 0 0 20px;
+    }
+    .feature-image-link,.feature-artifact figcaption {
+      max-width: 420px;
+    }
+    .feature-artifact img {
+      max-height: none;
+    }
+    .feature-artifact figcaption {
+      font-size: .75rem;
+      margin-top: 12px;
+    }
+    .feature-artifact figcaption span:last-child {
+      font-size: .75rem;
+    }
+    .feature-label {
+      border-left: 0;
+      border-top: 1px solid var(--editorial-line);
+      padding: 26px 5px 0;
+    }
+    .feature-kicker {
+      margin-bottom: 16px;
+      font-size: .8125rem;
+    }
+    h1 {
+      font-size: 2.125rem;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .feature-description {
+      font-size: 1rem;
+      line-height: 1.9;
+      margin-bottom: 23px;
+    }
+    .feature-bottom {
+      margin-top: 28px;
+      padding-top: 16px;
+      font-size: .8125rem;
+    }
+    .selected-albums,.collection {
+      margin-top: 35px;
+      padding-top: 27px;
+    }
+    .section-heading {
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 23px;
+    }
+    .section-heading p {
+      font-size: .875rem;
+    }
+    .section-heading>.editorial-link {
+      font-size: .8125rem;
+      margin-top: 5px;
+    }
+    .selection-grid {
+      grid-template-columns: minmax(0,1fr);
+      gap: 36px;
+    }
+    .selection-card figure {
+      height: 300px;
+      margin-bottom: 18px;
+    }
+    h3 {
+      font-size: 1.375rem;
+    }
+    .selection-description {
+      margin-bottom: 18px;
+    }
+    .category-grid {
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 0 20px;
+    }
+    .category-grid a {
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      min-height: 84px;
+    }
+    .category-grid strong {
+      width: 100%;
+    }
+    .category-grid span {
+      font-size: .8125rem;
+    }
+  }
+  @media (max-width:360px) {
+    h1 {
+      font-size: 1.875rem;
+    }
+    .selection-card figure {
+      height: 265px;
+    }
+    .section-heading {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  }
+</style>

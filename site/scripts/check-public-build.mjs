@@ -8,11 +8,11 @@ import { pointsInRanges, readCompleteFontCoverage } from './complete-font-covera
 import { collectVisibleHan } from '../../shared/public-build-text.mjs';
 import { checkLocalizedPageSeo } from './public-build-seo.mjs';
 import { checkManualsPublicBuild } from './manuals-public-build.mjs';
-import { galleryImageIndexFromHash } from '../src/data/gallery-image-link.mjs';
 
 const siteRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(siteRoot, 'dist');
 const homeSource = await readFile(join(siteRoot, 'src', 'pages', 'index.astro'), 'utf8');
+const homeEditorialSource = await readFile(join(siteRoot, 'src', 'components', 'HomeEditorial.astro'), 'utf8');
 const archiveIndexSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', 'index.astro'), 'utf8');
 const archiveDetailSource = await readFile(join(siteRoot, 'src', 'pages', 'archive', '[id].astro'), 'utf8');
 const archiveLikesSource = await readFile(join(siteRoot, 'src', 'scripts', 'archive-likes.ts'), 'utf8');
@@ -237,13 +237,7 @@ for(const definition of localeDefinitions.filter(entry=>entry.prefix)){
  for(const page of accounts)check(page.html.includes('name="robots"')&&page.html.includes('noindex'),page.relativePath+' 账户页未禁止收录');
  if(translatedHome)check(extractRandomIndexIds(translatedHome.html).length===detailPages.length,definition.locale+' 随机档案集合不一致');
 }
-check(homeSource.includes('const selection = selectHomepageCover(views);'), '首页精选没有通过统一规则为每种分类取一件藏品。');
-check(homeSource.includes('Boolean(view.images[0])'), '首页精选没有排除缺少图片的藏品。');
-check(homeSource.includes('const source = view?.images[imageIndex];') && homeSource.includes('description: view.imageDescriptions[imageIndex]'), '首页精选图片和说明没有使用同一封面位置。');
-check(/views:\s*publishedViews/.test(homeSource) && !homeSource.includes('homeAlbumByRecordId'), '首页精选应逐件选择，不能把档案替换成相册卡。');
-check(homeSource.includes('item.core.created_date?.trim()'), '首页排序没有优先使用首次录入日期。');
-check(!homeSource.includes('homeCarouselMaximumSlides'), '首页精选仍受旧的轮播总数上限限制。');
-check(!homeSource.includes('homeCarouselExcludedImagePaths'), '首页精选仍使用旧的单张图片排除清单。');
+check(homeSource.includes('HomeEditorial'), '首页没有接入已选定的暖白编辑式版式。');
 check(
 	archiveIndexSource.includes("fetchpriority={originalIndex === 0 ? 'high' : undefined}"),
 	'档案列表首张封面缺少高优先级加载设置。',
@@ -283,102 +277,73 @@ if (correctionsPage) {
 	);
 }
 
-if (home) {
-	const categoryOrder = ['photos', 'postcards', 'letters', 'credentials', 'cards', 'notes', 'other'];
-	const featuredIds = [...home.html.matchAll(/data-home-featured-record="([^"]+)"/g)].map((match) => match[1]);
-	const recentIds = [...home.html.matchAll(/data-home-recent-record="([^"]+)"/g)].map((match) => match[1]);
-	const recentCategories = [...home.html.matchAll(/data-home-recent-category="([^"]+)"/g)].map((match) => match[1]);
-	const likeIds = [...home.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
-	const carouselCategories = home.html.match(/data-carousel-category-order="([^"]*)"/)?.[1].split(',').filter(Boolean) ?? [];
-	const carouselRecordIds = home.html.match(/data-carousel-record-order="([^"]*)"/)?.[1].split(',').filter(Boolean) ?? [];
-	check(featuredIds.length === 1, '首页精选档案应当且只能出现一次。');
-	check(carouselRecordIds.length === carouselCategories.length, '首页精选藏品与分类顺序数量不一致。');
-	check(new Set(carouselRecordIds).size === carouselRecordIds.length, '首页精选重复使用了同一件藏品。');
-	check(carouselRecordIds.length <= categoryOrder.length, '首页精选每种分类展示超过一件藏品。');
-	const carouselCategoryCounts = new Map();
-	for (const category of carouselCategories) {
-		carouselCategoryCounts.set(category, (carouselCategoryCounts.get(category) ?? 0) + 1);
-	}
-	check(
-		[...carouselCategoryCounts.values()].every((count) => count === 1),
-		'首页精选没有为每个入选分类恰好展示一件藏品。',
-	);
-	check(new Set(recentIds).size === recentIds.length, '首页每种藏品类型只能展示一件最新档案。');
-	check(recentCategories.length === recentIds.length, '首页其他档案缺少藏品类型顺序标识。');
-	check(new Set(recentCategories).size === recentCategories.length, '首页其他档案重复展示了同一种藏品类型。');
-	check(recentIds.every((itemId) => !carouselRecordIds.includes(itemId)), '首页其他档案重复展示了精选藏品。');
-	check(recentCategories.every((category, index) =>
-		categoryOrder.indexOf(category) > categoryOrder.indexOf(recentCategories[index - 1] ?? '')),
-	'首页其他档案没有按规定的藏品类型顺序排列。');
-	let lastCarouselCategoryIndex = -1;
-	let carouselRoundCategories = new Set();
-	for (const category of carouselCategories) {
-		const categoryIndex = categoryOrder.indexOf(category);
-		check(categoryIndex >= 0, `首页精选轮播包含未知藏品类型：${category}。`);
-		if (categoryIndex <= lastCarouselCategoryIndex) carouselRoundCategories = new Set();
-		check(!carouselRoundCategories.has(category), `首页精选轮播同一轮重复出现藏品类型：${category}。`);
-		carouselRoundCategories.add(category);
-		lastCarouselCategoryIndex = categoryIndex;
-	}
-	check(likeIds.length === 0, '首页不应再显示点赞入口。');
-	check(!pageLoadsScriptMarker(home, '/api/likes?items='), '首页不应加载点赞计数程序。');
-	check(!home.html.includes('ARCHIVE · 001'), '首页重新出现已移除的装饰性档案编号。');
-	check(homeSource.includes('data-random-record-button'), '首页缺少「随手翻一件」随机浏览入口。');
-	check(homeSource.includes('data-view-history'), '首页缺少「您最近看过」浏览足迹区块。');
-	check(homeSource.includes('data-view-history-clear'), '首页浏览足迹缺少清空入口。');
-	check(!homeSource.includes('继续上次浏览'), '首页浏览足迹仍显示已删除的重复说明。');
-	check(homeSource.includes("item.className = 'view-history-item'"), '首页浏览足迹缺少受控列表项样式标记。');
-	check(homeSource.includes(':global(.view-history-image img)'), '首页浏览足迹的动态图片没有进入尺寸约束。');
-	check(homeSource.includes('object-fit: contain;'), '首页浏览足迹图片没有保持比例适配缩略图。');
-	check(
-		homeSource.includes('手机端去掉桌面端的图标列') &&
-			homeSource.includes('grid-template-columns: 1.7rem minmax(0, 1fr) max-content 0.85rem;'),
-		'首页移动端分类入口没有采用紧凑的四列布局。',
-	);
-	check(
-		homeSource.includes('word-break: keep-all;') && homeSource.includes('writing-mode: horizontal-tb;'),
-		'首页移动端分类名称缺少防止逐字竖排的约束。',
-	);
-	check(
-		extractRandomIndexIds(home.html).length === detailPages.length,
-		'首页随机浏览索引与公开详情页数量不一致。',
-	);
-}
-
-// 六语言首页都必须完整保留有图分类、逐件链接和可切换控件，不能让单帧相册蒙混通过。
+// 六语言共用暖白版式。检查实际生成的阅读入口、公开图片与分类，
+// 不再把上一版的分类轮播、圆点数量或某条CSS写法当作发布条件。
 if (archiveIndex) {
-	const categoriesById = new Map([...archiveIndex.html.matchAll(/<li\b[^>]*data-archive-id="([^"]+)"[^>]*>/g)]
-		.map((match) => [match[1], match[0].match(/data-archive-category="([^"]+)"/)?.[1]]));
-	const summary = JSON.parse(await readFile(join(distRoot, 'records.json'), 'utf8'));
-	const availableCategories = new Set(summary.records.filter((record) => record.cover).map((record) => categoriesById.get(record.id)));
+	const availableCategories = new Set([...archiveIndex.html.matchAll(/data-archive-category="([^"]+)"/g)].map((match) => match[1]));
 	const expectedCategories = ['photos', 'postcards', 'letters', 'credentials', 'cards', 'notes', 'other'].filter((category) => availableCategories.has(category));
-	const decodeAttribute = (value) => value.replace(/&(quot|amp|lt|gt|apos|#39);/g, (_, key) => ({ quot: '"', amp: '&', lt: '<', gt: '>', apos: "'", '#39': "'" })[key]);
+	const builtPaths = new Set(htmlEntries.map((entry) => `/${entry.relativePath.replace(/index\.html$/, '')}`));
+	const publicAssetPaths = new Set(distFiles.map((file) => `/${relative(distRoot, file).split(sep).join('/')}`));
+	const decodeAttribute = (value = '') => value.replace(/&(quot|amp|lt|gt|apos|#39);/g, (_, key) => ({ quot: '"', amp: '&', lt: '<', gt: '>', apos: "'", '#39': "'" })[key]);
+	const readAttribute = (tag, name) => decodeAttribute(tag.match(new RegExp(`\\b${name}="([^"]*)"`))?.[1]);
+	const combinedHomeSource = homeSource + homeEditorialSource;
+	check(combinedHomeSource.includes('data-view-history-clear'), '首页浏览足迹缺少清空入口。');
+	check(homeSource.includes("item.className = 'view-history-item'"), '首页浏览足迹缺少受控列表项样式标记。');
+	check(combinedHomeSource.includes(':global(.view-history-image img)'), '首页浏览足迹的动态图片没有进入尺寸约束。');
 	for (const definition of localeDefinitions) {
 		const relativeHome = definition.prefix ? `${definition.prefix}/index.html` : 'index.html';
 		const localeHome = htmlEntries.find((page) => page.relativePath === relativeHome);
 		if (!localeHome) continue;
-		const actualCategories = localeHome.html.match(/data-carousel-category-order="([^"]*)"/)?.[1].split(',').filter(Boolean) ?? [];
-		check(JSON.stringify(actualCategories) === JSON.stringify(expectedCategories), `${relativeHome} 轮播遗漏有图分类或顺序错误。`);
-		if (expectedCategories.length < 2) continue;
-		check((localeHome.html.match(/data-home-carousel-dot="/g) ?? []).length === expectedCategories.length && localeHome.html.includes('data-home-carousel-next') && localeHome.html.includes('data-home-carousel-previous'), `${relativeHome} 轮播箭头或圆点不完整。`);
-		check(pageLoadsScriptMarker(localeHome, 'carouselReady'), `${relativeHome} 未加载轮播初始化程序。`);
-		check([...localeHome.html.matchAll(/<script\b[^>]*type="module"[^>]*>([\s\S]*?)<\/script>/g)]
-			.some((match) => match[1].includes('carouselReady') && !/\bimport\b/.test(match[1])), `${relativeHome} 轮播必须独立初始化，不等待共享翻译或其他首页脚本。`);
-		const itemsAttribute = localeHome.html.match(/data-carousel-items="([^"]*)"/)?.[1] ?? '';
-		try {
-			const items = JSON.parse(decodeAttribute(itemsAttribute));
-			check(items.length === expectedCategories.length, `${relativeHome} 轮播数据不完整。`);
-			check(items.every((item) => {
-				const target = pathForLocale(`/archive/${item.itemId}/`, definition.locale);
-				if (item.href === target) return true;
-				if (typeof item.href !== 'string' || !item.href.startsWith(target)) return false;
-				const detailPath = `${definition.prefix ? definition.prefix + '/' : ''}archive/${item.itemId}/index.html`;
-				const detail = htmlEntries.find((page) => page.relativePath === detailPath);
-				const imageCount = Number(detail?.html.match(/data-record-image-count="(\d+)"/)?.[1]);
-				const imageIndex = galleryImageIndexFromHash(item.href.slice(target.length), imageCount);
-				return imageIndex !== undefined && imageIndex > 0;
-			}), `${relativeHome} 轮播应进入对应语言的单件详情及有效图片，不能替换成相册入口。`);
-		} catch { check(false, `${relativeHome} 轮播数据无法解析。`); }
+		const markup = localeHome.html;
+		check(markup.includes('data-home-editorial="warm"'), `${relativeHome} 没有使用已选定的暖白首页。`);
+		check((markup.match(/<h1\b/g) ?? []).length === 1, `${relativeHome} 应有一个明确的主阅读标题。`);
+		const featuredSections = [...markup.matchAll(/<section\b[^>]*\bdata-home-featured-(?:album|record)="[^"]+"[^>]*>[\s\S]*?<\/section>/g)].map((match) => match[0]);
+		check(featuredSections.length === 1, `${relativeHome} 应有且仅有一个主推阅读区。`);
+		const featured = featuredSections[0] ?? '';
+		const featuredTag = featured.slice(0, featured.indexOf('>') + 1);
+		const albumHref = readAttribute(featuredTag, 'data-home-featured-album');
+		const recordId = readAttribute(featuredTag, 'data-home-featured-record');
+		const target = albumHref ? pathForLocale(albumHref, definition.locale) : recordId ? pathForLocale(`/archive/${recordId}/`, definition.locale) : '';
+		check(Boolean(target) && builtPaths.has(target), `${relativeHome} 的首屏阅读入口没有对应公开页面。`);
+		check(!albumHref || !recordId, `${relativeHome} 的主推区混用了相册与单件身份。`);
+		const primaryLinks = [...featured.matchAll(/<a\b[^>]*\bdata-home-primary-link(?:="[^"]*")?[^>]*>/g)].map((match) => match[0]);
+		check(primaryLinks.length === 1 && readAttribute(primaryLinks[0] ?? '', 'href') === target, `${relativeHome} 的主要阅读链接与主推对象不一致。`);
+		const featuredFigure = featured.match(/<figure\b[^>]*>[\s\S]*?<\/figure>/)?.[0] ?? '';
+		check(featuredFigure.includes('<img'), `${relativeHome} 的首屏缺少公开原件图。`);
+		const photoLink = featuredFigure.match(/<a\b[^>]*>/)?.[0] ?? '';
+		check(readAttribute(photoLink, 'href') === target, `${relativeHome} 的首屏图片与阅读入口指向不同对象。`);
+		const headingLink = featured.match(/<h1\b[^>]*>[\s\S]*?<a\b[^>]*>/)?.[0] ?? '';
+		check(readAttribute(headingLink, 'href') === target, `${relativeHome} 的首屏标题缺少对应阅读链接。`);
+		const cards = [...markup.matchAll(/<a\b[^>]*\bdata-home-album-card="[^"]+"[^>]*>/g)].map((match) => match[0]);
+		const cardHrefs = cards.map((card) => readAttribute(card, 'data-home-album-card'));
+		check(cards.length <= 3 && new Set(cardHrefs).size === cards.length, `${relativeHome} 的精选相册应至多三组且不得重复。`);
+		check(!cardHrefs.includes(albumHref), `${relativeHome} 的精选区重复展示首屏专题。`);
+		for (const card of cards) {
+			const href = pathForLocale(readAttribute(card, 'data-home-album-card'), definition.locale);
+			check(readAttribute(card, 'href') === href && builtPaths.has(href), `${relativeHome} 的精选卡没有对应语言的公开相册。`);
+		}
+		const albumsPosition = markup.indexOf('id="home-albums-heading"');
+		const categories = markup.match(/<nav\b[^>]*\bdata-home-category-nav(?:="[^"]*")?[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? '';
+		check(albumsPosition >= 0, `${relativeHome} 缺少相册与专题区。`);
+		check(Boolean(categories) && markup.indexOf(categories) > albumsPosition, `${relativeHome} 的馆藏入口应在选读区之后。`);
+		const categoryLinks = [...categories.matchAll(/<a\b[^>]*>/g)].map((match) => readAttribute(match[0], 'href'));
+		const actualCategories = categoryLinks.map((href) => new URL(href, 'https://public-build.invalid').searchParams.get('category')).filter(Boolean);
+		check(JSON.stringify(actualCategories) === JSON.stringify(expectedCategories), `${relativeHome} 的馆藏分类遗漏、重复或顺序有误。`);
+		for (const href of categoryLinks) {
+			const url = new URL(href, 'https://public-build.invalid');
+			check(url.pathname === pathForLocale('/archive/', definition.locale), `${relativeHome} 的馆藏分类没有进入对应语言目录。`);
+		}
+		for (const imageTag of markup.match(/<img\b(?:[^>"']|"[^"]*"|'[^']*')*>/g) ?? []) {
+			const source = readAttribute(imageTag, 'src');
+			// 页尾社交二维码另有固定公开路径；藏品图必须来自发布副本目录。
+			if (source.startsWith('/social/')) continue;
+			check(/^\/archive(?:-responsive)?\//.test(source) && publicAssetPaths.has(source), `${relativeHome} 引用了缺失或非公开目录的藏品图：${source}。`);
+		}
+		check(!markup.includes('data-archive-like') && !pageLoadsScriptMarker(localeHome, '/api/likes?items='), `${relativeHome} 不应在阅读入口预先加载点赞。`);
+		check(markup.includes('data-random-record-button'), `${relativeHome} 缺少随手翻一件入口。`);
+		check(markup.includes('data-view-history') && markup.includes('data-view-history-clear'), `${relativeHome} 缺少浏览足迹或清空入口。`);
+		const randomIds = extractRandomIndexIds(markup);
+		check(randomIds.length === chineseRecordIds.size && new Set(randomIds).size === randomIds.length && randomIds.every((id) => chineseRecordIds.has(id)), `${relativeHome} 随机浏览索引与公开档案集合不一致。`);
 	}
 }
 
@@ -401,7 +366,7 @@ if (archiveIndex) {
 	check(albumKeys.length === albumMembers.size, '相册入口与入册档案的归属不一致。');
 	for (const mode of ['grouped', 'albums', 'items']) check(archiveIndex.html.includes(`data-archive-view="${mode}"`), `档案目录缺少 ${mode} 浏览方式。`);
 	check(home?.html.includes('id="home-albums-heading"'), '首页缺少清楚的按相册浏览入口。');
-	// 上下区域按永久编号去重（前文已检查），同册的不同档案仍按逐件规则参与精选。
+	// 首页选读按相册去重；目录仍需包含每一件已公开档案。
 	const likeIds = [...archiveIndex.html.matchAll(/data-archive-like[^>]*data-item-id="([^"]+)"/g)].map((match) => match[1]);
 	check(archiveIds.length === detailPages.length, '档案列表数量与公开详情页数量不一致。');
 	check(likeIds.length === 0, '档案列表不应再显示点赞入口。');
