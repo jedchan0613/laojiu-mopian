@@ -200,8 +200,6 @@ const albumGroup = publishedAlbumGroups().find((group) => group.members.some((me
 const isCorrespondence = Boolean(albumGroup?.isCorrespondence);
 const albumMateCount = isCorrespondence ? albumGroup!.members.length : albumGroup?.photos.length ?? 0;
 const albumContextLabel = isCorrespondence ? t("本辑档案", locale) : t("同册照片", locale);
-const albumPreviousLabel = isCorrespondence ? t("← 上一件", locale) : `← ${t("同册上一件", locale)}`;
-const albumNextLabel = isCorrespondence ? t("下一件 →", locale) : `${t("同册下一件", locale)} →`;
 const isWholeAlbumGroup = Boolean(albumGroup && !isCorrespondence && !albumGroup.photos.length && albumGroup.albums.length);
 const wholeAlbumImageCount = albumGroup?.albums.reduce((count, album) => count + album.core.publication_file_path.length, 0) ?? 0;
 const albumPhotos = [...(isCorrespondence ? albumGroup!.members : albumGroup?.photos ?? [])].sort((left,right) =>
@@ -217,6 +215,10 @@ const previousBrowseView = albumPhotoIndex >= 0
   ? (previousAlbumPhoto ? createArchiveRecordView(previousAlbumPhoto, locale) : undefined) : previousView;
 const nextBrowseView = albumPhotoIndex >= 0
   ? (nextAlbumPhoto ? createArchiveRecordView(nextAlbumPhoto, locale) : undefined) : nextView;
+const previousRecordLabel = isLetter && previousBrowseView?.objectType === 'LET' ? `← ${t('上一封信', locale)}`
+  : albumPhotoIndex >= 0 && !isCorrespondence ? `← ${t("同册上一件", locale)}` : t("← 上一件", locale);
+const nextRecordLabel = isLetter && nextBrowseView?.objectType === 'LET' ? `${t('下一封信', locale)} →`
+  : albumPhotoIndex >= 0 && !isCorrespondence ? `${t("同册下一件", locale)} →` : t("下一件 →", locale);
 const albumLinkLabel = albumGroup
   ? (isWholeAlbumGroup ? `${t('{0} 件相册档案 · {1} 幅整册影像', locale, { 0: albumGroup.albums.length, 1: wholeAlbumImageCount })} →`
     : curatedAlbumForId(albumGroup.albumId)
@@ -310,8 +312,8 @@ const breadcrumbStructuredData = {
             {item.core.object_type === 'PHO' && item.core.original_position && <small>{t("相册中的位置", locale)}：{item.core.original_position}</small>}
           </div>
           {(previousAlbumPhoto || nextAlbumPhoto) && <div class="record-album-navigation">
-            {previousAlbumPhoto && <a href={localizePath(`/archive/${previousAlbumPhoto.core.item_id}/`, locale)} rel="prev">{albumPreviousLabel}</a>}
-            {nextAlbumPhoto && <a href={localizePath(`/archive/${nextAlbumPhoto.core.item_id}/`, locale)} rel="next">{albumNextLabel}</a>}
+            {previousAlbumPhoto && <a href={localizePath(`/archive/${previousAlbumPhoto.core.item_id}/`, locale)} rel="prev">{previousRecordLabel}</a>}
+            {nextAlbumPhoto && <a href={localizePath(`/archive/${nextAlbumPhoto.core.item_id}/`, locale)} rel="next">{nextRecordLabel}</a>}
           </div>}
         </nav>
       )}
@@ -326,12 +328,11 @@ const breadcrumbStructuredData = {
         <header class="letter-reading-header" data-reader-toolbar>
             <div class="letter-reading-position">
               <h2>{t("信件阅读", locale)}</h2>
-              {letterPages.length > 0 && <output
-                data-letter-position
-                aria-live="off"
-                data-format={t('第 {0} 页，共 {1} 页', locale, {0: '{page}', 1: letterPages.length})}
-                aria-label={t('第 {0} 页，共 {1} 页', locale, {0: 1, 1: letterPages.length})}
-              >1 / {letterPages.length}</output>}
+              {letterPages.length > 0 && <select data-letter-position aria-label={t('选择信页', locale)}>
+                {letterPages.map((_, index) => <option value={index + 1}>
+                  {t('第 {0} 页，共 {1} 页', locale, {0: index + 1, 1: letterPages.length})}
+                </option>)}
+              </select>}
             </div>
             {letterReadingModes.length > 1 && (
               <div class="letter-reading-modes" role="group" aria-label={t("选择信件查看方式", locale)}>
@@ -365,7 +366,10 @@ const breadcrumbStructuredData = {
           </header>
           {locale !== 'zh-CN' && view.transcriptionTranslation && <div class="translation-heading">{view.transcriptionKind === 'summary' ? t('Translation summary',locale) : t('Translation',locale)}</div>}
           <div class="letter-transcription-text" data-letter-text lang={translatedLetter ? locale : view.originalLanguage}>{letterPages.length > 0
-            ? letterPages.map((page: string, index: number) => <div data-letter-page={index + 1} data-current-page={index === 0 ? 'true' : undefined}>{page}</div>)
+            ? letterPages.map((page: string, index: number) => <div class="letter-page-sheet">
+                <input type="button" class="letter-page-link" data-letter-original-page={index + 1} value={t('看本页原件', locale)} />
+                <div data-letter-page={index + 1} data-current-page={String(index === 0)} tabindex="-1">{page}</div>
+              </div>)
             : visibleLetterText}</div>
           {locale !== 'zh-CN' && view.transcriptionTranslation && view.originalTranscription && <details class="original-text"><summary>{t('View original text',locale)}</summary><div class="letter-transcription-text" lang={view.originalLanguage}>{view.originalTranscription}</div></details>}
           <footer>
@@ -382,6 +386,7 @@ const breadcrumbStructuredData = {
             class="record-gallery"
             data-record-gallery
             data-record-image-count={galleryImages.length}
+            data-page-counter-format={letterPages.length ? t('第 {0} 页，共 {1} 页', locale, {0: '{page}', 1: letterPages.length}) : undefined}
             data-gallery-items={JSON.stringify(galleryImages.map((image) => ({
               src: image.src,
               srcset: image.srcset,
@@ -419,16 +424,17 @@ const breadcrumbStructuredData = {
                   <strong data-gallery-role>{galleryImages[0].role}</strong>
                   <span data-gallery-caption>{galleryImages[0].description}</span>
                 </span>
+                {letterPages.length > 0 && <button type="button" class="letter-page-link" data-letter-read-page>{t('读本页文字', locale)}</button>}
               </figcaption>
             </figure>
             {galleryImages.length > 1 && (
               <div class="record-gallery-controls" aria-label={t("切换当前档案图片", locale)}>
                 <button class="gallery-step gallery-step-previous" type="button" data-gallery-previous-inline>
-                  <span aria-hidden="true">←</span> {t("上一张", locale)}
+                  <span aria-hidden="true">←</span> {letterPages.length ? t('上一页', locale) : t("上一张", locale)}
                 </button>
-                <output data-gallery-counter aria-live="polite">{t("第 {0} 张，共 {1} 张", locale, {0: 1, 1: galleryImages.length})}</output>
+                <output data-gallery-counter aria-live="polite">{t(letterPages.length ? '第 {0} 页，共 {1} 页' : '第 {0} 张，共 {1} 张', locale, {0: 1, 1: galleryImages.length})}</output>
                 <button class="gallery-step gallery-step-next" type="button" data-gallery-next-inline>
-                  {t("下一张", locale)} <span aria-hidden="true">→</span>
+                  {letterPages.length ? t('下一页', locale) : t("下一张", locale)} <span aria-hidden="true">→</span>
                 </button>
               </div>
             )}
@@ -437,7 +443,7 @@ const breadcrumbStructuredData = {
                 {galleryImages.map((image, index) => (
                   <button
                     type="button"
-                    aria-label={t("查看第 {0} 张图片：{1}", locale, {0: (index + 1), 1: (image.description)})}
+                    aria-label={letterPages.length ? t('前往第 {0} 页', locale, {0: index + 1}) : t("查看第 {0} 张图片：{1}", locale, {0: (index + 1), 1: (image.description)})}
                     aria-current={index === 0 ? 'true' : 'false'}
                     data-gallery-thumbnail
                     data-gallery-src={image.src}
@@ -473,7 +479,7 @@ const breadcrumbStructuredData = {
                   <button type="button" data-gallery-zoom-reset>{t("适应窗口", locale)}</button>
                 </div>
                 {galleryImages.length > 1 && (
-                  <button class="lightbox-previous" type="button" data-gallery-previous aria-label={t("查看上一张图片", locale)}>
+                  <button class="lightbox-previous" type="button" data-gallery-previous aria-label={letterPages.length ? t('上一页', locale) : t("查看上一张图片", locale)}>
                     <span aria-hidden="true">←</span>
                   </button>
                 )}
@@ -493,11 +499,11 @@ const breadcrumbStructuredData = {
                       <strong data-lightbox-role>{galleryImages[0].role}</strong>
                       <span data-lightbox-caption>{galleryImages[0].description}</span>
                     </span>
-                    <small data-lightbox-counter>{t("第 1 张，共", locale)} {galleryImages.length} {t("张", locale)}</small>
+                    <small data-lightbox-counter>{t(letterPages.length ? '第 {0} 页，共 {1} 页' : '第 {0} 张，共 {1} 张', locale, {0: 1, 1: galleryImages.length})}</small>
                   </figcaption>
                 </figure>
                 {galleryImages.length > 1 && (
-                  <button class="lightbox-next" type="button" data-gallery-next aria-label={t("查看下一张图片", locale)}>
+                  <button class="lightbox-next" type="button" data-gallery-next aria-label={letterPages.length ? t('下一页', locale) : t("查看下一张图片", locale)}>
                     <span aria-hidden="true">→</span>
                   </button>
                 )}
@@ -708,14 +714,14 @@ const breadcrumbStructuredData = {
         <div>
           {previousBrowseView && (
             <a href={localizePath(`/archive/${previousBrowseView.id}/`, locale)} data-record-nav data-record-target={previousBrowseView.id}>
-              <small>{albumPhotoIndex >= 0 ? albumPreviousLabel : t("← 上一件", locale)}</small>
+              <small>{previousRecordLabel}</small>
               <strong>{previousBrowseView.title}</strong>
               <span>{previousBrowseView.dateDisplay}</span>
             </a>
           )}
           {nextBrowseView && (
             <a class="is-next" href={localizePath(`/archive/${nextBrowseView.id}/`, locale)} data-record-nav data-record-target={nextBrowseView.id}>
-              <small>{albumPhotoIndex >= 0 ? albumNextLabel : t("下一件 →", locale)}</small>
+              <small>{nextRecordLabel}</small>
               <strong>{nextBrowseView.title}</strong>
               <span>{nextBrowseView.dateDisplay}</span>
             </a>
@@ -840,13 +846,15 @@ import '../../scripts/archive-likes';
       openButton.setAttribute('aria-label', ct("放大查看：{0}", {0: (item.description)}));
       thumbnails.forEach((button, thumbnailIndex) =>
         button.setAttribute('aria-current', String(thumbnailIndex === activeIndex)));
-      if (counter) counter.textContent = ct("第 {0} 张，共 {1} 张", {0: (activeIndex + 1), 1: (items.length)});
+      const countLabel = gallery.dataset.pageCounterFormat?.replace('{page}', String(activeIndex + 1))
+        ?? ct("第 {0} 张，共 {1} 张", {0: activeIndex + 1, 1: items.length});
+      if (counter) counter.textContent = countLabel;
       if (caption) caption.textContent = item.description;
       if (role) role.textContent = item.role;
       displayEnlargedImage();
       if (lightboxCaption) lightboxCaption.textContent = item.description;
       if (lightboxRole) lightboxRole.textContent = item.role;
-      if (lightboxCounter) lightboxCounter.textContent = ct("第 {0} 张，共 {1} 张", {0: (activeIndex + 1), 1: (items.length)});
+      if (lightboxCounter) lightboxCounter.textContent = countLabel;
       gallery.dispatchEvent(new CustomEvent('letter-image-changed', { bubbles: true, detail: activeIndex }));
     };
 
@@ -1207,7 +1215,7 @@ import '../../scripts/archive-likes';
     }
   }
 
-  .record-sheet--letter[data-letter-mode='compare'] [data-letter-page]:not([data-current-page='true']) {
+  .record-sheet--letter[data-letter-mode='compare'] .letter-page-sheet:has(> [data-current-page='false']) {
     display: none;
   }
 
@@ -1234,12 +1242,22 @@ import '../../scripts/archive-likes';
     font: 500 1.05rem/1.5 var(--site-ui-font);
   }
 
-  .letter-reading-position { display: flex; align-items: baseline; gap: .75rem; }
-  .letter-reading-position output {
-    color: var(--site-muted);
+  .letter-reading-position { display: flex; align-items: center; flex-wrap: wrap; gap: 0 .65rem; max-width: 100%; }
+  .letter-reading-position select {
+    min-height: 44px;
+    max-width: 100%;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--site-accent);
     font: .875rem/1.5 var(--site-ui-font);
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    cursor: pointer;
+  }
+  .letter-page-link { display: none; }
+  .letter-reading-position select:focus-visible, .letter-page-link:focus-visible {
+    outline: 2px solid var(--site-focus-outline);
+    outline-offset: 2px;
   }
 
   .letter-reading-introduction {
@@ -1322,8 +1340,8 @@ import '../../scripts/archive-likes';
 
   .record-sheet--letter[data-letter-size='small'] .letter-transcription-text { font-size: 1rem; }
   .record-sheet--letter[data-letter-size='large'] .letter-transcription-text { font-size: 1.375rem; }
-  [data-letter-page] + [data-letter-page] { border-top: 1px solid var(--site-border-soft); padding-top: 1.25rem; }
-  [data-letter-mode='compare'] [data-letter-page] { border: 0; padding: 0; }
+  .letter-page-sheet + .letter-page-sheet { border-top: 1px solid var(--site-border-soft); padding-top: 1.25rem; }
+  [data-letter-mode='compare'] .letter-page-sheet { border: 0; padding: 0; }
 
   .letter-transcription > footer,
   .letter-transcription .translation-heading {
@@ -1361,7 +1379,7 @@ import '../../scripts/archive-likes';
   }
 
   @media (scripting: none) {
-    .letter-reading-modes, .letter-text-size { display: none; }
+    .letter-reading-modes, .letter-text-size, .letter-reading-position select { display: none; }
   }
 
   .record-gallery {
@@ -2310,6 +2328,21 @@ import '../../scripts/archive-likes';
     .letter-reading-modes { gap: 0 .85rem; }
     .letter-reading-modes button { font-size: .875rem; }
     .letter-transcription-text { margin-block: 1rem 1.5rem; }
+    [data-letter-ready='true'] .letter-page-link {
+      display: inline-block;
+      min-height: 44px;
+      max-width: 100%;
+      padding: .35rem 0;
+      border: 0;
+      background: transparent;
+      color: var(--site-accent);
+      font: .875rem/1.45 var(--site-ui-font);
+      text-align: start;
+      text-decoration: underline;
+      text-underline-offset: .22em;
+      cursor: pointer;
+    }
+    .record-image figcaption:has([data-letter-read-page]) { flex-direction: column; gap: 0; }
 
     .record-image-hint {
       opacity: 1;

@@ -57,8 +57,11 @@ const pendingCategories = categories.filter(category => category.count === 0);
       <p class="feature-kicker"><span>{primaryAlbum ? copy.heroKind : primaryRecord?.typeLabel}</span>{isDalian && <span>{copy.heroPlace}</span>}</p>
       <h1 id="home-feature-title"><a href={localizePath(primaryHref, locale)}>{primaryTitle}</a></h1>
       <p class="feature-description">{primaryDescription}</p>
-      <a class="editorial-link feature-read" href={localizePath(primaryHref, locale)} data-home-primary-link>{primaryAlbum || isDalian ? copy.heroRead : copy.fallbackRead}</a>
-      <div class="feature-bottom"><span>{isDalian ? copy.photoCount.replace('{0}', String(photoCount)) : primaryRecord?.dateDisplay}</span><a href={localizePath('/archive/', locale)}>{copy.allArchives}</a></div>
+      <div class="feature-actions">
+        <a class="editorial-link feature-read" href={localizePath(primaryHref, locale)} data-home-primary-link>{primaryAlbum || isDalian ? copy.heroRead : copy.fallbackRead}</a>
+        <a class="editorial-link feature-find" href={localizePath('/archive/', locale)} data-home-directory-link>{copy.findRecords}</a>
+      </div>
+      {(isDalian || primaryRecord?.dateDisplay) && <p class="feature-bottom">{isDalian ? copy.photoCount.replace('{0}', String(photoCount)) : primaryRecord?.dateDisplay}</p>}
     </div>
   </section>
 
@@ -205,28 +208,39 @@ const pendingCategories = categories.filter(category => category.count === 0);
     background: none;
     cursor: pointer;
   }
-  .feature-read {
-    border-bottom-color: currentColor;
+  .feature-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 24px;
+    max-width: 100%;
+  }
+  .feature-actions .editorial-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    text-decoration: underline;
+    text-underline-offset: 6px;
+    text-decoration-thickness: 1px;
+  }
+  .feature-actions .feature-find {
+    color: var(--site-ink);
+    text-decoration-color: var(--editorial-line);
+  }
+  .feature-actions a:hover,.feature-actions a:focus-visible {
+    text-decoration-color: currentColor;
   }
   .editorial-link:hover,.editorial-link:focus-visible {
     border-bottom-color: currentColor;
   }
   .feature-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-top: 60px;
+    margin: 60px 0 0;
     padding-top: 20px;
     border-top: 1px solid var(--editorial-line);
     width: 100%;
     color: var(--editorial-muted);
     font: 0.8125rem/1.8 var(--site-ui-font);
-  }
-  .feature-bottom a {
-    color: inherit;
-    text-underline-offset: 5px;
   }
   .selected-albums,.collection {
     margin-top: 54px;
@@ -392,7 +406,7 @@ const pendingCategories = categories.filter(category => category.count === 0);
   .random-record-link[data-random-record-ready] {
     visibility: visible;
   }
-  a: focus-visible,button:focus-visible {
+  a:focus-visible,button:focus-visible {
     outline: 2px solid var(--site-focus-outline);
     outline-offset: 5px;
   }
@@ -455,11 +469,13 @@ const pendingCategories = categories.filter(category => category.count === 0);
       margin-bottom: 16px;
     }
     .feature-description {
+      order: 1;
       font-size: 1rem;
       line-height: 1.9;
-      margin-bottom: 23px;
+      margin: 12px 0 0;
     }
     .feature-bottom {
+      order: 2;
       margin-top: 28px;
       padding-top: 16px;
       font-size: .8125rem;
@@ -511,6 +527,11 @@ const pendingCategories = categories.filter(category => category.count === 0);
     }
   }
   @media (max-width:360px) {
+    .feature-actions {
+      flex-wrap: nowrap;
+      gap: 14px;
+    }
+    .feature-find { flex-shrink: 0; }
     h1 {
       font-size: 1.875rem;
     }
@@ -521,5 +542,17 @@ const pendingCategories = categories.filter(category => category.count === 0);
       flex-wrap: wrap;
       gap: 8px;
     }
+  }
+  @media (max-width:760px) and (max-height:740px) {
+    .feature-artifact img { max-height: 34svh; }
+    .feature-label { padding-top: 15px; }
+    .feature-kicker { gap: 4px 8px; }
+    .feature-kicker,h1 { margin-bottom: 8px; }
+  }
+  @media (max-width:760px) and (max-height:620px) {
+    .feature { margin-top: 12px; }
+    .feature-artifact { padding-bottom: 12px; }
+    .feature-artifact img { max-height: 25svh; }
+    h1 { font-size: clamp(1.5rem, 8vw, 1.6875rem); line-height: 1.4; }
   }
 </style>

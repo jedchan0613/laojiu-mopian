@@ -260,6 +260,12 @@ for (const page of htmlEntries.filter(entry => /^(?:[^/]+\/)?archive\/LJM-[^/]+\
   const pages = [...page.html.matchAll(/\bdata-letter-page="(\d+)"/g)].map(match => Number(match[1]));
   check(!pages.length || (pages.length === images && pages.every((number, index) => number === index + 1)),
     `${page.relativePath} 的释文页码与公开影像顺序不符。`);
+  const picker = page.html.match(/<select\b[^>]*\bdata-letter-position\b[^>]*>([\s\S]*?)<\/select>/);
+  const selectablePages = [...(picker?.[1] ?? '').matchAll(/<option\b[^>]*\bvalue="(\d+)"/g)].map(match => Number(match[1]));
+  const originalLinks = [...page.html.matchAll(/\bdata-letter-original-page="(\d+)"/g)].map(match => Number(match[1]));
+  check(Boolean(picker) === Boolean(pages.length) && selectablePages.join(',') === pages.join(',')
+    && originalLinks.join(',') === pages.join(',') && page.html.includes('data-letter-read-page') === Boolean(pages.length),
+    `${page.relativePath} 的信页选择或图文互跳与已核实的逐页释文不符。`);
   check(page.html.includes('data-letter-mode-select="compare"') === Boolean(hasText && images),
     `${page.relativePath} 的图文对照入口与公开内容不一致。`);
 }
@@ -319,6 +325,11 @@ if (archiveIndex) {
 		check(!albumHref || !recordId, `${relativeHome} 的主推区混用了相册与单件身份。`);
 		const primaryLinks = [...featured.matchAll(/<a\b[^>]*\bdata-home-primary-link(?:="[^"]*")?[^>]*>/g)].map((match) => match[0]);
 		check(primaryLinks.length === 1 && readAttribute(primaryLinks[0] ?? '', 'href') === target, `${relativeHome} 的主要阅读链接与主推对象不一致。`);
+		const actions = featured.match(/<div\b[^>]*class="feature-actions"[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? '';
+		const directoryLinks = [...actions.matchAll(/<a\b[^>]*\bdata-home-directory-link\b[^>]*>/g)];
+		check(actions.includes('data-home-primary-link') && directoryLinks.length === 1
+			&& readAttribute(directoryLinks[0]?.[0] ?? '', 'href') === pathForLocale('/archive/', definition.locale),
+			`${relativeHome} 的主推题签应可直接打开当前语言的档案目录。`);
 		const featuredFigure = featured.match(/<figure\b[^>]*>[\s\S]*?<\/figure>/)?.[0] ?? '';
 		check(featuredFigure.includes('<img'), `${relativeHome} 的首屏缺少公开原件图。`);
 		const photoLink = featuredFigure.match(/<a\b[^>]*>/)?.[0] ?? '';
@@ -361,10 +372,12 @@ if (archiveIndex) {
 if (archiveIndex) {
 	const archiveIds = [...archiveIndex.html.matchAll(/data-archive-id="([^"]+)"/g)].map((match) => match[1]);
 	const albumMembers = new Map();
+	const albumsWithNonLetters = new Set();
 	for (const match of archiveIndex.html.matchAll(/<li\b[^>]*data-archive-id="([^"]+)"[^>]*>/g)) {
 		const albumKey = match[0].match(/data-archive-album-key="([^"]+)"/)?.[1];
 		if (!albumKey) continue;
 		albumMembers.set(albumKey, (albumMembers.get(albumKey) ?? 0) + 1);
+		if (!match[0].includes('data-archive-category="letters"')) albumsWithNonLetters.add(albumKey);
 		check(/\shidden(?:\s|=|>)/.test(match[0]), `入册档案 ${match[1]} 在默认目录中没有收拢。`);
 	}
 	const albumKeys = [];
@@ -372,6 +385,13 @@ if (archiveIndex) {
 		albumKeys.push(match[1]);
 		const declaredCount = Number(match[0].match(/data-album-record-count="(\d+)"/)?.[1]);
 		check(declaredCount === albumMembers.get(match[1]), `相册 ${match[1]} 的公开总件数没有包含全部真实成员。`);
+		const card = archiveIndex.html.slice(match.index, archiveIndex.html.indexOf('</a>', match.index));
+		const letterUnit = match[0].includes('data-album-unit="letters"');
+		const total = `共 ${declaredCount} ${letterUnit ? '封' : '件档案'}`;
+		const countRows = [...card.matchAll(/<p\b[^>]*class="album-browse-count"[^>]*>([\s\S]*?)<\/p>/g)];
+		check(!letterUnit || !albumsWithNonLetters.has(match[1]), `相册 ${match[1]} 含有其他类型档案，不能以信件计数。`);
+		check(countRows.length === 1 && countRows[0][1].includes(total) && /<span\b[^>]*data-album-matches[^>]*\bhidden\b/.test(countRows[0][1]),
+			`相册 ${match[1]} 的初始目录卡需要单一的真实总数，筛选提示应在筛选后才出现。`);
 	}
 	check(new Set(albumKeys).size === albumKeys.length, '档案目录重复展示同一个相册入口。');
 	check(albumKeys.length === albumMembers.size, '相册入口与入册档案的归属不一致。');

@@ -3,7 +3,7 @@ export function initLetterReader(reader: HTMLElement) {
   const text = reader.querySelector<HTMLElement>('[data-letter-text]');
   const gallery = reader.querySelector<HTMLElement>('[data-record-gallery]');
   const pages = Array.from(reader.querySelectorAll<HTMLElement>('[data-letter-page]'));
-  const position = reader.querySelector<HTMLOutputElement>('[data-letter-position]');
+  const position = reader.querySelector<HTMLSelectElement>('[data-letter-position]');
   const modes = Array.from(reader.querySelectorAll<HTMLButtonElement>('[data-letter-mode-select]'));
   const sizes = Array.from(reader.querySelectorAll<HTMLButtonElement>('[data-letter-size-select]'));
   let imageIndex = 0;
@@ -18,10 +18,7 @@ export function initLetterReader(reader: HTMLElement) {
   function updatePosition() {
     if (!position) return;
     const page = (reader.dataset.letterMode === 'text' ? visibleTextPage() : imageIndex) + 1;
-    const display = `${page} / ${pages.length}`;
-    if (position.textContent === display) return;
-    position.textContent = display;
-    position.setAttribute('aria-label', position.dataset.format!.replace('{page}', String(page)));
+    if (position.value !== String(page)) position.value = String(page);
   }
 
   function savePlaceInText() {
@@ -59,12 +56,36 @@ export function initLetterReader(reader: HTMLElement) {
     if (element) window.scrollBy({ top: element.getBoundingClientRect().top - top, behavior: 'instant' });
   }
 
+  const belowToolbar = () => (toolbar?.getBoundingClientRect().height ?? 0) + 12;
+  const selectScan = (index: number) => gallery?.dispatchEvent(new CustomEvent('letter-select-image', { detail: index }));
+
+  function setMode(next: string) {
+    reader.dataset.letterMode = next;
+    for (const button of modes) button.setAttribute('aria-pressed', String(button.dataset.letterModeSelect === next));
+  }
+
+  function showPageText(index: number, restore: boolean) {
+    const page = pages[index];
+    if (!page) return;
+    if (restore && bookmark?.index === index) showReaderContent(bookmark.anchor, bookmark.top);
+    else showReaderContent(page.parentElement, belowToolbar());
+  }
+
   reader.addEventListener('letter-image-changed', (event) => {
     imageIndex = (event as CustomEvent<number>).detail;
     pages.forEach((page, index) => { page.dataset.currentPage = String(index === imageIndex); });
     updatePosition();
   });
   if (position) {
+    position.addEventListener('change', () => {
+      const index = Number(position.value) - 1;
+      if (!pages[index]) return;
+      bookmark = undefined;
+      selectScan(index);
+      if (reader.dataset.letterMode === 'text') showPageText(index, false);
+      else showReaderContent(gallery, belowToolbar());
+      updatePosition();
+    });
     let frame = 0;
     const onViewportChange = () => {
       if (reader.dataset.letterMode !== 'text' || frame) return;
@@ -81,23 +102,39 @@ export function initLetterReader(reader: HTMLElement) {
       const readingBelowHeader = (toolbar?.getBoundingClientRect().top ?? 1) <= 1;
       if (oldMode === 'text') {
         savePlaceInText();
-        if (pages.length && bookmark) gallery?.dispatchEvent(new CustomEvent('letter-select-image', { detail: bookmark.index }));
+        if (pages.length && bookmark) selectScan(bookmark.index);
       } else if (oldMode === 'compare' && !pages.length && !bookmark) {
         rememberUnpagedComparison();
       }
-      reader.dataset.letterMode = nextMode;
-      for (const modeButton of modes) {
-        modeButton.setAttribute('aria-pressed', String(modeButton.dataset.letterModeSelect === nextMode));
-      }
-      const toolbarHeight = (toolbar?.getBoundingClientRect().height ?? 0) + 12;
+      setMode(nextMode);
+      const toolbarHeight = belowToolbar();
       if (nextMode === 'text' && bookmark && (!pages.length || bookmark.index === imageIndex)) {
         showReaderContent(bookmark.anchor, bookmark.top);
       } else if (nextMode === 'text' && pages[imageIndex] && imageIndex > 0) {
-        showReaderContent(pages[imageIndex], toolbarHeight);
+        showPageText(imageIndex, false);
       } else if (readingBelowHeader) {
         showReaderContent(nextMode === 'text' ? text : gallery, toolbarHeight);
       }
       updatePosition();
+    });
+  }
+
+  reader.querySelector('[data-letter-read-page]')?.addEventListener('click', () => {
+    if (reader.dataset.letterMode === 'original') setMode('text');
+    showPageText(imageIndex, true);
+    pages[imageIndex]?.focus({ preventScroll: true });
+    updatePosition();
+  });
+  for (const link of reader.querySelectorAll<HTMLInputElement>('[data-letter-original-page]')) {
+    link.addEventListener('click', () => {
+      const index = Number(link.dataset.letterOriginalPage) - 1;
+      const page = pages[index];
+      if (!page) return;
+      bookmark = { anchor: page, index, top: page.getBoundingClientRect().top };
+      if (reader.dataset.letterMode === 'text') setMode('original');
+      selectScan(index);
+      showReaderContent(gallery, belowToolbar());
+      gallery?.querySelector<HTMLElement>('[data-gallery-open]')?.focus({ preventScroll: true });
     });
   }
 

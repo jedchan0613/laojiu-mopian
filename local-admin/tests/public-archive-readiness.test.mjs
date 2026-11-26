@@ -438,7 +438,7 @@ test('八字段权重与相册成员匹配继续用完整索引，q变化使用�
   assert.deepEqual(f.visibleItems().map((entry) => entry.dataset.archiveId), names.map((_, index) => 'TEST-' + String(index).padStart(3, '0')));
   f.views[1].dispatch('click');
   assert.equal(f.visibleGroups().length, 1);
-  assert.match(f.album.querySelector('[data-album-matches]').textContent, /3/);
+  assert.match(f.album.querySelector('[data-album-matches]').textContent, /全部符合搜索/);
   assert.equal(f.album.querySelector('[data-album-matched-items]').children.length, 3);
   f.input('doesnotexist');
   assert.equal(f.requests.length, 1);
@@ -446,6 +446,38 @@ test('八字段权重与相册成员匹配继续用完整索引，q变化使用�
   f.elements['archive-clear'].dispatch('click');
   assert.equal(f.search.value, '');
   assert.equal(f.visibleGroups()[0], f.album);
+});
+
+test('专题卡按六语展示实际命中，区分整组与部分、信件与混合档案，清除筛选恢复单一总数', async () => {
+  for (const locale of locales) {
+    const f = fixture({ locale });
+    const summary = f.album.querySelector('[data-album-matches]');
+    const links = f.album.querySelector('[data-album-matched-items]');
+    assert.equal(summary.hidden, true);
+    assert.equal(links.hidden, true);
+    for (const entry of f.entries.slice(0, 3)) entry.dataset.archiveCategory = 'letters';
+    f.album.dataset.albumUnit = 'letters';
+    f.category.value = 'letters';
+    f.category.dispatch('change');
+    assert.equal(summary.textContent, ' · ' + translate('全部符合筛选', locale));
+    f.decade.value = '1980';
+    f.decade.dispatch('change');
+    assert.equal(summary.textContent, ' · ' + translate('{0} 封符合筛选', locale, {0: 2}));
+    assert.equal(links.hidden, false);
+    assert.equal(links.children.length, 2);
+    f.fields[0].fields.transcription = 'singletarget';
+    f.input('singletarget');
+    await flush();
+    await f.succeed();
+    assert.equal(summary.textContent, ' · ' + translate('{0} 封符合搜索', locale, {0: 1}));
+    f.album.dataset.albumUnit = 'records';
+    f.category.value = '';
+    f.category.dispatch('change');
+    assert.equal(summary.textContent, ' · ' + translate('{0} 件符合搜索', locale, {0: 1}));
+    f.elements['archive-clear'].dispatch('click');
+    assert.equal(summary.hidden, true);
+    assert.equal(links.hidden, true);
+  }
 });
 
 test('返回目录恢复手动展开状态，离开页面保存不会抹掉刚点击的档案目标', () => {

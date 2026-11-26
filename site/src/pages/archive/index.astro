@@ -213,7 +213,7 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
 
       <ul class="archive-list" id="archive-list">
         {albumBrowseViews.map((album) => (
-          <li data-archive-album-card={album.slug} data-album-record-count={album.recordCount}>
+          <li data-archive-album-card={album.slug} data-album-record-count={album.recordCount} data-album-unit={album.isLetterCollection ? 'letters' : 'records'}>
             <AlbumBrowseCard album={album} locale={locale} showMatches />
             <ul class="album-matched-items" data-album-matched-items hidden></ul>
           </li>
@@ -821,9 +821,22 @@ import { setupArchiveFilterControls } from '../../scripts/archive-filter-control
       displayEntries.push(entry);
       if (group.kind !== 'album') continue;
       const matchSummary = entry.querySelector<HTMLElement>('[data-album-matches]');
-      if (matchSummary) matchSummary.textContent = ct('命中 {0} 件 / 册内共 {1} 件公开档案', {
-        0: group.memberIds.length, 1: entry.dataset.albumRecordCount ?? '',
-      });
+      if (matchSummary) {
+        matchSummary.hidden = !hasActiveFilters;
+        if (hasActiveFilters) {
+          const count = group.memberIds.length;
+          const searching = terms.length > 0;
+          let caption: string;
+          if (count === Number(entry.dataset.albumRecordCount)) {
+            caption = ct(searching ? '全部符合搜索' : '全部符合筛选');
+          } else if (entry.dataset.albumUnit === 'letters') {
+            caption = ct(searching ? '{0} 封符合搜索' : '{0} 封符合筛选', { 0: count });
+          } else {
+            caption = ct(searching ? '{0} 件符合搜索' : '{0} 件符合筛选', { 0: count });
+          }
+          matchSummary.textContent = ' · ' + caption;
+        }
+      }
       const matchedItems = entry.querySelector<HTMLElement>('[data-album-matched-items]');
       if (matchedItems) {
         matchedItems.hidden = !hasActiveFilters;
