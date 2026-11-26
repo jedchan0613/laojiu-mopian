@@ -1,9 +1,10 @@
 ---
 
-import { t, getLocale, localizePath, canonicalPath } from '../../i18n/ui';
+import { t, getLocale, localizePath } from '../../i18n/ui';
 const locale = getLocale(Astro.url.pathname);
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AlbumBrowseCard from '../../components/AlbumBrowseCard.astro';
+import ArchiveFilterChoices from '../../components/ArchiveFilterChoices.astro';
 import { createAlbumBrowseViews } from '../../data/album-browse';
 import { archiveItems } from '../../data/archive';
 import {
@@ -19,6 +20,7 @@ import { serializeHtmlJson } from '../../../../shared/html-json.mjs';
 import {groupArchiveMatches} from '../../data/archive-browse.mjs';
 import {archiveSearchUrl} from '../../data/archive-search-index';
 import { getDecadeOptions, getArchiveTypeOrder } from '../../../../shared/archive-reference.mjs';
+import { createArchivePlaceFacets, isBrowseableArchivePlace, normalizeArchivePlace } from '../../../../shared/archive-place-filters.mjs';
 
 const publishedViews = archiveItems
   .filter(isPublishedArchiveItem)
@@ -28,11 +30,14 @@ const albumKeyByItemId = new Map(albumBrowseViews.flatMap((album) => album.membe
 
 // 各端共同读取首个四位年份；无法确定的记录统一归入“年代未知”。
 const decadeOptions = getDecadeOptions(publishedViews.map((view) => view.item.core.date_display));
-const availableDecades = decadeOptions.filter((option) => option.value !== 'unknown').map((option) => option.value);
 const objectTypeOrder = getArchiveTypeOrder(archiveCategories);
 
-const availablePlaces = [...new Set(publishedViews.flatMap((view) => view.placeFilters))];
-const placeLabels = Object.assign({}, ...publishedViews.map(view => view.placeFilterLabels));
+const placeFacetsById = new Map(publishedViews.map(view => [
+  view.id, createArchivePlaceFacets(view.item.core, view.localizedCore),
+]));
+const placeLabels = Object.assign({}, ...[...placeFacetsById.values()].map(facets => facets.labels));
+const availablePlaces = [...new Set([...placeFacetsById.values()].flatMap(facets => facets.values))]
+  .sort((left, right) => (placeLabels[left] ?? left).localeCompare(placeLabels[right] ?? right, locale));
 const tagLabels = Object.assign({}, ...publishedViews.map(view => view.tagLabels));
 const availableTags = [...new Set(publishedViews.flatMap((view) => view.canonicalTags))];
 
@@ -40,34 +45,27 @@ const availableTags = [...new Set(publishedViews.flatMap((view) => view.canonica
 // 过滤规则：标签与 placeFilters 精确匹配，或标签是 placeDisplay 的子串，均视为重复。
 const filterDisplayTags = (tags: string[], placeDisplay: string, placeFilters: string[]) =>
   tags.filter((tag) => !placeFilters.includes(tag) && !placeDisplay.includes(tag));
-const decadeBrowseEntries = availableDecades.map((decade) => ({
-  label: t("{0}年代", locale, {0: (decade)}),
-  value: decade,
-  count: publishedViews.filter((view) => view.decade === decade).length,
-}));
-const normalizePlaceLabel = (value: string) => value.trim().replace(/[省市区县]$/, '');
-// “按地点浏览”取每条档案最能定位的一层结构化地点（优先市级），
-// 含“未知”的层级跳过；再回匹配到该档案地点筛选值中的对应项。
+// 只用已有结构化地点生成入口，考证说明留在原文和全文搜索中。
 const browsePlaceLevels = ['city', 'district', 'street_town', 'specific_place', 'province', 'country'] as const;
-const browsePlaceMap = new Map<string, { label: string; value: string; count: number }>();
+const browsePlaceMap = new Map<string, { label: string; value: string; count: number; level: number }>();
 for (const view of publishedViews) {
-  const preferred = browsePlaceLevels
-    .map((field) => view.item.core[field]?.trim())
-    .find((value): value is string => Boolean(value) && !value!.includes('未知'));
-  if (!preferred) continue;
-  const filterValue = view.placeFilters.find((place) => place === preferred)
-    ?? view.placeFilters.find((place) => normalizePlaceLabel(place) === normalizePlaceLabel(preferred));
-  if (!filterValue) continue;
-  const existing = browsePlaceMap.get(filterValue);
-  browsePlaceMap.set(filterValue, {
-    label: view.placeFilterLabels[filterValue] ?? preferred,
-    value: filterValue,
-    count: (existing?.count ?? 0) + 1,
+  const level = browsePlaceLevels.findIndex(field => isBrowseableArchivePlace(view.item.core[field]));
+  if (level < 0) continue;
+  const value = normalizeArchivePlace(view.item.core[browsePlaceLevels[level]]);
+  const existing = browsePlaceMap.get(value);
+  browsePlaceMap.set(value, {
+    label: placeLabels[value] ?? value,
+    value,
+    count: publishedViews.filter(candidate => placeFacetsById.get(candidate.id)?.values.includes(value)).length,
+    level: Math.min(existing?.level ?? level, level),
   });
 }
 const placeBrowseEntries = [...browsePlaceMap.values()]
-  .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, 'zh-CN'))
+  .sort((left, right) => Number(left.level >= 4) - Number(right.level >= 4)
+    || right.count - left.count || left.label.localeCompare(right.label, locale))
   .slice(0, 6);
+const placeChoices = [...placeBrowseEntries.map(entry => entry.value), ...availablePlaces.filter(place => !placeBrowseEntries.some(entry => entry.value === place))]
+  .map(value => ({ value, label: placeLabels[value] ?? value, count: publishedViews.filter(view => placeFacetsById.get(view.id)?.values.includes(value)).length }));
 // “最近收录”以首次录入日期为准；实物获得日期只在缺少录入日期时兜底。
 // 同一天录入时继续比较更新时间、获得日期和永久编号，保证结果稳定。
 const publishedEntries = [...publishedViews]
@@ -99,6 +97,7 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
 ---
 
 <BaseLayout
+  archiveStyle="editorial"
   title={t("档案｜老旧默片", locale)}
   description={t("浏览老旧默片收录的照片、纸张、卡片与普通生活痕迹。", locale)}
   image={publishedEntries[0]?.coverImage?.src}
@@ -106,136 +105,59 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
   <div class="archive-page">
     <header class="archive-heading">
       <h1>{t("档案", locale)}</h1>
-      <p class="introduction">{t("被时间留下来的照片、纸张、卡片与普通生活痕迹。", locale)}</p>
     </header>
 
-    {(decadeBrowseEntries.length > 0 || placeBrowseEntries.length > 0) && (
-      <details class="archive-paths" data-archive-paths open>
-        <summary class="archive-paths-heading">
-          <span class="archive-paths-title" id="archive-paths-heading">{t("按年代与地点浏览", locale)}</span>
-          <span class="archive-paths-toggle" aria-hidden="true">{t("展开 / 收起", locale)}</span>
-        </summary>
-        <div class:list={{
-          'archive-paths-grid': true,
-          'is-single': decadeBrowseEntries.length === 0 || placeBrowseEntries.length === 0,
-        }}>
-          {decadeBrowseEntries.length > 0 && (
-            <section class="archive-path-group" aria-labelledby="archive-decade-path-heading">
-              <h3 id="archive-decade-path-heading">{t("按年代浏览", locale)}</h3>
-              <div class="archive-path-links">
-                {decadeBrowseEntries.map((entry) => (
-                  <a href={localizePath(`/archive/?decade=${entry.value}&sort=date-asc`, locale)}>
-                    <span>{t(entry.label, locale)}</span><small>{entry.count}</small>
-                  </a>
-                ))}
-              </div>
-            </section>
-          )}
-          {placeBrowseEntries.length > 0 && (
-            <section class="archive-path-group" aria-labelledby="archive-place-path-heading">
-              <h3 id="archive-place-path-heading">{t("按地点浏览", locale)}</h3>
-              <div class="archive-path-links">
-                {placeBrowseEntries.map((entry) => (
-                  <a href={localizePath(`/archive/?place=${encodeURIComponent(entry.value)}`, locale)}>
-                    <span>{t(entry.label, locale)}</span><small>{entry.count}</small>
-                  </a>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-      </details>
-    )}
 
     <section
       class="archive-index"
       aria-label={t("档案目录", locale)}
       data-archive-page-size="12"
     >
-      <header class="archive-index-heading">
-        <div class="archive-index-title">
-          <div><h2>{t("查找档案", locale)}</h2></div>
+      <div class="archive-controls" role="search" aria-label={t("档案搜索与筛选", locale)}>
+        <div class="archive-search-field">
+          <label for="archive-search" class="archive-search-label">{t("关键词搜索", locale)}</label>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+          <input id="archive-search" type="search" placeholder={t("题名、地点或关键词", locale)} autocomplete="off" spellcheck={false} aria-controls="archive-list" />
         </div>
-      </header>
-      <nav class="archive-view-modes" aria-label={t('浏览方式', locale)}>
-        <a href={localizePath('/archive/', locale)} data-archive-view="grouped" aria-current="page">{t('相册与单件', locale)}</a>
-        <a href={localizePath('/archive/?view=albums', locale)} data-archive-view="albums">{t('相册与专题', locale)}</a>
-        <a href={localizePath('/archive/?view=items', locale)} data-archive-view="items">{t('逐件查看全部档案', locale)}</a>
-      </nav>
-      <p class="archive-view-note">{t('相册与专题集中展示，数量按单件档案统计。', locale)}</p>
-      <div class="archive-controls" aria-label={t("档案搜索与筛选", locale)}>
-        <div class="archive-control">
-          <label for="archive-search">{t("关键词搜索", locale)}</label>
-          <input
-            id="archive-search"
-            type="search"
-            placeholder={t("题名、地点或关键词", locale)}
-            autocomplete="off"
-            spellcheck={false}
-            aria-controls="archive-list"
-          />
-          <div class="archive-search-assist" id="archive-search-assist" hidden>
-            <span>{t("相关线索", locale)}</span>
-            <div id="archive-search-suggestions"></div>
-          </div>
+        <div class="archive-search-assist" id="archive-search-assist" hidden>
+          <span>{t("相关线索", locale)}</span>
+          <div id="archive-search-suggestions"></div>
         </div>
-
-        <div class="archive-control">
-          <label for="archive-category">{t("藏品分类", locale)}</label>
-          <select id="archive-category" aria-controls="archive-list">
-            <option value="">{t("全部分类", locale)}</option>
-            {archiveCategories.map((category) => (
-              <option
-                value={category.slug}
-                data-object-types={category.objectTypes.join('|')}
-              >
-                {t(category.label, locale)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div class="archive-control">
-          <label for="archive-sort">{t("排序方式", locale)}</label>
-          <select id="archive-sort" aria-controls="archive-list">
-            <option value="relevance" disabled>{t("按相关度", locale)}</option>
-            <option value="recent">{t("最近收录", locale)}</option>
-            <option value="likes">{t("最多点赞", locale)}</option>
-            <option value="date-asc">{t("年代从早到晚", locale)}</option>
-            <option value="date-desc">{t("年代从晚到早", locale)}</option>
-            <option value="type">{t("按藏品类型", locale)}</option>
-          </select>
-        </div>
-
-        <details class="archive-more-filters" id="archive-more-filters">
-          <summary><span>{t("更多筛选", locale)}</span><small id="archive-more-summary">{t("年代、地点、标签", locale)}</small></summary>
-          <div class="archive-secondary-controls">
-            <div class="archive-control">
-              <label for="archive-decade">{t("年代", locale)}</label>
-              <select id="archive-decade" aria-controls="archive-list">
-                <option value="">{t("全部年代", locale)}</option>
-                {decadeOptions.map(({ value, label }) => <option value={value}>{value === 'unknown' ? t(label, locale) : t('{0}年代',locale,{0:value})}</option>)}
-              </select>
-            </div>
-
-            <div class="archive-control">
-              <label for="archive-place">{t("地点", locale)}</label>
-              <select id="archive-place" aria-controls="archive-list">
-                <option value="">{t("全部地点", locale)}</option>
-                {availablePlaces.map((place) => <option value={place}>{placeLabels[place] ?? place}</option>)}
-              </select>
-            </div>
-
-            <div class="archive-control">
-              <label for="archive-tag">{t("标签", locale)}</label>
-              <select id="archive-tag" aria-controls="archive-list">
-                <option value="">{t("全部标签", locale)}</option>
-                {availableTags.map((tag) => <option value={tag}>{tagLabels[tag] ?? tag}</option>)}
-              </select>
-            </div>
-          </div>
-        </details>
       </div>
+
+      <ArchiveFilterChoices id="archive-category" label={t("藏品分类", locale)} variant="category" choices={[
+        { value: '', label: t('全部分类', locale) },
+        ...archiveCategories.map(category => ({ value: category.slug, label: t(category.label, locale), objectTypes: category.objectTypes })),
+      ]} />
+
+      <div class="archive-browse-bar">
+        <nav class="archive-view-modes" aria-label={t('浏览方式', locale)}>
+          <a href={localizePath('/archive/', locale)} data-archive-view="grouped" aria-current="page">{t('相册与单件', locale)}</a>
+          <a href={localizePath('/archive/?view=albums', locale)} data-archive-view="albums">{t('相册与专题', locale)}</a>
+          <a href={localizePath('/archive/?view=items', locale)} data-archive-view="items">{t('逐件查看全部档案', locale)}</a>
+        </nav>
+      </div>
+
+      <details class="archive-more-filters" id="archive-more-filters" data-archive-paths>
+        <summary>
+          <span>{t('年代、地点、标签', locale)}</span>
+          <small id="archive-more-summary" hidden></small>
+          <span class="archive-filter-toggle" aria-hidden="true"></span>
+        </summary>
+        <div class="archive-secondary-controls">
+          <ArchiveFilterChoices id="archive-decade" label={t('年代', locale)} choices={[
+            { value: '', label: t('全部年代', locale) },
+            ...decadeOptions.map(({value, label}) => ({ value, label: value === 'unknown' ? t(label, locale) : t('{0}年代', locale, {0:value}), count: publishedViews.filter(view => value === 'unknown' ? !view.decade : view.decade === value).length })),
+          ]} />
+          <ArchiveFilterChoices id="archive-place" label={t('地点', locale)} searchLabel={t('关键词搜索', locale)} choices={[
+            { value: '', label: t('全部地点', locale) }, ...placeChoices,
+          ]} />
+          <ArchiveFilterChoices id="archive-tag" label={t('标签', locale)} searchLabel={t('关键词搜索', locale)} choices={[
+            { value: '', label: t('全部标签', locale) },
+            ...availableTags.map(tag => ({ value: tag, label: tagLabels[tag] ?? tag })),
+          ]} />
+        </div>
+      </details>
 
       <div class="archive-actions" id="archive-actions" hidden>
         <div class="active-filters" aria-label={t("当前筛选条件", locale)}>
@@ -247,6 +169,7 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
         </button>
       </div>
 
+      <div class="archive-result-bar">
       <p
         class="results-summary"
         id="archive-results-summary"
@@ -256,6 +179,20 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
       >
         {t("共", locale)} {publishedViews.length} {t("件档案", locale)}
       </p>
+      <details class="archive-sort-menu" data-sort-menu>
+        <summary aria-label={t('排序方式', locale)}><span data-choice-label>{t('最近收录', locale)}</span><span class="archive-menu-chevron" aria-hidden="true"></span></summary>
+        <div class="archive-sort-options">
+          <ArchiveFilterChoices id="archive-sort" label={t('排序方式', locale)} variant="sort" selected="recent" choices={[
+            { value: 'relevance', label: t('按相关度', locale), disabled: true },
+            { value: 'recent', label: t('最近收录', locale) },
+            { value: 'likes', label: t('最多点赞', locale) },
+            { value: 'date-asc', label: t('年代从早到晚', locale) },
+            { value: 'date-desc', label: t('年代从晚到早', locale) },
+            { value: 'type', label: t('按藏品类型', locale) },
+          ]} />
+        </div>
+      </details>
+      </div>
       <button class="ui-action ui-action--secondary" id="archive-search-retry" type="button" hidden>
         {t('重试全文搜索', locale)}
       </button>
@@ -281,7 +218,7 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
               hidden={albumKeyByItemId.has(view.id)}
               data-archive-category={getArchiveCategorySlug(view.objectType)}
               data-archive-decade={view.decade}
-              data-archive-places={`|${view.placeFilters.join('|')}|`}
+              data-archive-places={`|${placeFacetsById.get(view.id)?.matchingValues.join('|') ?? ''}|`}
               data-archive-tags={`|${view.canonicalTags.join('|')}|`}
               data-archive-id={view.id}
               data-card-expanded={initialFullIds.has(view.id)?'true':undefined}
@@ -362,9 +299,11 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
 </BaseLayout>
 
 <script>
-import {clientText as ct,clientPath,clientLocale} from '../../i18n/client';
+import {clientText as ct,clientLocale} from '../../i18n/client';
 
 import '../../scripts/archive-likes';
+import { normalizeArchivePlace } from '../../../../shared/archive-place-filters.mjs';
+import { setupArchiveFilterControls } from '../../scripts/archive-filter-controls';
   import {
     SEARCH_FIELD_LABELS,
     normalizeSearchText,
@@ -376,13 +315,10 @@ import '../../scripts/archive-likes';
   import { groupArchiveMatches } from '../../data/archive-browse.mjs';
   import {showArchiveCard,type ArchiveCardData} from '../../scripts/archive-card';
 
+  const filterControls = setupArchiveFilterControls();
   const archiveIndex = document.querySelector<HTMLElement>('.archive-index');
   const searchInput = document.querySelector<HTMLInputElement>('#archive-search');
   const browsePaths = document.querySelector<HTMLDetailsElement>('[data-archive-paths]');
-  const narrowScreen = window.matchMedia('(max-width: 700px)');
-  const syncBrowsePaths = () => { if (browsePaths) browsePaths.open = !narrowScreen.matches; };
-  syncBrowsePaths();
-  narrowScreen.addEventListener('change', syncBrowsePaths);
   const categorySelect = document.querySelector<HTMLSelectElement>('#archive-category');
   const sortSelect = document.querySelector<HTMLSelectElement>('#archive-sort');
   const decadeSelect = document.querySelector<HTMLSelectElement>('#archive-decade');
@@ -413,12 +349,13 @@ import '../../scripts/archive-likes';
   const entriesById = new Map(archiveEntries.map((entry) => [entry.dataset.archiveId!, entry]));
   const cardData=JSON.parse(document.querySelector('#archive-card-data')?.textContent??'{}') as Record<string,ArchiveCardData>;
   const viewModeLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-archive-view]'));
-  const requestedViewMode = new URLSearchParams(window.location.search).get('view');
-  let viewMode = requestedViewMode === 'albums' || requestedViewMode === 'items' ? requestedViewMode : 'grouped';
+  let viewMode = 'grouped';
   const highlightOriginalText = new WeakMap<HTMLElement, string>();
   const browseStateKey = 'ljm-archive-browse-state';
   const pageSize = Math.max(1, Number(archiveIndex?.dataset.archivePageSize) || 12);
   let currentPage = 1;
+  let browseInitialized = false;
+  let restorationToken = 0;
   // 访客手动选择过排序方式后，不再自动切换到“按相关度”。
   let userChosenSort = false;
   // 「最多点赞」排序使用的计数：由点赞脚本在拿到计数后逐件通知本页。
@@ -447,6 +384,7 @@ import '../../scripts/archive-likes';
   const syncLikesSortOption = () => {
     const likesOption = sortSelect?.querySelector<HTMLOptionElement>('option[value="likes"]');
     if (likesOption) likesOption.disabled = !likesAvailable;
+    filterControls.sync();
   };
 
   // 分类、排序和分页直接使用页面轻量数据；只有关键词搜索才需要全文索引。
@@ -505,10 +443,11 @@ import '../../scripts/archive-likes';
     setAddressParameter(url, 'place', placeSelect.value);
     setAddressParameter(url, 'tag', tagSelect.value);
     url.searchParams.delete('topic');
-    setAddressParameter(url, 'sort', sortSelect.value === 'recent' ? '' : sortSelect.value);
+    const explicitRecent = userChosenSort && Boolean(searchInput.value.trim());
+    setAddressParameter(url, 'sort', sortSelect.value === 'recent' && !explicitRecent ? '' : sortSelect.value);
     setAddressParameter(url, 'page', currentPage > 1 ? String(currentPage) : '');
     setAddressParameter(url, 'view', viewMode === 'grouped' ? '' : viewMode);
-    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    window.history.replaceState(window.history.state ?? {}, '', `${url.pathname}${url.search}${url.hash}`);
     for (const link of viewModeLinks) {
       const destination = new URL(url);
       setAddressParameter(destination, 'view', link.dataset.archiveView === 'grouped' ? '' : link.dataset.archiveView ?? '');
@@ -541,15 +480,46 @@ import '../../scripts/archive-likes';
     }));
   };
 
-  const saveBrowseState = (targetId = '', targetAlbumSlug = '') => {
+  type BrowseState = {
+    href: string; scrollY: number; targetId: string; targetAlbumSlug: string;
+    restorePending: boolean; pathsOpen?: boolean; moreFiltersOpen?: boolean; targetOffset?: number;
+  };
+  const readBrowseState = (): BrowseState | undefined => {
+    let sessionState: BrowseState | undefined;
     try {
-      window.sessionStorage.setItem(
-        browseStateKey,
-        JSON.stringify({ href: currentBrowseHref(), scrollY: window.scrollY, targetId, targetAlbumSlug, restorePending: false }),
-      );
-    } catch {
-      // 浏览器禁用会话存储时，网址中的筛选条件仍然可以独立恢复。
-    }
+      sessionState = JSON.parse(window.sessionStorage.getItem(browseStateKey) ?? 'null');
+    } catch { /* 会话存储不可用时继续读取当前历史条目。 */ }
+    const historyState = window.history.state?.ljmArchiveBrowse as BrowseState | undefined;
+    const belongsHere = (state: BrowseState | undefined) => state && state.href === currentBrowseHref();
+    if (belongsHere(sessionState) && sessionState?.restorePending === true) return sessionState;
+    if (belongsHere(historyState)) return historyState;
+    return belongsHere(sessionState) ? sessionState : undefined;
+  };
+  const writeBrowseState = (state: BrowseState) => {
+    try { window.sessionStorage.setItem(browseStateKey, JSON.stringify(state)); } catch { /* 使用历史条目作为备份。 */ }
+    const previous = window.history.state;
+    window.history.replaceState({ ...(previous && typeof previous === 'object' ? previous : {}), ljmArchiveBrowse: state }, '', currentBrowseHref());
+  };
+  const browseTarget = (state: Pick<BrowseState, 'targetId' | 'targetAlbumSlug'>) =>
+    state.targetAlbumSlug ? albumCards.get(state.targetAlbumSlug) : entriesById.get(state.targetId);
+  const saveBrowseState = (targetId?: string, targetAlbumSlug?: string, restorePending?: boolean) => {
+    const previous = readBrowseState();
+    const state: BrowseState = {
+      href: currentBrowseHref(), scrollY: window.scrollY,
+      targetId: targetId ?? previous?.targetId ?? '',
+      targetAlbumSlug: targetAlbumSlug ?? previous?.targetAlbumSlug ?? '',
+      restorePending: restorePending ?? previous?.restorePending ?? false,
+      pathsOpen: browsePaths?.open ?? false,
+      moreFiltersOpen: moreFilters?.open ?? false,
+    };
+    const target = browseTarget(state);
+    if (target && !target.hidden && typeof target.getBoundingClientRect === 'function') state.targetOffset = target.getBoundingClientRect().top;
+    writeBrowseState(state);
+  };
+  const restorePanelState = () => {
+    const state = readBrowseState();
+    if (browsePaths && typeof state?.pathsOpen === 'boolean') browsePaths.open = state.pathsOpen;
+    if (moreFilters && typeof state?.moreFiltersOpen === 'boolean') moreFilters.open = state.moreFiltersOpen;
   };
 
   const compareText = (left: string, right: string) =>
@@ -740,13 +710,17 @@ import '../../scripts/archive-likes';
     if (!searchInput || !categorySelect || !sortSelect || !decadeSelect || !placeSelect || !tagSelect || !resultsSummary) return;
     const terms = searchTermsFrom(searchInput.value);
     syncRelevanceSort(terms.length > 0);
+    filterControls.sync();
     const selectedCategory = categorySelect.value;
     const selectedDecade = decadeSelect.value;
     const selectedPlace = placeSelect.value;
     const selectedTag = tagSelect.value;
     const advancedFilterCount = [selectedDecade, selectedPlace, selectedTag].filter(Boolean).length;
     const hasActiveFilters = terms.length > 0 || Boolean(selectedCategory || selectedDecade || selectedPlace || selectedTag);
-    if (moreFiltersSummary) moreFiltersSummary.textContent = advancedFilterCount ? ct("已选 {0} 项", {0: (advancedFilterCount)}) : ct("年代、地点、标签");
+    if (moreFiltersSummary) {
+      moreFiltersSummary.textContent = advancedFilterCount ? ct("已选 {0} 项", {0: (advancedFilterCount)}) : '';
+      moreFiltersSummary.hidden = advancedFilterCount === 0;
+    }
     if (archiveActions) archiveActions.hidden = !hasActiveFilters;
     renderActiveFilterChips();
     const awaitingSearch = terms.length > 0 && searchState !== 'ready';
@@ -821,7 +795,7 @@ import '../../scripts/archive-likes';
       }
     }
     archiveList?.append(...displayEntries);
-    const pageState = renderPagination(displayEntries);
+    renderPagination(displayEntries);
     renderSearchHighlights(terms);
     renderMatchReasons(scoreMap, terms.length > 0);
     renderSearchSuggestions(matchingEntries, terms);
@@ -844,22 +818,17 @@ import '../../scripts/archive-likes';
           : ct("可以移除部分筛选条件，或清除后浏览全部档案。");
       return;
     }
-    const rangeText = pageState.totalPages > 1 ? ct('，本页显示第 {0}–{1} 个浏览入口', { 0: pageState.startIndex + 1, 1: pageState.endIndex }) : '';
-    const albumCount = displayGroups.filter((group) => group.kind === 'album').length;
-    const itemCount = displayGroups.filter((group) => group.kind === 'item').length;
-    resultsSummary.textContent = viewMode === 'items'
-      ? ct('{0} {1} 件档案 · 逐件展示{2}', {0: hasActiveFilters ? ct('找到') : ct('共'), 1: matchingEntries.length, 2: rangeText})
-      : ct('{0} {1} 件档案 · {2} 个相册或专题、{3} 件散件{4}', {
-      0: hasActiveFilters ? ct('找到') : ct('共'), 1: matchingEntries.length,
-      2: albumCount, 3: itemCount, 4: rangeText,
+    resultsSummary.textContent = ct('{0} {1} 件档案{2}', {
+      0: hasActiveFilters ? ct('找到') : ct('共'), 1: matchingEntries.length, 2: '',
     });
   };
 
   const applyFilterChange = () => {
+    restorationToken += 1;
     currentPage = 1;
     updateArchiveResults();
     updateFiltersInAddress();
-    saveBrowseState();
+    saveBrowseState('', '');
   };
 
   searchInput?.addEventListener('focus', () => { void ensureSearchIndex(); });
@@ -892,6 +861,7 @@ import '../../scripts/archive-likes';
 
   const clearAllFilters = () => {
     if (!searchInput || !categorySelect || !decadeSelect || !placeSelect || !tagSelect) return;
+    restorationToken += 1;
     searchInput.value = '';
     categorySelect.value = '';
     decadeSelect.value = '';
@@ -915,11 +885,13 @@ import '../../scripts/archive-likes';
     const control = controls[button.dataset.clearFilter as keyof typeof controls];
     if (!control) return;
     control.value = '';
-    control.focus();
+    if (control === searchInput) searchInput.focus();
+    else filterControls.focus(control.id);
     applyFilterChange();
   });
 
   const changePage = (page: number) => {
+    restorationToken += 1;
     currentPage = page;
     updateArchiveResults();
     updateFiltersInAddress();
@@ -933,24 +905,47 @@ import '../../scripts/archive-likes';
     if (button) changePage(Number(button.dataset.archivePage));
   });
 
-  const addressParameters = new URLSearchParams(window.location.search);
-  const requestedKeyword = addressParameters.get('q');
-  const requestedCategory = addressParameters.get('category');
-  const requestedType = addressParameters.get('type');
-  const requestedDecade = addressParameters.get('decade');
-  const requestedPlace = addressParameters.get('place');
-  const requestedTag = addressParameters.get('tag');
-  const requestedSort = addressParameters.get('sort');
-  const requestedPage = Number(addressParameters.get('page'));
-  const categoryOptions = Array.from(categorySelect?.options ?? []);
-  const hasRequestedCategory = categoryOptions.some((option) => option.value === requestedCategory);
-  const selectRequestedValue = (select: HTMLSelectElement | null, value: string | null) => {
-    if (select && value && Array.from(select.options).some((option) => option.value === value)) select.value = value;
+  const readFiltersFromAddress = () => {
+    const addressParameters = new URLSearchParams(window.location.search);
+    const requestedKeyword = addressParameters.get('q');
+    const requestedCategory = addressParameters.get('category');
+    const requestedType = addressParameters.get('type');
+    const requestedDecade = addressParameters.get('decade');
+    const requestedPlace = addressParameters.get('place');
+    const requestedTag = addressParameters.get('tag');
+    const requestedSort = addressParameters.get('sort');
+    const requestedPage = Number(addressParameters.get('page'));
+    if (searchInput) searchInput.value = requestedKeyword ?? '';
+    if (categorySelect) categorySelect.value = '';
+    if (decadeSelect) decadeSelect.value = '';
+    if (placeSelect) placeSelect.value = '';
+    if (tagSelect) tagSelect.value = '';
+    if (sortSelect) sortSelect.value = 'recent';
+    currentPage = 1;
+    userChosenSort = false;
+    const requestedView = addressParameters.get('view');
+    viewMode = requestedView === 'albums' || requestedView === 'items' ? requestedView : 'grouped';
+    const categoryOptions = Array.from(categorySelect?.options ?? []);
+    const hasRequestedCategory = categoryOptions.some((option) => option.value === requestedCategory);
+    const selectRequestedValue = (select: HTMLSelectElement | null, value: string | null) => {
+      if (select && value && Array.from(select.options).some((option) => option.value === value)) select.value = value;
   };
 
   if (searchInput && requestedKeyword) searchInput.value = requestedKeyword;
   selectRequestedValue(decadeSelect, requestedDecade);
-  selectRequestedValue(placeSelect, requestedPlace);
+  if (placeSelect && requestedPlace) {
+    const normalized = normalizeArchivePlace(requestedPlace);
+    if (!Array.from(placeSelect.options).some(option => option.value === normalized)
+      && archiveEntries.some(entry => splitDataValues(entry.dataset.archivePlaces).includes(normalized))) {
+      // 旧链接中的完整地点说明仍然有效，只显示当前条件，不加入常用地点菜单。
+      const legacyOption = document.createElement('option');
+      legacyOption.value = normalized;
+      legacyOption.textContent = requestedPlace;
+      legacyOption.hidden = true;
+      placeSelect.append(legacyOption);
+    }
+    selectRequestedValue(placeSelect, normalized);
+  }
   selectRequestedValue(tagSelect, requestedTag);
   selectRequestedValue(sortSelect, requestedSort);
   if (requestedSort && sortSelect?.value === requestedSort) userChosenSort = true;
@@ -960,8 +955,11 @@ import '../../scripts/archive-likes';
     const legacyTypeCategory = categoryOptions.find((option) => (option.dataset.objectTypes ?? '').split('|').includes(requestedType));
     if (legacyTypeCategory) categorySelect.value = legacyTypeCategory.value;
   }
-  if (moreFilters && [decadeSelect?.value, placeSelect?.value, tagSelect?.value].some(Boolean)) moreFilters.open = true;
+  if (moreFilters) moreFilters.open = [decadeSelect?.value, placeSelect?.value, tagSelect?.value].some(Boolean);
+  restorePanelState();
+  };
 
+  readFiltersFromAddress();
   if (searchInput && searchTermsFrom(searchInput.value).length) void ensureSearchIndex();
   updateArchiveResults();
   updateFiltersInAddress();
@@ -977,31 +975,76 @@ import '../../scripts/archive-likes';
 
   function restoreBrowsePosition() {
     if (searchInput && searchTermsFrom(searchInput.value).length && searchState !== 'ready') return;
-    try {
-      const storedState = JSON.parse(window.sessionStorage.getItem(browseStateKey) ?? 'null');
-      if (storedState?.restorePending === true && storedState.href === currentBrowseHref() && Number.isFinite(storedState.scrollY)) {
-        window.requestAnimationFrame(() => window.scrollTo({ top: storedState.scrollY, behavior: 'auto' }));
-        window.sessionStorage.setItem(browseStateKey, JSON.stringify({ ...storedState, restorePending: false }));
-      }
-    } catch {
-      // 无法读取会话状态时不影响筛选本身。
-    }
+    const storedState = readBrowseState();
+    if (storedState?.restorePending !== true || !Number.isFinite(storedState.scrollY)) return;
+    const token = ++restorationToken;
+    writeBrowseState({ ...storedState, restorePending: false });
+    const position = () => {
+      if (token !== restorationToken) return;
+      const target = browseTarget(storedState);
+      const top = target && !target.hidden && Number.isFinite(storedState.targetOffset) && typeof target.getBoundingClientRect === 'function'
+        ? window.scrollY + target.getBoundingClientRect().top - storedState.targetOffset!
+        : storedState.scrollY;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+    };
+    window.requestAnimationFrame(() => {
+      position();
+      window.requestAnimationFrame(position);
+    });
+    if (document.fonts?.ready) void document.fonts.ready.then(() => window.requestAnimationFrame(position));
   }
   restoreBrowsePosition();
+  browseInitialized = true;
+  for (const panel of new Set([browsePaths, moreFilters])) panel?.addEventListener('toggle', () => {
+    if (!browseInitialized) return;
+    const state = readBrowseState();
+    if (state) writeBrowseState({ ...state, pathsOpen: browsePaths?.open ?? false, moreFiltersOpen: moreFilters?.open ?? false });
+    else saveBrowseState();
+  });
+  window.addEventListener('pagehide', () => saveBrowseState(undefined, undefined, true));
+  const restoreFromHistory = () => {
+    readFiltersFromAddress();
+    if (searchInput && searchTermsFrom(searchInput.value).length) void ensureSearchIndex();
+    updateArchiveResults();
+    updateFiltersInAddress();
+    restoreBrowsePosition();
+  };
+  window.addEventListener('popstate', restoreFromHistory);
+  window.addEventListener('pageshow', event => { if (event.persisted) restoreFromHistory(); });
+  window.addEventListener('wheel', () => { restorationToken += 1; }, { passive: true });
+  window.addEventListener('touchstart', () => { restorationToken += 1; }, { passive: true });
+  window.addEventListener('keydown', event => {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) restorationToken += 1;
+  });
 </script>
 
 <style>
   .archive-list[hidden],
   #archive-search-retry[hidden] { display: none; }
   .archive-entry--compact {padding:1rem;min-height:4rem;overflow-wrap:anywhere;}
-  .archive-view-modes { display:flex; flex-wrap:wrap; gap:0.65rem; margin:0 0 0.8rem; }
-  .archive-view-modes a { padding:0.5rem 0.85rem; border:1px solid var(--site-border-soft); color:var(--site-muted); text-decoration:none; font:0.8rem/1.6 var(--site-ui-font); }
-  .archive-view-modes a[aria-current="page"] { color:var(--site-accent); border-color:var(--site-accent); background:var(--site-paper); }
-  .archive-view-note { margin:0 0 1.3rem; color:var(--site-muted); font:0.78rem/1.8 var(--site-ui-font); }
+  .archive-view-modes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 22px;
+    margin: 0;
+  }
+  .archive-view-modes a {
+    padding: 10px 0;
+    min-height: 44px;
+    border-bottom: 2px solid transparent;
+    color: var(--site-muted);
+    text-decoration: none;
+    font: 0.9375rem/1.6 var(--site-ui-font);
+  }
+  .archive-view-modes a[aria-current="page"] {
+    color: var(--site-accent);
+    border-bottom-color: var(--site-accent);
+    font-weight: 600;
+  }
   .album-matched-items { padding:0.85rem 1.2rem 0.85rem 2.2rem; margin:0; border:1px solid var(--site-border-soft); border-top:0; font:0.78rem/1.8 var(--site-ui-font); }
   .album-matched-items :global(a) { color:var(--site-accent); }
   .archive-page {
-    padding-top: 1.15rem;
+    padding-top: 28px;
   }
 
   .archive-heading {
@@ -1010,260 +1053,43 @@ import '../../scripts/archive-likes';
     justify-content: space-between;
     gap: 1.25rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--site-border-soft);
   }
 
   h1 {
     margin: 0;
-    font-size: clamp(1.35rem, 2.2vw, 1.7rem);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    line-height: 1.2;
-  }
-
-  .introduction {
-    max-width: 32rem;
-    margin: 0;
-    color: var(--site-muted);
-    font-size: 0.88rem;
-    line-height: 1.65;
-    letter-spacing: 0.02em;
-  }
-
-  .archive-paths {
-    margin-top: 0.85rem;
-    padding: 0.55rem 0 0.35rem;
-    background: transparent;
-    border: 0;
-  }
-
-  .archive-paths-heading {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    cursor: pointer;
-    list-style: none;
-    min-height: 2rem;
-  }
-
-  .archive-paths-heading::-webkit-details-marker { display: none; }
-  .archive-paths-toggle { color: var(--site-subtle); font: 0.68rem var(--site-ui-font); }
-
-  .archive-paths-title,
-  .archive-index-title {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .archive-paths-title > :global(.site-icon),
-  .archive-index-title > :global(.site-icon) {
-    width: 1rem;
-    height: 1rem;
-    margin-top: 0.12rem;
-    color: var(--site-muted);
-  }
-
-  .archive-paths-heading p,
-  .archive-paths-heading #archive-paths-heading,
-  .archive-path-group h3 {
-    margin: 0;
-  }
-
-  .archive-paths-heading p {
-    display: none;
-  }
-
-  .archive-paths-heading #archive-paths-heading {
-    color: var(--site-subtle);
-    font-family: var(--site-ui-font);
-    font-size: 0.72rem;
+    font-size: clamp(1.75rem, 3vw, 2.125rem);
     font-weight: 500;
-    letter-spacing: 0.12em;
-  }
-
-  .archive-paths-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 1.5rem;
-    margin-top: 0.45rem;
-  }
-
-  .archive-path-group {
-    min-width: 0;
-  }
-
-  .archive-paths-grid.is-single {
-    grid-template-columns: 1fr;
-  }
-
-  .archive-path-group h3 {
-    margin-bottom: 0.3rem;
-    color: var(--site-subtle);
-    font-family: var(--site-ui-font);
-    font-size: 0.68rem;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-  }
-
-  .archive-path-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.2rem 0.85rem;
-  }
-
-  .archive-path-links a {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.35rem;
-    padding: 0.2rem 0;
-    color: var(--site-muted);
-    font-family: var(--site-ui-font);
-    font-size: 0.78rem;
-    line-height: 1.45;
-    text-decoration: none;
-  }
-
-  .archive-path-links a:hover,
-  .archive-path-links a:focus-visible {
-    color: var(--site-ink);
-    text-decoration: underline;
-    text-underline-offset: 0.28em;
-  }
-
-  .archive-path-links small {
-    color: var(--site-subtle);
-    font-size: var(--site-text-micro);
-  }
-
-  .archive-index {
-    margin-top: 0.85rem;
-  }
-
-  .archive-index-heading {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: 1.5rem;
-    margin-bottom: 0.65rem;
-  }
-
-  .archive-index-heading h2,
-  .archive-index-heading span {
-    margin: 0;
-  }
-
-  .archive-index-heading h2 {
-    font-family: var(--site-ui-font);
-    font-size: 0.72rem;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-  }
-
-  .archive-index-title {
-    align-items: center;
-  }
-
-  .archive-index-title > :global(.site-icon) {
-    margin-top: 0;
-  }
-
-  .archive-index-heading > span {
-    color: var(--site-subtle);
-    font-size: var(--site-text-small);
-    line-height: 1.55;
-  }
-
-  .archive-controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(11rem, 0.7fr));
-    gap: 0.65rem 1rem;
-    align-items: end;
-    margin-bottom: 0.55rem;
-  }
-
-  .archive-control label {
-    display: block;
-    margin-bottom: 0.32rem;
-    color: var(--site-subtle);
-    font-family: var(--site-ui-font);
-    font-size: 0.72rem;
-    letter-spacing: 0.1em;
-  }
-
-  .archive-control input,
-  .archive-control select {
-    width: 100%;
-    border: 1px solid var(--site-border-soft);
-    border-radius: 0;
-    background: var(--site-paper);
-    color: var(--site-text);
-    font: inherit;
-    font-family: var(--site-ui-font);
-    font-size: 0.92rem;
+    letter-spacing: 0.025em;
     line-height: 1.5;
-    padding: 0.48rem 0.65rem;
   }
 
-  .archive-more-filters {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--site-border-soft);
-  }
 
-  .archive-more-filters > summary {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.45rem 0;
-    color: var(--site-muted);
-    cursor: pointer;
-    font-family: var(--site-ui-font);
-    font-size: 0.76rem;
-    letter-spacing: 0.08em;
-    list-style: none;
-  }
-
-  .archive-more-filters > summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .archive-more-filters > summary::after {
-    flex: 0 0 auto;
-    content: '＋';
-  }
-
-  .archive-more-filters[open] > summary::after {
-    content: '－';
-  }
-
-  .archive-more-filters > summary small {
-    margin-left: auto;
-    color: var(--site-subtle);
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-  }
-
-  .archive-secondary-controls {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.85rem;
-    padding: 0.55rem 0 0.75rem;
-    border-top: 1px solid var(--site-border-soft);
-  }
-
-  .archive-control input::placeholder {
-    color: #7d786e;
-    opacity: 1;
-  }
-
-  .archive-control input:focus-visible,
-  .archive-control select:focus-visible {
-    border-color: var(--site-focus-outline);
-    outline: 2px solid var(--site-focus-outline);
-    outline-offset: 3px;
-  }
+  .archive-index { margin-top: 18px; }
+  .archive-controls { margin: 0 0 20px; }
+  .archive-search-field { display: flex; align-items: center; gap: 14px; border-bottom: 1px solid #a89f90; color: var(--site-muted); }
+  .archive-search-field svg { flex-shrink: 0; }
+  .archive-search-label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  #archive-search { width: 100%; min-width: 0; min-height: 64px; padding: 10px 0; border: 0; border-radius: 0; background: transparent; color: var(--site-ink); font: 1.5rem/1.5 var(--site-ui-font); }
+  #archive-search::placeholder { color: #7d766a; opacity: 1; }
+  .archive-search-field:focus-within { border-bottom-color: var(--site-accent); box-shadow: 0 1px var(--site-accent); }
+  #archive-search:focus-visible { outline: none; }
+  .archive-browse-bar { display: flex; align-items: start; justify-content: space-between; gap: 12px 24px; margin-top: 18px; border-top: 1px solid var(--site-border-soft); }
+  .archive-sort-menu { position: relative; flex-shrink: 0; max-width: 100%; color: var(--site-muted); font: 0.875rem/1.6 var(--site-ui-font); }
+  .archive-result-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 24px; margin-bottom: 12px; }
+  .archive-result-bar .results-summary { flex: 1 1 240px; margin: 0; }
+  .archive-sort-menu > summary { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 0; cursor: pointer; list-style: none; }
+  .archive-sort-menu > summary::-webkit-details-marker, .archive-more-filters > summary::-webkit-details-marker { display: none; }
+  .archive-menu-chevron { width: 6px; height: 6px; border-right: 1px solid; border-bottom: 1px solid; transform: rotate(45deg); margin: -3px 3px 0 0; }
+  .archive-sort-menu[open] .archive-menu-chevron { transform: rotate(225deg); margin-top: 3px; }
+  .archive-sort-options { position: absolute; z-index: 5; inset-inline-end: 0; top: 100%; width: max-content; min-width: 185px; max-width: min(320px, 85vw); padding: 12px 22px; background: var(--site-paper); border: 1px solid var(--site-border-soft); box-shadow: 0 8px 24px #352e2014; }
+  .archive-sort-menu > summary:focus-visible, .archive-more-filters > summary:focus-visible { outline: 2px solid var(--site-focus-outline); outline-offset: 3px; }
+  .archive-more-filters { margin: 0 0 24px; border-bottom: 1px solid var(--site-border-soft); }
+  .archive-more-filters > summary { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 0; color: var(--site-muted); cursor: pointer; list-style: none; font: 0.875rem/1.6 var(--site-ui-font); }
+  .archive-more-filters > summary small { font-size: 0.8125rem; color: var(--site-accent); }
+  .archive-filter-toggle { margin-inline-start: auto; }
+  .archive-filter-toggle::before { content: '＋'; }
+  .archive-more-filters[open] .archive-filter-toggle::before { content: '－'; }
+  .archive-secondary-controls { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1fr) minmax(0, 1fr); gap: 28px; padding: 22px 0 30px; border-top: 1px solid var(--site-border-soft); }
 
   .archive-search-assist {
     display: flex;
@@ -1289,18 +1115,19 @@ import '../../scripts/archive-likes';
     gap: 0.35rem;
   }
 
-  #archive-search-suggestions button {
+  #archive-search-suggestions :global(button) {
     padding: 0.2rem 0.42rem;
     color: #625e54;
-    background: #e5ded0;
-    border: 1px solid #c3bbac;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid #c3bbac;
     cursor: pointer;
     font: inherit;
-    font-size: var(--site-text-micro);
+    font-size: 0.875rem;
   }
 
-  #archive-search-suggestions button:hover,
-  #archive-search-suggestions button:focus-visible {
+  #archive-search-suggestions :global(button:hover),
+  #archive-search-suggestions :global(button:focus-visible) {
     color: var(--site-ink);
     border-color: var(--site-ink);
   }
@@ -1328,7 +1155,7 @@ import '../../scripts/archive-likes';
   .active-filters > span {
     color: var(--site-subtle);
     font-family: var(--site-ui-font);
-    font-size: 0.72rem;
+    font-size: 0.8125rem;
     letter-spacing: 0.1em;
   }
 
@@ -1338,18 +1165,22 @@ import '../../scripts/archive-likes';
     gap: 0.45rem;
   }
 
-  #archive-filter-chips button {
-    padding: 0.28rem 0.52rem;
+  #archive-filter-chips :global(button) {
+    padding: 8px 12px;
     color: #5f5a50;
-    background: #e4ddcf;
-    border: 1px solid #bdb5a6;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid #dcd5c9;
     cursor: pointer;
     font: inherit;
-    font-size: 0.72rem;
-    line-height: 1.45;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: start;
   }
 
-  #archive-filter-chips button:hover {
+  #archive-filter-chips :global(button:hover) {
     color: var(--site-text);
     border-color: #716c61;
   }
@@ -1361,7 +1192,7 @@ import '../../scripts/archive-likes';
     color: #686359;
     cursor: pointer;
     font: inherit;
-    font-size: 0.78rem;
+    font-size: 0.875rem;
     letter-spacing: 0.12em;
     line-height: 1.6;
     padding: 0.1rem 0 0.2rem;
@@ -1407,7 +1238,7 @@ import '../../scripts/archive-likes';
     margin: 0 0 0.7rem;
     color: var(--site-subtle);
     font-family: var(--site-ui-font);
-    font-size: 0.76rem;
+    font-size: 0.875rem;
     line-height: 1.6;
     letter-spacing: 0.08em;
   }
@@ -1613,7 +1444,7 @@ import '../../scripts/archive-likes';
     gap: 0.4rem;
   }
 
-  .archive-pagination button {
+  .archive-pagination :global(button) {
     min-width: 2.15rem;
     min-height: 2.15rem;
     padding: 0.35rem 0.55rem;
@@ -1625,13 +1456,13 @@ import '../../scripts/archive-likes';
     font-size: 0.72rem;
   }
 
-  .archive-pagination button[aria-current='page'] {
+  .archive-pagination :global(button[aria-current='page']) {
     color: #f7f1e6;
     background: var(--site-ink);
     border-color: var(--site-ink);
   }
 
-  .archive-pagination button:disabled {
+  .archive-pagination :global(button:disabled) {
     opacity: 0.42;
     cursor: not-allowed;
   }
@@ -1653,44 +1484,21 @@ import '../../scripts/archive-likes';
       padding-bottom: 0.7rem;
     }
 
-    .introduction {
-      margin: 0;
-    }
-
-    .archive-paths {
-      margin-top: 0.7rem;
-      padding: 0.4rem 0 0.2rem;
-    }
-
-    .archive-paths-grid {
-      grid-template-columns: 1fr;
-      margin-top: 0.4rem;
-    }
-
-    .archive-path-links {
-      gap: 0.15rem 0.7rem;
-    }
 
     .archive-index {
       margin-top: 0.75rem;
     }
 
-    .archive-index-heading {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 0.3rem;
-    }
-
-    .archive-controls {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.55rem 0.7rem;
-    }
-
-    .archive-controls > .archive-control:first-child { grid-column: 1 / -1; }
-
-    .archive-more-filters {
-      grid-column: 1 / -1;
-    }
+    .archive-controls { margin-bottom: 16px; }
+    #archive-search { min-height: 56px; font-size: 1.1875rem; }
+    .archive-search-field { gap: 10px; }
+    .archive-browse-bar { margin-top: 14px; }
+    .archive-view-modes { gap: 0 18px; }
+    .archive-view-modes a { font-size: 0.875rem; }
+    .archive-more-filters { margin-bottom: 16px; }
+    .archive-result-bar { align-items: baseline; }
+    .archive-result-bar .results-summary { flex-basis: 175px; }
+    .archive-sort-menu { margin-inline-start: auto; }
 
     .archive-actions {
       align-items: stretch;
@@ -1703,7 +1511,7 @@ import '../../scripts/archive-likes';
 
     .archive-secondary-controls {
       grid-template-columns: 1fr;
-      gap: 0.75rem;
+      gap: 24px;
     }
 
     .archive-list {

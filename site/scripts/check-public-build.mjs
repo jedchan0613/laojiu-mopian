@@ -372,9 +372,6 @@ if (archiveIndex) {
 	check(likeIds.length === 0, '档案列表不应再显示点赞入口。');
 	check(pageLoadsScriptMarker(archiveIndex, '/api/likes?items='), '档案列表缺少点赞计数程序。');
 	check(archiveIndex.html.includes('id="archive-sort"'), '档案列表缺少排序控件。');
-	check(archiveIndex.html.includes('class="archive-paths"'), '档案列表缺少年代与地点浏览入口。');
-	check(archiveIndex.html.includes('id="archive-decade-path-heading"'), '档案列表缺少按年代浏览入口。');
-	check(archiveIndex.html.includes('id="archive-place-path-heading"'), '档案列表缺少按地点浏览入口。');
 	check(!archiveIndex.html.includes('ARCHIVE INDEX'), '档案列表重新出现已移除的英文装饰标题。');
 	check(!archiveIndex.html.includes('data-topic-link='), '档案列表在暂不设置专题时仍输出专题入口。');
 	check(archiveIndex.html.includes('id="archive-search-suggestions"'), '档案列表缺少相关标签提示区域。');
@@ -398,6 +395,27 @@ if (archiveIndex) {
 	for (const sortValue of ['recent', 'likes', 'date-asc', 'date-desc', 'type', 'relevance']) {
 		check(archiveIndex.html.includes(`value="${sortValue}"`), `档案列表缺少排序方式：${sortValue}。`);
 	}
+}
+
+// 六语目录的筛选入口共用轻量文字选项；选项与内部状态必须逐一对应。
+for (const definition of localeDefinitions) {
+	const relativePath = `${definition.prefix ? definition.prefix + '/' : ''}archive/index.html`;
+	const page = htmlEntries.find(entry => entry.relativePath === relativePath);
+	check(Boolean(page), `${relativePath} 缺少档案目录。`);
+	if (!page) continue;
+	check(/<details\b[^>]*id="archive-more-filters"[^>]*data-archive-paths/.test(page.html), `${relativePath} 缺少合并的年代、地点与标签入口。`);
+	check(/<details\b[^>]*data-sort-menu/.test(page.html), `${relativePath} 缺少轻量排序菜单。`);
+	for (const id of ['archive-category', 'archive-decade', 'archive-place', 'archive-tag', 'archive-sort']) {
+		const group = page.html.match(new RegExp(`data-archive-choices="${id}"[^>]*>([\\s\\S]*?)</select>([\\s\\S]*?)</div>`))?.[0] ?? '';
+		const options = [...group.matchAll(/<option\b[^>]*value="([^"]*)"/g)].map(match => match[1]);
+		const buttons = [...group.matchAll(/<button\b[^>]*data-filter-value="([^"]*)"/g)].map(match => match[1]);
+		check(options.length > 0 && JSON.stringify(options) === JSON.stringify(buttons), `${relativePath} 的 ${id} 文字选项与筛选状态不一致。`);
+		check(new Set(buttons).size === buttons.length, `${relativePath} 的 ${id} 包含重复入口。`);
+		check(new RegExp(`<select\\b[^>]*id="${id}"[^>]*\\shidden(?:\\s|=|>)`).test(group), `${relativePath} 的 ${id} 仍展示原生下拉框。`);
+		check(group.includes('aria-pressed="true"'), `${relativePath} 的 ${id} 缺少初始选中状态。`);
+		if (id === 'archive-place' || id === 'archive-tag') check(group.includes('data-choice-search'), `${relativePath} 的 ${id} 缺少选项内搜索。`);
+	}
+	check(pageLoadsScriptMarker(page, 'data-filter-value'), `${relativePath} 缺少文字筛选交互程序。`);
 }
 
 for (const page of detailPages) {

@@ -5,6 +5,7 @@ import test from 'node:test';
 import { Script } from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { groupArchiveMatches } from '../../site/src/data/archive-browse.mjs';
+import { normalizeArchivePlace } from '../../shared/archive-place-filters.mjs';
 
 const root = new URL('../../', import.meta.url);
 const require = createRequire(new URL('site/package.json', root));
@@ -20,18 +21,19 @@ const withoutImports = (source) => source.replace(/^[ \t]*import[\s\S]*?;[ \t]*(
 const page = await readFile(new URL('site/src/pages/archive/index.astro', root), 'utf8');
 const pageScript = page.match(/<script>\s*([\s\S]*?)<\/script>/)?.[1];
 assert.ok(pageScript, '读取目录页实际执行的客户端脚本');
-const sources = await Promise.all(['archive-search.ts', 'archive-card.ts'].map((name) => readFile(new URL('site/src/scripts/' + name, root), 'utf8')));
-// 执行目录页、八字段计分和当前页卡片的真实源码；仅用合成公开数据与可控网络。
+const sources = await Promise.all(['archive-search.ts', 'archive-card.ts', 'archive-filter-controls.ts'].map((name) => readFile(new URL('site/src/scripts/' + name, root), 'utf8')));
+// 执行目录页、八字段计分、文字筛选控件和当前页卡片的真实源码；仅用合成公开数据与可控网络。
 const script = new Script(stripTypeScriptTypes([...sources, pageScript].map(withoutImports).join('\n')), { filename: 'archive-client.ts' });
 const loadingKey = '正在加载全文搜索，关键词已保留。可以清除关键词后继续浏览。';
 const errorKey = '全文搜索暂时无法加载，关键词已保留。请重试，或清除关键词后继续浏览。';
 const locales = ['zh-CN', 'en', 'th', 'ja', 'ko', 'zh-Hant'];
 const flush = async () => { for (let index = 0; index < 12; index++) await Promise.resolve(); };
 
-function fixture({ locale = 'zh-CN', query = '', restore = false } = {}) {
+function fixture({ locale = 'zh-CN', query = '', restore = false, storedState, historyState = {}, storageDisabled = false, narrow = false, initialScrollY = 742 } = {}) {
   const prefix = locale === 'zh-CN' ? '' : '/' + (locale === 'zh-Hant' ? 'zh-hant' : locale);
   const location = new URL('https://example.invalid' + prefix + '/archive/' + query);
   const storage = new Map(), scrolls = [], requests = [];
+  const windowListeners = new Map();
   const document = { activeElement: null };
   class Element {
     constructor(tagName = 'div') { this.tagName = tagName; }
@@ -41,6 +43,7 @@ function fixture({ locale = 'zh-CN', query = '', restore = false } = {}) {
     listeners = new Map();
     hidden = false;
     disabled = false;
+    open = false;
     value = '';
     _text = '';
     className = '';
@@ -51,6 +54,7 @@ function fixture({ locale = 'zh-CN', query = '', restore = false } = {}) {
     get selectedOptions() { return this.options.filter((child) => child.value === this.value); }
     setAttribute(name, value) { this.attributes.set(name, String(value)); }
     getAttribute(name) { return this.attributes.get(name) ?? null; }
+    hasAttribute(name) { return this.attributes.has(name); }
     getAttributeNames() { return [...this.attributes.keys()]; }
     removeAttribute(name) { this.attributes.delete(name); }
     append(...children) {
@@ -100,6 +104,7 @@ function fixture({ locale = 'zh-CN', query = '', restore = false } = {}) {
     const element = new Element(tag); element.id = id; parent.append(element); return element;
   };
   const index = make('archive-index'); index.className = 'archive-index'; index.dataset.archivePageSize = '12';
+  const browsePaths = make('archive-more-filters', 'details'); browsePaths.dataset.archivePaths = ''; browsePaths.open = !narrow;
   const controls = make('archive-controls'); controls.className = 'archive-controls';
   const search = make('archive-search', 'input', controls);
   const select = (id, values) => {
@@ -118,7 +123,7 @@ function fixture({ locale = 'zh-CN', query = '', restore = false } = {}) {
     'archive-search-assist', 'archive-search-suggestions', 'archive-results-summary', 'archive-search-retry',
     'archive-pagination', 'archive-page-summary', 'archive-page-previous', 'archive-page-next', 'archive-page-numbers',
   ];
-  const elements = Object.fromEntries(ids.map((id) => [id, make(id)]));
+  const elements = Object.fromEntries(ids.map((id) => [id, id === 'archive-more-filters' ? browsePaths : make(id)]));
   const list = make('archive-list', 'ul');
   const album = make('', 'li', list); album.dataset.archiveAlbumCard = 'family-album'; album.dataset.albumRecordCount = '3';
   const albumSummary = make('', 'p', album); albumSummary.dataset.albumMatches = '';
@@ -157,22 +162,43 @@ function fixture({ locale = 'zh-CN', query = '', restore = false } = {}) {
     addEventListener: (...args) => body.addEventListener(...args),
   });
   if (restore) storage.set('ljm-archive-browse-state', JSON.stringify({ href: location.pathname + location.search, scrollY: 742, restorePending: true }));
+  if (storedState !== undefined) storage.set('ljm-archive-browse-state', typeof storedState === 'string' ? storedState : JSON.stringify(storedState));
+  const history = {
+    state: structuredClone(historyState),
+    replaceState(state, _title, href) {
+      this.state = state;
+      location.href = new URL(href, location).href;
+    },
+  };
+  const dispatchWindow = (type, properties = {}) => {
+    for (const listener of windowListeners.get(type) ?? []) listener({ type, ...properties });
+  };
   const context = {
-    document, URL, URLSearchParams, AbortSignal, groupArchiveMatches,
+    document, URL, URLSearchParams, AbortSignal, groupArchiveMatches, normalizeArchivePlace, HTMLElement: Element,
     ct: (key, values) => translate(key, locale, values), clientLocale: () => locale,
     clientPath: (path) => prefix + path,
     window: {
-      location, scrollY: 742,
-      matchMedia: () => ({ matches: false, addEventListener() {} }),
-      sessionStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
-      history: { replaceState: (_state, _title, href) => { location.href = new URL(href, location).href; } },
+      location, scrollY: initialScrollY,
+      matchMedia: () => ({ matches: narrow, addEventListener() {} }),
+      sessionStorage: {
+        getItem(key) { if (storageDisabled) throw new Error('sessionStorage disabled'); return storage.get(key) ?? null; },
+        setItem(key, value) { if (storageDisabled) throw new Error('sessionStorage disabled'); storage.set(key, value); },
+      },
+      history,
+      addEventListener(type, listener) {
+        const listeners = windowListeners.get(type) ?? [];
+        listeners.push(listener); windowListeners.set(type, listeners);
+      },
+      removeEventListener(type, listener) {
+        windowListeners.set(type, (windowListeners.get(type) ?? []).filter(candidate => candidate !== listener));
+      },
       requestAnimationFrame: (fn) => fn(), scrollTo: (options) => scrolls.push(options.top),
     },
     fetch: (url, options) => new Promise((resolve, reject) => requests.push({ url, options, resolve, reject })),
   };
   script.runInNewContext(context, { timeout: 1000 });
   return {
-    document, body, search, category, sort, decade, place, tag, list, album, entries, fields, views, elements, requests, storage, scrolls, location, searchData,
+    document, body, search, category, sort, decade, place, tag, list, album, entries, fields, views, elements, requests, storage, scrolls, location, searchData, browsePaths, history, dispatchWindow,
     input: (text) => { search.value = text; search.dispatch('input'); },
     succeed: async (request = requests.at(-1), responseFields = fields) => { request.resolve({ ok: true, json: async () => responseFields }); await flush(); },
     visibleItems: () => entries.filter((entry) => !entry.hidden),
@@ -188,7 +214,8 @@ test('六语言无关键词初始化不请求索引，立即分页、分组并�
     assert.equal(f.list.hidden, false);
     assert.equal(f.visibleGroups().length, 12);
     assert.equal(f.elements['archive-page-summary'].textContent, translate('第 {0} 页，共 {1} 页', locale, { 0: 2, 1: 15 }));
-    assert.deepEqual(f.scrolls, [742]);
+    assert.ok(f.scrolls.length > 0);
+    assert.equal(f.scrolls.at(-1), 742);
     assert.equal(JSON.parse(f.storage.get('ljm-archive-browse-state')).restorePending, false);
     assert.equal(f.elements['archive-search-retry'].hidden, true);
     assert.equal(f.elements['archive-empty-state'].hidden, true);
@@ -275,7 +302,8 @@ test('六语言带q直接访问立即加载，慢网保持页码与q，失败明
     assert.equal(f.location.searchParams.get('page'), '2');
     assert.equal(f.location.searchParams.get('sort'), 'date-asc');
     assert.equal(f.visibleItems().length, 12);
-    assert.deepEqual(f.scrolls, [742]);
+    assert.ok(f.scrolls.length > 0);
+    assert.equal(f.scrolls.at(-1), 742);
     assert.equal(f.elements['archive-search-retry'].hidden, true);
   }
 });
@@ -355,4 +383,152 @@ test('八字段权重与相册成员匹配继续用完整索引，q变化使用�
   f.elements['archive-clear'].dispatch('click');
   assert.equal(f.search.value, '');
   assert.equal(f.visibleGroups()[0], f.album);
+});
+
+test('返回目录恢复手动展开状态，离开页面保存不会抹掉刚点击的档案目标', () => {
+  const f = fixture({ query: '?category=photos&page=2' });
+  f.browsePaths.open = false;
+  f.browsePaths.dispatch('toggle');
+  f.elements['archive-more-filters'].open = true;
+  f.elements['archive-more-filters'].dispatch('toggle');
+  const target = f.visibleItems()[0].querySelector('[data-archive-entry]');
+  f.list.dispatch('click', { target });
+  const beforeLeaving = JSON.parse(f.storage.get('ljm-archive-browse-state'));
+  assert.equal(beforeLeaving.targetId, target.parentElement.dataset.archiveId);
+  f.dispatchWindow('pagehide');
+  const saved = JSON.parse(f.storage.get('ljm-archive-browse-state'));
+  assert.equal(saved.targetId, beforeLeaving.targetId);
+  assert.equal(saved.pathsOpen, true);
+  assert.equal(saved.moreFiltersOpen, true);
+
+  const returned = fixture({ query: f.location.search, storedState: { ...saved, restorePending: true } });
+  assert.equal(returned.category.value, 'photos');
+  assert.equal(returned.location.searchParams.get('page'), '2');
+  assert.equal(returned.browsePaths.open, true);
+  assert.equal(returned.elements['archive-more-filters'].open, true);
+  assert.equal(returned.scrolls.at(-1), 742);
+});
+
+test('带关键词手动选最近收录后，网址和返回状态保留显式排序与页码', async () => {
+  const f = fixture({ query: '?q=record&view=items' });
+  await flush(); await f.succeed();
+  f.sort.value = 'recent';
+  f.sort.dispatch('change');
+  f.elements['archive-page-next'].dispatch('click');
+  assert.equal(f.location.searchParams.get('sort'), 'recent');
+  assert.equal(f.location.searchParams.get('page'), '2');
+  const target = f.visibleItems()[0].querySelector('[data-archive-entry]');
+  f.list.dispatch('click', { target });
+  const saved = JSON.parse(f.storage.get('ljm-archive-browse-state'));
+  const returned = fixture({ query: f.location.search, storedState: { ...saved, restorePending: true } });
+  await flush();
+  assert.equal(returned.sort.value, 'recent');
+  assert.equal(returned.search.value, 'record');
+  assert.deepEqual(returned.scrolls, []);
+  await returned.succeed();
+  assert.equal(returned.sort.value, 'recent');
+  assert.equal(returned.location.searchParams.get('sort'), 'recent');
+  assert.equal(returned.location.searchParams.get('page'), '2');
+  assert.equal(returned.scrolls.at(-1), 742);
+});
+
+test('返回搜索页的异步details事件在索引就绪前保留待恢复位置与锚点', async () => {
+  const query = '?q=record&view=items&sort=recent&page=2';
+  const state = {
+    href: '/archive/' + query,
+    scrollY: 742,
+    targetId: 'TEST-030',
+    targetAlbumSlug: '',
+    targetOffset: 85,
+    restorePending: true,
+    pathsOpen: true,
+    moreFiltersOpen: true,
+  };
+  const f = fixture({ query, initialScrollY: 0, storedState: state });
+  await flush();
+  assert.equal(f.requests.length, 1);
+  assert.equal(f.list.hidden, true);
+  assert.deepEqual(f.scrolls, []);
+  // 浏览器会在恢复open之后异步派发toggle，此时全文索引尚未返回。
+  f.browsePaths.dispatch('toggle');
+  f.elements['archive-more-filters'].dispatch('toggle');
+  const saved = JSON.parse(f.storage.get('ljm-archive-browse-state'));
+  assert.equal(saved.scrollY, 742);
+  assert.equal(saved.targetOffset, 85);
+  assert.equal(saved.targetId, 'TEST-030');
+  assert.equal(saved.restorePending, true);
+  assert.equal(f.history.state.ljmArchiveBrowse.scrollY, 742);
+  assert.equal(f.history.state.ljmArchiveBrowse.targetOffset, 85);
+  await f.succeed();
+  assert.equal(f.list.hidden, false);
+  assert.equal(f.scrolls.at(-1), 742);
+});
+
+test('筛选更新保留其他history.state，禁用会话存储时仍可通过历史备份返回', () => {
+  const query = '?category=photos&page=2';
+  const state = {
+    href: '/archive/' + query, scrollY: 742, restorePending: true,
+    pathsOpen: false, moreFiltersOpen: true, targetId: 'TEST-030', targetAlbumSlug: '',
+  };
+  const f = fixture({
+    query,
+    storageDisabled: true,
+    historyState: { unrelated: { marker: 'keep-me' }, ljmArchiveBrowse: state },
+  });
+  assert.equal(f.category.value, 'photos');
+  assert.equal(f.location.searchParams.get('page'), '2');
+  assert.equal(f.browsePaths.open, true);
+  assert.equal(f.elements['archive-more-filters'].open, true);
+  assert.equal(f.scrolls.at(-1), 742);
+  assert.equal(f.history.state.unrelated.marker, 'keep-me');
+  f.category.value = 'papers';
+  f.category.dispatch('change');
+  assert.equal(f.history.state.unrelated.marker, 'keep-me');
+  assert.ok(f.history.state.ljmArchiveBrowse.href.includes('category=papers'));
+  const target = f.visibleItems()[0].querySelector('[data-archive-entry]');
+  f.list.dispatch('click', { target });
+  assert.equal(f.history.state.ljmArchiveBrowse.targetId, target.parentElement.dataset.archiveId);
+});
+
+test('缓存返回目录会按当前URL重新同步筛选、展开状态和返回位置', () => {
+  const f = fixture({ query: '?category=photos&page=2' });
+  f.browsePaths.open = false;
+  f.elements['archive-more-filters'].open = true;
+  const target = f.visibleItems()[0].querySelector('[data-archive-entry]');
+  f.list.dispatch('click', { target });
+  const saved = JSON.parse(f.storage.get('ljm-archive-browse-state'));
+  f.storage.set('ljm-archive-browse-state', JSON.stringify({ ...saved, restorePending: true }));
+  f.category.value = '';
+  f.browsePaths.open = true;
+  f.elements['archive-more-filters'].open = false;
+  f.dispatchWindow('pageshow', { persisted: true });
+  assert.equal(f.category.value, 'photos');
+  assert.equal(f.location.searchParams.get('page'), '2');
+  assert.equal(f.browsePaths.open, true);
+  assert.equal(f.elements['archive-more-filters'].open, true);
+  assert.equal(f.scrolls.at(-1), 742);
+});
+
+test('popstate按历史URL恢复相册视图与筛选，不沿用当前控件值', () => {
+  const f = fixture({ query: '?view=items&category=papers&page=2' });
+  const query = '?view=albums&category=photos';
+  f.location.href = new URL('/archive/' + query, f.location).href;
+  f.history.state = { ljmArchiveBrowse: { href: '/archive/' + query, scrollY: 123, restorePending: true, pathsOpen: false, moreFiltersOpen: false } };
+  f.dispatchWindow('popstate', { state: f.history.state });
+  assert.equal(f.category.value, 'photos');
+  assert.equal(f.location.searchParams.get('view'), 'albums');
+  assert.equal(f.visibleGroups().length, 1);
+  assert.equal(f.visibleGroups()[0], f.album);
+  assert.equal(f.views[1].getAttribute('aria-current'), 'page');
+  assert.equal(f.scrolls.at(-1), 123);
+});
+
+test('状态损坏或普通重新访问时仍按URL工作，未标记返回时不强行滚动', () => {
+  const corrupt = fixture({ query: '?category=papers', storedState: '{broken' });
+  assert.equal(corrupt.category.value, 'papers');
+  assert.deepEqual(corrupt.scrolls, []);
+  const query = '?category=photos';
+  const fresh = fixture({ query, storedState: { href: '/archive/' + query, scrollY: 900, restorePending: false, pathsOpen: false, moreFiltersOpen: true } });
+  assert.equal(fresh.category.value, 'photos');
+  assert.deepEqual(fresh.scrolls, []);
 });

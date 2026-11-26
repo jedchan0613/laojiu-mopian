@@ -15,6 +15,7 @@ import '../assets/fonts/complete/complete.css';
 
 interface Props {
  homepageStyle?: 'editorial';
+ archiveStyle?: 'editorial';
  translationAvailability?: Record<string,boolean>;
 	englishAvailable?: boolean;
  thaiAvailable?: boolean;
@@ -31,6 +32,7 @@ interface Props {
 
 const {
  homepageStyle,
+ archiveStyle,
 	title: originalTitle = '老旧默片｜普通人的生活档案',
 	description: originalDescription = '老旧默片——从一张照片、一封信和一件旧物开始，保存普通人的生活痕迹。',
 	image,
@@ -48,6 +50,7 @@ const pathWithoutLocale = canonicalPath(currentPath);
 const title = t(originalTitle, locale);
 const description = t(originalDescription, locale);
 const isHome = homepageStyle === 'editorial' || pathWithoutLocale === '/';
+const editorialNavigation = homepageStyle === 'editorial' || archiveStyle === 'editorial';
 const isArchive = pathWithoutLocale.startsWith('/archive') || pathWithoutLocale.startsWith('/albums/');
 const isManuals = /^\/manuals(?:\/|$)/.test(pathWithoutLocale);
 const manualNavLabels = {'zh-CN':'说明书',en:'Manuals (Chinese)',th:'คู่มือ (ภาษาจีน)',ja:'説明書（中国語）',ko:'설명서(중국어)','zh-Hant':'說明書（簡體中文）'};
@@ -96,19 +99,19 @@ const serializedStructuredData = structuredData
 		<title>{title}</title>
 		<script type="application/json" id="client-interface-messages" set:html={serializeHtmlJson(getClientMessages(locale,getClientMessageGroups(pathWithoutLocale)))} />
 	</head>
-	<body class:list={{ 'homepage-editorial': homepageStyle === 'editorial' }}>
+	<body class:list={{ 'homepage-editorial': homepageStyle === 'editorial', 'archive-editorial': archiveStyle === 'editorial' }}>
 		<p id="client-message-error" role="alert" hidden>{({ 'zh-CN':'页面交互没有加载完成，请刷新页面。普通档案链接仍可使用。',en:'Page controls could not load. Reload this page. Ordinary archive links remain available.',th:'โหลดส่วนโต้ตอบไม่สำเร็จ โปรดรีเฟรชหน้า ลิงก์รายการทั่วไปยังใช้ได้',ja:'操作機能を読み込めませんでした。再読み込みしてください。通常の資料リンクは利用できます。',ko:'페이지 기능을 불러오지 못했습니다. 새로고침해 주세요. 일반 자료 링크는 사용할 수 있습니다.','zh-Hant':'頁面互動尚未載入完成，請重新整理。一般檔案連結仍可使用。' })[locale]}</p>
 		<a class="skip-link" href={localizePath("#main-content", locale)}>{t("跳到主要内容", locale)}</a>
 		<div class:list={['site-shell', { 'site-shell--archive': isArchive }]}>
-			<header class="site-header" data-home-brand={isHome ? (homepageStyle === 'editorial' ? 'editorial' : 'compact') : undefined}>
+			<header class="site-header" data-home-brand={editorialNavigation ? 'editorial' : isHome ? 'compact' : undefined}>
 				<nav aria-label={t("主要导航", locale)}>
 					<a class="site-brand" href={localizePath("/", locale)} aria-label={t("老旧默片首页", locale)} aria-current={isHome ? 'page' : undefined}>
 						<span class="site-logo"><BrandMark /></span>
 						<span class="site-name">{t("老旧默片", locale)}</span>
-						{homepageStyle === 'editorial' && <span class="site-home-tagline">{t('普通人的生活档案', locale)}</span>}
+						{editorialNavigation && <span class="site-home-tagline">{t('普通人的生活档案', locale)}</span>}
 					</a>
-					{homepageStyle === 'editorial' && <button class="home-menu-button" type="button" aria-controls="homepage-navigation" aria-expanded="false" hidden>{({ 'zh-CN':'菜单',en:'Menu',th:'เมนู',ja:'メニュー',ko:'메뉴','zh-Hant':'選單' })[locale]}<span aria-hidden="true">☰</span></button>}
-					<div class="site-links" id={homepageStyle === 'editorial' ? 'homepage-navigation' : undefined}>
+					{editorialNavigation && <button class="home-menu-button" type="button" aria-controls="homepage-navigation" aria-expanded="false" hidden>{({ 'zh-CN':'菜单',en:'Menu',th:'เมนู',ja:'メニュー',ko:'메뉴','zh-Hant':'選單' })[locale]}<span aria-hidden="true">☰</span></button>}
+					<div class="site-links" id={editorialNavigation ? 'homepage-navigation' : undefined}>
 						<a href={localizePath("/archive/", locale)} aria-current={isArchive ? 'page' : undefined}>{t("档案", locale)}</a>
 						<a href="/manuals/" aria-current={isManuals ? 'page' : undefined}>{manualNavLabels[locale]}</a>
 						<a href={localizePath("/about/", locale)} aria-current={isAbout ? 'page' : undefined}>{t("关于", locale)}</a>
@@ -583,10 +586,12 @@ const serializedStructuredData = structuredData
 		}
 	}
 
-  .homepage-editorial {
+  .homepage-editorial,
+  .archive-editorial {
     background: #faf7ef;
   }
-  .homepage-editorial .site-shell {
+  .homepage-editorial .site-shell,
+  .archive-editorial .site-shell {
     --site-content-width: 1280px;
     width: min(calc(100% - 112px),var(--site-content-width));
     padding-top: 0;
@@ -623,7 +628,8 @@ const serializedStructuredData = structuredData
     display: none;
   }
   @media(max-width:1100px) {
-    .homepage-editorial .site-shell {
+    .homepage-editorial .site-shell,
+    .archive-editorial .site-shell {
       width: calc(100% - 64px);
     }
     .site-home-tagline {
@@ -631,7 +637,8 @@ const serializedStructuredData = structuredData
     }
   }
   @media(max-width:760px) {
-    .homepage-editorial .site-shell {
+    .homepage-editorial .site-shell,
+    .archive-editorial .site-shell {
       width: calc(100% - 40px);
     }
     .site-header[data-home-brand='editorial'] {
