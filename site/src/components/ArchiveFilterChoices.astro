@@ -35,7 +35,7 @@ const { id, label, choices, selected = '', variant = 'facet', searchLabel } = As
   <div class="archive-choice-options" role="group" aria-label={label}>
     {choices.map(choice => (
       <button type="button" data-filter-value={choice.value} aria-pressed={choice.value === selected ? 'true' : 'false'} disabled={choice.disabled} aria-controls="archive-list">
-        <span>{choice.label}</span>{choice.count !== undefined && <small>{choice.count}</small>}
+        <span>{choice.label}</span>{choice.count !== undefined && <small data-choice-count={choice.value}>{choice.count}</small>}
       </button>
     ))}
   </div>
@@ -56,6 +56,7 @@ const { id, label, choices, selected = '', variant = 'facet', searchLabel } = As
   .archive-choices--category .archive-choice-options { gap: 4px 25px; }
   .archive-choices--category button { min-height: 44px; padding: 10px 0 9px; font-size: 1rem; }
   .archive-choices--facet .archive-choice-options { max-height: 240px; overflow-y: auto; padding: 4px; margin: -4px; scrollbar-width: thin; }
+  .archive-choices--facet button { scroll-margin-block-start: 48px; }
   .archive-choice-search { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; border-bottom: 1px solid var(--site-border-soft); color: var(--site-subtle); }
   .archive-choice-search svg { flex-shrink: 0; }
   .archive-choice-search input { width: 100%; min-width: 0; min-height: 40px; padding: 5px 0; border: 0; border-radius: 0; background: transparent; color: var(--site-ink); font: 1rem/1.6 var(--site-ui-font); }

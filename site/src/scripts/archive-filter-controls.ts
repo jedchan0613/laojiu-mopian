@@ -2,6 +2,7 @@ interface ChoiceGroup {
   element: HTMLElement;
   select: HTMLSelectElement;
   buttons: HTMLButtonElement[];
+  counts: HTMLElement[];
   search: HTMLInputElement | null;
   empty: HTMLElement | null;
   sortMenu: HTMLDetailsElement | null;
@@ -19,6 +20,7 @@ export function setupArchiveFilterControls(root: ParentNode = document) {
       element,
       select,
       buttons: Array.from(element.querySelectorAll<HTMLButtonElement>('button[data-filter-value]')),
+      counts: Array.from(element.querySelectorAll<HTMLElement>('[data-choice-count]')),
       search: element.querySelector<HTMLInputElement>('input[data-choice-search]'),
       empty: element.querySelector<HTMLElement>('[data-choice-empty]'),
       sortMenu: element.closest<HTMLDetailsElement>('details[data-sort-menu]'),
@@ -108,6 +110,17 @@ export function setupArchiveFilterControls(root: ParentNode = document) {
     root.querySelector<HTMLInputElement>('#archive-search')?.focus();
   };
 
+  const showCounts = (id: string, totals: ReadonlyMap<string, number> | null) => {
+    const group = groups.find(candidate => candidate.select.id === id);
+    for (const label of group?.counts ?? []) {
+      label.hidden = totals === null;
+      if (totals) {
+        const value = String(totals.get(label.dataset.choiceCount ?? '') ?? 0);
+        if (label.textContent !== value) label.textContent = value;
+      }
+    }
+  };
+
   sync();
-  return { sync, focus };
+  return { sync, focus, showCounts };
 }

@@ -144,6 +144,9 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
           <small id="archive-more-summary" hidden></small>
           <span class="archive-filter-toggle" aria-hidden="true"></span>
         </summary>
+        <button type="button" class="archive-filter-results" id="archive-filter-results" aria-controls="archive-results-summary" hidden>
+          <span></span><span aria-hidden="true">↓</span>
+        </button>
         <div class="archive-secondary-controls">
           <ArchiveFilterChoices id="archive-decade" label={t('年代', locale)} choices={[
             { value: '', label: t('全部年代', locale) },
@@ -173,6 +176,7 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
       <p
         class="results-summary"
         id="archive-results-summary"
+        tabindex="-1"
         role="status"
         aria-live="polite"
         aria-atomic="true"
@@ -200,7 +204,11 @@ const cardDataJson=serializeHtmlJson(Object.fromEntries(publishedEntries.map(({v
       <div class="archive-empty-state" id="archive-empty-state" hidden>
         <h2 id="archive-empty-title">{t("没有找到符合条件的档案", locale)}</h2>
         <span id="archive-empty-description">{t("可以减少筛选条件，或清除后浏览全部档案。", locale)}</span>
-        <button class="ui-action ui-action--secondary" id="archive-empty-clear" type="button">{t("清除全部筛选", locale)}</button>
+        <div class="archive-empty-actions">
+          <button class="ui-action ui-action--secondary" id="archive-empty-query" type="button" aria-controls="archive-list" hidden></button>
+          <button class="ui-text-link" id="archive-empty-letters" type="button" aria-controls="archive-list" hidden>{t('浏览信件', locale)}</button>
+          <button class="ui-action ui-action--secondary" id="archive-empty-clear" type="button">{t("清除全部筛选", locale)}</button>
+        </div>
       </div>
 
       <ul class="archive-list" id="archive-list">
@@ -306,6 +314,7 @@ import { normalizeArchivePlace } from '../../../../shared/archive-place-filters.
 import { setupArchiveFilterControls } from '../../scripts/archive-filter-controls';
   import {
     SEARCH_FIELD_LABELS,
+    getLetterSearchRecovery,
     normalizeSearchText,
     scoreEntryAgainstFields,
     searchTermsFrom,
@@ -328,11 +337,14 @@ import { setupArchiveFilterControls } from '../../scripts/archive-filter-control
   const archiveActions = document.querySelector<HTMLElement>('#archive-actions');
   const moreFilters = document.querySelector<HTMLDetailsElement>('#archive-more-filters');
   const moreFiltersSummary = document.querySelector<HTMLElement>('#archive-more-summary');
+  const filterResults = document.querySelector<HTMLButtonElement>('#archive-filter-results');
   const filterChips = document.querySelector<HTMLElement>('#archive-filter-chips');
   const emptyState = document.querySelector<HTMLElement>('#archive-empty-state');
   const emptyTitle = document.querySelector<HTMLElement>('#archive-empty-title');
   const emptyDescription = document.querySelector<HTMLElement>('#archive-empty-description');
   const emptyClearButton = document.querySelector<HTMLButtonElement>('#archive-empty-clear');
+  const emptyQueryButton = document.querySelector<HTMLButtonElement>('#archive-empty-query');
+  const emptyLettersButton = document.querySelector<HTMLButtonElement>('#archive-empty-letters');
   const searchAssist = document.querySelector<HTMLElement>('#archive-search-assist');
   const searchSuggestions = document.querySelector<HTMLElement>('#archive-search-suggestions');
   const archiveList = document.querySelector<HTMLElement>('#archive-list');
@@ -731,6 +743,9 @@ import { setupArchiveFilterControls } from '../../scripts/archive-filter-control
     if (retrySearchButton) retrySearchButton.hidden = !awaitingSearch || searchState !== 'error';
     if (awaitingSearch) {
       // 未完成搜索不能当作零命中；保留关键词、其他筛选和页码，直到完整索引可用。
+      filterControls.showCounts('archive-decade', null);
+      filterControls.showCounts('archive-place', null);
+      if (filterResults) filterResults.hidden = true;
       resultsSummary.textContent = searchState === 'error'
         ? ct('全文搜索暂时无法加载，关键词已保留。请重试，或清除关键词后继续浏览。')
         : ct('正在加载全文搜索，关键词已保留。可以清除关键词后继续浏览。');
@@ -739,8 +754,14 @@ import { setupArchiveFilterControls } from '../../scripts/archive-filter-control
       if (searchAssist) searchAssist.hidden = true;
       return;
     }
+    const recovery = getLetterSearchRecovery(searchInput.value);
+    const recoveryFields: ArchiveSearchFields[] = [];
+    let hasScopedLetters = false;
     const scoreMap = new Map<HTMLElement, ArchiveSearchMatch>();
+    const decadeCounts = new Map<string, number>();
+    const placeCounts = new Map<string, number>();
     const initialMatches = archiveEntries.filter((entry) => {
+      if (viewMode === 'albums' && !entry.dataset.archiveAlbumKey) return false;
       const fields = searchFieldsByItemId.get(entry.dataset.archiveId ?? '');
       const keywordMatch = terms.length === 0
         ? { score: 0, matchedFields: [] }
@@ -751,22 +772,49 @@ import { setupArchiveFilterControls } from '../../scripts/archive-filter-control
       const matchesDecade = !selectedDecade || (selectedDecade === 'unknown' ? !entry.dataset.archiveDecade : entry.dataset.archiveDecade === selectedDecade);
       const matchesPlace = !selectedPlace || (entry.dataset.archivePlaces ?? '').includes(`|${selectedPlace}|`);
       const matchesTag = !selectedTag || (entry.dataset.archiveTags ?? '').includes(`|${selectedTag}|`);
+      if (recovery && matchesDecade && matchesPlace && matchesTag) {
+        if (entry.dataset.archiveCategory === 'letters') hasScopedLetters = true;
+        if (recovery.shorterQuery && matchesCategory && fields) recoveryFields.push(fields);
+      }
       const isMatch = keywordMatch !== null && matchesCategory && matchesDecade && matchesPlace && matchesTag;
+      // 每个选项显示替换本维度后能得到的件数，其他条件及当前浏览范围继续生效。
+      if (keywordMatch && matchesCategory && matchesTag) {
+        if (matchesPlace) {
+          const decade = entry.dataset.archiveDecade || 'unknown';
+          decadeCounts.set(decade, (decadeCounts.get(decade) ?? 0) + 1);
+        }
+        if (matchesDecade) {
+          for (const place of new Set(splitDataValues(entry.dataset.archivePlaces))) {
+            placeCounts.set(place, (placeCounts.get(place) ?? 0) + 1);
+          }
+        }
+      }
       if (isMatch && terms.length > 0 && keywordMatch) scoreMap.set(entry, keywordMatch);
       entry.hidden = !isMatch;
       return isMatch;
     });
     // 按真实档案筛选、排序后才收拢，不能拿甲的年代和乙的地点拼成一次命中。
+    filterControls.showCounts('archive-decade', decadeCounts);
+    filterControls.showCounts('archive-place', placeCounts);
     sortArchiveEntries(scoreMap);
     const matchedIds = new Set(initialMatches.map((entry) => entry.dataset.archiveId));
-    const matchingEntries = archiveEntries.filter((entry) => matchedIds.has(entry.dataset.archiveId)
-      && (viewMode !== 'albums' || Boolean(entry.dataset.archiveAlbumKey)));
+    const matchingEntries = archiveEntries.filter((entry) => matchedIds.has(entry.dataset.archiveId));
     const displayGroups = groupArchiveMatches(matchingEntries.map((entry) => ({
       id: entry.dataset.archiveId!, albumKey: entry.dataset.archiveAlbumKey,
     })), viewMode);
     archiveEntries.forEach((entry) => { entry.hidden = true; });
     albumCards.forEach((entry) => { entry.hidden = true; });
     const displayEntries: HTMLElement[] = [];
+    if (filterResults) {
+      const label = filterResults.querySelector('span');
+      if (label) {
+        if (!matchingEntries.length) label.textContent = ct('0 个结果，查看提示');
+        else if (viewMode === 'albums') label.textContent = ct('查看 {0} 个相册或专题', {0: displayGroups.length});
+        else if (selectedCategory === 'letters') label.textContent = ct('查看 {0} 封信', {0: matchingEntries.length});
+        else label.textContent = ct('查看 {0} 件档案', {0: matchingEntries.length});
+      }
+      filterResults.hidden = false;
+    }
     for (const group of displayGroups) {
       const entry = group.kind === 'album' ? albumCards.get(group.key) : entriesById.get(group.key);
       if (!entry) continue;
@@ -801,6 +849,18 @@ import { setupArchiveFilterControls } from '../../scripts/archive-filter-control
     renderSearchSuggestions(matchingEntries, terms);
     if (emptyState) emptyState.hidden = matchingEntries.length !== 0;
     if (!matchingEntries.length) {
+      // 使用当前视图和筛选下的真实命中验证建议，仅在出现空结果后计算备选词的分数。
+      const shorterQuery = recovery?.shorterQuery;
+      const shorterTerms = shorterQuery ? searchTermsFrom(shorterQuery) : [];
+      const canSearchShorter = shorterTerms.length > 0 && recoveryFields.some(fields => scoreEntryAgainstFields(shorterTerms, fields) !== null);
+      if (emptyQueryButton) {
+        emptyQueryButton.hidden = !canSearchShorter;
+        emptyQueryButton.value = shorterQuery && canSearchShorter ? shorterQuery : '';
+        if (canSearchShorter) emptyQueryButton.textContent = ct('改搜“{0}”', { 0: shorterQuery });
+      }
+      if (emptyLettersButton) emptyLettersButton.hidden = !hasScopedLetters;
+      if (emptyDescription) emptyDescription.hidden = canSearchShorter || hasScopedLetters;
+      if (emptyClearButton) emptyClearButton.hidden = canSearchShorter || hasScopedLetters;
       const hasOnlyCategoryFilter = Boolean(selectedCategory) && !terms.length && !selectedDecade && !selectedPlace && !selectedTag;
       const hasKeywordFilter = terms.length > 0;
       resultsSummary.textContent = hasOnlyCategoryFilter ? ct("当前暂无此类档案。") : ct("没有找到符合条件的档案。");
@@ -844,6 +904,10 @@ import { setupArchiveFilterControls } from '../../scripts/archive-filter-control
     applyFilterChange();
   });
   categorySelect?.addEventListener('change', applyFilterChange);
+  filterResults?.addEventListener('click', () => {
+    resultsSummary?.focus({ preventScroll: true });
+    resultsSummary?.scrollIntoView({ block: 'start' });
+  });
   sortSelect?.addEventListener('change', () => {
     userChosenSort = true;
     applyFilterChange();
@@ -877,6 +941,19 @@ import { setupArchiveFilterControls } from '../../scripts/archive-filter-control
 
   clearFiltersButton?.addEventListener('click', clearAllFilters);
   emptyClearButton?.addEventListener('click', clearAllFilters);
+  emptyQueryButton?.addEventListener('click', () => {
+    if (!searchInput || !emptyQueryButton.value) return;
+    searchInput.value = emptyQueryButton.value;
+    applyFilterChange();
+    resultsSummary?.focus();
+  });
+  emptyLettersButton?.addEventListener('click', () => {
+    if (!searchInput || !categorySelect) return;
+    searchInput.value = '';
+    categorySelect.value = 'letters';
+    applyFilterChange();
+    resultsSummary?.focus();
+  });
 
   filterChips?.addEventListener('click', (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-clear-filter]');
@@ -1089,6 +1166,26 @@ import { setupArchiveFilterControls } from '../../scripts/archive-filter-control
   .archive-filter-toggle { margin-inline-start: auto; }
   .archive-filter-toggle::before { content: '＋'; }
   .archive-more-filters[open] .archive-filter-toggle::before { content: '－'; }
+  .archive-filter-results {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 2px;
+    color: var(--site-accent);
+    background: var(--site-paper);
+    border: 0;
+    border-top: 1px solid var(--site-border-soft);
+    font: 500 0.9375rem/1.5 var(--site-ui-font);
+    cursor: pointer;
+  }
+  .archive-filter-results[hidden] { display: none; }
+  .archive-filter-results:focus-visible { outline: 2px solid var(--site-focus-outline); outline-offset: -2px; }
   .archive-secondary-controls { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1fr) minmax(0, 1fr); gap: 28px; padding: 22px 0 30px; border-top: 1px solid var(--site-border-soft); }
 
   .archive-search-assist {
@@ -1269,8 +1366,27 @@ import { setupArchiveFilterControls } from '../../scripts/archive-filter-control
     line-height: 1.8;
   }
 
-  .archive-empty-state button {
-    margin-inline: auto;
+  .archive-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 1rem;
+    margin-block-start: 1rem;
+  }
+
+  .archive-empty-actions button {
+    min-height: 44px;
+  }
+
+  .archive-empty-actions .ui-text-link {
+    padding: 0.4rem;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .archive-empty-actions button[hidden], .archive-empty-state span[hidden] {
+    display: none;
   }
 
   .archive-entry {

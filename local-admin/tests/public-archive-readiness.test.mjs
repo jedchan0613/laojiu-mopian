@@ -108,23 +108,37 @@ function fixture({ locale = 'zh-CN', query = '', restore = false, storedState, h
   const controls = make('archive-controls'); controls.className = 'archive-controls';
   const search = make('archive-search', 'input', controls);
   const select = (id, values) => {
-    const element = make(id, 'select', controls);
-    for (const value of values) { const option = new Element('option'); option.value = value; option.textContent = value; element.append(option); }
+    const counted = id === 'archive-decade' || id === 'archive-place';
+    const parent = counted ? make('', 'div', controls) : controls;
+    if (counted) parent.dataset.archiveChoices = id;
+    const element = make(id, 'select', parent);
+    for (const value of values) {
+      const option = make('', 'option', element);
+      option.value = value;
+      option.textContent = value;
+      if (counted) {
+        const button = make('', 'button', parent);
+        button.dataset.filterValue = value;
+        if (value) make('', 'small', button).dataset.choiceCount = value;
+      }
+    }
     element.value = values[0]; return element;
   };
-  const category = select('archive-category', ['', 'photos', 'papers']);
+  const category = select('archive-category', ['', 'photos', 'papers', 'letters']);
   const sort = select('archive-sort', ['relevance', 'recent', 'likes', 'date-asc', 'date-desc', 'type']); sort.value = 'recent';
-  const decade = select('archive-decade', ['', '1980', '1990']);
+  const decade = select('archive-decade', ['', '1980', '1990', 'unknown']);
   const place = select('archive-place', ['', 'Beijing', 'Tokyo']);
   const tag = select('archive-tag', ['', 'family', 'travel']);
   const ids = [
     'archive-clear', 'archive-actions', 'archive-more-filters', 'archive-more-summary', 'archive-filter-chips',
-    'archive-empty-state', 'archive-empty-title', 'archive-empty-description', 'archive-empty-clear',
+    'archive-empty-state', 'archive-empty-title', 'archive-empty-description', 'archive-empty-clear', 'archive-empty-query', 'archive-empty-letters',
     'archive-search-assist', 'archive-search-suggestions', 'archive-results-summary', 'archive-search-retry',
     'archive-pagination', 'archive-page-summary', 'archive-page-previous', 'archive-page-next', 'archive-page-numbers',
   ];
   const elements = Object.fromEntries(ids.map((id) => [id, id === 'archive-more-filters' ? browsePaths : make(id)]));
   const list = make('archive-list', 'ul');
+  const jump = make('archive-filter-results', 'button', browsePaths);
+  make('', 'span', jump);
   const album = make('', 'li', list); album.dataset.archiveAlbumCard = 'family-album'; album.dataset.albumRecordCount = '3';
   const albumSummary = make('', 'p', album); albumSummary.dataset.albumMatches = '';
   const matchedItems = make('', 'ul', album); matchedItems.dataset.albumMatchedItems = '';
@@ -306,6 +320,55 @@ test('六语言带q直接访问立即加载，慢网保持页码与q，失败明
     assert.equal(f.scrolls.at(-1), 742);
     assert.equal(f.elements['archive-search-retry'].hidden, true);
   }
+});
+
+test('六语言空结果可改搜家书或浏览信件，同时保留年代、地点、标签和浏览方式', async () => {
+  const familyTerms = [
+    ['zh-CN', '旧家书', '家书'], ['en', 'old family letter', 'family letter'],
+    ['th', 'จดหมายครอบครัวเก่า', 'จดหมายครอบครัว'], ['ja', '古い手紙', '手紙'],
+    ['ko', '오래된 가족 편지', '가족 편지'], ['zh-Hant', '舊家書', '家書'],
+  ];
+  for (const [locale, original, shorter] of familyTerms) {
+    const params = new URLSearchParams({ category: 'papers', decade: '1990', place: 'Tokyo', tag: 'travel', view: 'items', q: original });
+    const f = fixture({ locale, query: '?' + params });
+    f.fields[1].fields.description = shorter;
+    f.entries[3].dataset.archiveCategory = 'letters';
+    await flush();
+    assert.equal(f.elements['archive-empty-state'].hidden, true);
+    await f.succeed();
+    const suggestion = f.elements['archive-empty-query'];
+    const letters = f.elements['archive-empty-letters'];
+    assert.equal(suggestion.hidden, false, locale);
+    assert.equal(letters.hidden, false, locale);
+    assert.equal(suggestion.textContent, translate('改搜“{0}”', locale, { 0: shorter }));
+    suggestion.dispatch('click');
+    assert.equal(f.elements['archive-empty-state'].hidden, true);
+    params.set('q', shorter);
+    for (const [key, value] of params) assert.equal(f.location.searchParams.get(key), value);
+    assert.deepEqual(f.visibleItems(), [f.entries[1]]);
+    f.input(original);
+    letters.dispatch('click');
+    assert.equal(f.location.searchParams.has('q'), false);
+    assert.equal(f.category.value, 'letters');
+    for (const key of ['decade', 'place', 'tag', 'view']) assert.equal(f.location.searchParams.get(key), params.get(key));
+    assert.deepEqual(f.visibleItems(), [f.entries[3]]);
+  }
+});
+
+test('空结果操作只推荐当前筛选和浏览范围内确有结果的信件查询', async () => {
+  const f = fixture({ query: '?view=albums&category=papers&q=旧家书' });
+  f.fields[5].fields.description = '家书'; // 两个候选都在本次相册浏览范围之外。
+  f.entries[7].dataset.archiveCategory = 'letters';
+  await flush(); await f.succeed();
+  const suggestion = f.elements['archive-empty-query'];
+  const letters = f.elements['archive-empty-letters'];
+  assert.equal(suggestion.hidden, true);
+  assert.equal(letters.hidden, true);
+  assert.equal(f.elements['archive-empty-clear'].hidden, false);
+  f.entries[1].dataset.archiveCategory = 'letters';
+  f.input('完全无关的查询');
+  assert.equal(suggestion.hidden, true);
+  assert.equal(letters.hidden, true);
 });
 
 test('预取失败仍能使用筛选及返回链接；清除失败关键词恢复真实结果', async () => {
@@ -531,4 +594,52 @@ test('状态损坏或普通重新访问时仍按URL工作，未标记返回时�
   const fresh = fixture({ query, storedState: { href: '/archive/' + query, scrollY: 900, restorePending: false, pathsOpen: false, moreFiltersOpen: true } });
   assert.equal(fresh.category.value, 'photos');
   assert.deepEqual(fresh.scrolls, []);
+});
+
+test('年代和地点计数排除自身条件，保留其他条件、未知年代与相册范围', () => {
+  const f = fixture();
+  const total = (control, value) => control.parentElement.querySelector(`[data-choice-count="${value}"]`).textContent;
+  const choose = (control, value) => { control.value = value; control.dispatch('change'); };
+  const jump = f.document.querySelector('#archive-filter-results');
+  f.entries[0].dataset.archiveDecade = '';
+  f.entries[0].dataset.archivePlaces = '|Beijing|Beijing|';
+  f.entries[2].dataset.archiveDecade = '1990';
+  f.entries[2].dataset.archivePlaces = '|Tokyo|';
+  choose(f.category, 'photos');
+  assert.equal(total(f.decade, 'unknown'), '1');
+  assert.equal(total(f.decade, '1990'), '1');
+  assert.equal(total(f.place, 'Beijing'), '89');
+  choose(f.decade, 'unknown');
+  assert.equal(total(f.decade, '1990'), '1', '切换年代无需先清除原年代');
+  assert.equal(total(f.place, 'Beijing'), '1', '一件只计一次');
+  choose(f.place, 'Tokyo');
+  assert.equal(total(f.decade, '1990'), '1');
+  assert.equal(jump.textContent, '0 个结果，查看提示');
+  choose(f.decade, '1990');
+  assert.equal(jump.textContent, '查看 1 件档案');
+  choose(f.tag, 'travel');
+  assert.equal(total(f.place, 'Tokyo'), '0');
+  choose(f.tag, '');
+  choose(f.place, '');
+  choose(f.decade, '');
+  f.views[1].dispatch('click');
+  assert.equal(total(f.decade, '1980'), '0', '散件不会进入只看相册与专题的计数');
+  assert.equal(total(f.decade, 'unknown'), '1');
+  assert.equal(jump.textContent, '查看 1 个相册或专题', '两件同册档案可打开一个相册');
+  jump.dispatch('click');
+  assert.equal(f.document.activeElement, f.elements['archive-results-summary']);
+});
+
+test('搜索未就绪隐藏条件计数，索引就绪后按实际搜索范围显示', async () => {
+  const f = fixture();
+  const label = f.place.parentElement.querySelector('[data-choice-count="Beijing"]');
+  const jump = f.document.querySelector('#archive-filter-results');
+  f.input('needleonlylast'); await flush();
+  assert.equal(jump.hidden, true);
+  assert.equal(label.hidden, true);
+  await f.succeed();
+  assert.equal(label.hidden, false);
+  assert.equal(label.textContent, '1');
+  assert.equal(jump.hidden, false);
+  assert.equal(jump.textContent, '查看 1 件档案');
 });

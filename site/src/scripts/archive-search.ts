@@ -39,6 +39,24 @@ export const normalizeSearchText = (value: string) => value.trim().toLocaleLower
 export const searchTermsFrom = (value: string) =>
 	normalizeSearchText(value).split(/\s+/).filter(Boolean);
 
+// 只给含义明确的信件查询提供出路；输入原文和正常的搜索排序都不改写。
+const shorterLetterQueries = new Map([
+	['旧家书', '家书'], ['舊家書', '家書'], ['旧家信', '家信'], ['舊家信', '家信'],
+	['旧信件', '信件'], ['舊信件', '信件'],
+	['old family letter', 'family letter'], ['old family letters', 'family letters'],
+	['old letter', 'letter'], ['old letters', 'letters'],
+	['古い家族の手紙', '家族の手紙'], ['古い手紙', '手紙'],
+	['오래된 가족 편지', '가족 편지'], ['오래된 편지', '편지'],
+	['จดหมายครอบครัวเก่า', 'จดหมายครอบครัว'], ['จดหมายเก่า', 'จดหมาย'],
+]);
+const letterQueries = new Set([...shorterLetterQueries.values(), '书信', '書信']);
+
+export function getLetterSearchRecovery(query: string) {
+	const normalized = normalizeSearchText(query).replace(/\s+/g, ' ');
+	const shorterQuery = shorterLetterQueries.get(normalized);
+	if (shorterQuery || letterQueries.has(normalized)) return { shorterQuery };
+}
+
 // CJK 统一表意文字、扩展区与兼容表意文字、日文假名；用于判断是否启用二元组匹配。
 const cjkCharacter = /[⺀-鿿豈-﫿぀-ヿ]/;
 const cjkRun = /[⺀-鿿豈-﫿぀-ヿ]+/g;
