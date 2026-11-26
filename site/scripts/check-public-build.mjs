@@ -252,6 +252,17 @@ for (const marker of ['data-letter-reader', '文字阅读', '原件对照', '只
 }
 check(archiveDetailSource.includes('data-letter-size-select'), '信件阅读缺少字号调节控件。');
 check(archiveDetailSource.includes('record-view-data'), '详情页缺少浏览足迹记录数据。');
+for (const page of htmlEntries.filter(entry => /^(?:[^/]+\/)?archive\/LJM-[^/]+\/index\.html$/.test(entry.relativePath))) {
+  check(/<body\b[^>]*\barchive-editorial\b/.test(page.html), `${page.relativePath} 的详情页未使用暖白版式。`);
+  if (!page.html.includes('data-letter-reader=')) continue;
+  const hasText = page.html.includes('data-letter-text ');
+  const images = Number(page.html.match(/data-record-image-count="(\d+)"/)?.[1] ?? 0);
+  const pages = [...page.html.matchAll(/\bdata-letter-page="(\d+)"/g)].map(match => Number(match[1]));
+  check(!pages.length || (pages.length === images && pages.every((number, index) => number === index + 1)),
+    `${page.relativePath} 的释文页码与公开影像顺序不符。`);
+  check(page.html.includes('data-letter-mode-select="compare"') === Boolean(hasText && images),
+    `${page.relativePath} 的图文对照入口与公开内容不一致。`);
+}
 
 if (notFoundPage) {
   check(notFoundPage.html.includes('这页目前找不到'), '404 页面缺少清晰的不可访问说明。');
